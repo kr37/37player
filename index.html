@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>37 Player - About</title>
+
+    <link rel="shortcut icon" href="37player.ico" />
+
+    <style>
+        #bodyDiv    { 
+                        margin:auto; max-width: 800px; 
+                        font-family: "Palatino", "Palatino Linotype", "Palatino LT STD", "Book Antiqua", Georgia, serif;
+                    }
+        h2          { padding: 1em 0 0 0 }
+        li          { padding: .5em 0; }
+        img         { max-width: 100%; }
+        .viewPic    { font-size: x-small; vertical-align: top; text-decoration: none; }
+
+        /* Core Overlay Styling */
+        .popup-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background: rgba(0, 0, 0, 0.7);
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          
+          /* Hide the popup initially */
+          opacity: 0;
+          pointer-events: none;
+          transition: opacity 0.3s ease;
+        }
+
+        /* The Magic: Show the popup when its ID is targeted in the URL */
+        .popup-overlay:target {
+          opacity: 1;
+          pointer-events: auto;
+        }
+
+        /* Popup Box & Image Styling */
+        .popup-content {
+          position: relative;
+          background: #fff;
+          padding: 10px;
+          border-radius: 8px;
+          max-width: 90%;
+          max-height: 90%;
+        }
+
+        .popup-content img {
+          display: block;
+          max-width: 100%;
+          height: auto;
+        }
+
+        /* Invisible full-screen link to allow clicking outside to close */
+        .close-overlay-bg {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          cursor: default;
+        }
+
+        /* Close Button positioning */
+        .close-btn {
+          position: absolute;
+          top: -15px;
+          right: -15px;
+          background: #fff;
+          color: #333;
+          width: 30px;
+          height: 30px;
+          border-radius: 50%;
+          text-align: center;
+          line-height: 30px;
+          text-decoration: none;
+          font-weight: bold;
+          box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        }
+
+
+
+
+    </style>
+
+</head>
+
+<body>
+    <div id="bodyDiv">
+        <h1><img src="37player.png" style="height: 1em; vertical-align: -.2em;"> 37 Player</h1>
+
+        <h2>What it is</h2>
+        <p>37 Player is a multi-platform music player and playlist creator/organizer. It was created based on years of using iTunes/Music.app in Kadampa centers - understanding that much of what iTunes does is very good, but some things can be improved for our usage.</p>
+        <img src="Screenshot_Playing_Seekbar.png" style="border: 1px solid gray;">
+
+        <h2>What's better?</h2>
+        <ul>
+            <li><b>Waveform seekbar</b> &mdash; the waveform on the 'Playing' screen shows the shape of the verses and silences in the track, so you can click straight to the right spot when you need to.</li>
+            <li><b>Side-by-side playlist editing</b><a href="#imgPlaylistEditing" class="viewPic">View</a> &mdash; the 'Edit Playlists' screen's two-pane layout makes it easy to build a playlist while browsing your library right alongside it.</li>
+            <li><b>Safety</b> - On the main 'Playing' screen, nothing can be edited or deleted accidentally. You can set a pin to prevent access to the edit screens, if you wish.
+            <li><b>Stop</b> <a href="#imgPlayingStop" class="viewPic">View</a> &mdash; put a Stop wherever you need one in a playlist and give it a name, like "Stop for meditation." Playback pauses there and waits for a click to continue &mdash; no more prayers starting up while someone's teaching.</li>
+            <li><b>Split track</b> &mdash; no need for Audacity. On the 'Library' tab, play a track to the point you want, click Split track, and edit the details for each half before saving them as two separate tracks.</li>
+            <li><b>Export</b> &mdash; Export your library and playlists in a convenient, standard format for use with other players.</li>
+            <li><b>Other stuff</b> - many things have been tweak for center use.</li>
+        </ul>
+
+
+        <!-- 2. The Popup Overlay (Hidden by default) -->
+        <div id="imgPlaylistEditing" class="popup-overlay">
+          <!-- A link pointing to '#' wraps the background so clicking outside the image closes it -->
+          <a href="#" class="close-overlay-bg"></a>
+          
+          <div class="popup-content">
+            <!-- Close button inside the box -->
+            <a href="#" class="close-btn">&times;</a>
+            <!-- The popped-out image -->
+            <img src="Screenshot_EditPlaylists.png" alt="Popped out preview">
+          </div>
+        </div>
+
+
+        <!-- 2. The Popup Overlay (Hidden by default) -->
+        <div id="imgPlayingStop" class="popup-overlay">
+          <!-- A link pointing to '#' wraps the background so clicking outside the image closes it -->
+          <a href="#" class="close-overlay-bg"></a>
+          
+          <div class="popup-content">
+            <!-- Close button inside the box -->
+            <a href="#" class="close-btn">&times;</a>
+            <!-- The popped-out image -->
+            <img src="Screenshot_Playing_Stop.png" alt="Popped out preview">
+          </div>
+        </div>
+
+
+
+       
+        <h2>How to get it</h2>
+        <ul>
+            <li>Run from <a href="live/index.html">here</a>.
+            <li><a href="37playerApp.zip" download>Download</a> and run from your machine.</a>
+        </ul>
+        <p>Note that "run it from here" works quite well, and also allows you to have totally offline functionality especially if you run from Chrome or Edge.</p>
+
+        <h2>Libraries</h2>
+        <p>These libraries are full of Tharpa copyright music. You need to have bought and paid for the tracks yourself.</p>
+        <p><a href="libraries/">Libraries</a></p>
+    </div>
+</body>
+</html>
