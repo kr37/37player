@@ -40,3 +40,5 @@ Each copy of 37 Player — in a particular browser, on a particular computer —
 The backup folder's **app** folder contains a copy of 37 Player. Open **app/index.html** in Chrome or Edge to run it without an internet connection. It starts with an empty library — each copy has its own — so restore from the same folder as described above.
 
 That copy can update itself: when a newer version is published and there's an internet connection, it shows an **Update** button at the top. Updating keeps your library exactly as it is.
+
+If you downloaded 37 Player as a single file (such as 37-player.html) rather than using the website, keep that file in its own folder and choose that same folder as the backup folder. The file and its backup then live side by side, and the file can update itself in the same way. Chrome or Edge on a computer only.
