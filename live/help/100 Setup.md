@@ -1,7 +1,13 @@
 Setup
 
-37 Player stores its entire library inside the browser's own storage. Browsers are allowed to clear that storage under disk pressure — unless it's been granted **persistent** status, in which case it's protected from that automatic cleanup.
+Two things make 37 Player dependable from the start. For why they matter, see 'Reliability'.
 
-37 Player already asks the browser for persistent storage automatically, every time it loads. Whether that request is actually granted is up to the browser's own judgment of how genuinely the app is being used — the more it looks like a real, regularly-used app rather than a page visited once, the more likely persistence gets granted.
+### Install 37 Player as an app
 
-The single best thing you can do to help: install 37 Player as its own app rather than just opening it as a page — in Chrome, either a full "Install app" if it's served over https, or "Create shortcut" → "Open as window" from the three-dot menu if you're running it as a local file. Browsers treat an installed app as a strong signal of genuine, ongoing use, which meaningfully improves the odds persistence gets granted. Some browsers will also show you an explicit permission prompt asking to allow persistent storage — if you ever see one, choose Allow.
+Install 37 Player as its own app rather than just opening it as a page — in Chrome, either a full "Install app" if it's served over https, or "Create shortcut" → "Open as window" from the three-dot menu if you're running it as a local file.
+
+Browsers treat an installed app as a strong sign of genuine, regular use, which makes them much more likely to mark its storage **persistent** — protected from being cleared automatically when the disk fills up. 37 Player asks for persistent storage every time it starts; if the browser ever shows a prompt about it, choose **Allow**. To check whether it's been granted, open Settings → **Library info**.
+
+### Choose a backup folder
+
+In Chrome, Edge, and similar browsers, the first time 37 Player starts it asks for a backup folder. Create a new, empty folder and choose it — 37 Player then keeps it up to date by itself. In other browsers, backups are manual. See 'Backing up'.

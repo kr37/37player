@@ -1,10 +1,10 @@
 Backing up
 
-37 Player keeps your whole library — audio, playlists, notes, and all your edits — inside the browser. That's what makes it fast and able to work offline, but it also means that clearing the browser's data (for example "Clear cookies and site data") erases the library. The browser can't be told to protect it from that. The only real protection is a copy outside the browser, as ordinary files — a backup.
+37 Player keeps your whole library inside the browser, and several everyday things can erase it there — clearing the browser's data above all (see 'Reliability'). The only real protection is a copy outside the browser, as ordinary files: a backup.
 
-### Automatic backups (Chrome or Edge on a computer)
+### Automatic backups (Chrome, Edge, and similar browsers on a computer)
 
-In Chrome or Edge on a computer (Windows, Mac, Linux, or Chromebook), 37 Player can keep a backup folder up to date by itself, a few seconds after every change.
+In Chrome or Edge on a computer (Windows, Mac, Linux, or Chromebook), 37 Player can keep a backup folder up to date by itself, a few seconds after every change. Most other browsers built on the same engine can too; in Brave, first turn on "File System Access API" at brave://flags.
 
 - **Setting it up:** the first time 37 Player starts, it asks for a backup folder. Create a new, empty folder and choose it — not your existing music folder. You can change it later in Settings. If Chrome asks whether 37 Player may keep access to the folder, choose **Allow on every visit**; otherwise it will ask again each time you open 37 Player (the button at the top will say **Resume backups** — click it to continue).
 - **A synced folder** (Dropbox, Google Drive, Syncthing, or similar) also gives you a copy off this computer.
@@ -20,7 +20,7 @@ Anyone can back up, even without the PIN — a backup never changes the library.
 
 - **Library - do not touch** — the library itself. Please don't edit, rename, or rearrange anything in it; 37 Player relies on it exactly as it is. Its files are named by internal ID, not by title.
 - **contents.csv** — a list of every track, with its artist, album, name, and playlists. Open it in any spreadsheet program to find a particular recording.
-- **app** — a copy of 37 Player itself, for running without the website (see below).
+- **37-player.html** — 37 Player itself, for running without the website (see below).
 - **README.txt** — a short explanation, for anyone who comes across the folder.
 
 The backup is a mirror, not a history: something deleted in 37 Player is removed from the backup too. For a snapshot you can go back to, use 'Import / Export' → Export now and then, and keep that file somewhere else.
@@ -37,8 +37,6 @@ Each copy of 37 Player — in a particular browser, on a particular computer —
 
 ### Running without the website
 
-The backup folder's **app** folder contains a copy of 37 Player. Open **app/index.html** in Chrome or Edge to run it without an internet connection. It starts with an empty library — each copy has its own — so restore from the same folder as described above.
+As soon as you choose a backup folder, 37 Player puts a copy of itself there: 37-player.html. Open it in Chrome or Edge to run 37 Player without the website or an internet connection. If your backup was made from the website, the copy may start with an empty library of its own — restore from the same folder as described above.
 
-That copy can update itself: when a newer version is published and there's an internet connection, it shows an **Update** button at the top. Updating keeps your library exactly as it is.
-
-If you downloaded 37 Player as a single file (such as 37-player.html) rather than using the website, keep that file in its own folder and choose that same folder as the backup folder. The file and its backup then live side by side, and the file can update itself in the same way. Chrome or Edge on a computer only.
+That copy keeps itself up to date: when a newer version is published and there's an internet connection, it shows an Update button at the top. Updating keeps your library exactly as it is. Keep the file in its backup folder — that's what lets it update itself. Chrome or Edge on a computer only.

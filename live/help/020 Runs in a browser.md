@@ -1,8 +1,8 @@
 Runs in a browser
 
-37 Player runs entirely in a browser. The browser (Chrome, Edge, etc.) keeps its own storage, and 37 Player lives entirely within it, in a database called IndexedDB. When you import any files or make any playlists, they're stored inside this IndexedDB — the entire music library lives in this one space. You won't find the library on your disk (unless you're kind of a hacker-type).
+37 Player runs entirely in a browser (Chrome, Edge, Firefox, Safari, etc.) — there's nothing to install, and it works the same on Windows, Mac, Linux, or a Chromebook. Your library lives inside the browser too, in its own storage. For what that means — how it works without the internet, and how to keep the library safe — see 'Reliability'.
 
-You can export the library in a structured format, which looks like this:
+Because the library lives inside the browser, you won't find it as files on your disk (unless you're kind of a hacker-type). To get your music back out as ordinary files — for another player, or just to look through — use 'Import / Export' → Export and choose Portable. It unpacks into a structure like this:
 
 ```
 /music/New Kadampa Tradition/Heart Jewel/files
@@ -12,10 +12,6 @@ You can export the library in a structured format, which looks like this:
 /playlists/action tantra/medicine buddha sadhana.m3u8
 ```
 
-That exported structure can be useful to other programs, and it can also be re-imported back into 37 Player — but 37 Player itself is always actually playing from within the browser's own storage, never directly from an exported copy.
-
-This also means that although you may have initially run this from a web URL, once it is initialized, it does not depend at all on an internet connection.
-
-The app itself works the same way as the library data: once it has loaded successfully at least once, the browser keeps its own cached copy, so opening the page again doesn't require reaching the server at all. Between that and the library already living entirely in the browser's own storage, there's nothing about actually running 37 Player that depends on a network connection — only that very first visit does.
+That structure can be useful to other programs, and it can also be imported back into 37 Player — but 37 Player itself always plays from within the browser's own storage, never directly from an exported copy.
 
 {{setup-locally}}
