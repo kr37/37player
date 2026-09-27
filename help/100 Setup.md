@@ -19,4 +19,4 @@ Browsers treat an installed app as a strong sign of genuine, regular use, which 
 
 ### Choose a backup folder
 
-In Chrome, Edge, and similar browsers, the first time 37 Player starts it asks for a backup folder. Create a new, empty folder and choose it — 37 Player then keeps it up to date by itself. In other browsers, backups are manual. See 'Backing up'.
+In Chrome, Edge, and similar browsers, the first time 37 Player starts it asks which language you want, then for a backup folder. Create a new, empty folder and choose it — 37 Player then keeps it up to date by itself. In other browsers, backups are manual. See 'Backing up'.
