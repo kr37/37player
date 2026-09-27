@@ -1,6 +1,15 @@
 Setup
 
-Two things make 37 Player dependable from the start. For why they matter, see 'Reliability'.
+Three choices at the start make 37 Player dependable. For why they matter, see 'Reliability'.
+
+### Choose one home for your library
+
+Your library lives in one browser, at one address, so decide where 37 Player will live and stay with it:
+
+- **One browser.** Chrome, Edge, Firefox and Safari each keep their own library. So do two installations of the same browser — on Linux, for example, a Flatpak Chrome and a Chrome installed from a .deb package are two separate browsers.
+- **One address.** The website (player.37dakinis.net) and a 37-player.html file opened from your disk are separate libraries, with separate backups.
+
+Installing 37 Player as an app (below) is not a second home: the installed app and the website in the same browser share one library. Settings → **Library info** shows where the library you're looking at lives. To move a library somewhere else later, see 'Multiple instances'.
 
 ### Install 37 Player as an app
 
