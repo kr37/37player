@@ -8,6 +8,7 @@ Cool stuff
 
 ### Handy features
 
+- **Look ahead without losing your place** — while something is playing, clicking another playlist opens it over the playing one, which stays live underneath with its waveform in view. Pick a track, see its waveform, and click in it to choose where to start; then the play button (or Enter, from the top of the track) switches to it. Escape, ✕, or a click outside closes it with nothing changed.
 - **Waveform seekbar** — the waveform on the 'Playing' screen shows the shape of the verses and silences in the track, so you can click straight to the right spot when you need to.
 - **Stop** — put a Stop wherever you need one in a playlist and give it a name, like "Stop for meditation." Playback pauses there and waits for a click to continue — no more prayers starting up while someone's teaching.
 - **Split track** — no need for Audacity. On the 'Library' tab, play a track to the point you want, click Split track, and edit the details for each half before saving them as two separate tracks.

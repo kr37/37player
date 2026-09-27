@@ -4,7 +4,8 @@ Keyboard Shortcuts
 
 <h3 style="margin:24px 0 8px 0;">Playing</h3>
 <table style="width:100%; border-collapse:collapse; margin-bottom:20px;">
-<tr><td style="padding:6px 14px 6px 0; vertical-align:top; white-space:nowrap;"><kbd>Enter</kbd></td><td style="padding:6px 0;">Starts a track from the beginning — the highlighted one if there is one, otherwise whatever's currently queued.</td></tr>
+<tr><td style="padding:6px 14px 6px 0; vertical-align:top; white-space:nowrap;"><kbd>Enter</kbd></td><td style="padding:6px 0;">Starts a track from the beginning — the highlighted one if there is one, otherwise whatever's currently queued. With another playlist open over the playing one, it starts that playlist instead: its highlighted track, or else its first.</td></tr>
+<tr><td style="padding:6px 14px 6px 0; vertical-align:top; white-space:nowrap;"><kbd>Escape</kbd></td><td style="padding:6px 0;">Closes another playlist opened over the playing one, without changing anything.</td></tr>
 <tr><td style="padding:6px 14px 6px 0; vertical-align:top; white-space:nowrap;"><kbd>Space</kbd></td><td style="padding:6px 0;">Toggles play/pause.</td></tr>
 <tr><td style="padding:6px 14px 6px 0; vertical-align:top; white-space:nowrap;">Double-click a track</td><td style="padding:6px 0;">Plays it immediately, stopping whatever was playing before.</td></tr>
 </table>
