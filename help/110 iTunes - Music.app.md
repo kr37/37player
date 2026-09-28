@@ -35,7 +35,7 @@ Every track keeps its name, artist, album, track number and artwork, since 37 Pl
 
 ### Why standardize for Music.app and iTunes
 
-Music.app and iTunes play one track straight into the next — but only smoothly when the two are alike. When the next track has a different sample rate (44.1 kHz after 48 kHz, say) or a different number of channels (mono after stereo), the player has to reset its audio output between them, and you hear a click, a dropout, or a short gap. In a sadhana split into many tracks, that can land in the middle of a prayer.
+Music.app and iTunes play one track straight into the next — but only smoothly when the two are alike. When the next track is a different file type (MP3 after AAC), or has a different sample rate (44.1 kHz after 48 kHz, say) or a different number of channels (mono after stereo), the player has to reset its audio output between them, and you hear a click, dropout, short gap, or worse.
 
 37 Player itself doesn't have this problem, but a library headed for Music.app or iTunes is better standardized first: Settings → **Library standardization** converts, in the background, every file to the same format — AAC, stereo, at one sample rate — so every track matches its neighbours. It also shrinks uncompressed files like WAV a great deal.
 
