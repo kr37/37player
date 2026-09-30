@@ -32,6 +32,17 @@ A copy opened from a file (such as the 37-player.html in your backup folder) doe
 
 For everything on that list, the real protection is a **backup**. In Chrome, Edge, and other browsers built on the same engine, backups to a folder happen automatically (in Brave, first turn on "File System Access API" at brave://flags). In Firefox and Safari, and on phones and tablets, backups are manual. See 'Backing up'.
 
+### If the computer freezes or loses power
+
+A crash at the moment 37 Player is saving can damage part of the browser's storage. 37 Player keeps a spare copy of the library's list of tracks and playlists, a few minutes behind at most, and uses it by itself if the main one can't be read — anything changed in those last few minutes may need doing again.
+
+If neither can be read, 37 Player says so when it starts, and changes nothing until you choose:
+
+- **Restore from your backup folder** (or a backup file). Audio still stored in the browser is kept, and any that the backup doesn't know about — added since it was made — can be added back as tracks afterwards.
+- **Rebuild the tracks from the audio still stored here.** The audio is stored separately and usually survives; each track gets its name, artist, album and artwork from the file itself. Playlists can't be rebuilt this way, so backups to your backup folder pause until you've restored from it (or chosen to replace it).
+
+Don't clear the browser's data in this situation — that would erase the audio that's still there.
+
 ### Try it: run with no internet
 
 Worth doing once, so there are no surprises at an event:
