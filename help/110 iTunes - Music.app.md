@@ -19,7 +19,8 @@ Good to know:
 
 - **Everything in the folder is imported**, not just the tracks your playlists use. To bring in less, pick a smaller folder (one artist, say) — playlists still come in, with anything outside that folder listed as missing.
 - **Apple's own lists** (Library, Music, Downloaded and the like) are left out. A smart playlist comes in as the tracks it held when you exported — it doesn't keep updating.
-- **Tracks that were never downloaded** — streamed from Apple Music, or left in the cloud — have no file, so they're listed as missing. Download them in Music.app first if you need them.
+- **A track that can't be found** — never downloaded (streamed from Apple Music, or left in the cloud), or outside the folder you picked — leaves a **Stop** in its place in the playlist, named "MISSING TRACK: title — album", so playback halts right there instead of quietly skipping it, and the playlist is flagged. Once the track is in the library, put it in where the Stop is, and remove the Stop.
+- **AIFF files** (.aif), common in older iTunes libraries, come in as WAV, since most browsers can't play AIFF. The sound is identical, and the name, artist, album and artwork come along.
 - **Older iTunes Store purchases** protected against copying (.m4p files) can't be played in a browser.
 - **Your music doesn't have to be organized the way Music.app keeps it.** Tracks are found by their folder names and file name, and if a file has moved, by its name and size.
 - **Single playlists** work too: a playlist exported on its own (**File → Library → Export Playlist…**, as an .m3u file), or an .m3u or .m3u8 from another player. Put it in the music folder and import the folder.
@@ -32,6 +33,8 @@ To take a library from 37 Player into Music.app or iTunes, use 'Import / Export'
 - **The playlists:** choose **File → Library → Import Playlist…** and pick each .m3u8 file. Music.app doesn't recreate folders from these, so a playlist lands at the top level; drag it into a playlist folder afterwards if you want one.
 
 Every track keeps its name, artist, album, track number and artwork, since 37 Player writes those into the files themselves.
+
+Volume adjustments made in 37 Player, and its evening out, don't come along: they aren't written into the files as ReplayGain tags, so Music.app plays each file at its own level. Music.app's own **Sound Check** (in its Playback settings) evens tracks out in a similar way.
 
 ### Why standardize for Music.app and iTunes
 
