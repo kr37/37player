@@ -23,7 +23,7 @@ Good to know:
 - **AIFF files** (.aif), common in older iTunes libraries, come in as WAV, since most browsers can't play AIFF. The sound is identical, and the name, artist, album and artwork come along.
 - **Older iTunes Store purchases** protected against copying (.m4p files) can't be played in a browser.
 - **Your music doesn't have to be organized the way Music.app keeps it.** Tracks are found by their folder names and file name, and if a file has moved, by its name and size.
-- **Single playlists** work too: a playlist exported on its own (**File → Library → Export Playlist…**, as an .m3u file), or an .m3u, .m3u8 or .xspf (VLC) from another player. Put it in the music folder and import the folder.
+- **Single playlists** work too: a playlist exported on its own (**File → Library → Export Playlist…**, as an .m3u file), or an .m3u, .m3u8 or .xspf (VLC) from another player. Put it in the music folder and import the folder. ('Importing playlists' explains where playlists end up.)
 
 ### Exporting
 
