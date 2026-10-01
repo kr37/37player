@@ -10,6 +10,8 @@ Playlists from other players come in along with their audio: choose the folder t
 
 A playlist file can be anywhere in the folder you choose. Its tracks are found wherever they are in that folder too — by where the playlist says they are, or, when that's a path on another computer, by the last few folder names and the file name. A track that can't be found leaves a **Stop** named "MISSING TRACK: …" in its place, and the playlist is flagged.
 
+**Only what the playlists use:** everything in the folder is imported unless you say otherwise. When the folder has playlists, the review before importing offers **Import only tracks that are in playlists** (off to begin with) — handy for bringing in a friend's session playlists without their whole music collection.
+
 ### Where the playlists end up
 
 Playlists keep the folders they're in, as folders in 'Edit Playlists' — counted from the folder you chose:
