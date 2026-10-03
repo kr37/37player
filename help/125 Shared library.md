@@ -27,6 +27,11 @@ There's nothing to do. 37 Player checks a few seconds after every change, every 
 - **The same detail of a track changed on both** (the same track renamed differently, say): the version that reached the shared library first wins.
 - **Deleted on one device but edited on another:** the edited one is kept. A track still used in a playlist is never deleted.
 
+### Phones and tablets
+
+- **Wi-Fi only:** on an Android phone, **Send and receive audio on Wi-Fi only** is on to begin with. Library changes still sync on mobile data (they're tiny), and a track you play that hasn't arrived yet is still fetched. Everything else waits for Wi-Fi. iPhones, iPads and computers can't tell Wi-Fi from mobile data. They have **Pause sending and receiving audio** instead, to switch on before using mobile data.
+- **Keep syncing with the screen off:** a phone or tablet stops 37 Player soon after its screen locks, which pauses a big first sync. While there's audio to send or receive, Settings → Shared library offers **Keep syncing with the screen off**. It keeps 37 Player going by quietly playing silence, shows the progress on the lock screen, and stops by itself when everything has arrived. The lock screen's pause button stops it, and so does playing anything. It's best done plugged in.
+
 ### Receive updates only
 
 For a player nobody edits on, such as a meditation room's laptop, turn on **Receive updates only**. That device takes every change from the shared library and sends nothing. Anything changed on it by accident is replaced at the next sync.
