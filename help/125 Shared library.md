@@ -7,9 +7,9 @@ A shared library keeps the same tracks and playlists on several devices: the roo
 You need a **join code** from whoever runs your shared library. In Settings → **Shared library**, enter the code and a name for this device (for example "Gompa iPad"), and choose **Join**.
 
 - **A device with nothing in it yet** simply receives the shared library.
-- **A device that already has a library** asks first. **Use the shared library here** replaces what's on this device with the shared one. **Combine them** adds this device's tracks and playlists to the shared library, which is how the first device fills an empty shared library.
+- **A device that already has a library** asks first, and shows how many tracks are already in the shared library, only on this device, and only in the shared library. **Use the shared library here** replaces what's on this device with the shared one. **Combine them** adds this device's tracks and playlists to the shared library, which is how the first device fills an empty shared library. A recording this device imported separately (so 37 Player knows it by a different ID) is matched to the shared copy by its name, album, artist and length, so combining doesn't create duplicates.
 
-The tracks' details and playlists arrive straight away. The audio follows in the background, shown in the bar along the bottom; a track that hasn't arrived yet is fetched the moment it's played. A large library can take a while the first time. After that, only what changed travels.
+The tracks' details and playlists arrive straight away, on every device. The audio follows in the background, shown in the bar along the bottom. A track that hasn't arrived yet is fetched the moment it's played. While the first device is still sending its audio, the others show how many files are still on their way, and pick them up as they arrive. A large library takes a while the first time; after that, only what changed travels.
 
 ### Day to day
 

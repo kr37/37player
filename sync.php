@@ -120,9 +120,16 @@ if ($op === 'file') {
     if ($method === 'PUT') {
         if (is_file($f)) json_out(['stored' => false, 'exists' => true]);
         $tmp = $f . '.' . bin2hex(random_bytes(4)) . '.tmp';
+        ignore_user_abort(true); // finish the checks below even if the sender has gone
         $in = fopen('php://input', 'rb'); $out = fopen($tmp, 'wb');
         stream_copy_to_stream($in, $out); fclose($in); fclose($out);
-        if (!filesize($tmp)) { unlink($tmp); fail(400, 'Empty file'); }
+        clearstatcache(true, $tmp);
+        $got = filesize($tmp);
+        // A connection that dropped part-way (a laptop going to sleep) leaves
+        // a short file: never keep it, or later attempts would skip it as
+        // already here. Browsers always say how much they're sending.
+        $expected = isset($_SERVER['CONTENT_LENGTH']) ? intval($_SERVER['CONTENT_LENGTH']) : -1;
+        if (!$got || ($expected >= 0 && $got !== $expected)) { unlink($tmp); fail(400, 'Incomplete upload'); }
         rename($tmp, $f);
         json_out(['stored' => true]);
     }
