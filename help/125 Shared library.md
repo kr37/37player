@@ -7,9 +7,9 @@ A shared library keeps the same tracks and playlists on several devices: the roo
 You need a **join code** from whoever runs your shared library. In Settings → **Shared library**, enter the code and a name for this device (for example "Gompa iPad"), and choose **Join**.
 
 - **A device with nothing in it yet** simply receives the shared library.
-- **A device that already has a library** asks first, and shows how many tracks are already in the shared library, only on this device, and only in the shared library. **Use the shared library here** replaces what's on this device with the shared one. **Combine them** adds this device's tracks and playlists to the shared library, which is how the first device fills an empty shared library. A recording this device imported separately (so 37 Player knows it by a different ID) is matched to the shared copy by its name, album, artist and length, so combining doesn't create duplicates.
+- **A device that already has a library** asks first, and shows how many tracks are already in the shared library, only on this device, and only in the shared library. **Use the shared library here** replaces what's on this device with the shared one. **Combine them** adds this device's tracks and playlists to the shared library, which is how the first device fills an empty shared library. A recording this device imported separately (so 37 Player knows it by a different ID) is matched to the shared copy by its name, album, artist and length, so combining doesn't create duplicates. Folders and playlists work the same way: a folder or playlist with the same name in the same place becomes one with the shared one, such as the **Classes** folder every new library starts with. If a playlist's tracks differ, this device's version is kept beside the shared one as "Name (device name)", marked ⚠.
 
-The tracks' details and playlists arrive straight away, on every device. The audio follows in the background, shown in the bar along the bottom. A track that hasn't arrived yet is fetched the moment it's played. While the first device is still sending its audio, the others show how many files are still on their way, and pick them up as they arrive. A large library takes a while the first time; after that, only what changed travels.
+The tracks' details and playlists arrive straight away, on every device. The audio follows in the background, shown in the bar along the bottom. A track that hasn't arrived yet is fetched the moment it's played. While anything is playing, sending and receiving pause between files so the sound stays clean, and pick up again when it stops. While the first device is still sending its audio, the others show how many files are still on their way, and pick them up as they arrive. A large library takes a while the first time; after that, only what changed travels.
 
 ### Day to day
 
@@ -34,3 +34,9 @@ For a player nobody edits on, such as a meditation room's laptop, turn on **Rece
 ### Leaving
 
 **Leave shared library** stops syncing this device. Its library stays exactly as it is now, as an ordinary library of its own.
+
+### If something goes wrong
+
+- **Sync log:** Settings → Shared library → **Sync log** lists what syncing did recently: what it saved, received, sent and fetched, and any errors. Copy it into a message if you're reporting a problem.
+- **Going round in circles:** if this device saves to the shared library 30 times in 2 minutes, syncing stops by itself and says so. **Sync now** starts it again.
+- **Opening without syncing:** add `?nosync` to the end of 37 Player's address (for example `https://player.37dakinis.net/37-player.html?nosync`). Sharing stays off for that session, and Settings lets you leave the shared library.
