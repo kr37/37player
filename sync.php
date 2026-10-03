@@ -14,8 +14,11 @@
  *     artwork/<id>.<rev>   artwork files, never overwritten
  *     peaks/<id>.<rev>     waveform data for each audio file (small JSON)
  *
- * Every request carries the library's join code in an "X-Library" header:
- * "<library>-<secret>". Only a hash of the secret is stored here.
+ * Every request carries the library's join code in an "X-Library" header
+ * (URL-encoded): the library's name, then its passphrase — "ikrc Death comes
+ * to us all!", or a generated one, "ikrc-ABCD-EFGH-JKLM-NPQR". Capitals,
+ * spaces and punctuation in the passphrase don't matter (passphraseKey), so
+ * it's easy to type on a phone. Only a hash of it is stored here.
  *
  * Web requests (all on this file, chosen by ?op=):
  *   GET  op=state                 current document; version in X-Version (0 = empty)
@@ -30,8 +33,10 @@
  *   GET  op=history               recent versions: number, time, size
  *
  * Command line (as the web server's user, e.g. sudo -u www-data php sync.php …):
- *   php sync.php create <library> ["Display name"]   make a library; prints its join code
- *   php sync.php newcode <library>                   replace its join code (old one stops working)
+ *   php sync.php create <library> ["Display name"] ["passphrase"]
+ *                                   make a library; prints its join code (a
+ *                                   passphrase is generated if none is given)
+ *   php sync.php newcode <library> ["passphrase"]    replace its join code (old one stops working)
  *   php sync.php list                                list libraries
  *   php sync.php cleanup [days]                      prune old versions and unused files
  *
@@ -151,13 +156,24 @@ if ($op === 'history' && $method === 'GET') {
 fail(400, 'Unknown request');
 
 // ---------- helpers ----------
+// "ikrc Death comes to us all!" → ["ikrc", "deathcomestousall"]. Any run of
+// spaces, a colon or a hyphen separates the name from the passphrase.
+function parse_join_code($code) {
+    $code = trim(rawurldecode($code));
+    if (!preg_match('/^([A-Za-z0-9]{1,40})[\s:\-]+(.+)$/su', $code, $m)) return null;
+    $key = passphraseKey($m[2]);
+    if (mb_strlen($key) < 8) return null;
+    return [strtolower($m[1]), $key];
+}
+// Only letters and digits count, in lower case — any script (Tibetan too).
+function passphraseKey($s) { return preg_replace('/[^\p{L}\p{N}\p{M}]+/u', '', mb_strtolower($s, 'UTF-8')); }
 function authenticate() {
-    $code = $_SERVER['HTTP_X_LIBRARY'] ?? '';
-    if (!preg_match('/^([a-z0-9]{1,40})-([A-Za-z0-9-]{8,80})$/', $code, $m)) fail(401, 'Missing or malformed join code');
-    $lib = $m[1]; $secret = str_replace('-', '', $m[2]);
+    $parsed = parse_join_code($_SERVER['HTTP_X_LIBRARY'] ?? '');
+    if (!$parsed) fail(401, 'Missing or malformed join code');
+    [$lib, $key] = $parsed;
     $metaF = DATA_DIR . "/$lib/meta.json";
     $meta = is_file($metaF) ? json_decode(file_get_contents($metaF), true) : null;
-    if (!$meta || !hash_equals($meta['hash'], hash('sha256', $secret))) { usleep(300000); fail(403, 'Unknown library or wrong join code'); }
+    if (!$meta || !hash_equals($meta['hash'], hash('sha256', $key))) { usleep(300000); fail(403, 'Unknown library or wrong join code'); }
     return $lib;
 }
 function latest($dir) { $f = "$dir/latest"; return is_file($f) ? intval(trim(file_get_contents($f))) : 0; }
@@ -213,13 +229,22 @@ function cli($argv) {
         $metaF = "$dir/meta.json";
         if ($cmd === 'create' && is_file($metaF)) { fwrite(STDERR, "$lib already exists (use newcode to replace its join code)\n"); return 1; }
         if ($cmd === 'newcode' && !is_file($metaF)) { fwrite(STDERR, "No library called $lib\n"); return 1; }
+        $given = $cmd === 'create' ? ($argv[4] ?? '') : ($argv[3] ?? '');
+        if ($given !== '') {
+            // Anyone who knows it can change the library, so it should be
+            // something nobody would guess: a sentence, not a single word.
+            if (mb_strlen(passphraseKey($given)) < 16) { fwrite(STDERR, "That passphrase is too short to be safe: use at least 16 letters or digits (spaces and punctuation don't count).\n"); return 1; }
+            $phrase = $given;
+        } else {
+            $alphabet = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+            $secret = ''; for ($i = 0; $i < 16; $i++) $secret .= $alphabet[random_int(0, strlen($alphabet) - 1)];
+            $phrase = implode('-', str_split($secret, 4));
+        }
         foreach (['', '/state', '/audio', '/artwork', '/peaks'] as $sub) if (!is_dir($dir . $sub)) mkdir($dir . $sub, 0770, true);
-        $alphabet = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
-        $secret = ''; for ($i = 0; $i < 16; $i++) $secret .= $alphabet[random_int(0, strlen($alphabet) - 1)];
         $meta = is_file($metaF) ? json_decode(file_get_contents($metaF), true) : ['name' => $argv[3] ?? $lib, 'created' => date('c')];
-        $meta['hash'] = hash('sha256', $secret);
-        file_put_contents($metaF, json_encode($meta, JSON_PRETTY_PRINT));
-        echo "Join code for $lib: $lib-" . implode('-', str_split($secret, 4)) . "\n";
+        $meta['hash'] = hash('sha256', passphraseKey($phrase));
+        file_put_contents($metaF, json_encode($meta, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+        echo "Join code for $lib: $lib " . $phrase . "\n";
         return 0;
     }
     if ($cmd === 'list') {
@@ -240,7 +265,7 @@ function cli($argv) {
         }
         return 0;
     }
-    fwrite(STDERR, "Usage: php sync.php create <library> [\"Name\"] | newcode <library> | list | cleanup [days]\n");
+    fwrite(STDERR, "Usage: php sync.php create <library> [\"Display name\"] [\"passphrase\"] | newcode <library> [\"passphrase\"] | list | cleanup [days]\n");
     return 1;
 }
 // Keeps every version from the last $days days and the newest KEEP_VERSIONS;
