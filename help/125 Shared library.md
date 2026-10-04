@@ -46,6 +46,24 @@ A phone or tablet stops 37 Player soon after its screen locks, which pauses a bi
 
 Sharing uses mobile data like any other connection, because a shared library only works when every device keeps it complete. The one big transfer is when a device joins, and the join screen says how much that will be before it starts.
 
+### Reviewing changes before they sync
+
+To decide for yourself what comes and goes, turn on **Review changes before syncing** in Settings → Shared library. Nothing then changes on this device or in the shared library until you say so. 37 Player still checks, and when this device and the shared library differ, a button at the top says so, such as **3 shared changes**. Tap it (or **Review changes…** in Settings) to see the list.
+
+Each row is one difference: a folder or playlist, a track, or the order of things inside a folder. The left side says what this device has, and the right side says what the shared library has. The arrow between them says which version wins:
+
+- **→ Send:** this device's version goes to the shared library.
+- **← Take:** the shared library's version comes here.
+- **✕ Skip:** leave both as they are for now. The row comes up again next time.
+
+Tap an arrow to change it. Each row starts with a suggestion: send what changed here, take what changed in the shared library. A row changed in **both** places is shown in red with **?**, and you choose. **Synchronize** does what the arrows say, and it waits until every **?** is decided.
+
+New tracks are listed under the playlist that uses them. If you take or send a playlist, its new tracks have to come along, so their arrows are locked, with a note saying which playlist needs them. Skip the playlist and they unlock.
+
+If anything changes while the list is open (someone else syncs, say), Synchronize first shows the updated list, keeping your choices where nothing changed. Check it, then press Synchronize again.
+
+**Review changes…** works on a device that syncs automatically too. It's a way to look before something big, and syncing waits while the review is open.
+
 ### Receive updates only
 
 For a player nobody edits on, such as a meditation room's laptop, turn on **Receive updates only**. That device takes every change from the shared library and sends nothing. Anything changed on it by accident is replaced at the next sync.
