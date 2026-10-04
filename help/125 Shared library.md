@@ -15,7 +15,7 @@ The tracks' details and playlists arrive straight away, on every device. The aud
 
 ### Day to day
 
-There's nothing to do. 37 Player checks a few seconds after every change, every few minutes while it's open, and whenever it comes back on screen. **Sync now** in Settings does it at once, and Settings shows when it last synced.
+There's nothing to do. 37 Player checks a few seconds after every change, every few minutes while it's open, and whenever it comes back on screen. **Sync now** in Settings does it at once. Settings also shows when this device last checked, and whether it's **up to date**, still **updating** (downloading or sending audio), or **waiting** for files from other devices that haven't sent them yet.
 
 - **Working offline** is fine: everything plays from this device as always, and changes are sent the next time it's online.
 - **Each device keeps its own settings**: display, PIN, backups and volume aren't shared.
