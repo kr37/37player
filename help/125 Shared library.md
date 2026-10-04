@@ -64,6 +64,22 @@ If anything changes while the list is open (someone else syncs, say), Synchroniz
 
 **Review changes…** works on a device that syncs automatically too. It's a way to look before something big, and syncing waits while the review is open.
 
+### Partial sync: keeping only part of the library
+
+A small iPad, or a laptop for one retreat, doesn't need everything. Turn on **Partial sync** in Settings → Shared library, or choose **Partial sync** when joining.
+
+- **Everything on this device stays in sync both ways,** in the background. A new track added to one of its playlists elsewhere arrives by itself.
+- **Nothing else comes unless you choose it.** New playlists and folders elsewhere don't arrive on their own. The button at the top says how many are new since you last looked, for example **2 new in the shared library**.
+- **To bring something in,** open **Review changes**. Below the usual list is **In the shared library, not on this device**, grouped by folder, with sizes. Set a playlist's arrow, or a whole folder's, to **← Take** and press **Synchronize**. Its tracks come with it. Taking a playlist inside a folder brings the folder along as its container, but not the folder's other playlists.
+- **Deleting asks which you mean.** Deleting a folder, playlist or track offers **Remove from this device** or **Delete everywhere**:
+  - **Remove from this device:** the shared library keeps it, and Review changes can bring it back. A removed playlist's tracks that nothing else here uses go too, freeing the space.
+  - **Delete everywhere:** it's deleted from the shared library and every device.
+
+  Anything that disappears from a partial device some other way, such as through Library cleanup, counts as removed from this device. Only **Delete everywhere** can delete from the shared library.
+- **Turning Partial sync off** brings the whole shared library to this device. 37 Player says how much that is first.
+
+When joining with Partial sync, everything already on the device joins the shared library, and Review changes opens so you can pick what else to bring.
+
 ### Receive updates only
 
 For a player nobody edits on, such as a meditation room's laptop, turn on **Receive updates only**. That device takes every change from the shared library and sends nothing. Anything changed on it by accident is replaced at the next sync.
