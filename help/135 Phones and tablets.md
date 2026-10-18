@@ -24,6 +24,6 @@ On a phone, the columns are a fixed width, and the screen slides sideways betwee
 
 ### Playing with the screen off
 
-A playlist keeps playing with the screen locked or while you use another app, and moves from track to track by itself. Between tracks, 37 Player plays a moment of silence so the phone doesn't treat the pause as the end of playback.
+A playlist keeps playing with the screen locked or while you use another app, and moves from track to track by itself. While the screen is off, 37 Player also plays a silent sound alongside the track. Without it, Android lets a track that starts with the screen off play for a couple of seconds and then silences it.
 
 If playback ever goes quiet while the time keeps moving, open **Settings → Playback → Playback log** afterwards. It records when each track started, when the app left and came back to the screen, and whether the phone stopped or paused anything. Copy it into a message when reporting the problem.
