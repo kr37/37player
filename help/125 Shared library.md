@@ -38,6 +38,8 @@ A track whose audio isn't on this device yet shows its name in **bold**, with th
 
 Playing also says above the list how many of the playlist's tracks can't play yet, so check before a session starts.
 
+Pressing play on a track that's on its way fetches it at once. If it arrives within a few seconds, it plays. If not, a message says it's still coming. Press play again once it's here. It never starts by itself later, so it can't interrupt whatever you've moved on to.
+
 While 37 Player is sending audio, the bar along the bottom says so. Keep it open until that finishes. Closing the window asks first. Closing a laptop's lid can't be caught, so wait for the bar to finish before you close it.
 
 ### Phones and tablets
