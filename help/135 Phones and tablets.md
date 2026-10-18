@@ -21,3 +21,9 @@ Copy and paste work too, from the bar above each list.
 On a tablet, drag the thin line between two columns to make a column wider, such as the right-hand one, so long titles can be read. Turning on **Wrap long titles** in Display settings (◐) shows titles in full on every row.
 
 On a phone, the columns are a fixed width, and the screen slides sideways between them.
+
+### Playing with the screen off
+
+A playlist keeps playing with the screen locked or while you use another app, and moves from track to track by itself. Between tracks, 37 Player plays a moment of silence so the phone doesn't treat the pause as the end of playback.
+
+If playback ever goes quiet while the time keeps moving, open **Settings → Playback → Playback log** afterwards. It records when each track started, when the app left and came back to the screen, and whether the phone stopped or paused anything. Copy it into a message when reporting the problem.
