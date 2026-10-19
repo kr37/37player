@@ -28,7 +28,8 @@
  *                                 {"version": current}
  *   GET  op=list                  names of every stored audio/artwork/peaks file
  *   GET  op=file&kind=K&name=X    download one (Range requests supported)
- *   PUT  op=file&kind=K&name=X    upload one (kept as-is if it already exists)
+ *   PUT  op=file&kind=K&name=X    upload one (kept as-is if it already exists;
+ *                                 a waveform can be replaced with &replace=1)
  *   POST op=peaks                 {"names":[...]} → {"name": peaks, ...}
  *   GET  op=history               recent versions: number, time, size
  *
@@ -58,8 +59,8 @@ if (PHP_SAPI === 'cli') { exit(cli($argv)); }
 // ---------- web ----------
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, PUT, HEAD, OPTIONS');
-header('Access-Control-Allow-Headers: X-Library, Content-Type, Range');
-header('Access-Control-Expose-Headers: X-Version, X-Library-Name, Content-Range, Content-Length, Accept-Ranges');
+header('Access-Control-Allow-Headers: X-Library, Content-Type, Range, X-Body-Gzip');
+header('Access-Control-Expose-Headers: X-Version, X-Library-Name, X-Accepts-Gzip, Content-Range, Content-Length, Accept-Ranges');
 header('Cache-Control: no-store');
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(204); exit; }
 
@@ -73,6 +74,7 @@ if ($op === 'state' && $method === 'GET') {
     $meta = json_decode(file_get_contents("$dir/meta.json"), true);
     header('X-Library-Name: ' . rawurlencode($meta['name'] ?? $lib));
     header('X-Version: ' . latest($dir));
+    header('X-Accepts-Gzip: 1');
     if ($v <= 0) { json_out(null); }
     $f = state_file($dir, $v);
     if (!is_file($f)) fail(404, 'No such version');
@@ -85,8 +87,16 @@ if ($op === 'state' && $method === 'POST') {
     $base = intval($_GET['base'] ?? -1);
     $body = file_get_contents('php://input', false, null, 0, MAX_DOC_BYTES + 1);
     if ($body === false || strlen($body) > MAX_DOC_BYTES) fail(413, 'Too large');
-    $doc = json_decode($body, true);
-    if (!is_array($doc) || !isset($doc['tracks']) || !isset($doc['tree'])) fail(400, 'Not a library document');
+    $received = strlen($body);
+    // 37 Player sends the document gzip-compressed when this script says it can (X-Accepts-Gzip).
+    if (($_SERVER['HTTP_X_BODY_GZIP'] ?? '') === '1') {
+        $body = @gzdecode($body, MAX_DOC_BYTES + 1);
+        if ($body === false) fail(400, 'Compressed document incomplete (' . $received . ' of ' . ($_SERVER['CONTENT_LENGTH'] ?? '?') . ' bytes arrived)');
+        if (strlen($body) > MAX_DOC_BYTES) fail(413, 'Too large');
+    }
+    $doc = json_decode($body, true, 512, JSON_INVALID_UTF8_SUBSTITUTE);
+    if (!is_array($doc) || !isset($doc['tracks']) || !isset($doc['tree']))
+        fail(400, 'Not a library document (' . json_last_error_msg() . '; ' . $received . ' of ' . ($_SERVER['CONTENT_LENGTH'] ?? '?') . ' bytes arrived)');
     $lock = fopen($dir . '/lock', 'c');
     flock($lock, LOCK_EX);
     $cur = latest($dir);
@@ -118,7 +128,10 @@ if ($op === 'file') {
     if (!in_array($kind, KINDS, true) || !valid_name($name)) fail(400, 'Bad file name');
     $f = "$dir/$kind/$name";
     if ($method === 'PUT') {
-        if (is_file($f)) json_out(['stored' => false, 'exists' => true]);
+        // Never replaced, as names are per version — except a waveform, which a
+        // device may send again once it has made a real one in place of the
+        // flat stand-in it had (replace=1).
+        if (is_file($f) && !($kind === 'peaks' && ($_GET['replace'] ?? '') === '1')) json_out(['stored' => false, 'exists' => true]);
         $tmp = $f . '.' . bin2hex(random_bytes(4)) . '.tmp';
         ignore_user_abort(true); // finish the checks below even if the sender has gone
         $in = fopen('php://input', 'rb'); $out = fopen($tmp, 'wb');
