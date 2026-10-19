@@ -69,6 +69,7 @@ The full plan and history are in the project doc `shared-library-sync.md`. In sh
 - **Transfers:**
   - Audio moves in the background, one window at a time: `navigator.locks`, with separate locks for down and up.
   - It waits while anything plays, because transfers made phones crackle. A track you press play on is still fetched at once, with one download per file at a time.
+- **Keep syncing with the screen off** (phones and tablets): a setting that stays as set (`cfg.keepAwake`). While on, whenever there's something to send or receive and nothing is playing, a silent loop keeps the page awake, with progress on the lock screen. Playback stops it; it restarts the moment playback stops. The lock screen's pause holds it off until the app is next on screen or plays.
 - **Review changes:** a FreeFileSync-style overlay with arrows per row (send / take / skip). It holds back automatic syncing while open.
 - **Partial sync** (a "left sync"):
   - Everything on the device syncs both ways.
@@ -127,11 +128,7 @@ The full plan and history are in the project doc `shared-library-sync.md`. In sh
 ## Open / later
 
 - **Sync:** restore from history, borrowing from another library (a one-time import), a QR join code, and a per-library quota.
-- **Sync field tests still to do:**
-  - playing a session while a big sync runs (partly covered by the playback-restart fix in 1.3.021);
-  - closing a laptop's lid mid-send;
-  - "Keep syncing with the screen off" on the iPad;
-  - Safari keeping the library after days unused.
+- **Sync field tests:** all seven done by 19 Oct 2026, including closing the laptop mid-send, syncing with the iPad's screen off, and Safari keeping the iPad's library through two weeks unused. Playing a session during a big sync led to the long-recording fixes (1.3.030–1.3.032); worth one more run.
 - **Partial sync:** when "new in the shared library" leads into Review changes, show those new items highlighted. Possibly only that once, or with a "most recent changes" button. The "new since last review" set (`sharedSeen`) already exists to drive it.
 - **Settings → "All settings":** one page listing every setting in a two-column table: the control, then its label, with tap or hover for more help. Grouped under headers. Every setting also stays where it is now.
 - **Library:** clip extraction, auto-updating playlists after a split, and undo for destructive actions.

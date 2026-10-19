@@ -44,7 +44,7 @@ While 37 Player is sending audio, the bar along the bottom says so. Keep it open
 
 ### Phones and tablets
 
-A phone or tablet stops 37 Player soon after its screen locks, which pauses a big first sync. While there's audio to send or receive, Settings → Shared library shows a **Keep syncing with the screen off** switch. It keeps 37 Player going by quietly playing silence, shows the progress on the lock screen, and stops by itself when everything has arrived. The lock screen's pause button stops it, and so does playing anything. It's best done plugged in.
+A phone or tablet stops 37 Player soon after its screen locks, which pauses a big first sync. On a phone or tablet, Settings → Shared library has a **Keep syncing with the screen off** switch, which stays as you set it. While it's on, whenever there's something to send or receive and nothing is playing, 37 Player keeps going by quietly playing silence, with the progress on the lock screen, until everything has arrived. Playing always comes first: syncing waits while a session plays and carries on by itself the moment it stops, even with the screen locked. The lock screen's pause button stops it until you next open 37 Player or play something. It's best done plugged in.
 
 Sharing uses mobile data like any other connection, because a shared library only works when every device keeps it complete. The one big transfer is when a device joins, and the join screen says how much that will be before it starts.
 
