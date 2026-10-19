@@ -27,6 +27,7 @@
  *                                 version is still N; otherwise 409 with
  *                                 {"version": current}
  *   GET  op=list                  names of every stored audio/artwork/peaks file
+ *                                 (and flatPeaks: waveforms that are only a stand-in)
  *   GET  op=file&kind=K&name=X    download one (Range requests supported)
  *   PUT  op=file&kind=K&name=X    upload one (kept as-is if it already exists;
  *                                 a waveform can be replaced with &replace=1)
@@ -119,6 +120,16 @@ if ($op === 'list' && $method === 'GET') {
         foreach (scandir($dir . '/' . $k) ?: [] as $n) if ($n[0] !== '.' && substr($n, -4) !== '.tmp') $names[] = $n;
         $out[$k] = $names;
     }
+    // Waveforms that are only the flat stand-in (every value the same), so a
+    // device that has made the real one sends it in their place.
+    $flat = [];
+    foreach ($out['peaks'] as $n) {
+        $f = "$dir/peaks/$n";
+        if (filesize($f) !== 3601) continue; // the stand-in, 720 × 0.15, is exactly this size: no need to read the rest
+        $p = json_decode(file_get_contents($f), true);
+        if (is_array($p) && count($p) && count(array_unique($p)) === 1) $flat[] = $n;
+    }
+    $out['flatPeaks'] = $flat;
     json_out($out);
 }
 
