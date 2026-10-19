@@ -104,6 +104,7 @@ The full plan and history are in the project doc `shared-library-sync.md`. In sh
 - **Codecs:**
   - ALAC and WMA play in no browser, so they're converted with the `.py` scripts.
   - What MediaRecorder writes as "AAC" varies by browser. Some write Opus, which `findMp4AudioCodecFourcc` catches.
+- **Long recordings and memory:** decoding a whole file holds it all as raw samples (a 2-hour stereo teaching is about 2.5 GB), which crashed a phone's tab ("Aw, Snap!") and made a laptop give up with a flat stand-in waveform. Past a per-device budget, MP3s are decoded about 3 minutes at a time, cut at frame boundaries (`analyzeMp3InPieces`, `makeLoudnessMeter`). Other formats past the budget get a stand-in waveform and no loudness, marked with the budget of the device that tried (`loudness.tooLong`, in MB); a device with a bigger budget (a computer) tries again, and the result reaches the others through sync. Budgets: 2000 MB on a computer reporting 8 GB, otherwise 1000 MB (about 45 minutes of stereo). Splitting a track still decodes it whole.
 - **Long work freezes the page:** decoding and loudness loops yield to the page (`yieldToPage`). A 90-minute track used to freeze the page for 9 s.
 
 ## Tried and abandoned (don't go back)
@@ -126,6 +127,13 @@ The full plan and history are in the project doc `shared-library-sync.md`. In sh
 ## Open / later
 
 - **Sync:** restore from history, borrowing from another library (a one-time import), a QR join code, and a per-library quota.
+- **Sync field tests still to do:**
+  - playing a session while a big sync runs (partly covered by the playback-restart fix in 1.3.021);
+  - closing a laptop's lid mid-send;
+  - "Keep syncing with the screen off" on the iPad;
+  - Safari keeping the library after days unused.
+- **Partial sync:** when "new in the shared library" leads into Review changes, show those new items highlighted. Possibly only that once, or with a "most recent changes" button. The "new since last review" set (`sharedSeen`) already exists to drive it.
+- **Settings → "All settings":** one page listing every setting in a two-column table: the control, then its label, with tap or hover for more help. Grouped under headers. Every setting also stays where it is now.
 - **Library:** clip extraction, auto-updating playlists after a split, and undo for destructive actions.
 - **Standardize:** a "shrink" step for files over the target bitrate.
 - **Hosting:** Drive or Dropbox adapters for individuals' libraries. Only centers are hosted on the droplet.
