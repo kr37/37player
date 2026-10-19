@@ -1,6 +1,8 @@
 <?php
 /*
  * 37 Player — shared library sync server.
+ * Version 1.3.043 (the 37 Player version this file was last changed for;
+ * keep it the same as SYNC_VERSION below).
  *
  * One file, plain PHP (7.4+), no database. It keeps each shared library in
  * its own folder outside the web root:
@@ -35,6 +37,7 @@
  *   GET  op=history               recent versions: number, time, size
  *
  * Command line (as the web server's user, e.g. sudo -u www-data php sync.php …):
+ *   php sync.php version                            which version this file is
  *   php sync.php create <library> ["Display name"] ["passphrase"]
  *                                   make a library; prints its join code (a
  *                                   passphrase is generated if none is given)
@@ -54,6 +57,10 @@ if (!defined('KEEP_VERSIONS')) define('KEEP_VERSIONS', 300); // and at least the
 if (!defined('MAX_DOC_BYTES')) define('MAX_DOC_BYTES', 50 * 1024 * 1024);
 
 const KINDS = ['audio', 'artwork', 'peaks'];
+// The 37 Player version this file was last changed for (it doesn't change
+// with every release of the app, only when this file does). Shown in the
+// app's Settings → Shared library, and by `php sync.php version`.
+const SYNC_VERSION = '1.3.043';
 
 if (PHP_SAPI === 'cli') { exit(cli($argv)); }
 
@@ -61,7 +68,8 @@ if (PHP_SAPI === 'cli') { exit(cli($argv)); }
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, PUT, HEAD, OPTIONS');
 header('Access-Control-Allow-Headers: X-Library, Content-Type, Range, X-Body-Gzip');
-header('Access-Control-Expose-Headers: X-Version, X-Library-Name, X-Accepts-Gzip, Content-Range, Content-Length, Accept-Ranges');
+header('Access-Control-Expose-Headers: X-Version, X-Library-Name, X-Accepts-Gzip, X-Sync-Version, Content-Range, Content-Length, Accept-Ranges');
+header('X-Sync-Version: ' . SYNC_VERSION);
 header('Cache-Control: no-store');
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(204); exit; }
 
@@ -253,6 +261,7 @@ function send_file($f, $headOnly) {
 // ---------- command line ----------
 function cli($argv) {
     $cmd = $argv[1] ?? '';
+    if ($cmd === 'version') { echo "sync.php " . SYNC_VERSION . "\n"; return 0; }
     if ($cmd === 'create' || $cmd === 'newcode') {
         $lib = $argv[2] ?? '';
         if (!preg_match('/^[a-z0-9]{1,40}$/', $lib)) { fwrite(STDERR, "Library name: lowercase letters and digits only, e.g. ikrc\n"); return 1; }
