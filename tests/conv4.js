@@ -19,6 +19,8 @@ const clickText = (p, sel, src) => p.evaluate((sel, src)=>{ const re=new RegExp(
     return p;
   };
   const A = await open('A');
+  // A has no converter, so what it imports stays unconverted for B to do.
+  await A.setRequestInterception(true); A.on('request', r=> r.url().includes('/ffmpeg/') ? r.abort() : r.continue());
   await A.evaluate(async()=>{ const r = window.__dbg.getRoot(); r.library = []; r.tree = [{id:'pl1', kind:'playlist', name:'Session', items:[]}]; delete r.settings.starterPlaylistId; await window.__dbg.saveState(); });
   await A.evaluate(async()=>{
     for(const n of ['playme.mp3','longtalk.wma','talk.wma']){ const blob = await (await fetch('/conv/' + n)).blob(); await window.__conv.importFiles([new File([blob], n)], window.__dbg.getRoot().tree[0], null, true); document.querySelectorAll('.modal [data-close]').forEach(b=> b.click()); }

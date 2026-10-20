@@ -13,7 +13,10 @@ window.__rv = {rows: syncReviewRows, classify: (r,m)=>syncClassifyPartial(r,m,ne
 window.__aa = {analyze: analyzeAudio};
 // files this browser can't play (conv.js)
 window.__conv = {importFiles, recheck: recheckStoredAudio, cantPlay: trackCantPlay, describe: describeFormatProblem,
-  convert: (ids)=>convertTracks(ids), state: ()=>({queue: convertQueue.slice(), running: convertRunning, worker: !!converterWorker, bar: activeOperation && activeOperation.text}), stored: ()=>converterStored().then(r=>!!r), libPreview: (id)=>playLibraryPreview(id), overlay: (id)=>openPlaylistOverlay(id)};
+  convert: (ids)=>convertTracks(ids), state: ()=>({queue: convertQueue.slice(), running: convertRunning, worker: !!converterWorker, bar: activeOperation && activeOperation.text}), stored: ()=>converterStored().then(r=>!!r), libPreview: (id)=>playLibraryPreview(id), overlay: (id)=>openPlaylistOverlay(id),
+  musicEntries: (ids)=>buildMusicEntries(new Set(ids)), dropOriginal: (id)=>dropKeptOriginal(findLibraryTrack(id))};
+// No quiet converter download 20 s after opening, unless a test asks for it.
+window.__noAutoConverter = true;
 // playback
 window.__play = (id)=>playItem(id);
 window.__pause = ()=> togglePlay();
