@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Converter test</title>
+<style>
+  :root{ --bg:#f5f1ea; --card:#fffdf9; --text:#2a2420; --dim:#6f655c; --line:#e3dacd; --accent:#9a5a1e; --bad:#a8392a; --good:#3f7a3a; }
+  @media (prefers-color-scheme: dark){ :root{ --bg:#1d1a17; --card:#26221e; --text:#ece6dd; --dim:#a89e92; --line:#3a342e; --accent:#d99a5b; --bad:#e2735f; --good:#8cc47f; } }
+  *{ box-sizing:border-box; }
+  body{ margin:0; background:var(--bg); color:var(--text); font:15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main{ max-width:880px; margin:0 auto; padding:20px 16px 60px; }
+  h1{ font-size:22px; margin:0 0 4px; font-weight:650; }
+  h2{ font-size:17px; margin:0 0 6px; font-weight:650; }
+  p{ margin:6px 0; }
+  .dim{ color:var(--dim); font-size:13.5px; }
+  section{ background:var(--card); border:1px solid var(--line); border-radius:10px; padding:14px 16px; margin:14px 0; }
+  button, select{ font:inherit; font-size:14px; padding:6px 12px; border-radius:7px; border:1px solid var(--line); background:var(--bg); color:var(--text); cursor:pointer; }
+  button.primary{ background:var(--accent); border-color:var(--accent); color:#fff; font-weight:600; }
+  button:disabled{ opacity:.5; cursor:default; }
+  .row{ display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin:8px 0; }
+  label{ font-size:13.5px; color:var(--dim); }
+  .ok{ color:var(--good); font-weight:600; }
+  .bad{ color:var(--bad); font-weight:600; }
+  .tablewrap{ overflow-x:auto; margin-top:8px; }
+  table{ border-collapse:collapse; width:100%; font-size:13.5px; }
+  th, td{ text-align:left; padding:6px 8px; border-bottom:1px solid var(--line); vertical-align:top; white-space:nowrap; }
+  th{ color:var(--dim); font-weight:600; }
+  td.name{ white-space:normal; min-width:140px; max-width:260px; overflow-wrap:anywhere; }
+  audio{ height:32px; max-width:220px; }
+  pre{ white-space:pre-wrap; font-size:12px; background:var(--bg); padding:8px; border-radius:6px; max-height:240px; overflow:auto; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Converter test</h1>
+  <p class="dim">A trial of ffmpeg.wasm (ffmpeg compiled to run in a browser) for 37 Player: how fast it converts here, how much memory it takes, and whether converted files play without gaps. Nothing here touches your 37 Player library.</p>
+  <p class="dim" id="device"></p>
+
+  <section>
+    <h2>1. Load the converter</h2>
+    <p class="dim">Downloads about 32 MB the first time (less if the server compresses it), then starts it.</p>
+    <div class="row"><button class="primary" id="loadBtn">Load</button><span id="loadStatus"></span></div>
+  </section>
+
+  <section>
+    <h2>2. Gapless check</h2>
+    <p class="dim">Makes a steady tone, cuts it into three parts, converts each part, and reads them back. "Extra at start" is silence the format added that this browser didn't trim; anything above 0 can be heard as a tiny gap between tracks that should run on. Then listen: the three parts played one after another, the way 37 Player plays a playlist, should sound like one unbroken tone.</p>
+    <div class="row"><button id="gapBtn" disabled>Run the gapless check</button><span id="gapStatus"></span></div>
+    <div class="tablewrap"><table id="gapTable" hidden><thead><tr><th>Format</th><th>Extra at start</th><th>Length change</th><th>Listen</th></tr></thead><tbody></tbody></table></div>
+  </section>
+
+  <section>
+    <h2>3. Convert your own files</h2>
+    <p class="dim">Pick a few files: one that 37 Player can't play (WMA, Apple Lossless, compressed AIFF), a big WAV, and a long recording (an hour or two). The converted files stay on this page only. "Converter memory" is what ffmpeg itself uses; the finished file is held as well, until you leave the page.</p>
+    <div class="row">
+      <label>Format <select id="fmt">
+        <option value="mp3">MP3 192k (Standard, plays everywhere)</option>
+        <option value="aac">AAC 192k (.m4a)</option>
+        <option value="flac">FLAC (lossless)</option>
+        <option value="small">MP3 96k (very small)</option>
+      </select></label>
+      <label>Sample rate <select id="rate"><option value="">Keep</option><option value="44100">44.1 kHz</option><option value="48000">48 kHz</option></select></label>
+      <label>Channels <select id="chan"><option value="">Keep</option><option value="2">Stereo</option><option value="1">Mono</option></select></label>
+    </div>
+    <div class="row"><input type="file" id="files" multiple disabled><button class="primary" id="convBtn" disabled>Convert</button><span id="convStatus"></span></div>
+    <div class="tablewrap"><table id="convTable" hidden><thead><tr><th>File</th><th>Was</th><th>Length</th><th>Took</th><th>Speed</th><th>Size</th><th>Converter memory</th><th>Result</th></tr></thead><tbody></tbody></table></div>
+  </section>
+
+  <section>
+    <h2>4. Send the results</h2>
+    <p class="dim">Copies everything above as text, to paste into the conversation.</p>
+    <div class="row"><button id="copyBtn">Copy results</button><span id="copyStatus"></span></div>
+    <pre id="report" hidden></pre>
+  </section>
+</main>
+<script>
+"use strict";
+// Where the converter's files are: ./ffmpeg/ next to this page (get-ffmpeg.sh
+// puts them there).
+const CORE_URL = new URL("ffmpeg/ffmpeg-core.js", location.href).href;
+const WASM_URL = new URL("ffmpeg/ffmpeg-core.wasm", location.href).href;
+const $ = id=> document.getElementById(id);
+const results = {device: "", load: "", gapless: [], files: []};
+
+const mb = n=> n == null ? "–" : (n / 1048576).toFixed(n < 10485760 ? 1 : 0) + " MB";
+const secs = ms=> (ms / 1000).toFixed(ms < 10000 ? 1 : 0) + " s";
+const clock = s=>{ if(!(s > 0)) return "–"; s = Math.round(s); const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), x = s % 60; return (h ? h + ":" + String(m).padStart(2, "0") : m) + ":" + String(x).padStart(2, "0"); };
+
+(function device(){
+  const bits = [navigator.userAgent];
+  if(navigator.deviceMemory) bits.push("reports " + navigator.deviceMemory + " GB memory");
+  if(navigator.hardwareConcurrency) bits.push(navigator.hardwareConcurrency + " cores");
+  results.device = bits.join(" · ");
+  $("device").textContent = results.device;
+})();
+
+// ---- The worker, one request at a time
+let worker = null, busy = null, onLog = null, onProgress = null;
+function ask(msg, transfer){
+  return new Promise((resolve, reject)=>{
+    busy = {resolve, reject};
+    worker.postMessage(msg, transfer || []);
+  });
+}
+function startWorker(){
+  worker = new Worker("convert-worker.js");
+  worker.onmessage = ({data})=>{
+    if(data.type === "log"){ if(onLog) onLog(data.message); return; }
+    if(data.type === "progress"){ if(onProgress) onProgress(data.time); return; }
+    const b = busy; busy = null;
+    if(!b) return;
+    if(data.type === "error"){ const e = new Error(data.message); e.log = data.log; b.reject(e); }
+    else b.resolve(data);
+  };
+  worker.onerror = (e)=>{ const b = busy; busy = null; if(b) b.reject(new Error(e.message || "The converter stopped (out of memory?)")); };
+}
+
+// ---- 1. Load
+$("loadBtn").addEventListener("click", async ()=>{
+  $("loadBtn").disabled = true;
+  $("loadStatus").textContent = "Downloading and starting…";
+  const began = performance.now();
+  try{
+    // Fetch first, so download and start-up can be timed apart.
+    const r = await fetch(WASM_URL, {cache: "force-cache"});
+    if(!r.ok) throw new Error("ffmpeg/ffmpeg-core.wasm wasn't found (" + r.status + ") — run get-ffmpeg.sh on the server");
+    const size = (await r.arrayBuffer()).byteLength;
+    const downloaded = performance.now() - began;
+    startWorker();
+    const res = await ask({type: "load", coreURL: CORE_URL, wasmURL: WASM_URL});
+    results.load = "downloaded " + mb(size) + " in " + secs(downloaded) + ", started in " + secs(res.ms) + ", memory " + mb(res.heap);
+    $("loadStatus").innerHTML = '<span class="ok">Ready.</span> ' + results.load;
+    $("gapBtn").disabled = false; $("files").disabled = false; $("convBtn").disabled = false;
+  }catch(err){
+    results.load = "failed: " + err.message;
+    $("loadStatus").innerHTML = '<span class="bad">Couldn\'t load.</span> ';
+    $("loadStatus").append(err.message);
+    $("loadBtn").disabled = false;
+  }
+});
+
+// ---- Conversion settings
+const FORMATS = {
+  mp3:   {label: "MP3 192k", ext: ".mp3", args: ["-c:a", "libmp3lame", "-b:a", "192k", "-id3v2_version", "3"]},
+  aac:   {label: "AAC 192k", ext: ".m4a", args: ["-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart"]},
+  flac:  {label: "FLAC",     ext: ".flac", args: ["-c:a", "flac"]},
+  small: {label: "MP3 96k",  ext: ".mp3", args: ["-c:a", "libmp3lame", "-b:a", "96k", "-id3v2_version", "3"]},
+};
+function convertArgs(file, fmtKey, rate, chan, outName){
+  const a = ["-hide_banner", "-nostdin", "-y", "-i", "/in/" + file.name, "-map", "0:a:0", "-map_metadata", "0", "-vn"];
+  if(rate) a.push("-ar", rate);
+  if(chan) a.push("-ac", chan);
+  return a.concat(FORMATS[fmtKey].args, ["/out/" + outName]);
+}
+// What ffmpeg says the input is: its length and its audio stream.
+function readInput(log){
+  const text = log.join("\n");
+  const d = text.match(/Duration:\s*(\d+):(\d+):(\d+(?:\.\d+)?)/);
+  const s = text.match(/Stream #\d+:\d+[^:]*: Audio: ([^\n]+)/);
+  return {duration: d ? (+d[1]) * 3600 + (+d[2]) * 60 + parseFloat(d[3]) : null, audio: s ? s[1].replace(/\s*\(default\)\s*$/, "").replace(/\s*\([^()]*\/\s*0x[0-9a-f]+\)/i, "").trim() : "?"};
+}
+async function convert(file, fmtKey, rate, chan, onTime){
+  const outName = "out" + FORMATS[fmtKey].ext;
+  const probe = await ask({type: "probe", file});
+  const input = readInput(probe.log || []);
+  onProgress = (t)=>{ if(onTime) onTime(t); };
+  const res = await ask({type: "convert", file, args: convertArgs(file, fmtKey, rate, chan, outName), outName});
+  onProgress = null;
+  return {input, res, outName};
+}
+
+// ---- 2. Gapless check
+// A steady 440 Hz tone at 44.1 kHz stereo, cut into three 3-second parts,
+// each part carrying on exactly where the last one stopped.
+function tonePartWav(part, seconds){
+  const rate = 44100, n = rate * seconds, start = part * n, ch = 2;
+  const buf = new ArrayBuffer(44 + n * ch * 2), dv = new DataView(buf);
+  const w4 = (o, s)=>{ for(let i = 0; i < 4; i++) dv.setUint8(o + i, s.charCodeAt(i)); };
+  w4(0, "RIFF"); dv.setUint32(4, 36 + n * ch * 2, true); w4(8, "WAVE"); w4(12, "fmt ");
+  dv.setUint32(16, 16, true); dv.setUint16(20, 1, true); dv.setUint16(22, ch, true); dv.setUint32(24, rate, true);
+  dv.setUint32(28, rate * ch * 2, true); dv.setUint16(32, ch * 2, true); dv.setUint16(34, 16, true); w4(36, "data"); dv.setUint32(40, n * ch * 2, true);
+  for(let i = 0; i < n; i++){
+    const v = Math.round(Math.sin(2 * Math.PI * 440 * (start + i) / rate) * 0.5 * 32767);
+    dv.setInt16(44 + i * 4, v, true); dv.setInt16(46 + i * 4, v, true);
+  }
+  return new File([buf], "tone" + (part + 1) + ".wav", {type: "audio/wav"});
+}
+// Decoded at 44.1 kHz, the tone's own rate, so no resampling blurs the start.
+// The callback form, since older Safari's decodeAudioData returns no promise.
+async function decodeLength(blob){
+  const AC = window.AudioContext || window.webkitAudioContext;
+  let ctx; try{ ctx = new AC({sampleRate: 44100}); }catch(e){ ctx = new AC(); }
+  const bytes = await blob.arrayBuffer();
+  try{
+    return await new Promise((res, rej)=>{ const p = ctx.decodeAudioData(bytes, res, rej); if(p && p.catch) p.catch(rej); });
+  } finally { if(ctx.close) ctx.close(); }
+}
+async function gaplessRow(fmtKey){
+  const seconds = 3, rate = 44100, parts = [];
+  for(let k = 0; k < 3; k++){
+    const {res} = await convert(tonePartWav(k, seconds), fmtKey, "", "", null);
+    if(res.ret !== 0) throw new Error("conversion failed");
+    parts.push(new Blob([res.out], {type: fmtKey === "aac" ? "audio/mp4" : fmtKey === "flac" ? "audio/flac" : "audio/mpeg"}));
+  }
+  let extra = null, change = null;
+  try{
+    const b = await decodeLength(parts[1]);
+    const data = b.getChannelData(0);
+    let i = 0; while(i < data.length && Math.abs(data[i]) < 0.02) i++;
+    // Every part starts as the tone rises from zero, loud within a sample:
+    // any quiet stretch before that was added by the format.
+    extra = i / b.sampleRate * 1000;
+    change = (b.duration - seconds) * 1000;
+  }catch(err){}
+  return {parts, extra, change};
+}
+function playInTurn(blobs, btn){
+  const urls = blobs.map(b=> URL.createObjectURL(b));
+  const els = urls.map(u=>{ const a = new Audio(u); a.preload = "auto"; return a; });
+  btn.disabled = true;
+  els.forEach((a, i)=> a.addEventListener("ended", ()=>{ if(els[i + 1]) els[i + 1].play(); else { btn.disabled = false; urls.forEach(u=> URL.revokeObjectURL(u)); } }));
+  els[0].play();
+}
+$("gapBtn").addEventListener("click", async ()=>{
+  $("gapBtn").disabled = true;
+  const tbody = $("gapTable").querySelector("tbody");
+  tbody.innerHTML = ""; $("gapTable").hidden = false; results.gapless = [];
+  for(const key of ["mp3", "aac", "flac"]){
+    $("gapStatus").textContent = "Converting " + FORMATS[key].label + "…";
+    const tr = document.createElement("tr");
+    tr.innerHTML = "<td></td><td></td><td></td><td></td>";
+    tr.children[0].textContent = FORMATS[key].label;
+    tbody.appendChild(tr);
+    try{
+      const r = await gaplessRow(key);
+      const ms = v=> v == null ? "can't read it here" : Math.round(v) + " ms";
+      tr.children[1].innerHTML = r.extra == null ? "can't read it here" : '<span class="' + (r.extra < 1 ? "ok" : "bad") + '">' + ms(r.extra) + "</span>";
+      tr.children[2].textContent = r.change == null ? "–" : (r.change >= 0 ? "+" : "") + Math.round(r.change) + " ms";
+      const b = document.createElement("button"); b.textContent = "▶ Play the three parts";
+      b.addEventListener("click", ()=> playInTurn(r.parts, b));
+      tr.children[3].appendChild(b);
+      results.gapless.push(FORMATS[key].label + ": extra at start " + ms(r.extra) + ", length change " + (r.change == null ? "–" : Math.round(r.change) + " ms"));
+    }catch(err){
+      tr.children[1].innerHTML = '<span class="bad">failed</span>';
+      results.gapless.push(FORMATS[key].label + ": failed (" + err.message + ")");
+    }
+  }
+  $("gapStatus").textContent = "";
+  $("gapBtn").disabled = false;
+});
+
+// ---- 3. Your own files
+$("convBtn").addEventListener("click", async ()=>{
+  const files = Array.from($("files").files || []);
+  if(!files.length){ $("convStatus").textContent = "Pick one or more files first."; return; }
+  const fmtKey = $("fmt").value, rate = $("rate").value, chan = $("chan").value;
+  $("convBtn").disabled = true; $("convTable").hidden = false;
+  const tbody = $("convTable").querySelector("tbody");
+  for(const [i, file] of files.entries()){
+    const tr = document.createElement("tr");
+    tr.innerHTML = '<td class="name"></td><td class="name"></td><td></td><td></td><td></td><td></td><td></td><td></td>';
+    tr.children[0].textContent = file.name + " (" + mb(file.size) + ")";
+    tbody.appendChild(tr);
+    $("convStatus").textContent = "Converting " + (i + 1) + " of " + files.length + "…";
+    const began = performance.now();
+    try{
+      let length = null;
+      const {input, res, outName} = await convert(file, fmtKey, rate, chan, (t)=>{
+        // ffmpeg.wasm reports how far it has got, in microseconds of audio.
+        const done = t / 1e6;
+        if(length) tr.children[7].textContent = Math.min(99, Math.round(done / length * 100)) + "%";
+      });
+      length = input.duration;
+      const took = performance.now() - began;
+      tr.children[1].textContent = input.audio;
+      tr.children[2].textContent = clock(input.duration);
+      tr.children[3].textContent = secs(took);
+      tr.children[4].textContent = input.duration ? Math.round(input.duration * 1000 / took) + "× real time" : "–";
+      tr.children[6].textContent = mb(res.heap);
+      if(res.ret !== 0){
+        tr.children[7].innerHTML = '<span class="bad">failed</span>';
+        results.files.push(file.name + " (" + mb(file.size) + ", " + input.audio + "): FAILED, ffmpeg returned " + res.ret + "\n  " + (res.log || []).slice(-6).join("\n  "));
+        continue;
+      }
+      const blob = new Blob([res.out], {type: fmtKey === "aac" ? "audio/mp4" : fmtKey === "flac" ? "audio/flac" : "audio/mpeg"});
+      tr.children[5].textContent = mb(blob.size);
+      const url = URL.createObjectURL(blob);
+      const cell = tr.children[7]; cell.textContent = "";
+      const audio = document.createElement("audio"); audio.controls = true; audio.src = url; audio.preload = "metadata";
+      const a = document.createElement("a"); a.href = url; a.download = file.name.replace(/\.[^.]+$/, "") + FORMATS[fmtKey].ext; a.textContent = "Save";
+      cell.append(audio, " ", a);
+      results.files.push(file.name + " (" + mb(file.size) + ", " + input.audio + ", " + clock(input.duration) + ") → " + FORMATS[fmtKey].label + (rate ? " " + rate + " Hz" : "") + (chan ? " " + chan + " ch" : "") + ": " + secs(took) + ", " + (input.duration ? Math.round(input.duration * 1000 / took) + "× real time" : "?") + ", " + mb(blob.size) + ", converter memory " + mb(res.heap));
+    }catch(err){
+      tr.children[3].textContent = secs(performance.now() - began);
+      tr.children[7].innerHTML = '<span class="bad">failed</span> ';
+      tr.children[7].append(err.message);
+      results.files.push(file.name + " (" + mb(file.size) + "): FAILED, " + err.message);
+      // A converter that ran out of memory is gone; start a fresh one.
+      if(/memory|stopped/i.test(err.message)){ worker.terminate(); startWorker(); await ask({type: "load", coreURL: CORE_URL, wasmURL: WASM_URL}).catch(()=>{}); }
+    }
+  }
+  $("convStatus").textContent = "";
+  $("convBtn").disabled = false;
+});
+
+// ---- 4. Report
+$("copyBtn").addEventListener("click", async ()=>{
+  const text = ["Converter test", "Device: " + results.device, "Load: " + (results.load || "not loaded"),
+    "Gapless:", ...(results.gapless.length ? results.gapless.map(s=> "  " + s) : ["  not run"]),
+    "Files:", ...(results.files.length ? results.files.map(s=> "  " + s) : ["  none"])].join("\n");
+  $("report").hidden = false; $("report").textContent = text;
+  try{ await navigator.clipboard.writeText(text); $("copyStatus").textContent = "Copied."; }
+  catch(err){ $("copyStatus").textContent = "Select the text below and copy it."; }
+});
+</script>
+</body>
+</html>

@@ -6,3 +6,4 @@ engine/engine.js
 *.log
 serve.out
 package-lock.json
+convert/ffmpeg/

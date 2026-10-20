@@ -73,3 +73,20 @@ By hand: `./serve.sh` in one terminal (servers on ports 8861 and 8870), then
 | conv | Files this browser can't play (WMA, ALAC, compressed AIFF) kept and marked at import; AIFF dropped on a playlist comes in as WAV; Playing says how many can't play; Library cleanup's Check again repairs an old 0:00 AIFF |
 | conv2 | The same through a folder import: the playlist keeps its place for the WMA, and another device in the shared library sees it marked |
 | big413 | A file the server refuses as too big isn't sent again at every sync, and the status says so |
+
+## The converter test page (tests/convert/)
+
+A page to try ffmpeg.wasm (ffmpeg compiled for browsers) on real devices
+before it goes into 37 Player: load time, conversion speed and memory, and
+whether converted files play without gaps. It never touches a 37 Player
+library.
+
+On the test site, once: `cd tests/convert && ./get-ffmpeg.sh` (downloads
+ffmpeg.wasm 0.12.10, about 32 MB, into `tests/convert/ffmpeg/`, not kept in
+git). Then open `https://playertest.37dakinis.net/tests/convert/` on each
+device, and press "Copy results" at the end.
+
+`convert-page.js` runs the same page headless: `(cd .. && python3 -m
+http.server 8862)`, then `node convert-page.js [more files]`; `FMT=aac`
+(or `flac`, `small`) picks the format. Speeds from it say little about a real
+device.
