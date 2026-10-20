@@ -1,0 +1,7 @@
+node_modules/
+www/
+syncdata/
+shots/
+engine/engine.js
+*.log
+serve.out

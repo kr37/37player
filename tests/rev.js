@@ -1,0 +1,106 @@
+const puppeteer = require('puppeteer-core');
+const fs = require('fs'), path = require('path'); const sleep = ms=>new Promise(r=>setTimeout(r,ms));
+const CODE = process.argv[2], URL_SYNC = 'http://127.0.0.1:8870/sync.php';
+const clickText = (p, sel, src) => p.evaluate((sel, src)=>{ const re=new RegExp(src); const el=[...document.querySelectorAll(sel)].find(e=>e.offsetParent!==null && re.test(e.textContent.trim())); if(el){ el.click(); return true; } return false; }, sel, src);
+const base = 'www/ovt'; const files = [];
+(function walk(d){ for(const n of fs.readdirSync(d)){ const f = path.join(d,n); if(fs.statSync(f).isDirectory()) walk(f); else files.push([path.relative(base,f), fs.readFileSync(f).toString('base64')]); } })(base);
+let fails = 0; const ok=(c,m)=>{ console.log((c?'ok   ':'FAIL ')+m); if(!c) fails++; };
+async function device(b, name){
+  const ctx = await b.createBrowserContext();
+  const p = await ctx.newPage(); await p.setViewport({width:1300,height:900});
+  p.on('pageerror', e=>console.log(name,'PAGE ERROR:', e.message));
+  p.on('dialog', d=>{ console.log(name,'ALERT:', d.message()); d.dismiss(); });
+  await p.setRequestInterception(true); p.on('request', r=> r.url().startsWith('http://localhost') || r.url().startsWith('http://127.0.0.1') ? r.continue() : r.abort());
+  await p.goto('http://localhost:8861/37-player.html',{waitUntil:'networkidle0'}); await sleep(800);
+  for(const x of ['^English$','^Skip for now$','^Finish$']){ await clickText(p,'.modal button',x); await sleep(300); }
+  await p.evaluate(()=> document.querySelector('.modal [data-close]')?.click());
+  return p;
+}
+const lib = p=> p.evaluate(()=>{ const r=window.__dbg.getRoot(); const pl=[]; (function w(a,d){a.forEach(n=>{ pl.push('  '.repeat(d)+n.kind[0]+':'+n.name+(n.items?'['+n.items.length+']':'')); if(n.children) w(n.children,d+1); });})(r.tree,0); return {tracks: r.library.map(t=>t.name).sort().join('|'), tree: pl.join(' / ')}; });
+const waitIdle = async (p)=>{ for(let k=0;k<400;k++){ const s = await p.evaluate(()=>({st: window.__dbg3.status().state, tr: window.__dbg3.status().transfer, pend: Object.keys((window.__dbg3.pending()||{audio:{}}).audio).length})); if(s.st!=='syncing' && !s.tr && s.pend===0) return s; await sleep(200); } return 'timeout'; };
+(async()=>{
+  const b = await puppeteer.launch({executablePath: process.env.CHROME || '/usr/bin/google-chrome', args:['--no-sandbox']});
+  const CODE = process.argv[2];
+  // A seeds the library
+  const A = await device(b,'A');
+  await A.evaluate(async()=>{ const r = window.__dbg.getRoot(); r.tree = []; r.library = []; delete r.settings.starterPlaylistId; await window.__dbg.saveState(); });
+  await A.evaluate((files)=>{ const list = files.map(([rel,b64])=>{ const f = new File([Uint8Array.from(atob(b64), c=>c.charCodeAt(0))], rel.split('/').pop()); Object.defineProperty(f,'webkitRelativePath',{value: rel}); return f; }); window.__dbg.bulkImportFolder(list); }, files);
+  await sleep(2500); await A.evaluate(()=>{ const b=[...document.querySelectorAll('.modal .btn.primary')].pop(); b && b.click(); }); await sleep(4000);
+  await A.evaluate(()=> document.querySelectorAll('.modal [data-close], .modal .btn.primary').forEach(b=>b.click())); await sleep(800);
+  await A.evaluate((c,u)=> window.__dbg3.join(u,c,'Laptop'), CODE, URL_SYNC); await waitIdle(A);
+
+  const B = await device(b,'B');
+  await B.evaluate(async()=>{ const r = window.__dbg.getRoot(); r.tree = []; r.library = []; delete r.settings.starterPlaylistId; await window.__dbg.saveState(); });
+  await B.evaluate((c,u)=> window.__dbg3.join(u,c,'iPad'), CODE, URL_SYNC); await waitIdle(B);
+  await B.evaluate(async()=>{ window.__dbg.getRoot().settings.sharedLibrary.reviewMode = true; await window.__dbg.saveState(); });
+  const rename = (P, from, to)=> P.evaluate(async(from,to)=>{ const r=window.__dbg.getRoot(); const f=nodes=>{ for(const n of nodes){ if(n.name===from) return n; if(n.children){ const x=f(n.children); if(x) return x; } } }; f(r.tree).name=to; await window.__dbg.saveState(); }, from, to);
+  const names = P=> P.evaluate(()=>{ const out=[]; (function w(a){ a.forEach(n=>{ out.push(n.name); if(n.children) w(n.children); }); })(window.__dbg.getRoot().tree); return out.join(','); });
+  const syncNow = async P=>{ await P.evaluate(()=>window.__dbg3.sync()); await sleep(1200); await waitIdle(P); };
+  await rename(A,'One','One renamed'); await syncNow(A);
+  await rename(B,'Two','Two B'); await syncNow(B);
+  const st = await B.evaluate(()=> window.__dbg3.status().reviewCount);
+  ok(st===2, 'review mode: 2 changes waiting (got '+st+')');
+  ok(!(await names(B)).includes('One renamed'), 'review mode: nothing taken yet: '+await names(B));
+  await syncNow(A);
+  ok(!(await names(A)).includes('Two B'), 'review mode: nothing sent yet');
+  const badge = await B.evaluate(()=>{ const b=document.getElementById('btnSharedReview'); return b.style.display!=='none' ? b.textContent : ''; });
+  ok(/2 shared changes/.test(badge), 'badge: '+badge);
+  const openReview = async ()=>{ await B.evaluate(()=>window.__dbg3.review()); await sleep(1500); };
+  const rows = ()=> B.evaluate(()=>[...document.querySelectorAll('#reviewPage .rv-row')].map(r=> r.querySelector('.rv-title').textContent+' | '+r.querySelector('.rv-here').textContent+' | '+r.querySelector('.rv-word').textContent+' | '+r.querySelector('.rv-there').textContent));
+  await openReview();
+  console.log('rows:\n  ' + (await rows()).join('\n  '));
+  await B.screenshot({path:'shots/rv-1.png'});
+  await B.evaluate(()=> document.getElementById('rvGo').click()); await sleep(2500);
+  ok(!(await B.evaluate(()=>!!document.getElementById('reviewPage'))), 'review closed after Synchronize');
+  ok((await names(B)).includes('One renamed') && (await names(B)).includes('Two B'), 'B took and sent: '+await names(B));
+  await syncNow(A);
+  ok((await names(A)).includes('Two B'), 'A got B\'s change: '+await names(A));
+  ok(await B.evaluate(()=> window.__dbg3.status().reviewCount)===0, 'nothing left to review');
+  await rename(A,'One renamed','One again'); await syncNow(A); await syncNow(B);
+  await openReview();
+  await B.evaluate(()=>{ const r=[...document.querySelectorAll('#reviewPage .rv-row')][0]; r.querySelector('.rv-arrow').click(); }); await sleep(300);
+  console.log('after click:', (await rows()).join(' // '));
+  await B.evaluate(()=> document.getElementById('rvGo').click()); await sleep(2500);
+  ok((await names(B)).includes('One renamed') && !(await names(B)).includes('One again'), 'skipped: kept mine for now');
+  await syncNow(B);
+  ok(await B.evaluate(()=> window.__dbg3.status().reviewCount)===1, 'the skipped change is still waiting');
+  await rename(A,'Two B','Two A'); await syncNow(A);
+  await rename(B,'Two B','Two BB'); await syncNow(B);
+  await openReview();
+  const r2 = await rows(); console.log('conflict rows:', r2.join(' // '));
+  ok(await B.evaluate(()=> document.getElementById('rvGo').disabled), 'Synchronize waits for a choice');
+  await B.screenshot({path:'shots/rv-2.png'});
+  await B.evaluate(()=>{ const r=[...document.querySelectorAll('#reviewPage .rv-row.rv-undecided')][0]; r.querySelector('.rv-arrow').click(); }); await sleep(300);
+  await rename(A,'One again','One third'); await syncNow(A);
+  await B.evaluate(()=> document.getElementById('rvGo').click()); await sleep(2500);
+  const notice = await B.evaluate(()=> document.querySelector('.rv-notice')?.textContent || '');
+  ok(/changed while you were reviewing/.test(notice), 'changed meanwhile: list refreshed');
+  console.log('refreshed rows:', (await rows()).join(' // '));
+  await B.evaluate(()=> document.getElementById('rvGo').click()); await sleep(2500);
+  await syncNow(A);
+  ok((await names(A)).includes('Two BB') && (await names(B)).includes('One third'), 'after second Synchronize: A '+await names(A)+' / B '+await names(B));
+
+  // a new track in a playlist: nested under it and locked while the playlist comes
+  await A.evaluate(async()=>{ const r=window.__dbg.getRoot(); const t0=r.library[0]; r.library.push(Object.assign({}, t0, {id:'newtrk', name:'New Talk'}));
+    const blob = new Blob([new Uint8Array(4000)]); await window.__dbg3.put('audio',{id:'newtrk', blob});
+    const f=nodes=>{ for(const n of nodes){ if(n.name==='Two BB') return n; if(n.children){ const x=f(n.children); if(x) return x; } } }; const pl=f(r.tree); pl.items.push({id:'nti',kind:'track',refId:'newtrk',order:99}); await window.__dbg.saveState(); });
+  await syncNow(A); await syncNow(B);
+  await openReview();
+  const dep = await B.evaluate(()=>[...document.querySelectorAll('#reviewPage .rv-row')].map(r=>({t:r.querySelector('.rv-title').textContent, indent:r.classList.contains('rv-indent'), dis:r.querySelector('.rv-arrow').disabled, word:r.querySelector('.rv-word').textContent, note:(r.querySelector('.rv-note')||{}).textContent||''})));
+  console.log('dep rows:', JSON.stringify(dep));
+  const tr = dep.find(x=>x.t==='New Talk');
+  ok(tr && tr.indent && tr.dis && /Needed by Two BB/.test(tr.note), 'new track nested under its playlist and locked');
+  await B.setViewport({width:390,height:844,isMobile:true,hasTouch:true}); await sleep(1500); await openReview();
+  await B.screenshot({path:'shots/rv-3.png'});
+  console.log('page after phone:', await B.evaluate(()=>!!document.getElementById('reviewPage')));
+  await B.setViewport({width:1300,height:900}); await sleep(1500); await openReview();
+  console.log('page after back:', await B.evaluate(()=>!!document.getElementById('reviewPage')));
+  // skip the playlist: the track unlocks
+  await B.evaluate(()=>{ const r=[...document.querySelectorAll('#reviewPage .rv-row')].find(r=>r.querySelector('.rv-title').textContent==='Two BB'); r.querySelector('.rv-arrow').click(); }); await sleep(300);
+  console.log('after skip rows:', JSON.stringify(await B.evaluate(()=>[...document.querySelectorAll('#reviewPage .rv-row')].map(r=>r.querySelector('.rv-title').textContent+':'+r.querySelector('.rv-word').textContent)), await B.evaluate(()=>!!document.getElementById('reviewPage'))));
+  const after = await B.evaluate(()=>{ const r=[...document.querySelectorAll('#reviewPage .rv-row')].find(r=>r.querySelector('.rv-title').textContent==='New Talk'); return {dis:r.querySelector('.rv-arrow').disabled, word:r.querySelector('.rv-word').textContent}; });
+  ok(!after.dis, 'skipping the playlist unlocks its track: '+JSON.stringify(after));
+  await B.evaluate(()=> document.querySelector('#rvClose').click()); await sleep(400);
+  console.log(fails ? fails+' FAILED' : 'ALL OK');
+  await b.close();
+})();

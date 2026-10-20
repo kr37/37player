@@ -1,0 +1,6 @@
+{
+  "name": "37player-tests",
+  "private": true,
+  "description": "Browser tests for 37 Player (see README.md)",
+  "dependencies": { "puppeteer-core": "^23.0.0" }
+}
