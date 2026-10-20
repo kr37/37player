@@ -66,7 +66,25 @@ const clickText = (p, sel, src) => p.evaluate((sel, src)=>{ const re=new RegExp(
   console.log('play pressed:', JSON.stringify(dlg), JSON.stringify({cur: st.cur, paused: st.paused}));
   ok(/This track can't be played/.test(dlg) && /Windows Media Audio \(WMA\) needs converting first/.test(dlg) && /Convert it now/.test(dlg), 'pressing play on the WMA says it can\'t be played, offering Convert it now');
   ok(st.cur !== wmaItem && st.paused, 'nothing was loaded, and nothing counts as playing');
+  ok(!/Nothing else/.test(dlg), 'the dialog doesn\'t carry the confusing "nothing else changed" line');
   await p.evaluate(()=> document.querySelector('.modal [data-close]')?.click()); await sleep(300);
+
+  // The Library tab's player: the same dialog instead of loading it.
+  const wmaId = await p.evaluate(()=> window.__dbg.getRoot().library.find(t=> t.filename === 'talk.wma').id);
+  await p.evaluate((id)=> window.__conv.libPreview(id), wmaId); await sleep(500);
+  const dlg2 = await p.evaluate(()=> document.querySelector('.modal')?.innerText || '');
+  ok(/This track can't be played/.test(dlg2) && /Convert it now/.test(dlg2), 'the Library player offers "Convert it now" for it');
+  await p.evaluate(()=> document.querySelector('.modal [data-close]')?.click()); await sleep(300);
+
+  // The playlist overlay (another playlist looked at while one plays): marked too.
+  await p.evaluate(async()=>{ const r = window.__dbg.getRoot(); r.tree.push({id:'pl2', kind:'playlist', name:'Other', items:[]}); await window.__dbg.saveState(); });
+  await p.evaluate(()=> window.__conv.overlay('pl1')); await sleep(600);
+  const ov = await p.evaluate(()=>{ const w = document.getElementById('plOverlayWrap'); return w ? {banner: w.querySelector('.not-here-banner')?.innerText || '', rows: w.querySelectorAll('.item-row.not-here').length, name: w.querySelector('.plov-track-name')?.innerText || ''} : null; });
+  console.log('overlay:', JSON.stringify(ov));
+  ok(ov && /tracks in this playlist can't be played/.test(ov.banner) && /Convert them now/.test(ov.banner), 'the overlay says how many can\'t be played, with Convert them now');
+  ok(ov && ov.rows === marked, 'the overlay marks each of them');
+  await p.screenshot({path: 'shots/conv-overlay.png'});
+  await p.evaluate(()=> document.querySelector('#plOverlayWrap .plov-close')?.click()); await sleep(300);
 
   // An old import: an AIFF stored as it was, at 0:00, never marked.
   await p.evaluate(async()=>{
