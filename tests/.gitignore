@@ -5,3 +5,4 @@ shots/
 engine/engine.js
 *.log
 serve.out
+package-lock.json
