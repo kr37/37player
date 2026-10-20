@@ -21,7 +21,10 @@ A playlist player for live sessions at Kadampa centers: chanting, prayers, manda
 - **Site:** `player.37dakinis.net/` is a git working copy of the repo on the droplet, plus `libraries/` (read-only starter collections with `manifest.json`, not in git). `sync.php`'s data is outside the web root at `/var/lib/37player/`, bind-mounted from the DigitalOcean volume.
 - **Release routine:** the droplet's copy is also the live test bed (the laptop mounts it over SSH).
   - Changes made there: run `help/generate_help.py` (embeds the help topics into `37-player.html`, writes `help.json`) and `scripts/generate_library_manifest.py` if the libraries changed; commit; push.
-  - Changes made by a Claude session: it pushes to GitHub (a branch, with a pull request, unless asked otherwise); on the droplet, `git pull --ff-only` (or check out the branch to test it). Commit and push any edits made on the droplet before starting a session, so the session builds on them.
+  - Changes made by a Claude session go to the standing **`dev`** branch. At the start of a session, bring `dev` up to date with `main` first (`git merge origin/main`). Push to `dev` as work goes; when a batch is ready, open (or update) one pull request from `dev` into `main` and say it's ready. Gen merges it; `dev` carries on afterwards, it isn't deleted.
+  - Testing `dev`: on the droplet, `git checkout dev && git pull --ff-only` (or a separate test site, below); back to `main` with `git checkout main && git pull --ff-only`.
+  - Commit and push any edits made on the droplet before starting a session, so the session builds on them.
+  - Planned: a test site, `playertest.37dakinis.net`, a second working copy on `dev`. It has its own IndexedDB on every device (a different address), so it should join a **test copy** of the shared library, not the real one: `cp -a /var/lib/37player/<lib> /var/lib/37player/<lib>test`, then `php sync.php newcode <lib>test`. A branch's bugs then can't reach the real library.
   - `sync.php` changes take effect as soon as the droplet has them. `SYNC-SETUP.md` covers first-time setup and the Apache upload limit.
 - **Backups of the droplet:** a nightly rsync of `/var/lib/37player/` to the T470.
 
