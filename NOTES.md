@@ -79,6 +79,7 @@ The full plan and history are in the project doc `shared-library-sync.md`. In sh
   - New tracks in playlists the device already holds arrive automatically.
   - Deleting offers three choices: Cancel / Remove from this device / Delete everywhere.
 - **Missing tracks** are marked big and clear, saying where each one is coming from ("on its way from {device}" or "waiting for {device} to send it").
+- **Upload size limit:** Apache 2.4.54+ refuses request bodies over 1 GiB by default (`LimitRequestBody`), answering 413. A 1.2 GB WAV hit it. The droplet needs `LimitRequestBody 0` for sync.php (see SYNC-SETUP.md). The app now stops resending a refused file until "Sync now" and says so in the status (1.3.045). A later improvement: send big files in pieces (resumable).
 - **Mobile data:** treated like any other connection, because library integrity matters more. Only the join dialog warns about the size.
 
 ## Non-obvious decisions
@@ -135,5 +136,5 @@ The full plan and history are in the project doc `shared-library-sync.md`. In sh
 - **Partial sync:** when "new in the shared library" leads into Review changes, show those new items highlighted. Possibly only that once, or with a "most recent changes" button. The "new since last review" set (`sharedSeen`) already exists to drive it.
 - **Settings → "All settings":** one page listing every setting in a two-column table: the control, then its label, with tap or hover for more help. Grouped under headers. Every setting also stays where it is now.
 - **Library:** clip extraction, auto-updating playlists after a split, and undo for destructive actions.
-- **Standardize:** a "shrink" step for files over the target bitrate.
+- **Standardize:** a "shrink" step for files over the target bitrate. Long files: Standardize decodes the whole file (fails for ~2 h stereo) and encodes in real time through MediaRecorder (2 h of audio = 2 h of the app in front, off 'Playing'); a 1.2 GB WAV never got converted and hit the server's 1 GiB upload limit. Worth reading WAVs in pieces and finding a faster-than-real-time encoder (WebCodecs AudioEncoder). Also: the idle return to 'Playing' after 10 minutes stops Standardize, so an unattended laptop never finishes anything long; let it carry on there while nothing plays and nobody has touched the machine, pausing at the first input.
 - **Hosting:** Drive or Dropbox adapters for individuals' libraries. Only centers are hosted on the droplet.
