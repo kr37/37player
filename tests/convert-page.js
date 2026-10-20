@@ -21,10 +21,10 @@ const files = ['talk.wma','lossless.m4a','ima.aif','song.aiff'].map(f=> path.joi
   ok(/Ready/.test(load), 'the converter loads');
 
   await p.click('#gapBtn');
-  await p.waitForFunction(()=> !document.getElementById('gapBtn').disabled && document.querySelectorAll('#gapTable tbody tr').length === 3, {timeout: 300000});
+  await p.waitForFunction(()=> !document.getElementById('gapBtn').disabled && document.querySelectorAll('#gapTable tbody tr').length === 4, {timeout: 300000});
   const gap = await p.$$eval('#gapTable tbody tr', rows=> rows.map(r=> [...r.children].slice(0,3).map(c=>c.textContent).join(' | ')));
   console.log('gapless:\n  ' + gap.join('\n  '));
-  ok(gap.length === 3 && !gap.some(r=> /failed/.test(r)), 'all three formats convert in the gapless check');
+  ok(gap.length === 4 && !gap.some(r=> /failed/.test(r)), 'all formats convert in the gapless check');
 
   if(process.env.FMT) await p.select('#fmt', process.env.FMT);
   const input = await p.$('#files');

@@ -45,7 +45,7 @@
 
   <section>
     <h2>2. Gapless check</h2>
-    <p class="dim">Makes a steady tone, cuts it into three parts, converts each part, and reads them back. "Extra at start" is silence the format added that this browser didn't trim; anything above 0 can be heard as a tiny gap between tracks that should run on. Then listen: the three parts played one after another, the way 37 Player plays a playlist, should sound like one unbroken tone.</p>
+    <p class="dim">Makes a steady tone, cuts it into three parts, converts each part, and reads them back. "Extra at start" is silence the format added that this browser didn't trim; anything above 0 can be heard as a tiny gap between tracks that should run on. Then listen, two ways: "As 37 Player plays now" gives each part to the player in turn when the last one ends, the way a playlist plays today; "Seamless" schedules each part to start on the exact sample the last one ends. The unconverted WAV is there to compare: if it breaks up too, the gap is in how the parts are played, not in the format.</p>
     <div class="row"><button id="gapBtn" disabled>Run the gapless check</button><span id="gapStatus"></span></div>
     <div class="tablewrap"><table id="gapTable" hidden><thead><tr><th>Format</th><th>Extra at start</th><th>Length change</th><th>Listen</th></tr></thead><tbody></tbody></table></div>
   </section>
@@ -197,8 +197,9 @@ async function decodeLength(blob){
   } finally { if(ctx.close) ctx.close(); }
 }
 async function gaplessRow(fmtKey){
-  const seconds = 3, rate = 44100, parts = [];
+  const seconds = 3, parts = [];
   for(let k = 0; k < 3; k++){
+    if(fmtKey === "wav"){ parts.push(tonePartWav(k, seconds)); continue; }
     const {res} = await convert(tonePartWav(k, seconds), fmtKey, "", "", null);
     if(res.ret !== 0) throw new Error("conversion failed");
     parts.push(new Blob([res.out], {type: fmtKey === "aac" ? "audio/mp4" : fmtKey === "flac" ? "audio/flac" : "audio/mpeg"}));
@@ -215,35 +216,62 @@ async function gaplessRow(fmtKey){
   }catch(err){}
   return {parts, extra, change};
 }
-function playInTurn(blobs, btn){
+// The way 37 Player plays a playlist today: one <audio> element, given the
+// next file when the last one ends.
+function playLikeThePlayer(blobs, btn){
   const urls = blobs.map(b=> URL.createObjectURL(b));
-  const els = urls.map(u=>{ const a = new Audio(u); a.preload = "auto"; return a; });
+  const el = new Audio();
+  let k = 0;
   btn.disabled = true;
-  els.forEach((a, i)=> a.addEventListener("ended", ()=>{ if(els[i + 1]) els[i + 1].play(); else { btn.disabled = false; urls.forEach(u=> URL.revokeObjectURL(u)); } }));
-  els[0].play();
+  el.addEventListener("ended", ()=>{
+    k++;
+    if(k < urls.length){ el.src = urls[k]; el.play(); }
+    else { btn.disabled = false; urls.forEach(u=> URL.revokeObjectURL(u)); }
+  });
+  el.src = urls[0]; el.play();
+}
+// Seamless: every part decoded first, then each scheduled to start at the
+// exact sample the one before it ends (Web Audio).
+async function playSeamless(blobs, btn){
+  btn.disabled = true;
+  const AC = window.AudioContext || window.webkitAudioContext;
+  const ctx = new AC();
+  try{
+    const buffers = [];
+    for(const b of blobs){
+      const bytes = await b.arrayBuffer();
+      buffers.push(await new Promise((res, rej)=>{ const p = ctx.decodeAudioData(bytes, res, rej); if(p && p.catch) p.catch(rej); }));
+    }
+    let at = ctx.currentTime + 0.2;
+    buffers.forEach(buf=>{ const src = ctx.createBufferSource(); src.buffer = buf; src.connect(ctx.destination); src.start(at); at += buf.duration; });
+    setTimeout(()=>{ btn.disabled = false; ctx.close && ctx.close(); }, (at - ctx.currentTime) * 1000 + 300);
+  }catch(err){ btn.disabled = false; btn.textContent = "can't play here"; }
 }
 $("gapBtn").addEventListener("click", async ()=>{
   $("gapBtn").disabled = true;
   const tbody = $("gapTable").querySelector("tbody");
   tbody.innerHTML = ""; $("gapTable").hidden = false; results.gapless = [];
-  for(const key of ["mp3", "aac", "flac"]){
-    $("gapStatus").textContent = "Converting " + FORMATS[key].label + "…";
+  const labels = {wav: "WAV (not converted)", mp3: FORMATS.mp3.label, aac: FORMATS.aac.label, flac: FORMATS.flac.label};
+  for(const key of ["wav", "mp3", "aac", "flac"]){
+    $("gapStatus").textContent = key === "wav" ? "" : "Converting " + labels[key] + "…";
     const tr = document.createElement("tr");
     tr.innerHTML = "<td></td><td></td><td></td><td></td>";
-    tr.children[0].textContent = FORMATS[key].label;
+    tr.children[0].textContent = labels[key];
     tbody.appendChild(tr);
     try{
       const r = await gaplessRow(key);
       const ms = v=> v == null ? "can't read it here" : Math.round(v) + " ms";
       tr.children[1].innerHTML = r.extra == null ? "can't read it here" : '<span class="' + (r.extra < 1 ? "ok" : "bad") + '">' + ms(r.extra) + "</span>";
       tr.children[2].textContent = r.change == null ? "–" : (r.change >= 0 ? "+" : "") + Math.round(r.change) + " ms";
-      const b = document.createElement("button"); b.textContent = "▶ Play the three parts";
-      b.addEventListener("click", ()=> playInTurn(r.parts, b));
-      tr.children[3].appendChild(b);
-      results.gapless.push(FORMATS[key].label + ": extra at start " + ms(r.extra) + ", length change " + (r.change == null ? "–" : Math.round(r.change) + " ms"));
+      const b1 = document.createElement("button"); b1.textContent = "▶ As 37 Player plays now";
+      b1.addEventListener("click", ()=> playLikeThePlayer(r.parts, b1));
+      const b2 = document.createElement("button"); b2.textContent = "▶ Seamless";
+      b2.addEventListener("click", ()=> playSeamless(r.parts, b2));
+      tr.children[3].append(b1, " ", b2);
+      results.gapless.push(labels[key] + ": extra at start " + ms(r.extra) + ", length change " + (r.change == null ? "–" : Math.round(r.change) + " ms"));
     }catch(err){
       tr.children[1].innerHTML = '<span class="bad">failed</span>';
-      results.gapless.push(FORMATS[key].label + ": failed (" + err.message + ")");
+      results.gapless.push(labels[key] + ": failed (" + err.message + ")");
     }
   }
   $("gapStatus").textContent = "";
