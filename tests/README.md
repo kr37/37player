@@ -71,6 +71,7 @@ By hand: `./serve.sh` in one terminal (servers on ports 8861 and 8870), then
 | af | Autofill off on text fields; viewport resizes for the keyboard |
 | twowin | An older copy in another window is told a newer one is open, stops syncing and asks to be reloaded |
 | conv | Files this browser can't play (WMA, ALAC, compressed AIFF) kept and marked at import; AIFF dropped on a playlist comes in as WAV; Playing says how many can't play; Library cleanup's Check again repairs an old 0:00 AIFF |
+| conv3 | Converting: "Convert them now" asks to download the converter, then WMA and Apple Lossless become MP3 in place; the other device in the shared library gets the MP3; a conversion stops when playback starts and is done again after |
 | conv2 | The same through a folder import: the playlist keeps its place for the WMA, and another device in the shared library sees it marked |
 | big413 | A file the server refuses as too big isn't sent again at every sync, and the status says so |
 
