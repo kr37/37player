@@ -14,4 +14,12 @@ ffmpeg -loglevel error -y -f lavfi -i "sine=f=330:d=225" -c:a libmp3lame -b:a 12
 ffmpeg -loglevel error -y -f lavfi -i "sine=f=440:d=20" -c:a libmp3lame -b:a 192k "ovt/M/Art/Alb/02 loud.mp3"
 printf '#EXTM3U\nArt/Alb/01 lp.mp3\n' > ovt/M/One.m3u8
 printf '#EXTM3U\nArt/Alb/02 loud.mp3\nArt/Alb/01 lp.mp3\n' > ovt/M/Two.m3u8
+# Formats a browser can't play, and a playlist file posing as audio (conv.js).
+mkdir -p conv
+ffmpeg -loglevel error -y -f lavfi -i "sine=frequency=440:duration=3" -ac 2 conv/ok.mp3
+ffmpeg -loglevel error -y -f lavfi -i "sine=frequency=500:duration=3" -ac 2 -c:a wmav2 conv/talk.wma
+ffmpeg -loglevel error -y -f lavfi -i "sine=frequency=600:duration=3" -ac 2 -c:a alac conv/lossless.m4a
+ffmpeg -loglevel error -y -f lavfi -i "sine=frequency=700:duration=3" -ac 2 -c:a pcm_s16be conv/song.aiff
+ffmpeg -loglevel error -y -f lavfi -i "sine=frequency=800:duration=3" -ac 2 -c:a adpcm_ima_qt -f aiff conv/ima.aif
+printf '#EXTM3U\n#EXTINF:3,Song\nsong.mp3\n' > conv/notaudio.mp3
 echo "Test audio made in tests/www"
