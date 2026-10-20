@@ -11,18 +11,18 @@ A playlist player for live sessions at Kadampa centers: chanting, prayers, manda
 
 ## Where it lives
 
-- **Repo:** `github.com/kr37/37player` (public). The droplet serves a pulled copy.
-- **Site:** `player.37dakinis.net/` holds:
-  - `index.html`: the about page, not the app;
-  - `37-player.html`;
-  - `sw.js`, `help.json`, `help/`;
-  - `libraries/`: read-only starter collections with `manifest.json`;
-  - `sync.php`: shared libraries. Its data is outside the web root at `/var/lib/37player/`, bind-mounted from the DigitalOcean volume.
-- **Release routine:**
-  1. Run `help/generate_help.py`, which embeds the help topics into `37-player.html` and writes `help.json`.
-  2. Run the library-manifest generator.
-  3. Commit, push, and pull on the droplet.
-  4. `sync.php` changes are copied to the droplet by hand. `SYNC-SETUP.md` covers its first-time setup.
+- **Repo:** `github.com/kr37/37player` (public). Layout:
+  - `37-player.html` (the app), `sw.js`, `help.json`, `help/` (topics and `generate_help.py`);
+  - `sync.php` and `SYNC-SETUP.md` (shared libraries on the droplet);
+  - `index.html` (the about page, not the app) and `homepage/` (its icon, logo and screenshots);
+  - `scripts/` (`convert_incompatible_audio.py`, `scan_incompatible_audio.py`, `generate_library_manifest.py`);
+  - `tests/` (browser tests; see tests/README.md);
+  - `NOTES.md` (this file).
+- **Site:** `player.37dakinis.net/` is a git working copy of the repo on the droplet, plus `libraries/` (read-only starter collections with `manifest.json`, not in git). `sync.php`'s data is outside the web root at `/var/lib/37player/`, bind-mounted from the DigitalOcean volume.
+- **Release routine:** the droplet's copy is also the live test bed (the laptop mounts it over SSH).
+  - Changes made there: run `help/generate_help.py` (embeds the help topics into `37-player.html`, writes `help.json`) and `scripts/generate_library_manifest.py` if the libraries changed; commit; push.
+  - Changes made by a Claude session: it pushes to GitHub (a branch, with a pull request, unless asked otherwise); on the droplet, `git pull --ff-only` (or check out the branch to test it). Commit and push any edits made on the droplet before starting a session, so the session builds on them.
+  - `sync.php` changes take effect as soon as the droplet has them. `SYNC-SETUP.md` covers first-time setup and the Apache upload limit.
 - **Backups of the droplet:** a nightly rsync of `/var/lib/37player/` to the T470.
 
 ## Architecture in brief
@@ -107,7 +107,7 @@ The full plan and history are in the project doc `shared-library-sync.md`. In sh
   - native `draggable` is turned off on coarse pointers.
 - **Folder access:** `showDirectoryPicker` works only in Chrome and Edge on desktop. Brave needs `brave://flags` → File System Access. iOS Chrome is WebKit, so it has no folder access either.
 - **Codecs:**
-  - ALAC and WMA play in no browser, so they're converted with the `.py` scripts.
+  - ALAC and WMA play in no browser, so they're converted with the scripts in `scripts/`.
   - What MediaRecorder writes as "AAC" varies by browser. Some write Opus, which `findMp4AudioCodecFourcc` catches.
 - **Long recordings and memory:** decoding a whole file holds it all as raw samples (a 2-hour stereo teaching is about 2.5 GB), which crashed a phone's tab ("Aw, Snap!") and made a laptop give up with a flat stand-in waveform. Past a per-device budget, MP3s are decoded about 3 minutes at a time, cut at frame boundaries (`analyzeMp3InPieces`), and WAVs are read a few MB at a time with no decoder (`analyzeWavInPieces`); both feed `makePieceAnalyzer` / `makeLoudnessMeter`. Other formats past the budget get a stand-in waveform and no loudness, marked with the budget of the device that tried (`loudness.tooLong`, in MB); a device with a bigger budget (a computer) tries again, and the result reaches the others through sync. Budgets: 2000 MB on a computer reporting 8 GB, otherwise 1000 MB (about 45 minutes of stereo). Splitting a track still decodes it whole. On phones and tablets MP3/WAV always go in pieces (1 MB pieces for MP3 there). The first piece starts after an MP3's Xing/Info header frame (`mp3AudioStart`): with that and smaller pieces, an iPad that had crashed on four 2-hour MP3s analyzed each in about a minute (1.3.042, 19 Oct 2026). A background analysis that gets the page closed is remembered (`guardedAnalysis`, localStorage `37player.analyzing`) and that track is skipped by that version (`analysisCrashed` = version). The server's `list` reports stand-in waveforms (`flatPeaks`, exactly 3601 bytes) so a device with the real one replaces it. Waveforms travel separately from the library document (720 numbers a track would make every save megabytes): each is a small file on the server named after its audio version, sent with the audio and fetched with it. A flat stand-in is never sent. A device with a stand-in (`repairStandInPeaks`, once per track via the local `peaksTried`) first asks the server, else makes it and sends it with `replace=1`, the one case the server overwrites a file. Loudness is in the library document (the audio group), so it syncs directly.
 - **Long work freezes the page:** decoding and loudness loops yield to the page (`yieldToPage`). A 90-minute track used to freeze the page for 9 s.

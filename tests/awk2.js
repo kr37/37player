@@ -1,0 +1,41 @@
+const puppeteer = require('puppeteer-core'); const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const clickText = (p, sel, src) => p.evaluate((sel, src)=>{ const re=new RegExp(src); const el=[...document.querySelectorAll(sel)].find(e=>e.offsetParent!==null && re.test(e.textContent.trim())); if(el){ el.click(); return true; } return false; }, sel, src);
+let fails=0; const ok=(c,m)=>{ console.log((c?'ok   ':'FAIL ')+m); if(!c) fails++; };
+(async()=>{
+  const b = await puppeteer.launch({executablePath: process.env.CHROME || '/usr/bin/google-chrome', args:['--no-sandbox','--autoplay-policy=no-user-gesture-required']});
+  const p = await b.newPage(); p.on('pageerror', e=>console.log('PAGE ERROR:', e.message));
+  await p.evaluateOnNewDocument(()=>{ window.__ah = {}; const o = navigator.mediaSession.setActionHandler.bind(navigator.mediaSession); navigator.mediaSession.setActionHandler = (k,f)=>{ window.__ah[k]=f; o(k,f); }; });
+  await p.emulate({viewport:{width:412,height:860,isMobile:true,hasTouch:true,deviceScaleFactor:1}, userAgent:'Mozilla/5.0 (Linux; Android 14) Mobile'});
+  await p.goto('http://localhost:8861/37-player.html',{waitUntil:'networkidle0'}); await sleep(800);
+  for(const x of ['^English$','^Skip for now$','^Finish$']){ await clickText(p,'.modal button',x); await sleep(300); }
+  await p.evaluate(()=> document.querySelector('.modal [data-close]')?.click());
+  await p.evaluate((u,c)=> window.__dbg3.join(u,c,'Phone'), 'http://127.0.0.1:8870/sync.php', process.argv[2]); await sleep(1500);
+  // a playlist with one real track
+  await p.evaluate(async()=>{ const r=window.__dbg.getRoot(); const blob = await (await fetch('ten.mp3')).blob(); r.library.push({id:'tk', name:'Ten', duration:600, peaks:new Array(720).fill(0.5)}); await window.__dbg3.put('audio',{id:'tk', blob}); r.tree.push({id:'pl', kind:'playlist', name:'P', items:[{id:'it', kind:'track', refId:'tk', order:0}]}); await window.__dbg.saveState(); });
+  await p.evaluate(()=>{ window.__dbg4.settings(); }); await sleep(400);
+  await clickText(p, 'button, nav *', '^Shared library$'); await sleep(600);
+  ok(await p.evaluate(()=> !!document.getElementById('shAwake')), 'switch shown even with nothing to sync');
+  await p.evaluate(()=>{ window.__fakeOut = true; document.getElementById('shAwake').click(); }); await sleep(800);
+  ok(await p.evaluate(()=> window.__aw()), 'switch on + something to sync: syncing kept awake');
+  await p.evaluate(()=> document.querySelector('.settings-page [data-close], #settingsClose, .settings-close')?.click());
+  await p.evaluate(()=> window.__play('it')); await sleep(1500);
+  ok(!(await p.evaluate(()=> window.__aw())), 'playing takes over');
+  await p.evaluate(()=> window.__pause()); await sleep(1200);
+  ok(await p.evaluate(()=> window.__aw()), 'paused: syncing carries on by itself');
+  await p.evaluate(()=> window.__ah.pause()); await sleep(1200);
+  ok(!(await p.evaluate(()=> window.__aw())) && !(await p.evaluate(()=> window.__st().paused)), 'with a track paused part-way, the lock-screen button resumes it');
+  await p.evaluate(()=>{ const a=document.getElementById('audioEl'); a.currentTime = a.duration - 0.3; }); await sleep(2500);
+  ok(await p.evaluate(()=> window.__aw()), 'end of the playlist: syncing carries on');
+  await p.evaluate(()=> window.__ah.pause()); await sleep(600);
+  ok(!(await p.evaluate(()=> window.__aw())), 'with nothing paused, lock-screen pause stops syncing');
+  await sleep(6000);
+  ok(!(await p.evaluate(()=> window.__aw())), '...and it stays stopped');
+  await p.evaluate(()=>{ document.dispatchEvent(new Event('visibilitychange')); }); await sleep(800);
+  ok(await p.evaluate(()=> window.__aw()), 'back on screen: on again');
+  await p.evaluate(()=>{ window.__fakeOut = false; }); await sleep(17000);
+  ok(!(await p.evaluate(()=> window.__aw())), 'everything done: stops by itself');
+  ok(await p.evaluate(()=> window.__dbg.getRoot().settings.sharedLibrary.keepAwake === true), 'setting stays on');
+  await p.evaluate(()=>{ window.__fakeOut = true; }); await sleep(6000);
+  ok(await p.evaluate(()=> window.__aw()), 'new work later: starts again');
+  console.log(fails? fails+' FAILED':'ALL OK'); await b.close();
+})();

@@ -1,0 +1,72 @@
+# 37 Player tests
+
+Browser tests that drive real Chrome through Puppeteer, against a **test copy**
+of `../37-player.html` (the real file is never changed) and a local copy of
+`../sync.php`. Written while building shared-library sync and screen-off
+playback (October 2026); each prints `ok` / `FAIL` lines and ends with
+`ALL OK` or `N FAILED`.
+
+## Setting up (once)
+
+Needs Node, PHP (command line), Python 3, ffmpeg and Chrome or Chromium.
+
+```
+cd tests
+npm install                 # puppeteer-core only; it uses your own Chrome
+./make-fixtures.sh          # makes the test audio in tests/www (about 1.3 GB, mostly WAVs)
+```
+
+## Running
+
+```
+CHROME=/usr/bin/google-chrome ./run-all.sh            # everything, ~15 minutes
+CHROME=/usr/bin/google-chrome ./run-all.sh miss play  # some
+```
+
+`run-all.sh` builds the test copy, starts the two servers, makes a fresh
+shared library for each test and prints one line per test. Each test's full
+output (and any screenshots) goes to `tests/shots/`.
+
+By hand: `./serve.sh` in one terminal (servers on ports 8861 and 8870), then
+`node miss.js "$(./new-library.sh)"` in another. `e2e.js` takes two codes:
+`node e2e.js "$(./new-library.sh)" "$(./new-library.sh)"`.
+
+## How it fits together
+
+- `debug-hooks.js` — the app's functions the tests reach (`window.__dbg`,
+  `__dbg3`, `__st`, …). Top-level functions aren't on `window`, hence hooks.
+  If the app renames something a hook uses, the test copy fails to load: fix
+  the hook here.
+- `make-debug-copy.py` — app + hooks → `www/37-player.html`. Also lets a test
+  pretend there's something to sync (`window.__fakeOut`).
+- `engine/` — the sync merge engine's tests, in plain Node, after
+  `extract-engine.py` pulls the `SYNC-MERGE:BEGIN/END` block out of the app.
+- The phone/tablet tests emulate a touch screen and simulate the app leaving
+  the screen (`document.hidden`). That tests 37 Player's logic only; what a
+  real phone does has to be checked on the phone, with Settings → Playback →
+  Playback log.
+
+## The tests
+
+| Test | What it checks |
+|---|---|
+| e2e | Joining from Settings, two devices syncing, a second library |
+| fold | Folders and playlists moving and deleting across devices |
+| rev | Review changes: arrows, dependencies, applying |
+| part | Partial sync: what comes, what stays, deleting |
+| dup | The same recordings imported on two devices are matched |
+| ipad | Touch: selecting, dragging, folders (iPad emulation) |
+| miss, miss2 | Tracks not arrived yet: banner, "waiting for (device)", clearing when they land; miss2 in the order an import writes |
+| play | Pressing play on a track still downloading: one download, no restarts, never starts by itself |
+| bridge3 | Screen off: silent loop through track → silence → track, lock-screen buttons |
+| stoplock | Stops keep the lock screen ready; ▶ there continues |
+| ph | Pausing off screen keeps the lock screen ready; ▶ resumes |
+| pausesync | Syncing after a pause keeps the paused track on the lock screen |
+| awk2 | "Keep syncing with the screen off": starts, gives way to playing, resumes, stops when done |
+| pk2 | Waveforms on the server: flat ones never sent, real ones replace flat ones |
+| crash | A track whose analysis closed the page is skipped afterwards |
+| retry2 | Flat stand-in waveforms repaired; Check for updates reads the version |
+| wav, long | Long WAV/MP3 analysed in pieces: same loudness and waveform as whole |
+| stop | The list of earlier names sits under the field on a touch screen |
+| af | Autofill off on text fields; viewport resizes for the keyboard |
+| big413 | A file the server refuses as too big isn't sent again at every sync, and the status says so |
