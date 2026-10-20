@@ -29,6 +29,7 @@ A playlist player for live sessions at Kadampa centers: chanting, prayers, manda
 
 - **IndexedDB `temple-sound-library`.** Never rename it, or every user loses their library. Stores: `state`, `audio`, `artwork`. Audio and artwork are keyed by track ID; IDs never change.
 - **State is split** into the library (`library`, `tree`, `rev`) and the view (settings, session). The library is written only when its hash changes, and only if no other window has written since (`idbWriteLibraryIfCurrent`). A BroadcastChannel keeps other windows live.
+- **Old windows:** two windows on one computer share one library, so a window left open on an old version syncs by old rules (a 1.3.021 window and a 1.3.045 one re-saved the library every 3 minutes all night). Each window announces its version on BroadcastChannel `37player-version`; one that hears of a newer version stops syncing and asks to be reloaded (1.3.047). Devices also strip local-only fields (`SYNC_LOCAL_TRACK_FIELDS`) from the shared library as they receive it (1.3.046).
 - **Rule for all code:** `root.library` and `root.tree` can be replaced at any moment by another window or a sync. Hold IDs, never long-lived object references.
 - **`sw.js`** can't be inlined (a spec restriction). It caches only the app page and `help.json`, network-first, and skips Range requests.
 - **Help** is Markdown in `help/NNN Title.md`. It's embedded into the HTML because a `file://` copy can't fetch `help.json`. It's English only, by design.
