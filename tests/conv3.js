@@ -67,6 +67,16 @@ const import_ = (p, names)=> p.evaluate(async(names)=>{
   console.log('B:', JSON.stringify(bt));
   ok(bt && bt.file === 'talk.mp3' && !bt.nc && !bt.orig, 'on B the track is talk.mp3, unmarked, with no original');
   ok(isMp3(await stored(B, talk.id)), 'B has the MP3 itself');
+  // Only the converted files were sent, never the WMA or Apple Lossless originals.
+  {
+    const fs = require('fs'), path = require('path');
+    const dir = path.join(__dirname, 'syncdata', CODE.split(' ')[0], 'audio');
+    const heads = fs.existsSync(dir) ? fs.readdirSync(dir).map(f=> fs.readFileSync(path.join(dir, f)).subarray(0, 12)) : [];
+    const wma = heads.filter(h=> h[0] === 0x30 && h[1] === 0x26 && h[2] === 0xB2 && h[3] === 0x75).length;
+    const m4a = heads.filter(h=> h.subarray(4, 8).toString('latin1') === 'ftyp').length;
+    console.log('server audio files:', heads.length, 'WMA:', wma, 'MP4/M4A:', m4a);
+    ok(heads.length >= 3 && wma === 0 && m4a === 0, 'the server got only MP3s, never the originals');
+  }
 
   // Library cleanup: discard the kept originals.
   await A.evaluate(()=> window.__dbg4.settings()); await sleep(400);

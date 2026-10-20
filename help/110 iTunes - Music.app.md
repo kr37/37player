@@ -41,6 +41,16 @@ Volume adjustments made in 37 Player, and its evening out, don't come along: the
 
 Music.app and iTunes play one track straight into the next — but only smoothly when the two are alike. When the next track is a different file type (MP3 after AAC), or has a different sample rate (44.1 kHz after 48 kHz, say) or a different number of channels (mono after stereo), the player has to reset its audio output between them, and you hear a click, dropout, short gap, or worse.
 
-37 Player itself doesn't have this problem, but a library headed for Music.app or iTunes is better standardized first: Settings → **Library standardization** converts, in the background, every file to the same format — AAC, stereo, at one sample rate — so every track matches its neighbours. It also shrinks uncompressed files like WAV a great deal.
+37 Player itself doesn't have this problem, so there's no need to change the library for it. Instead, when exporting with **Portable**, tick **Convert to the preferred format**: every file in the export comes out alike, and the library stays as it is. For a stricter match, set the preferred format (Settings → **File format**) to **Best for Apple** (AAC, 44.1 kHz, stereo), or choose your own under Custom.
 
-The conversion needs a browser that can create AAC files — usually Safari, or Chrome or Edge on a Mac or Windows; the Library standardization section says so when this one can't. Chrome and Firefox on Linux can't: there, uncompressed files are still made smaller (as Opus), and the rest are left as they are.
+### The library's file format
+
+Settings → **File format** sets one **preferred format** for the library — Standard (MP3 192k, recommended), Best for Apple, Very small, Lossless (FLAC, not recommended: much larger, with no difference you can hear), or Custom — and which files are converted to it:
+
+- **Don't touch my files:** nothing is changed. A file this browser can't play still gets a playable copy, and its original is kept too.
+- **Reduce uncompressed audio** (recommended): WAV and AIFF files are converted as they come in.
+- **Choose the rules:** uncompressed audio, a bitrate above a limit, a sample rate or channel count other than the preferred format's, or less widely playable types (Opus, Ogg, WebM).
+
+The page says what the settings would mean for the library as it is ("12 tracks would be converted…"), with **Convert them now**. In a shared library these settings belong to the library, so a change on one device applies on all of them, and a file about to be converted is never sent before its converted version is ready.
+
+Videos (a recorded teaching, say) can come in too: 37 Player asks whether to take their sound as audio tracks. The video itself isn't kept.

@@ -73,6 +73,8 @@ By hand: `./serve.sh` in one terminal (servers on ports 8861 and 8870), then
 | conv | Files this browser can't play (WMA, ALAC, compressed AIFF) kept and marked at import; AIFF dropped on a playlist comes in as WAV; Playing says how many can't play; Library cleanup's Check again repairs an old 0:00 AIFF |
 | conv3 | Converting: "Convert them now" asks to download the converter, then WMA and Apple Lossless become MP3 in place; the other device in the shared library gets the MP3; a conversion stops when playback starts and is done again after |
 | conv4 | Two windows: converting in one waits while the other plays; with "Only when nothing is playing" off it carries on, and turned back on it stops and waits |
+| conv5 | The File format settings: a WAV converted under the default, kept under "Don't touch my files" (a WMA still converted, its original kept without asking), Choose the rules with custom AAC showing and converting what it would, FLAC asking first, the settings travelling both ways through a shared library |
+| conv6 | Audio from video files (AAC copied out, Vorbis to MP3, a silent video reported, the tracks in the playlist), and a portable export converted to the preferred format |
 | conv2 | The same through a folder import: the playlist keeps its place for the WMA, and another device in the shared library sees it marked |
 | big413 | A file the server refuses as too big isn't sent again at every sync, and the status says so |
 
