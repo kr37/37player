@@ -58,6 +58,16 @@ const clickText = (p, sel, src) => p.evaluate((sel, src)=>{ const re=new RegExp(
   ok(view.rows.length === marked, 'each of them is marked in the list');
   ok(view.rows.some(r=> /Windows Media Audio \(WMA\) needs converting first/.test(r)), 'the WMA row says what needs converting');
 
+  // Pressing play on one: not loaded, said plainly, with Convert.
+  const wmaItem = await p.evaluate(()=>{ const r = window.__dbg.getRoot(); const t = r.library.find(t=> t.filename === 'talk.wma'); return r.tree[0].items.find(it=> it.refId === t.id).id; });
+  await p.evaluate((id)=> window.__play(id), wmaItem); await sleep(800);
+  const dlg = await p.evaluate(()=> document.querySelector('.modal')?.innerText || '');
+  const st = await p.evaluate(()=> window.__st());
+  console.log('play pressed:', JSON.stringify(dlg), JSON.stringify({cur: st.cur, paused: st.paused}));
+  ok(/This track can't be played/.test(dlg) && /Windows Media Audio \(WMA\) needs converting first/.test(dlg) && /Convert it now/.test(dlg), 'pressing play on the WMA says it can\'t be played, offering Convert it now');
+  ok(st.cur !== wmaItem && st.paused, 'nothing was loaded, and nothing counts as playing');
+  await p.evaluate(()=> document.querySelector('.modal [data-close]')?.click()); await sleep(300);
+
   // An old import: an AIFF stored as it was, at 0:00, never marked.
   await p.evaluate(async()=>{
     const blob = await (await fetch('/conv/song.aiff')).blob();
