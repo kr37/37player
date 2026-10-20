@@ -14,4 +14,8 @@ f = 'function sharedTransfersOutstanding(){'
 if f in src: src = src.replace(f, f + '\n  if(window.__fakeOut != null) return window.__fakeOut;', 1)
 os.makedirs(os.path.join(here, 'www'), exist_ok=True)
 open(os.path.join(here, 'www', '37-player.html'), 'w', encoding='utf-8').write(src)
-print('tests/www/37-player.html written')
+# old.html: the same, claiming to be an old version (for twowin.js)
+import re
+old = re.sub(r'<meta name="app-version" content="[^"]+"', '<meta name="app-version" content="1.0.000"', src, count=1)
+open(os.path.join(here, 'www', 'old.html'), 'w', encoding='utf-8').write(old)
+print('tests/www/37-player.html and old.html written')

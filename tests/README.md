@@ -69,4 +69,5 @@ By hand: `./serve.sh` in one terminal (servers on ports 8861 and 8870), then
 | wav, long | Long WAV/MP3 analysed in pieces: same loudness and waveform as whole |
 | stop | The list of earlier names sits under the field on a touch screen |
 | af | Autofill off on text fields; viewport resizes for the keyboard |
+| twowin | An older copy in another window is told a newer one is open, stops syncing and asks to be reloaded |
 | big413 | A file the server refuses as too big isn't sent again at every sync, and the status says so |
