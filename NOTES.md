@@ -1,6 +1,6 @@
 # 37 Player: notes
 
-The big picture as of October 2026 (version 1.3.028). Commit messages hold the detail of each change. This file says how the whole thing works and why it is the way it is. Update it when a decision changes.
+The big picture as of October 2026 (version 1.3.048). Commit messages hold the detail of each change. This file says how the whole thing works and why it is the way it is. Update it when a decision changes.
 
 ## What it is
 
@@ -89,6 +89,7 @@ The full plan and history are in the project doc `shared-library-sync.md`. In sh
 ## Non-obvious decisions
 
 - **Re-encode target is AAC 192 kbps, 44.1 kHz, stereo, `.m4a`.** It re-encodes only uncompressed audio, codecs a browser can't play, and odd channel counts or sample rates. An ordinary 192k MP3 is never touched.
+- **Files a browser can't play are kept, never thrown away** (1.3.048). Import stores the original and marks its track `needsConvert` with the format's name ("Windows Media Audio (WMA)", "Apple Lossless (ALAC)", "AIFF-C (ima4)"; `describeFormatProblem`), so playlists keep their place for it and nothing is lost. It's part of the audio group in sync, so every device shows it, and whichever device later converts the file clears it. Marked like a missing track (bold, with the reason under it; `trackCantPlay`, `markRowNotHere`), and Playing says how many in a playlist can't play. Library cleanup → Tracks that can't be played → **Check again** (`recheckStoredAudio`) re-reads stored files with today's decoders: an AIFF an older version left at 0:00 comes back as WAV. Only a playlist file posing as audio is still left out.
 - **Tag edits must never need a re-encode, and must never silently destroy tag information.** Getting the right audio in the right order matters more than perfect metadata.
 - **Backup folders use ID filenames** under "Library - do not touch". Readable names would invite reorganizing. A Portable export is the player-ready copy.
 - **An empty library never backs up,** so a wiped browser can't overwrite a good backup. A backup folder belongs to one copy of the app; another copy only takes it over by an explicit choice.
@@ -134,6 +135,17 @@ The full plan and history are in the project doc `shared-library-sync.md`. In sh
 - **Simulating the screen off:** override `document.hidden` and send `visibilitychange`. This tests the logic only. Real phone behavior has to be checked on a phone, with the playback log.
 
 ## Open / later
+
+- **File formats and converting** (talked through 20 Oct 2026; step 1 done in 1.3.048, above):
+  - **Principle:** keep everything, and let a capable device fix it. A file only needs converting once, anywhere: the result syncs to every device. Works the same with the droplet, Google Drive or no sync at all.
+  - **Converter:** ffmpeg.wasm (the community build of ffmpeg for browsers), our own audio-only LGPL build, hosted on player.37dakinis.net, downloaded once (offered during setup on computers, off by default on phones and iPads) and kept locally, so it works offline. Decodes what browsers can't (ALAC, WMA, compressed AIFF), encodes MP3 and AAC on any browser including Linux Chrome and Firefox, faster than real time, reading big files in place (WORKERFS). Next: a test page to measure the build's size, speed and memory on a 2-hour file, and gapless playback of the results.
+  - **Standardize becomes optional, off by default.** It began for fear of the browser's storage filling up (not borne out) and for Music.app's gapless playback (mismatched rates/channels click between tracks); the latter becomes an **export option** ("Export for Music.app": one rate and channel count in the exported copy), downplayed. Presets: Keep as is (default) / Standard, most universal (MP3 192k, like Tharpa) / Lossless (FLAC) / Very small / Custom (format, bitrate, sample rate, channels: keep by default, thresholds such as "only above N kbps"). A **preferred format** (default MP3 192k) is what files that can't be played are converted to.
+  - **Format settings belong to the shared library,** not the device: one device's choice replaces files everywhere. The library's settings win; the join preview says what that means ("40 of this device's files will be converted, 3.1 GB → 0.6 GB"). Every settings change says its effect before applying ("This will convert 42 tracks…").
+  - **Older iPads and Macs must keep working:** no Opus in shared libraries (old Safari can't play it). The 336 "wrong channel count" (mono) and 15 "wrong sample rate" files on the T470 aren't problems; they stop being counted as such.
+  - **Conversion runs whenever nothing is playing** (not only off the Playing tab), in a worker; playback stops the current file, to be redone.
+  - **Sending big files:** a size threshold; over it, ask "Send as is / Convert first / Not now".
+  - **Library cleanup becomes one page laid out like Help and Settings:** Library info (stats) → Can't play → Duplicates → Missing artwork and tags (the "571 missing…" selector moves here from the Library page; "Find duplicates" stays on the Library page too) → Storage → Format.
+  - **Server conversion** (sync.php with ffmpeg): held back as a fallback; Gen isn't willing to host many centers' or friends' libraries.
 
 - **Sync:** restore from history, borrowing from another library (a one-time import), a QR join code, and a per-library quota.
 - **Sync field tests:** all seven done by 19 Oct 2026, including closing the laptop mid-send, syncing with the iPad's screen off, and Safari keeping the iPad's library through two weeks unused. Playing a session during a big sync led to the long-recording fixes (1.3.030–1.3.032); worth one more run.
