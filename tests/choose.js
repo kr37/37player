@@ -25,8 +25,9 @@ async function device(b, name){
   await p.evaluate(async()=>{ const r = window.__dbg.getRoot(); r.tree = []; r.library = []; delete r.settings.starterPlaylistId; await window.__dbg.saveState(); });
   return p;
 }
-const row = (p, txt)=> p.evaluate((txt)=>{ const r = [...document.querySelectorAll('.ch-row')].find(e=> e.querySelector('.ch-name')?.textContent.trim() === txt); if(!r) return null; return {state: r.querySelector('.ch-box').className.replace('ch-box ', ''), isNew: !!r.querySelector('.ch-new')}; }, txt);
-const tick = (p, txt)=> p.evaluate((txt)=>{ [...document.querySelectorAll('.ch-row')].find(e=> e.querySelector('.ch-name')?.textContent.trim() === txt).click(); }, txt);
+const findRow = (txt)=> [...document.querySelectorAll('.ch-row')].find(e=>{ const n = e.querySelector('.ch-name'); if(!n) return false; const c = n.querySelector('.ch-count'); return (n.textContent.slice(0, c ? n.textContent.length - c.textContent.length : undefined)).trim() === txt; });
+const row = (p, txt)=> p.evaluate((src, txt)=>{ const findRow = eval(src); const r = findRow(txt); if(!r) return null; return {state: r.querySelector('.ch-box').className.replace('ch-box ', ''), isNew: !!r.querySelector('.ch-new')}; }, findRow.toString(), txt);
+const tick = (p, txt)=> p.evaluate((src, txt)=>{ const findRow = eval(src); findRow(txt).querySelector('.ch-box').click(); }, findRow.toString(), txt);
 const addPl = (p, name)=> p.evaluate(async(name)=>{ const r = window.__dbg.getRoot(); const t = r.library[0]; r.tree.push({id:'pl'+Math.random().toString(36).slice(2), kind:'playlist', name, order:r.tree.length, items:[{id:'it'+Math.random().toString(36).slice(2), kind:'track', refId:t.id, order:0}]}); await window.__dbg.saveState(); }, name);
 (async()=>{
   const b = await puppeteer.launch({executablePath: process.env.CHROME || '/usr/bin/google-chrome', args: ['--no-sandbox'], protocolTimeout: 120000});
@@ -54,6 +55,10 @@ const addPl = (p, name)=> p.evaluate(async(name)=>{ const r = window.__dbg.getRo
   let text = await B.evaluate(()=> document.getElementById('reviewPage')?.innerText || '');
   ok(/What's on this device/.test(text) && /has everything in the shared library/.test(text), 'the overview opens, saying this device has everything');
   ok((await row(B, 'Two')).state === 'all' && (await row(B, 'Festival')).state === 'all', 'everything is ticked');
+  // a folder's name opens it; it doesn't tick
+  await B.evaluate(()=> [...document.querySelectorAll('.ch-folder .ch-name')].find(e=> /Festival/.test(e.textContent)).click()); await sleep(200);
+  ok(!!(await row(B, 'Opening')) && (await row(B, 'Festival')).state === 'all', 'tapping a folder\'s name opens it without ticking anything');
+  ok(await B.evaluate(()=> document.getElementById('chClose').textContent) === 'Cancel', 'the overview\'s way out says Cancel');
   await B.screenshot({path: 'shots/choose-all.png'});
   // untick Two and the Festival folder
   await tick(B, 'Two'); await tick(B, 'Festival'); await sleep(200);
@@ -80,6 +85,29 @@ const addPl = (p, name)=> p.evaluate(async(name)=>{ const r = window.__dbg.getRo
   ok(/Brings 1 tracks|Apply/.test(text), 'the footer says what Apply will do: ' + text.replace(/\n/g, ' '));
   await B.evaluate(()=> document.getElementById('chGo').click()); await sleep(2500); await waitIdle(B);
   ok(/Fresh/.test(await names(B)), 'ticked and applied: Fresh is on B');
+  // ---- an album: its tracks come here without its playlists
+  const twoTracks = await A.evaluate(()=>{ const r = window.__dbg.getRoot(); const two = r.tree.find(n=> n.name === 'Two'); return two.items.filter(i=> i.kind === 'track').map(i=> i.refId); });
+  const onB = await B.evaluate(()=> window.__dbg.getRoot().library.map(t=> t.id));
+  const missing = twoTracks.filter(id=> !onB.includes(id));
+  const album = await A.evaluate((ids)=>{ const r = window.__dbg.getRoot(); const tr = r.library.find(t=> ids.includes(t.id)); return tr ? (tr.album || '') : null; }, missing);
+  console.log('album of a track only in Two:', JSON.stringify(album), missing.length);
+  await B.evaluate(()=> document.getElementById('btnSharedReview') && 0); await B.evaluate(()=> window.__choose.open()); await sleep(1200);
+  await B.evaluate(()=> [...document.querySelectorAll('.ch-section-title')][0].click()); await sleep(300);
+  const albumName = album || 'No album';
+  const before = await row(B, albumName);
+  ok(before && before.state !== 'all', 'Albums lists ' + albumName + ', not all here: ' + JSON.stringify(before));
+  await B.screenshot({path: 'shots/choose-albums.png'});
+  await tick(B, albumName); await sleep(200);
+  ok((await row(B, albumName)).state === 'all', 'ticking it ticks the album');
+  await B.evaluate(()=> document.getElementById('chGo').click()); await sleep(2500); await waitIdle(B);
+  const onB2 = await B.evaluate(()=> window.__dbg.getRoot().library.map(t=> t.id));
+  ok(missing.every(id=> onB2.includes(id)) && !/Two/.test(await names(B)), 'the album\'s tracks are on B, without the playlist Two');
+  await B.evaluate(()=> window.__dbg3.sync()); await waitIdle(B);
+  ok(missing.every(id=> onB2.includes(id)) && (await B.evaluate(()=> window.__dbg.getRoot().library.map(t=> t.id))).length === onB2.length, 'and they stay after the next sync');
+  await B.evaluate(()=> window.__choose.open()); await sleep(1200);
+  await B.evaluate(()=> [...document.querySelectorAll('.ch-section-title')][0].click()); await sleep(300);
+  ok((await row(B, albumName)).state === 'all', 'opened again, the album shows as here');
+  await B.evaluate(()=> document.getElementById('chClose').click()); await sleep(300);
   // ---- come by themselves
   await B.evaluate(async()=>{ window.__choose.cfg().autoNew = true; await window.__choose.markAllSeen(); await window.__dbg.saveState(); });
   await addPl(A, 'Fresher'); await A.evaluate(()=> window.__dbg3.sync()); await waitIdle(A);

@@ -375,21 +375,31 @@
   .dup-page{ display:flex; flex-direction:column; }
   /* Review changes (shared library) */
   .rv-page{ display:flex; flex-direction:column; }
+  .sh-status-row{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+  .sh-status-row p{ margin:0; flex:1 1 260px; }
   .sh-mode{ margin:16px 0 4px; display:flex; flex-direction:column; gap:6px; }
   .sh-mode-title{ font-weight:600; }
   .sh-mode label{ display:flex; gap:8px; align-items:center; margin:0; cursor:pointer; }
   .sh-mode input{ width:auto; margin:0; }
   .ch-total{ font-weight:600; margin:6px 0 12px; }
-  .ch-list{ border:1px solid var(--line); border-radius:8px; max-width:760px; }
-  .ch-row{ display:flex; align-items:center; gap:8px; padding:7px 12px; border-top:1px solid var(--line); cursor:pointer; user-select:none; }
+  .ch-wrap{ max-width:600px; margin:0 auto; }
+  .ch-list{ border:1px solid var(--line); border-radius:8px; }
+  .ch-section{ display:flex; align-items:center; gap:4px; margin:22px 0 6px; }
+  .ch-section-title{ font-weight:600; cursor:pointer; }
+  .ch-count{ color:var(--text-dim); font-weight:400; font-size:13px; margin-left:8px; }
+  .ch-row{ display:flex; align-items:center; gap:10px; padding:4px 12px; min-height:44px; border-top:1px solid var(--line); user-select:none; }
+  .ch-row[data-node], .ch-row[data-album]{ cursor:pointer; }
+  .ch-folder .ch-name{ cursor:pointer; }
   .ch-row:first-child{ border-top:0; }
   .ch-row:hover{ background:var(--bg-panel); }
   .ch-folder .ch-name{ font-weight:600; }
   .ch-name{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; display:flex; align-items:center; gap:6px; }
   .ch-size{ color:var(--text-dim); font-size:13px; font-variant-numeric:tabular-nums; white-space:nowrap; }
   .ch-new{ font-size:11px; font-weight:700; color:var(--bg-deep); background:var(--amber); border-radius:999px; padding:1px 7px; }
-  .ch-twist{ background:none; border:0; color:var(--text-dim); font-size:13px; width:18px; padding:0; cursor:pointer; }
-  .ch-box{ width:18px; height:18px; border:1.5px solid var(--text-dim); border-radius:4px; display:inline-flex; align-items:center; justify-content:center; font-size:13px; font-weight:700; flex-shrink:0; }
+  .ch-twist{ background:none; border:0; color:var(--text); font-size:20px; line-height:1; width:36px; height:36px; padding:0; margin:0 2px 0 -6px; cursor:pointer; border-radius:6px; flex-shrink:0; }
+  .ch-twist:hover{ background:var(--bg-panel-raised); }
+  .ch-twist-space{ width:28px; flex-shrink:0; }
+  .ch-box{ width:22px; height:22px; border:1.5px solid var(--text-dim); border-radius:5px; display:inline-flex; align-items:center; justify-content:center; font-size:14px; font-weight:700; flex-shrink:0; background:none; color:inherit; padding:0; cursor:pointer; }
   .ch-box.all, .ch-box.some{ background:var(--amber); border-color:var(--amber); color:var(--bg-deep); }
   .rv-scroll{ flex:1; overflow-y:auto; padding:18px 22px; }
   .rv-head, .rv-list{ max-width:920px; margin:0 auto; }
@@ -1720,7 +1730,12 @@ const STRINGS = {
     "chooseApply": "Apply",
     "chooseNothing": "Tick or untick to change what's on this device.",
     "chooseNew": "New",
-    "chooseLoose": "Tracks in no playlist",
+    "chooseAlbums": "Albums",
+    "chooseAlbumCount": "{n}",
+    "chooseTrackCount": "{n} tracks",
+    "chooseNoAlbum": "No album",
+    "chooseAlbumsNote": "Tick an album to bring its tracks here, to make playlists from them. An album is ticked when all its tracks will be here, partly ticked when some come with a playlist.",
+    "chooseTickLabel": "On this device",
     "chooseSwitchTitle": "Keep only what you choose?",
     "chooseSwitchBody": "This device has everything in the shared library. Taking something off it switches it to “Only what I choose”: new playlists from other devices then wait for you, unless you turn on “come here by themselves” in Settings → Shared library. “Everything in the shared library” switches it back at any time.",
     "chooseSwitchBtn": "Switch and apply",
@@ -2762,7 +2777,12 @@ const STRINGS = {
     "chooseApply": "Aplicar",
     "chooseNothing": "Marca o desmarca para cambiar lo que hay en este dispositivo.",
     "chooseNew": "Nuevo",
-    "chooseLoose": "Pistas que no están en ninguna lista",
+    "chooseAlbums": "Álbumes",
+    "chooseAlbumCount": "{n}",
+    "chooseTrackCount": "{n} pistas",
+    "chooseNoAlbum": "Sin álbum",
+    "chooseAlbumsNote": "Marca un álbum para traer aquí sus pistas y hacer listas con ellas. Un álbum aparece marcado cuando todas sus pistas estarán aquí, y en parte cuando algunas llegan con una lista.",
+    "chooseTickLabel": "En este dispositivo",
     "chooseSwitchTitle": "¿Tener solo lo que elijas?",
     "chooseSwitchBody": "Este dispositivo tiene todo lo de la biblioteca compartida. Quitar algo lo cambia a «Solo lo que yo elija»: las listas nuevas de otros dispositivos te esperarán, salvo que actives «llegan aquí solas» en Ajustes → Biblioteca compartida. «Todo lo de la biblioteca compartida» lo devuelve en cualquier momento.",
     "chooseSwitchBtn": "Cambiar y aplicar",
@@ -3804,7 +3824,12 @@ const STRINGS = {
     "chooseApply": "Appliquer",
     "chooseNothing": "Cochez ou décochez pour changer ce qui est sur cet appareil.",
     "chooseNew": "Nouveau",
-    "chooseLoose": "Pistes dans aucune liste",
+    "chooseAlbums": "Albums",
+    "chooseAlbumCount": "{n}",
+    "chooseTrackCount": "{n} pistes",
+    "chooseNoAlbum": "Sans album",
+    "chooseAlbumsNote": "Cochez un album pour en apporter les pistes ici et en faire des listes. Un album est coché quand toutes ses pistes seront ici, en partie coché quand certaines viennent avec une liste.",
+    "chooseTickLabel": "Sur cet appareil",
     "chooseSwitchTitle": "Ne garder que ce que vous choisissez ?",
     "chooseSwitchBody": "Cet appareil a tout ce qui est dans la bibliothèque partagée. Y retirer quelque chose le fait passer à « Seulement ce que je choisis » : les nouvelles listes des autres appareils vous attendront alors, sauf si vous activez « arrivent d'elles-mêmes » dans Réglages → Bibliothèque partagée. « Tout ce qui est dans la bibliothèque partagée » le rétablit à tout moment.",
     "chooseSwitchBtn": "Changer et appliquer",
@@ -4846,7 +4871,12 @@ const STRINGS = {
     "chooseApply": "Aplicar",
     "chooseNothing": "Marque ou desmarque para mudar o que há neste dispositivo.",
     "chooseNew": "Novo",
-    "chooseLoose": "Faixas fora de playlists",
+    "chooseAlbums": "Álbuns",
+    "chooseAlbumCount": "{n}",
+    "chooseTrackCount": "{n} faixas",
+    "chooseNoAlbum": "Sem álbum",
+    "chooseAlbumsNote": "Marque um álbum para trazer as faixas dele e fazer playlists com elas. Um álbum fica marcado quando todas as faixas estarão aqui, e em parte quando algumas vêm com uma playlist.",
+    "chooseTickLabel": "Neste dispositivo",
     "chooseSwitchTitle": "Ter só o que você escolher?",
     "chooseSwitchBody": "Este dispositivo tem tudo da biblioteca compartilhada. Tirar algo muda para “Só o que eu escolher”: as playlists novas de outros dispositivos vão esperar por você, a menos que você ative “chegam sozinhas” em Configurações → Biblioteca compartilhada. “Tudo da biblioteca compartilhada” volta a qualquer momento.",
     "chooseSwitchBtn": "Mudar e aplicar",
@@ -5888,7 +5918,12 @@ const STRINGS = {
     "chooseApply": "Anwenden",
     "chooseNothing": "Setze oder entferne Haken, um zu ändern, was auf diesem Gerät ist.",
     "chooseNew": "Neu",
-    "chooseLoose": "Titel in keiner Playlist",
+    "chooseAlbums": "Alben",
+    "chooseAlbumCount": "{n}",
+    "chooseTrackCount": "{n} Titel",
+    "chooseNoAlbum": "Ohne Album",
+    "chooseAlbumsNote": "Hake ein Album an, um seine Titel hierher zu holen und Playlists daraus zu machen. Ein Album ist angehakt, wenn alle seine Titel hier sein werden, teilweise, wenn manche mit einer Playlist kommen.",
+    "chooseTickLabel": "Auf diesem Gerät",
     "chooseSwitchTitle": "Nur behalten, was du auswählst?",
     "chooseSwitchBody": "Dieses Gerät hat alles aus der gemeinsamen Bibliothek. Etwas davon zu entfernen stellt es auf „Nur was ich auswähle“ um: Neue Playlists anderer Geräte warten dann auf dich, außer du schaltest „kommen von selbst“ in Einstellungen → Gemeinsame Bibliothek ein. „Alles aus der gemeinsamen Bibliothek“ stellt es jederzeit zurück.",
     "chooseSwitchBtn": "Umstellen und anwenden",
@@ -6930,7 +6965,12 @@ const STRINGS = {
     "chooseApply": "应用",
     "chooseNothing": "勾选或取消勾选来改变这台设备上的内容。",
     "chooseNew": "新",
-    "chooseLoose": "不在任何播放列表中的曲目",
+    "chooseAlbums": "专辑",
+    "chooseAlbumCount": "{n}",
+    "chooseTrackCount": "{n} 首曲目",
+    "chooseNoAlbum": "无专辑",
+    "chooseAlbumsNote": "勾选专辑可把其曲目带到这里，用来制作播放列表。专辑的所有曲目都会在这里时显示为勾选；部分曲目随播放列表而来时显示为部分勾选。",
+    "chooseTickLabel": "在此设备上",
     "chooseSwitchTitle": "只保留你选择的内容？",
     "chooseSwitchBody": "这台设备拥有共享曲库中的全部内容。移除任何内容会把它切换为“只要我选择的”：之后其他设备的新播放列表会等待你选择，除非你在 设置 → 共享曲库 中开启“自动来到这里”。随时可以切换回“共享曲库中的所有内容”。",
     "chooseSwitchBtn": "切换并应用",
@@ -7972,7 +8012,12 @@ const STRINGS = {
     "chooseApply": "Áp dụng",
     "chooseNothing": "Chọn hoặc bỏ chọn để thay đổi những gì có trên thiết bị này.",
     "chooseNew": "Mới",
-    "chooseLoose": "Bài không thuộc danh sách phát nào",
+    "chooseAlbums": "Album",
+    "chooseAlbumCount": "{n}",
+    "chooseTrackCount": "{n} bài",
+    "chooseNoAlbum": "Không có album",
+    "chooseAlbumsNote": "Chọn một album để mang các bài của nó về đây và tạo danh sách phát. Album được chọn khi mọi bài của nó sẽ có ở đây, chọn một phần khi một số bài đến cùng một danh sách phát.",
+    "chooseTickLabel": "Trên thiết bị này",
     "chooseSwitchTitle": "Chỉ giữ những gì bạn chọn?",
     "chooseSwitchBody": "Thiết bị này có mọi thứ trong thư viện chung. Gỡ bất cứ thứ gì sẽ chuyển nó sang “Chỉ những gì tôi chọn”: danh sách phát mới từ thiết bị khác sẽ chờ bạn, trừ khi bạn bật “tự về đây” trong Cài đặt → Thư viện chung. “Mọi thứ trong thư viện chung” chuyển lại bất cứ lúc nào.",
     "chooseSwitchBtn": "Chuyển và áp dụng",
@@ -9014,7 +9059,12 @@ const STRINGS = {
     "chooseApply": "Εφαρμογή",
     "chooseNothing": "Επιλέξτε ή αποεπιλέξτε για να αλλάξετε τι υπάρχει σε αυτή τη συσκευή.",
     "chooseNew": "Νέο",
-    "chooseLoose": "Κομμάτια εκτός λιστών",
+    "chooseAlbums": "Άλμπουμ",
+    "chooseAlbumCount": "{n}",
+    "chooseTrackCount": "{n} κομμάτια",
+    "chooseNoAlbum": "Χωρίς άλμπουμ",
+    "chooseAlbumsNote": "Επιλέξτε ένα άλμπουμ για να έρθουν εδώ τα κομμάτια του και να φτιάξετε λίστες με αυτά. Ένα άλμπουμ είναι επιλεγμένο όταν όλα τα κομμάτια του θα είναι εδώ, μερικώς όταν κάποια έρχονται με μια λίστα.",
+    "chooseTickLabel": "Σε αυτή τη συσκευή",
     "chooseSwitchTitle": "Να κρατά μόνο ό,τι επιλέγετε;",
     "chooseSwitchBody": "Αυτή η συσκευή έχει όλα όσα υπάρχουν στην κοινή βιβλιοθήκη. Αν αφαιρέσετε κάτι, περνά στο «Μόνο ό,τι επιλέγω»: οι νέες λίστες από άλλες συσκευές θα σας περιμένουν, εκτός αν ενεργοποιήσετε το «έρχονται μόνες τους» στις Ρυθμίσεις → Κοινή βιβλιοθήκη. Το «Όλα όσα έχει η κοινή βιβλιοθήκη» την επαναφέρει οποτεδήποτε.",
     "chooseSwitchBtn": "Αλλαγή και εφαρμογή",
@@ -10056,7 +10106,12 @@ const STRINGS = {
     "chooseApply": "Applica",
     "chooseNothing": "Spunta o togli la spunta per cambiare ciò che c'è su questo dispositivo.",
     "chooseNew": "Nuovo",
-    "chooseLoose": "Brani in nessuna playlist",
+    "chooseAlbums": "Album",
+    "chooseAlbumCount": "{n}",
+    "chooseTrackCount": "{n} brani",
+    "chooseNoAlbum": "Senza album",
+    "chooseAlbumsNote": "Spunta un album per portarne qui i brani e farne delle playlist. Un album è spuntato quando tutti i suoi brani saranno qui, in parte quando alcuni arrivano con una playlist.",
+    "chooseTickLabel": "Su questo dispositivo",
     "chooseSwitchTitle": "Tenere solo ciò che scegli?",
     "chooseSwitchBody": "Questo dispositivo ha tutto ciò che c'è nella libreria condivisa. Togliere qualcosa lo passa a «Solo ciò che scelgo»: le nuove playlist degli altri dispositivi ti aspetteranno, a meno che non attivi «arrivano da sole» in Impostazioni → Libreria condivisa. «Tutto ciò che c'è nella libreria condivisa» lo riporta indietro in qualsiasi momento.",
     "chooseSwitchBtn": "Cambia e applica",
@@ -28596,18 +28651,24 @@ function chooseFolderState(n){
   const k = pls.filter(id=> chooseState.ticked.has(id)).length;
   return k === 0 ? "none" : k === pls.length ? "all" : "some";
 }
-// Tracks this device would hold: those of ticked playlists, plus ticked
-// tracks that are in no playlist.
+// Tracks this device would hold: those of ticked playlists, plus tracks
+// ticked on their own (through an album).
 function chooseTrackSet(){
   const st = chooseState, doc = st.remote.doc, out = new Set();
   (function w(a){ (a || []).forEach(n=>{ if(n.kind === "playlist" && st.ticked.has(n.id)) chooseRefs(n).forEach(id=> out.add(id)); if(n.children) w(n.children); }); })(doc.tree);
-  chooseLoose().forEach(tr=>{ if(st.ticked.has(tr.id)) out.add(tr.id); });
+  doc.tracks.forEach(tr=>{ if(st.ticked.has(tr.id)) out.add(tr.id); });
   return out;
 }
-function chooseLoose(){
-  const doc = chooseState.remote.doc, used = new Set();
-  (function w(a){ (a || []).forEach(n=>{ chooseRefs(n).forEach(id=> used.add(id)); if(n.children) w(n.children); }); })(doc.tree);
-  return doc.tracks.filter(tr=> !used.has(tr.id));
+// The shared library's tracks by album, A to Z ("No album" last).
+function chooseAlbums(){
+  const groups = new Map();
+  chooseState.remote.doc.tracks.forEach(tr=>{
+    const key = (tr.album || "").trim();
+    if(!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(tr);
+  });
+  return [...groups.entries()].map(([name, tracks])=> ({name, tracks, ids: tracks.map(x=> x.id)}))
+    .sort((x, y)=> !x.name ? 1 : !y.name ? -1 : x.name.localeCompare(y.name, undefined, {sensitivity: "base"}));
 }
 function chooseSize(ids){
   const byId = new Map(chooseState.remote.doc.tracks.map(tr=> [tr.id, tr]));
@@ -28619,74 +28680,89 @@ function renderSharedChoose(){
   const doc = st.remote.doc, scroll = page.querySelector("#rvScroll");
   const keepScroll = scroll.scrollTop;
   const full = !st.cfg.partial;
-  const box = (state)=> `<span class="ch-box ${state}" aria-hidden="true">${state === "all" ? "✓" : state === "some" ? "–" : ""}</span>`;
+  const box = (state, attr)=> `<button type="button" class="ch-box ${state}" ${attr} aria-label="${escapeHtmlText(t("chooseTickLabel"))}">${state === "all" ? "✓" : state === "some" ? "–" : ""}</button>`;
+  const twist = (id, open)=> `<button class="ch-twist" type="button" data-twist="${escapeHtmlText(id)}" aria-expanded="${open}">${open ? "▾" : "▸"}</button>`;
+  const want = chooseTrackSet();
   const rowsHtml = [];
   (function w(a, depth){
     (a || []).slice().sort((x, y)=> (x.order || 0) - (y.order || 0)).forEach(n=>{
-      const isNew = choosePlaylistsIn(n).concat(n.kind === "folder" ? [n.id] : []).some(id=> st.fresh.has(id)) || st.fresh.has(n.id);
+      const pad = `style="padding-left:${10 + depth * 22}px"`;
       if(n.kind === "folder"){
-        const state = chooseFolderState(n), open = st.open.has(n.id);
-        rowsHtml.push(`<div class="ch-row ch-folder" data-id="${escapeHtmlText(n.id)}" style="padding-left:${12 + depth * 20}px">
-          <button class="ch-twist" type="button" data-twist="${escapeHtmlText(n.id)}">${open ? "▾" : "▸"}</button>${box(state)}
-          <span class="ch-name">${ICON_FOLDER} ${escapeHtmlText(n.name || "")}</span>${isNew ? `<span class="ch-new">${escapeHtmlText(t("chooseNew"))}</span>` : ""}
+        const isNew = chooseSubtree(n).some(id=> st.fresh.has(id)), open = st.open.has(n.id);
+        rowsHtml.push(`<div class="ch-row ch-folder" ${pad}>${twist(n.id, open)}${box(chooseFolderState(n), `data-node="${escapeHtmlText(n.id)}"`)}
+          <span class="ch-name" data-twist="${escapeHtmlText(n.id)}">${ICON_FOLDER} ${escapeHtmlText(n.name || "")}</span>${isNew ? `<span class="ch-new">${escapeHtmlText(t("chooseNew"))}</span>` : ""}
           <span class="ch-size">${fmtBytes(chooseSize(chooseRefs(n)))}</span></div>`);
         if(open) w(n.children, depth + 1);
       } else if(n.kind === "playlist"){
-        rowsHtml.push(`<div class="ch-row" data-id="${escapeHtmlText(n.id)}" style="padding-left:${34 + depth * 20}px">${box(st.ticked.has(n.id) ? "all" : "none")}
+        rowsHtml.push(`<div class="ch-row" ${pad} data-node="${escapeHtmlText(n.id)}"><span class="ch-twist-space"></span>${box(st.ticked.has(n.id) ? "all" : "none", `data-node="${escapeHtmlText(n.id)}"`)}
           <span class="ch-name">${escapeHtmlText(n.name || "")}</span>${st.fresh.has(n.id) ? `<span class="ch-new">${escapeHtmlText(t("chooseNew"))}</span>` : ""}
           <span class="ch-size">${fmtBytes(chooseSize(chooseRefs(n)))}</span></div>`);
       }
     });
   })(doc.tree, 0);
-  const loose = chooseLoose();
-  if(loose.length){
-    const k = loose.filter(tr=> st.ticked.has(tr.id)).length, state = k === 0 ? "none" : k === loose.length ? "all" : "some", open = st.open.has("\u0000loose");
-    rowsHtml.push(`<div class="ch-row ch-folder" data-loose="1" style="padding-left:12px"><button class="ch-twist" type="button" data-twist="\u0000loose">${open ? "▾" : "▸"}</button>${box(state)}
-      <span class="ch-name">${escapeHtmlText(t("chooseLoose"))}</span><span class="ch-size">${fmtBytes(chooseSize(loose.map(x=> x.id)))}</span></div>`);
-    if(open) loose.forEach(tr=> rowsHtml.push(`<div class="ch-row" data-track="${escapeHtmlText(tr.id)}" style="padding-left:54px">${box(st.ticked.has(tr.id) ? "all" : "none")}<span class="ch-name">${escapeHtmlText(tr.name || "")}</span><span class="ch-size">${fmtBytes(tr.fileSize || 0)}</span></div>`));
-  }
+  // Albums: ticked when all their tracks will be here, however they come.
+  const albums = chooseAlbums(), albumsOpen = st.open.has("\u0000albums");
+  const albumRows = albumsOpen ? albums.map((al, i)=>{
+    const k = al.ids.filter(id=> want.has(id)).length, state = k === 0 ? "none" : k === al.ids.length ? "all" : "some";
+    return `<div class="ch-row" data-album="${i}" style="padding-left:10px"><span class="ch-twist-space"></span>${box(state, `data-album="${i}"`)}
+      <span class="ch-name">${escapeHtmlText(al.name || t("chooseNoAlbum"))}<span class="ch-count">${escapeHtmlText(t("chooseTrackCount", {n: al.ids.length}))}</span></span>
+      <span class="ch-size">${fmtBytes(chooseSize(al.ids))}</span></div>`;
+  }).join("") : "";
   // Totals, and what Apply would do.
-  const allTracks = doc.tracks.map(x=> x.id), want = chooseTrackSet();
+  const allTracks = doc.tracks.map(x=> x.id), sharedIds = new Set(allTracks);
   const haveNow = new Set(root.library.map(x=> x.id));
-  const bring = [...want].filter(id=> !haveNow.has(id)), drop = [...haveNow].filter(id=> !want.has(id) && allTracks.includes(id));
-  const changedNodes = [...new Set([...st.ticked, ...st.start])].filter(id=> st.ticked.has(id) !== st.start.has(id));
-  scroll.innerHTML = `<h2 class="settings-h2">${escapeHtmlText(t("chooseTitle"))}</h2>
+  const bring = [...want].filter(id=> !haveNow.has(id)), drop = [...haveNow].filter(id=> !want.has(id) && sharedIds.has(id));
+  const changed = bring.length || drop.length || [...new Set([...st.ticked, ...st.start])].some(id=> st.ticked.has(id) !== st.start.has(id));
+  scroll.innerHTML = `<div class="ch-wrap"><h2 class="settings-h2">${escapeHtmlText(t("chooseTitle"))}</h2>
     <p class="settings-note">${escapeHtmlText(t(full ? "chooseIntroAll" : "chooseIntroPartial"))}</p>
     <p class="ch-total">${escapeHtmlText(t("chooseTotals", {here: fmtBytes(chooseSize(want)), all: fmtBytes(chooseSize(allTracks))}))}</p>
-    <div class="ch-list">${rowsHtml.join("")}</div>`;
+    <div class="ch-list">${rowsHtml.join("")}</div>
+    <div class="ch-section"><button class="ch-twist" type="button" data-twist="\u0000albums" aria-expanded="${albumsOpen}">${albumsOpen ? "▾" : "▸"}</button>
+      <span class="ch-section-title" data-twist="\u0000albums">${escapeHtmlText(t("chooseAlbums"))} <span class="ch-count">${escapeHtmlText(t("chooseAlbumCount", {n: albums.length}))}</span></span></div>
+    ${albumsOpen ? `<p class="settings-note">${escapeHtmlText(t("chooseAlbumsNote"))}</p><div class="ch-list">${albumRows}</div>` : ""}</div>`;
   scroll.scrollTop = keepScroll;
   const summary = [];
   if(bring.length) summary.push(t("chooseBring", {n: bring.length, size: fmtBytes(chooseSize(bring))}));
   if(drop.length) summary.push(t("chooseRemove", {n: drop.length}));
   const foot = page.querySelector("#rvFoot");
   foot.innerHTML = `<span class="rv-summary"></span><span style="flex:1"></span>
-    <button class="btn" type="button" id="chClose">${escapeHtmlText(t("closeBtn"))}</button>
-    <button class="btn primary" type="button" id="chGo" ${changedNodes.length ? "" : "disabled"}>${escapeHtmlText(t("chooseApply"))}</button>`;
-  foot.querySelector(".rv-summary").textContent = summary.join(" · ") || (changedNodes.length ? "" : t("chooseNothing"));
+    <button class="btn" type="button" id="chClose">${escapeHtmlText(t("cancel"))}</button>
+    <button class="btn primary" type="button" id="chGo" ${changed ? "" : "disabled"}>${escapeHtmlText(t("chooseApply"))}</button>`;
+  foot.querySelector(".rv-summary").textContent = summary.join(" · ") || (changed ? "" : t("chooseNothing"));
   foot.querySelector("#chClose").addEventListener("click", closeSharedChoose);
   foot.querySelector("#chGo").addEventListener("click", applySharedChoose);
-  scroll.querySelectorAll("[data-twist]").forEach(b=> b.addEventListener("click", (e)=>{
+  // Folders open and close by their arrow or name; the box ticks.
+  scroll.querySelectorAll("[data-twist]").forEach(el=> el.addEventListener("click", (e)=>{
     e.stopPropagation();
-    const id = b.dataset.twist;
+    const id = el.dataset.twist;
     if(st.open.has(id)) st.open.delete(id); else st.open.add(id);
     renderSharedChoose();
   }));
-  scroll.querySelectorAll(".ch-row").forEach(row=> row.addEventListener("click", ()=>{
-    const flat = new Map(); (function w(a, parentId){ (a || []).forEach(n=>{ flat.set(n.id, Object.assign({parentId}, n)); if(n.children) w(n.children, n.id); }); })(doc.tree, null);
-    const set = (ids, on)=> ids.forEach(id=>{ if(on) st.ticked.add(id); else st.ticked.delete(id); });
-    if(row.dataset.loose){ const ids = loose.map(x=> x.id), on = !ids.every(id=> st.ticked.has(id)); set(ids, on); }
-    else if(row.dataset.track){ const id = row.dataset.track; set([id], !st.ticked.has(id)); }
-    else {
-      const n = flat.get(row.dataset.id);
-      if(!n) return;
-      const on = n.kind === "folder" ? chooseFolderState(n) !== "all" : !st.ticked.has(n.id);
-      set(chooseSubtree(n), on);
-      // The folders around a ticked playlist come with it.
-      if(on) for(let p = (flat.get(n.id) || {}).parentId; p; p = (flat.get(p) || {}).parentId) st.ticked.add(p);
-    }
-    // A folder with nothing ticked inside goes too.
-    (function tidy(a){ (a || []).forEach(n=>{ if(n.kind === "folder"){ tidy(n.children); const pls = choosePlaylistsIn(n); if(pls.length){ if(pls.some(id=> st.ticked.has(id))) st.ticked.add(n.id); else st.ticked.delete(n.id); } } }); })(doc.tree);
+  const flat = new Map(); (function w(a, parentId){ (a || []).forEach(n=>{ flat.set(n.id, Object.assign({parentId}, n)); if(n.children) w(n.children, n.id); }); })(doc.tree, null);
+  const set = (ids, on)=> ids.forEach(id=>{ if(on) st.ticked.add(id); else st.ticked.delete(id); });
+  const tidy = ()=> (function t(a){ (a || []).forEach(n=>{ if(n.kind === "folder"){ t(n.children); const pls = choosePlaylistsIn(n); if(pls.length){ if(pls.some(id=> st.ticked.has(id))) st.ticked.add(n.id); else st.ticked.delete(n.id); } } }); })(doc.tree);
+  const tickNode = (id)=>{
+    const n = flat.get(id);
+    if(!n) return;
+    const on = n.kind === "folder" ? chooseFolderState(n) !== "all" : !st.ticked.has(n.id);
+    set(chooseSubtree(n), on);
+    if(on) for(let p = n.parentId; p; p = (flat.get(p) || {}).parentId) st.ticked.add(p); // a playlist's folders come with it
+    tidy();
     renderSharedChoose();
+  };
+  const tickAlbum = (i)=>{
+    const al = albums[i];
+    if(!al) return;
+    set(al.ids, !al.ids.every(id=> want.has(id)));
+    renderSharedChoose();
+  };
+  scroll.querySelectorAll(".ch-box").forEach(el=> el.addEventListener("click", (e)=>{
+    e.stopPropagation();
+    if(el.dataset.node) tickNode(el.dataset.node); else if(el.dataset.album) tickAlbum(+el.dataset.album);
+  }));
+  // A playlist's or an album's whole row ticks too (not a folder's: its name opens it).
+  scroll.querySelectorAll(".ch-row[data-node], .ch-row[data-album]").forEach(row=> row.addEventListener("click", ()=>{
+    if(row.dataset.node) tickNode(row.dataset.node); else tickAlbum(+row.dataset.album);
   }));
 }
 async function applySharedChoose(){
@@ -28781,12 +28857,12 @@ async function sharedBringNewOnes(cfg){
   return (await sharedApplySelection(ticked)) === true;
 }
 // What's on this device, as a selection: its folders and playlists, and
-// the tracks it holds that are in no playlist in the shared library (a
-// playlist's tracks come and go with the playlist).
+// the tracks it holds that no playlist here uses (brought on their own,
+// with an album). A playlist's tracks come and go with the playlist.
 function sharedHereSelection(remoteDoc){
   const sel = new Set(), used = new Set();
   (function w(a){ (a || []).forEach(n=>{ sel.add(n.id); if(n.children) w(n.children); }); })(root.tree);
-  (function w(a){ (a || []).forEach(n=>{ (n.items || []).forEach(it=>{ if(it.kind === "track") used.add(it.refId); }); if(n.children) w(n.children); }); })(remoteDoc.tree);
+  (function w(a){ (a || []).forEach(n=>{ (n.items || []).forEach(it=>{ if(it.kind === "track") used.add(it.refId); }); if(n.children) w(n.children); }); })(root.tree);
   root.library.forEach(x=>{ if(!used.has(x.id)) sel.add(x.id); });
   return sel;
 }
@@ -28860,9 +28936,9 @@ function renderSharedSection(body){
   }
   body.innerHTML = `
     <p id="shJoined"></p>
-    <p id="shStatus" class="settings-note"></p>
+    <div class="sh-status-row"><p id="shStatus" class="settings-note"></p><button class="btn primary" id="shSyncNow" type="button">${escapeHtmlText(t("sharedSyncNowBtn"))}</button></div>
     <p id="shConflicts" class="settings-note" style="color:var(--rust-bright);"></p>
-    <div class="settings-row"><button class="btn primary" id="shSyncNow" type="button">${escapeHtmlText(t("sharedSyncNowBtn"))}</button>
+    <div class="settings-row">
       <button class="btn" id="shChoose" type="button">${escapeHtmlText(t("chooseBtn"))}</button>
       ${cfg.reviewMode ? `<button class="btn" id="shReview" type="button">${escapeHtmlText(t("rvOpenBtn"))}</button>` : ""}</div>
     <div class="sh-mode" role="radiogroup" aria-label="${escapeHtmlText(t("onDeviceLabel"))}">
@@ -28993,7 +29069,7 @@ function renderSharedStatusInto(){
   status.textContent = s;
   // Who keeps backups of the shared library.
   let kp = document.getElementById("shKeepers");
-  if(!kp){ kp = document.createElement("p"); kp.id = "shKeepers"; kp.className = "settings-note"; kp.style.whiteSpace = "pre-line"; status.after(kp); }
+  if(!kp){ kp = document.createElement("p"); kp.id = "shKeepers"; kp.className = "settings-note"; kp.style.whiteSpace = "pre-line"; (status.closest(".sh-status-row") || status).after(kp); }
   const kl = keeperLines();
   kp.textContent = (sharedCoversLibrary() ? t("sharedCoveredTooltip") + "\n" : "") + (kl.length ? kl.join("\n") : t("keeperNone"));
   renderSharedAwakeRow();
