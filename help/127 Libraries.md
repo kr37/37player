@@ -21,7 +21,7 @@ Two windows can have two different libraries open at the same time. A new window
 
 ### What belongs to each library, and what to the device
 
-- **Each library has its own:** tracks and playlists, the PIN, the backup folder, the File format settings, and its shared library, if any, with Review changes, Partial sync and Receive updates only.
+- **Each library has its own:** tracks and playlists, the PIN, the backup folder, the File format settings, and its shared library, if any, with What's on this device, Review changes and Receive updates only.
 - **The device keeps for all of them:** the language, display settings, the screen-off playback settings, this device's name for shared libraries, and the converter.
 
 ### Syncing

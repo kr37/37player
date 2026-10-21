@@ -111,11 +111,11 @@ async function open(b, name){
   m = await modal(D);
   ok(/Bring only the playlists I choose/.test(m) && /next step says how much will travel/.test(m), 'partial sync can be chosen with the join code, and the next step is promised');
   await D.evaluate((c, u)=>{ document.getElementById('swCode').value = c; document.getElementById('swDevice').value = 'Phone'; document.getElementById('swUrl').value = u; document.getElementById('swPartial').checked = true; document.getElementById('swJoin').click(); }, CODE, URL_SYNC);
-  await waitFor(D, ()=> /Partial sync/.test(document.querySelector('.modal')?.innerText || ''), 10000);
+  await waitFor(D, ()=> /Only what I choose/.test(document.querySelector('.modal')?.innerText || ''), 10000);
   const first = await D.evaluate(()=> { const b = document.querySelector('.modal .btn.primary'); return b ? b.textContent : ''; });
-  ok(first === 'Partial sync', 'ticked, the next step leads with Partial sync: ' + first);
+  ok(first === 'Only what I choose', 'ticked, the next step leads with Only what I choose: ' + first);
   await D.screenshot({path: 'shots/share-partial.png'});
-  await clickText(D, '.modal button', '^Partial sync$'); await sleep(800); await waitIdle(D);
+  await clickText(D, '.modal button', '^Only what I choose$'); await sleep(800); await waitIdle(D);
   ok(await D.evaluate(()=> !!(window.__dbg.getRoot().settings.sharedLibrary || {}).partial), 'D joined with partial sync');
   // a track the server has comes "from the shared library", not from a device
   const note = await D.evaluate(()=> window.__share.missingNote());

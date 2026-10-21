@@ -58,3 +58,4 @@ window.__share = {offer: (meta)=> offerNativeImport(meta, {}, {}, null, {backupR
   label: ()=> document.getElementById("btnBackup").textContent, setup: ()=> backupInfo.setupDone};
 window.__share.missingNote = ()=> sharedMissingNote({waiting: false, from: "Laptop"});
 window.openImportExportForTest = openImportExportDialog;
+window.__choose = {open: openSharedChoose, markAllSeen: sharedMarkAllSeen, cfg: ()=> sharedConfig()};

@@ -59,7 +59,7 @@ Sharing uses mobile data like any other connection, because a shared library onl
 
 ### Reviewing changes before they sync
 
-To decide for yourself what comes and goes, turn on **Review changes before syncing** in Settings → Shared library. Nothing then changes on this device or in the shared library until you say so. 37 Player still checks, and when this device and the shared library differ, a button at the top says so, such as **3 shared changes**. Tap it (or **Review changes…** in Settings) to see the list.
+To decide for yourself what comes and goes, turn on **Review changes before syncing** in Settings → Shared library. Nothing then changes on this device or in the shared library until you say so. 37 Player still checks, and when this device and the shared library differ, a button at the top says so, such as **3 shared changes**. Tap it (or **Review changes…** in Settings, which appears while this is on) to see the list.
 
 Each row is one difference: a folder or playlist, a track, or the order of things inside a folder. The left side says what this device has, and the right side says what the shared library has. The arrow between them says which version wins:
 
@@ -73,23 +73,25 @@ New tracks are listed under the playlist that uses them. If you take or send a p
 
 If anything changes while the list is open (someone else syncs, say), Synchronize first shows the updated list, keeping your choices where nothing changed. Check it, then press Synchronize again.
 
-**Review changes…** works on a device that syncs automatically too. It's a way to look before something big, and syncing waits while the review is open.
+### What's on this device
 
-### Partial sync: keeping only part of the library
+**What's on this device…** in Settings → Shared library shows the whole shared library, with a tick on everything that's on this device and the size of each folder and playlist. The total at the top says how much of the shared library this device holds.
 
-A small iPad, or a laptop for one retreat, doesn't need everything. Turn on **Partial sync** in Settings → Shared library, or choose **Partial sync** when joining.
+- **Tick** a playlist or folder to bring it here; **untick** it to take it off this device. The shared library keeps it, and so do the other devices. A track used by two playlists stays while either is ticked.
+- **Nothing changes until Apply.** The bar at the bottom says what Apply will do, for example "Brings 12 tracks (840 MB to download) · Takes 3 tracks off this device".
+- **Tracks in no playlist** have a group of their own at the bottom.
 
-- **Everything on this device stays in sync both ways,** in the background. A new track added to one of its playlists elsewhere arrives by itself.
-- **Nothing else comes unless you choose it.** New playlists and folders elsewhere don't arrive on their own. The button at the top says how many are new since you last looked, for example **2 new in the shared library**.
-- **To bring something in,** open **Review changes**. Below the usual list is **In the shared library, not on this device**, grouped by folder, with sizes. Set a playlist's arrow, or a whole folder's, to **← Take** and press **Synchronize**. Its tracks come with it. Taking a playlist inside a folder brings the folder along as its container, but not the folder's other playlists.
-- **Deleting asks which you mean.** Deleting a folder, playlist or track offers **Remove from this device** or **Delete everywhere**:
-  - **Remove from this device:** the shared library keeps it, and Review changes can bring it back. A removed playlist's tracks that nothing else here uses go too, freeing the space.
-  - **Delete everywhere:** it's deleted from the shared library and every device.
+### Everything, or only what you choose
 
-  Anything that disappears from a partial device some other way, such as through Library cleanup, counts as removed from this device. Only **Delete everywhere** can delete from the shared library.
-- **Turning Partial sync off** brings the whole shared library to this device. 37 Player says how much that is first.
+Under **On this device** in Settings → Shared library:
 
-When joining with Partial sync, everything already on the device joins the shared library, and Review changes opens so you can pick what else to bring.
+- **Everything in the shared library** (the usual choice): everything comes here and stays in step. A Center's playback computers and iPads, or your own phone and laptop, work this way, with nothing to think about. Unticking something in What's on this device asks first, then switches the device to the other choice.
+- **Only what I choose:** this device holds what's ticked in What's on this device. What it holds stays in step both ways, including new tracks added to its playlists elsewhere. Good for a small iPad, a laptop for one retreat, or helping with a few of a Center's playlists from home.
+  - **New playlists from other devices** wait for you, marked **New** in What's on this device; the button at the top says how many, for example **2 new in the shared library**, and opens it. Turn on **New playlists from other devices come here by themselves** to have them arrive on their own (what you've unticked stays off).
+  - **Deleting asks which you mean.** Deleting a folder, playlist or track offers **Remove from this device** (the shared library keeps it, and What's on this device can bring it back) or **Delete everywhere** (it's deleted from the shared library and every device). Anything that disappears from this device some other way, such as through Library cleanup, counts as removed from this device. Only **Delete everywhere** deletes from the shared library.
+  - **Choosing Everything again** brings the whole shared library here. 37 Player says how much that is first.
+
+When joining, tick **Bring only the playlists I choose** beside the join code for Only what I choose. Everything already on the device joins the shared library, and What's on this device opens so you can tick what else to bring.
 
 ### Receive updates only
 
