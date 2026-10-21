@@ -32,6 +32,7 @@ const waitIdle = async (p)=>{ for(let k=0;k<400;k++){ const s = await p.evaluate
   await A.evaluate(()=>[...document.querySelectorAll('#settingsNav .settings-nav-item')].find(e=>/Shared/.test(e.textContent)).click()); await sleep(300);
   await A.screenshot({path:'shots/e2e-join.png'});
   await A.evaluate((c,u)=>{ document.getElementById('shCode').value=c; document.getElementById('shDevice').value='Gompa laptop'; document.getElementById('shUrl').value=u; document.getElementById('shJoin').click(); }, CODE, URL_SYNC);
+  await sleep(800); ok(await clickText(A,'.modal button','^Join with '), 'a library with tracks is asked first: new library or join with this one');
   await sleep(1500); await A.screenshot({path:'shots/e2e-joindlg.png'}); await clickText(A,'.modal button','^Join$');
   await sleep(1500); console.log('A wait:', JSON.stringify(await waitIdle(A)));
   await A.screenshot({path:'shots/e2e-joined.png'});
