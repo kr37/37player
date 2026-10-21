@@ -17,7 +17,7 @@ After the first visit, 37 Player doesn't need the internet at all. The browser k
 Only a few things use the internet:
 
 - the very first visit, to load the app;
-- 'Import / Export' → **Server libraries**;
+- a shared library, to sync;
 - checking for and installing updates. Click the version number at the top (v1.3…) to check. On a phone, it's under ☰. If there's a newer version, **Update** installs it and reloads 37 Player. The library stays as it is, but playback stops, so don't do it mid-session.
 
 A copy opened from a file (such as the 37-player.html in your backup folder) doesn't need the internet even the first time — only for updates.

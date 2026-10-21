@@ -41,7 +41,7 @@ async function open(b, name){
   ok(await A.evaluate(()=> window.__share.prompt()), 'and the reminder on leaving Edit');
   await A.evaluate((c,u)=> window.__dbg3.join(u, c, 'Laptop'), CODE, URL_SYNC); await waitIdle(A);
   ok(await waitFor(A, ()=> window.__share.covered(), 15000), 'joined and sent: everything is in the shared library');
-  ok(await A.evaluate(()=> window.__share.label()) === 'In the shared library', 'the button says "In the shared library": ' + await A.evaluate(()=> window.__share.label()));
+  ok(await A.evaluate(()=> window.__share.label()) === 'In sync', 'the button says "In sync": ' + await A.evaluate(()=> window.__share.label()));
   ok(!(await A.evaluate(()=> window.__share.prompt())), 'and there\'s no reminder on leaving Edit');
   await A.evaluate(()=> window.__share.noteKept()); await A.evaluate(()=> window.__dbg3.sync()); await waitIdle(A);
 
@@ -64,6 +64,21 @@ async function open(b, name){
   const lines = await B.evaluate(()=> window.__share.keeperLines());
   ok(lines.length === 1 && /Backed up by Laptop, today/.test(lines[0]), 'B sees who keeps backups: ' + lines.join(' / '));
   ok(/Backed up by Laptop/.test(await B.evaluate(()=> document.getElementById('btnBackup').title)), 'and says so on the button');
+  // tapping "In sync": the backup dialog opens with "Up to date"
+  await B.evaluate(()=> document.getElementById('btnBackup').click()); await sleep(400);
+  m = await modal(B);
+  ok(/^Up to date/.test(m) && /in sync with the shared library “Test”/.test(m) && /Back up library/.test(m), 'tapping it opens with "Up to date", then the backup choices');
+  await B.screenshot({path: 'shots/share-uptodate.png'});
+  await clickText(B, '.modal button', '^Cancel$'); await sleep(300);
+  // Import / Export points to the shared library, not server libraries
+  await B.evaluate(()=> openImportExportForTest()); await sleep(300);
+  m = await modal(B);
+  ok(/Shared library/.test(m) && !/Server libraries/.test(m), 'Import / Export offers Shared library, not Server libraries');
+  await B.evaluate(()=> document.getElementById('ieShared').click()); await sleep(700);
+  ok(await B.evaluate(()=> !!document.getElementById('shStatus')), 'and it opens Settings → Shared library');
+  const nav = await B.evaluate(()=> [...document.querySelectorAll('#settingsNav .settings-nav-item')].map(e=> e.textContent).join(' | '));
+  ok(nav === 'Library info | Shared library | Switch libraries | Playback | Library cleanup | File format | Backups | PIN | About', 'Settings in the new order: ' + nav);
+  await B.evaluate(()=> document.getElementById('settingsClose').click()); await sleep(300);
   // an edit on B: no backup reminder while it's on its way
   await B.evaluate(async()=>{ const r = window.__dbg.getRoot(); r.tree[0].name = 'Morning prayers'; await window.__dbg.saveState(); });
   ok(!(await B.evaluate(()=> window.__share.prompt())), 'an edit on a joined device doesn\'t ask for a backup');

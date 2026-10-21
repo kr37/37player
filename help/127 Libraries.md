@@ -4,16 +4,16 @@ One device can hold more than one library: a Center's library and your own, say,
 
 ### Making one
 
-In Settings → **Libraries**, choose **New library…**, give it a name, and choose how it starts:
+In Settings → **Switch libraries**, choose **New library…**, give it a name, and choose how it starts:
 
-- **Start empty:** a new, empty library. Fill it as usual, with Import / Export or Server libraries.
+- **Start empty:** a new, empty library. Fill it as usual, with Import / Export.
 - **Join a shared library:** enter the join code and this device's name, and the new library joins straight away. Leave the name empty and it takes the shared library's own name, such as "IKRC Library".
 
 Joining a shared library from a library that already has tracks asks first whether to make a new library for it instead. That's usually the right choice: joining with an existing library would add all its tracks and playlists to the shared library, for everyone in it to see.
 
 ### Switching
 
-Once there's more than one library, the open library's name is shown in the top bar, so it's clear which one a session is about to play from. Click it to see the others and switch. Settings → **Libraries** can switch too, and it's where libraries are renamed and deleted.
+Once there's more than one library, the open library's name is shown in the top bar, so it's clear which one a session is about to play from. Click it to see the others and switch. Settings → **Switch libraries** can switch too, and it's where libraries are renamed and deleted.
 
 If something is playing, switching asks first, because it stops playback. Each library remembers its own place: the playlist you had open and where the session had got to.
 
@@ -30,7 +30,7 @@ Only the open library syncs. A shared library that isn't open catches up as soon
 
 ### Deleting
 
-Settings → **Libraries** → **Delete…** removes a library's tracks, playlists and settings from this device. Its backups aren't touched, and neither is the shared library it may be joined to: other devices keep it, and this device can join it again later. To keep a copy first, open the library and make a backup or a Portable export.
+Settings → **Switch libraries** → **Delete…** removes a library's tracks, playlists and settings from this device. Its backups aren't touched, and neither is the shared library it may be joined to: other devices keep it, and this device can join it again later. To keep a copy first, open the library and make a backup or a Portable export.
 
 The open library can't be deleted: switch to another one first.
 

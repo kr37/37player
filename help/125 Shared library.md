@@ -21,7 +21,7 @@ There's nothing to do. 37 Player checks a few seconds after every change, every 
 
 - **Working offline** is fine: everything plays from this device as always, and changes are sent the next time it's online.
 - **Each device keeps its own settings**: display, PIN, backups and volume aren't shared.
-- **The shared library is this device's backup.** Once everything on a device has reached the shared library, the **Back up library** button reads **In the shared library**, and 37 Player stops reminding you to back up. Until then (just after a change, or while audio is being sent), it says **Sending to the shared library**.
+- **The shared library is this device's backup.** Once everything on a device has reached the shared library, the **Back up library** button at the top reads **In sync**, and 37 Player stops reminding you to back up. Until then (just after a change, or while audio is being sent), it says **Syncing…**. Tapping **In sync** still lets you save a backup on this device: it opens with **Up to date**, then the usual backup choices.
 - **Who keeps backups.** A shared library still needs one device that backs it up: it protects against losing a device, but not against a mistake, because a mistake is shared too. A computer with Chrome or Edge and a backup folder (see 'Backing up') does it by itself, and every device shows when it last did, for example "Backed up by Gen's laptop, today" (on the button's tooltip, and in Settings → Backups and Shared library).
 
 ### If a device loses its library

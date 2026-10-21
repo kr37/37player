@@ -60,7 +60,7 @@ const addPlaylist = (p, name)=> p.evaluate(async (name)=>{ const r = window.__db
   ok(await A.evaluate(()=> window.__dbg.getRoot().settings.pin) === '1234', 'and its PIN');
   // ---- Settings → Libraries
   await A.evaluate(()=>{ window.__dbg.setMode('editing'); document.getElementById('btnSettings').click(); }); await sleep(400);
-  await A.evaluate(()=> [...document.querySelectorAll('#settingsNav .settings-nav-item')].find(e=> e.textContent === 'Libraries').click()); await sleep(300);
+  await A.evaluate(()=> [...document.querySelectorAll('#settingsNav .settings-nav-item')].find(e=> e.textContent === 'Switch libraries').click()); await sleep(300);
   const sec = await A.evaluate(()=> document.getElementById('settingsBody').innerText);
   ok(/My library[\s\S]*Open now[\s\S]*Lady Gaga[\s\S]*Tracks: 0 · Playlists: 1/.test(sec), 'Settings → Libraries lists them with their sizes');
   await A.screenshot({path:'shots/libs-settings.png'});

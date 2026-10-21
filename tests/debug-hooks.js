@@ -57,3 +57,4 @@ window.__share = {offer: (meta)=> offerNativeImport(meta, {}, {}, null, {backupR
   noteKept: ()=>{ root.backupKeepers = Object.assign({}, root.backupKeepers, {[sharedConfig().deviceName]: Date.now()}); return saveState(); },
   label: ()=> document.getElementById("btnBackup").textContent, setup: ()=> backupInfo.setupDone};
 window.__share.missingNote = ()=> sharedMissingNote({waiting: false, from: "Laptop"});
+window.openImportExportForTest = openImportExportDialog;
