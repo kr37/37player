@@ -63,3 +63,5 @@ window.__drive = {fetch: (params, init)=> driveFetch(sharedConfig(), params, ini
 // the move to 37player.com (moved.js)
 window.__moved = {to: ()=> MOVED_TO, newAddress: newAddressFor, open: openMovedDialog,
   setShared: (cfg)=>{ root.settings.sharedLibrary = cfg; }};
+// re-tagging on Safari (webkitstore.js)
+window.__wk = {rewrite: rewriteFileTagsIfPossible, stored: async (id)=>{ const r = await idbGet("audio", id); return r ? {size: r.blob.size, read: (await r.blob.arrayBuffer()).byteLength, type: r.blob.type} : null; }, tags: async (id)=>{ const r = await idbGet("audio", id); return parseAudioTags(r.blob); }};
