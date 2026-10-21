@@ -15,6 +15,16 @@ Before anything moves, 37 Player says how much joining will download or send (fo
 
 The tracks' details and playlists arrive straight away, on every device. The audio follows in the background, shown in the bar along the bottom. A track that hasn't arrived yet is fetched the moment it's played. While anything is playing, sending and receiving pause between files so the sound stays clean, and pick up again when it stops. While the first device is still sending its audio, the others show how many files are still on their way, and pick them up as they arrive. A large library takes a while the first time; after that, only what changed travels.
 
+### On Google Drive
+
+A shared library can also live in a folder of your Google Drive instead of on 37 Player's server. In Settings → **Shared library** (or the welcome's join step), choose **Use Google Drive…** and sign in with Google. 37 Player then shows the 37 Player libraries in that Google Drive: choose one to join, or **Make a new library on Google Drive**. It appears in your Drive as a folder called "37 Player – " and the library's name.
+
+- **Every device that shares it signs in with the same Google account,** a Center's account, say. Sharing one Drive library between several people's own Google accounts isn't possible yet.
+- **37 Player sees only what it made** in that Google Drive, nothing else.
+- **Everything else works the same:** what's on each device, reviewing changes, receiving updates only, and leaving.
+- **If Google asks you to sign in again** (the sign-in was removed in your Google account, say, or the device went unused for months), the button at the top says **Sign in to Google**. It takes you to Settings → Shared library and **Sign in to Google again**.
+- **Leave the folder alone in Drive:** don't move or rename what's inside it. Moving the folder itself, or renaming it, is fine.
+
 ### Day to day
 
 There's nothing to do. 37 Player checks a few seconds after every change, every few minutes while it's open, and whenever it comes back on screen. **Sync now** in Settings does it at once. Settings also shows when this device last checked, and whether it's **up to date**, still **updating** (downloading or sending audio), or **waiting** for files from other devices that haven't sent them yet.

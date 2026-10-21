@@ -59,3 +59,4 @@ window.__share = {offer: (meta)=> offerNativeImport(meta, {}, {}, null, {backupR
 window.__share.missingNote = ()=> sharedMissingNote({waiting: false, from: "Laptop"});
 window.openImportExportForTest = openImportExportDialog;
 window.__choose = {open: openSharedChoose, markAllSeen: sharedMarkAllSeen, cfg: ()=> sharedConfig()};
+window.__drive = {fetch: (params, init)=> driveFetch(sharedConfig(), params, init || {}), doc: ()=> sharedDocFromLibrary()};

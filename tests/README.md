@@ -76,6 +76,11 @@ By hand: `./serve.sh` in one terminal (servers on ports 8861 and 8870), then
 | conv5 | The File format settings: a WAV converted under the default, kept under "Don't touch my files" (a WMA still converted, its original kept without asking), Choose the rules with custom AAC showing and converting what it would, FLAC asking first, the settings travelling both ways through a shared library |
 | conv6 | Audio from video files (AAC copied out, Vorbis to MP3, a silent video reported, the tracks in the playlist), and a portable export converted to the preferred format |
 | conv2 | The same through a folder import: the playlist keeps its place for the WMA, and another device in the shared library sees it marked |
+| libs | Several libraries on one device: making, switching, two windows, deleting, joining into a new library |
+| welcome | The welcome for each kind of device and browser |
+| share | The welcome's sharing question, "In sync", who keeps backups, restoring on a joined device |
+| choose | What's on this device: unticking, New, ticking, albums, back to Everything |
+| drive | Google Drive libraries against a fake Google and the real token.php: sign-in, making a folder, joining, a true tie, an expired token, signing in again |
 | big413 | A file the server refuses as too big isn't sent again at every sync, and the status says so |
 
 ## The converter test page (tests/convert/)
