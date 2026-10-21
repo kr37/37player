@@ -48,3 +48,6 @@ window.__ver = versionFromHtml;
 window.__lib = {id: ()=> LIBRARY_ID, list: readLibraryList, create: createLibrary, switchTo: switchLibrary, del: deleteLibrary, rename: renameLibrary,
   converter: ()=> converterStored().then(r=> !!r), putConverter: ()=> mainStatePut({key: "converter", version: "t", js: new Blob(["x"]), wasm: new Blob(["y"]), size: 2, at: Date.now()}),
   name: currentLibraryName, popover: openLibraryPopover};
+// the welcome (welcome.js)
+window.IMPORT_ACCEPT_FOR_TEST = IMPORT_ACCEPT;
+window.backupInfoForTest = ()=> backupInfo;
