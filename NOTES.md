@@ -1,6 +1,6 @@
 # 37 Player: notes
 
-The big picture as of October 2026 (version 1.3.048). Commit messages hold the detail of each change. This file says how the whole thing works and why it is the way it is. Update it when a decision changes.
+The big picture as of October 2026 (version 1.4.000: converting, and the library's file format). Commit messages hold the detail of each change. This file says how the whole thing works and why it is the way it is. Update it when a decision changes.
 
 ## What it is
 
