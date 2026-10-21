@@ -35,11 +35,14 @@ const waitIdle = async (p)=>{ for(let k=0;k<400;k++){ const s = await p.evaluate
   const B = await device(b,'B');
   await B.evaluate(async()=>{ const r = window.__dbg.getRoot(); r.tree = []; r.library = []; delete r.settings.starterPlaylistId; await window.__dbg.saveState(); });
   B.evaluate((c,u)=> window.__dbg3.join(u,c,'iPad'), CODE, URL_SYNC).catch(()=>{});
-  // the wrapper clicks "Join" — beat it to "Partial sync"
-  for(let k=0;k<40;k++){ const done = await B.evaluate(()=>{ const b=[...document.querySelectorAll('.modal button')].find(b=>b.textContent.trim()==='Partial sync'); if(b){ b.click(); return true; } return false; }); if(done) break; await sleep(50); }
+  // the wrapper clicks "Join" — beat it to "Only what I choose"
+  for(let k=0;k<40;k++){ const done = await B.evaluate(()=>{ const b=[...document.querySelectorAll('.modal button')].find(b=>b.textContent.trim()==='Only what I choose'); if(b){ b.click(); return true; } return false; }); if(done) break; await sleep(50); }
   await sleep(3000);
   console.log('B after join:', await names(B), ' review open:', await B.evaluate(()=>!!document.getElementById('reviewPage')));
-  ok(!(await names(B)).includes('One') && await B.evaluate(()=>!!document.getElementById('reviewPage')), 'partial join: nothing arrives, Review opens');
+  ok(!(await names(B)).includes('One') && await B.evaluate(()=>!!document.querySelector('#reviewPage.choose-page')), 'partial join: nothing arrives, What\'s on this device opens');
+  // the rest of this test goes through Review changes, which still offers what's not here
+  await B.evaluate(()=> document.getElementById('chClose').click()); await sleep(300);
+  await B.evaluate(()=>window.__dbg3.review()); await sleep(1500);
   const lowerRows = await B.evaluate(()=>[...document.querySelectorAll('#reviewPage .rv-lower')].map(r=>r.innerText.replace(/\s+/g,' ').trim()));
   console.log('lower:', JSON.stringify(lowerRows));
   await B.screenshot({path:'shots/part-1.png'});

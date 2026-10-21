@@ -4,7 +4,7 @@ Multiple instances
 
 ### Several windows or tabs, same website, same browser
 
-Windows and tabs that open 37 Player from the same website address (for example player.37dakinis.net) in the same browser all use **one and the same library**. So do the website and an installed 37 Player app in Chrome or Edge. They also share the same backup folder.
+Windows and tabs that open 37 Player from the same website address (for example 37player.com) in the same browser all use **one and the same library**. So do the website and an installed 37 Player app in Chrome or Edge. They also share the same backup folder.
 
 They stay in step with each other: a change made in one window — renaming a playlist, adding a prayer, deleting a track — appears in the others within a moment. If a window has a dialog open at the time, it catches up as soon as the dialog closes. So it's fine to play in one window and edit the same playlist in another, even mid-session: whatever is playing carries on, and the changes take effect when it finishes.
 

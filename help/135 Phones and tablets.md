@@ -1,5 +1,21 @@
 Phones and tablets
 
+### iPad and iPhone: start from the Home Screen
+
+Safari on an iPad or iPhone erases a website's data after 7 days without a visit, and the library with it. A 37 Player added to the Home Screen keeps its library. It's a separate app with a library of its own, so do this **before** importing anything:
+
+1. In Safari, open 37 Player and tap the **Share** button (a square with an arrow pointing up), then **View More**. If Share isn't showing, tap **•••** first.
+2. Choose **Add to Home Screen**. Leave **Open as Web App** turned on: turned off, the icon only opens the website in Safari, with Safari's library and its 7-day limit. Then tap **Add**.
+3. Open **37 Player** from the Home Screen, and set it up there.
+
+Already built a library in Safari? Use 'Import / Export' → Export there, then Import in the Home Screen app.
+
+### Android: install it as an app
+
+In Chrome on Android, 37 Player offers to install itself when it first opens; otherwise use Chrome's ⋮ menu → **Add to Home screen** or **Install app**. The installed app and the website share one library, and Chrome keeps an installed app's data safe rather than clearing it when space runs low.
+
+### Touch
+
 On a touch screen, 'Edit Playlists' and the 'Library' work by tapping and holding instead of clicking and dragging.
 
 ### Selecting

@@ -4,7 +4,7 @@
 
 ## 1. Put sync.php on the site
 
-Copy `sync.php` next to `37-player.html`, so it's at `https://player.37dakinis.net/sync.php`. That's the address 37 Player suggests by default.
+Copy `sync.php` next to `37-player.html`, so it's at `https://37player.com/sync.php`. That's the address 37 Player suggests by default.
 
 ## 2. Make the data folder (outside the web root)
 
@@ -27,7 +27,7 @@ Updating `sync.php` later never touches that file.
 ## 3. Create a library and get its join code
 
 ```
-sudo -u www-data php /var/www/player.37dakinis.net/sync.php create ikrc "IKRC Library" "Death comes to us all!"
+sudo -u www-data php /var/www/37player.com/html/sync.php create ikrc "IKRC Library" "Death comes to us all!"
 # → Join code for ikrc: ikrc Death comes to us all!
 ```
 
@@ -50,7 +50,7 @@ php sync.php cleanup                             # prune old versions and unused
 ## 4. Check it
 
 ```
-curl -i -H "X-Library: ikrc%20Death%20comes%20to%20us%20all" "https://player.37dakinis.net/sync.php?op=state"
+curl -i -H "X-Library: ikrc%20Death%20comes%20to%20us%20all" "https://37player.com/sync.php?op=state"
 ```
 
 You should see `X-Version: 0` and `null`. A wrong code gives a 403.
@@ -64,18 +64,53 @@ Every saved change is kept as a version, so mistakes can be traced and, later, u
 `/etc/cron.d/37player`:
 
 ```
-15 4 * * * www-data php /var/www/player.37dakinis.net/sync.php cleanup >/dev/null
+15 4 * * * www-data php /var/www/37player.com/html/sync.php cleanup >/dev/null
 ```
 
 ## 6. Backup to the T470
 
-In the T470's crontab:
+`scripts/pull_droplet_backup.sh` pulls a dated copy of `/var/lib/37player` into `~/backups/37player/YYYY-MM-DD`, hard-linked to the day before (an unchanged file takes no extra space), and keeps the newest 30 days. It never deletes a file because the droplet did (no `--delete`), and if a day's copy comes back less than half the size of the one before (the droplet's data gone, say), it stops pruning and exits with an error, so the good copies stay. Put `~/backups/37player` inside a pCloud-synced folder for a copy off the laptop too.
+
+**Read access on the droplet:** the SSH user needs to read `/var/lib/37player`, which belongs to `www-data`:
 
 ```
-30 3 * * * rsync -a --delete droplet:/var/lib/37player/ ~/backups/37player/
+sudo usermod -aG www-data <ssh user>      # then log out and in
+sudo chmod -R g+rX /var/lib/37player
 ```
 
-This needs read access to `/var/lib/37player` for the SSH user. Add that user to the `www-data` group, or run the rsync with sudo on the droplet side.
+**A daily timer on the T470** (systemd rather than cron, so a laptop that was asleep at the time catches up when it wakes). Copy the script to `~/bin/`, then:
+
+`~/.config/systemd/user/37player-backup.service`
+```
+[Unit]
+Description=Pull 37 Player shared libraries from the droplet
+
+[Service]
+Type=oneshot
+ExecStart=%h/bin/pull_droplet_backup.sh
+```
+
+`~/.config/systemd/user/37player-backup.timer`
+```
+[Unit]
+Description=Daily 37 Player droplet backup
+
+[Timer]
+OnCalendar=*-*-* 03:30
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+```
+
+```
+systemctl --user daemon-reload
+systemctl --user enable --now 37player-backup.timer
+systemctl --user start 37player-backup.service     # once now, to check
+journalctl --user -u 37player-backup               # what it said
+```
+
+`SRC=other-host:/var/lib/37player/` overrides where it pulls from (the default is the SSH alias `kr37`).
 
 ## Notes
 

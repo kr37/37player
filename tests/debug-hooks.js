@@ -44,3 +44,30 @@ window.__flat = (id)=> isStandInPeaks(findLibraryTrack(id).peaks);
 window.__setPeaks = (id)=>{ findLibraryTrack(id).peaks = Array.from({length:720}, (_, i)=> (i%7)/7); };
 window.__slog = ()=> sharedLogLines.slice(-3);
 window.__ver = versionFromHtml;
+// libraries on one device (libs.js)
+window.__lib = {id: ()=> LIBRARY_ID, list: readLibraryList, create: createLibrary, switchTo: switchLibrary, del: deleteLibrary, rename: renameLibrary,
+  converter: ()=> converterStored().then(r=> !!r), putConverter: ()=> mainStatePut({key: "converter", version: "t", js: new Blob(["x"]), wasm: new Blob(["y"]), size: 2, at: Date.now()}),
+  name: currentLibraryName, popover: openLibraryPopover};
+// the welcome (welcome.js)
+window.IMPORT_ACCEPT_FOR_TEST = IMPORT_ACCEPT;
+window.backupInfoForTest = ()=> backupInfo;
+// shared library as the backup (share.js)
+window.__share = {offer: (meta)=> offerNativeImport(meta, {}, {}, null, {backupRestore: true}), meta: ()=> buildNativeMeta({type: "library"}).meta,
+  prompt: backupPromptNeeded, covered: sharedCoversLibrary, keepers: ()=> root.backupKeepers, keeperLines,
+  noteKept: ()=>{ root.backupKeepers = Object.assign({}, root.backupKeepers, {[sharedConfig().deviceName]: Date.now()}); return saveState(); },
+  label: ()=> document.getElementById("btnBackup").textContent, setup: ()=> backupInfo.setupDone};
+window.__share.missingNote = ()=> sharedMissingNote({waiting: false, from: "Laptop"});
+window.openImportExportForTest = openImportExportDialog;
+window.__choose = {open: openSharedChoose, markAllSeen: sharedMarkAllSeen, cfg: ()=> sharedConfig()};
+window.__drive = {fetch: (params, init)=> driveFetch(sharedConfig(), params, init || {}), doc: ()=> sharedDocFromLibrary()};
+// the move to 37player.com (moved.js)
+window.__moved = {to: ()=> MOVED_TO, newAddress: newAddressFor, open: openMovedDialog,
+  setShared: (cfg)=>{ root.settings.sharedLibrary = cfg; }};
+// re-tagging on Safari (webkitstore.js)
+window.__wk = {rewrite: rewriteFileTagsIfPossible, stored: async (id)=>{ const r = await idbGet("audio", id); return r ? {size: r.blob.size, read: (await r.blob.arrayBuffer()).byteLength, type: r.blob.type} : null; }, tags: async (id)=>{ const r = await idbGet("audio", id); return parseAudioTags(r.blob); }};
+// damaged stored files (damaged.js)
+window.__dmg = {ids: ()=> [...damagedAudio.ids], get: async (id)=> (await idbGet("audio", id)).blob, salvage: salvageOldFile, skipped: ()=> zipSkipped.slice(),
+  zip: (entries)=> buildZipBlob(entries),
+  // This browser stores files properly, so "damaged" is pretended: a stored
+  // WAV whose second RIFF header starts at byte 12 (the Safari pattern).
+  pretend: ()=>{ storedAudioDamaged = async (id)=>{ const r = await idbGet("audio", id); if(!r || !r.blob) return false; const h = new Uint8Array(await r.blob.slice(0, 16).arrayBuffer()); return String.fromCharCode(...h.subarray(12, 16)) === "RIFF"; }; }};
