@@ -87,6 +87,15 @@ const closeSettings = p=> p.evaluate(()=> document.querySelector('#settingsClose
   const effect = await A.evaluate(()=> document.getElementById('fmtEffect')?.innerText || '');
   console.log('effect:', JSON.stringify(effect));
   ok(/1 tracks already in the library would be converted to AAC 192k/.test(effect), 'it says what the rules would convert (the WAV)');
+  ok(/Show the 1 tracks/.test(effect) && await A.evaluate(()=> !document.querySelector('#fmtEffect details').open), 'with the tracks themselves folded away beneath');
+  await A.evaluate(()=> document.querySelector('#fmtEffect details summary').click()); await sleep(300);
+  const rows = await A.evaluate(()=> [...document.querySelectorAll('#fmtEffect table tr')].map(r=> [...r.cells].map(c=> c.innerText.trim())));
+  console.log('list:', JSON.stringify(rows));
+  ok(rows.length === 2 && rows[0].join('|') === 'Track|Type|Size|Sample rate|Bit rate' && rows[1][1] === 'WAV' && /(KB|MB)$/.test(rows[1][2]) && /kHz$/.test(rows[1][3]) && /kbps$/.test(rows[1][4]), 'opened: name, type, size, sample rate and bit rate of each');
+  await A.evaluate(()=> document.getElementById('fmtEffect').scrollIntoView({block: 'center'})); await sleep(200);
+  await A.screenshot({path: 'shots/conv5-format-list.png'});
+  await A.evaluate(()=> [...document.querySelectorAll('#fmtEffect th')].find(th=> th.textContent === 'Size').click()); await sleep(200);
+  ok(await A.evaluate(()=> document.querySelector('#fmtEffect th[data-sorted]')?.textContent) === 'Size', 'a click on a column sorts by it');
   await clickText(A, '#fmtEffect button', '^Convert them now$'); await sleep(500);
   await clickText(A, '.modal button', '^Convert them now$');
   ok(await waitFor(A, ()=> /Keep the originals\?/.test(document.querySelector('.modal')?.innerText || ''), 60000), 'they\'re converted, and the originals question asked');
