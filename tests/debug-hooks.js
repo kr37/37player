@@ -60,3 +60,6 @@ window.__share.missingNote = ()=> sharedMissingNote({waiting: false, from: "Lapt
 window.openImportExportForTest = openImportExportDialog;
 window.__choose = {open: openSharedChoose, markAllSeen: sharedMarkAllSeen, cfg: ()=> sharedConfig()};
 window.__drive = {fetch: (params, init)=> driveFetch(sharedConfig(), params, init || {}), doc: ()=> sharedDocFromLibrary()};
+// the move to 37player.com (moved.js)
+window.__moved = {to: ()=> MOVED_TO, newAddress: newAddressFor, open: openMovedDialog,
+  setShared: (cfg)=>{ root.settings.sharedLibrary = cfg; }};

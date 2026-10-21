@@ -20,8 +20,8 @@ as of October 2026.
 ## 2. The consent screen (Google Auth Platform)
 
 1. **Branding:** app name **37 Player**, a support email, and under
-   *App domain* the home page `https://player.37dakinis.net/`. Add
-   `37dakinis.net` as an authorized domain. A privacy policy link is asked
+   *App domain* the home page `https://37player.com/`. Add
+   `37player.com` as an authorized domain. A privacy policy link is asked
    for when publishing; a short page on the site saying that 37 Player
    keeps libraries in the person's own Drive and nothing on the server is
    enough.
@@ -39,12 +39,12 @@ as of October 2026.
 **Clients → Create client**, type **Web application**, name **37 Player**:
 
 - **Authorized redirect URIs:**
-  - `https://player.37dakinis.net/token.php`
-  - `https://playertest.37dakinis.net/token.php` (once the test site exists)
+  - `https://37player.com/token.php`
+  - `https://test.37player.com/token.php` 
 
   Exactly these, with no `?` or anything after them.
 - *Authorized JavaScript origins* aren't needed (sign-in is a redirect, not
-  a popup), but adding `https://player.37dakinis.net` does no harm.
+  a popup), but adding `https://37player.com` does no harm.
 
 Create it, and copy the **Client ID** and **Client secret**.
 
@@ -61,9 +61,11 @@ sudo nano /etc/37player/google-config.php
 <?php
 define('GOOGLE_CLIENT_ID', '1234567890-abc...apps.googleusercontent.com');
 define('GOOGLE_CLIENT_SECRET', 'GOCSPX-...');
-define('ALLOWED_ORIGINS', ['https://player.37dakinis.net', 'https://playertest.37dakinis.net']);
+define('ALLOWED_ORIGINS', ['https://37player.com', 'https://test.37player.com',
+    // the old addresses, while devices are still moving from them:
+    'https://player.37dakinis.net', 'https://playertest.37dakinis.net']);
 // Only if token.php can't work out its own address (behind a proxy, say):
-// define('TOKEN_URL', 'https://player.37dakinis.net/token.php');
+// define('TOKEN_URL', 'https://37player.com/token.php');
 ```
 
 ```
@@ -76,7 +78,7 @@ sudo chmod 640 /etc/37player/google-config.php
 
 ## 5. Check it
 
-- <https://player.37dakinis.net/token.php?op=status> should say
+- <https://37player.com/token.php?op=status> should say
   `{"configured":true}`.
 - In 37 Player: Settings → Shared library → **Use Google Drive…** → sign in
   → **Make a new library on Google Drive**. A folder "37 Player – <name>"

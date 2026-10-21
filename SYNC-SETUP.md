@@ -4,7 +4,7 @@
 
 ## 1. Put sync.php on the site
 
-Copy `sync.php` next to `37-player.html`, so it's at `https://player.37dakinis.net/sync.php`. That's the address 37 Player suggests by default.
+Copy `sync.php` next to `37-player.html`, so it's at `https://37player.com/sync.php`. That's the address 37 Player suggests by default.
 
 ## 2. Make the data folder (outside the web root)
 
@@ -27,7 +27,7 @@ Updating `sync.php` later never touches that file.
 ## 3. Create a library and get its join code
 
 ```
-sudo -u www-data php /var/www/player.37dakinis.net/sync.php create ikrc "IKRC Library" "Death comes to us all!"
+sudo -u www-data php /var/www/37player.com/html/sync.php create ikrc "IKRC Library" "Death comes to us all!"
 # → Join code for ikrc: ikrc Death comes to us all!
 ```
 
@@ -50,7 +50,7 @@ php sync.php cleanup                             # prune old versions and unused
 ## 4. Check it
 
 ```
-curl -i -H "X-Library: ikrc%20Death%20comes%20to%20us%20all" "https://player.37dakinis.net/sync.php?op=state"
+curl -i -H "X-Library: ikrc%20Death%20comes%20to%20us%20all" "https://37player.com/sync.php?op=state"
 ```
 
 You should see `X-Version: 0` and `null`. A wrong code gives a 403.
@@ -64,7 +64,7 @@ Every saved change is kept as a version, so mistakes can be traced and, later, u
 `/etc/cron.d/37player`:
 
 ```
-15 4 * * * www-data php /var/www/player.37dakinis.net/sync.php cleanup >/dev/null
+15 4 * * * www-data php /var/www/37player.com/html/sync.php cleanup >/dev/null
 ```
 
 ## 6. Backup to the T470

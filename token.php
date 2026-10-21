@@ -27,9 +27,9 @@
  *     <?php
  *     define('GOOGLE_CLIENT_ID', '1234-abc.apps.googleusercontent.com');
  *     define('GOOGLE_CLIENT_SECRET', 'GOCSPX-...');
- *     define('ALLOWED_ORIGINS', ['https://player.37dakinis.net', 'https://playertest.37dakinis.net']);
+ *     define('ALLOWED_ORIGINS', ['https://37player.com', 'https://test.37player.com']);
  *     // optional: this script's address, if it can't be worked out
- *     define('TOKEN_URL', 'https://player.37dakinis.net/token.php');
+ *     define('TOKEN_URL', 'https://37player.com/token.php');
  */
 
 $config = getenv('P37_GOOGLE_CONFIG') ?: '/etc/37player/google-config.php';
@@ -39,7 +39,7 @@ if (!defined('GOOGLE_TOKEN_ENDPOINT')) define('GOOGLE_TOKEN_ENDPOINT', getenv('P
 if (!defined('GOOGLE_AUTH_ENDPOINT')) define('GOOGLE_AUTH_ENDPOINT', getenv('P37_GOOGLE_AUTH_ENDPOINT') ?: 'https://accounts.google.com/o/oauth2/v2/auth');
 const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
 
-$allowed = defined('ALLOWED_ORIGINS') ? ALLOWED_ORIGINS : ['https://player.37dakinis.net'];
+$allowed = defined('ALLOWED_ORIGINS') ? ALLOWED_ORIGINS : ['https://37player.com'];
 $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
 if ($origin !== '' && in_array($origin, $allowed, true)) {
     header('Access-Control-Allow-Origin: ' . $origin);

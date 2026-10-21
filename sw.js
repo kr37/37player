@@ -4,7 +4,7 @@
 // It looks after exactly two things — the app page itself and help.json —
 // and lets every other request go straight to the network untouched. That
 // matters because the app can share a site with other pages: at
-// player.37dakinis.net the app is /37-player.html, next to an about page
+// 37player.com the app is /37-player.html, next to an about page
 // (/index.html) and the libraries/ folder, none of which this should ever
 // cache or intercept.
 //

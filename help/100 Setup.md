@@ -7,7 +7,7 @@ The first time 37 Player opens, it asks for your language, then walks you throug
 Your library lives in one browser, at one address, so decide where 37 Player will live and stay with it:
 
 - **One browser.** Chrome, Edge, Firefox and Safari each keep their own library. So do two installations of the same browser: on Linux, for example, a Flatpak Chrome and a Chrome installed from a .deb package are two separate browsers.
-- **One address.** The website (player.37dakinis.net) and a 37-player.html file opened from your disk are separate libraries, with separate backups.
+- **One address.** The website (37player.com) and a 37-player.html file opened from your disk are separate libraries, with separate backups.
 
 Settings → **Library info** shows where the library you're looking at lives. To move a library somewhere else later, see 'Multiple instances'.
 
@@ -32,3 +32,7 @@ On Android, the welcome offers to install 37 Player as an app (or use Chrome's �
 ### On a computer, installing is optional
 
 In Chrome or Edge on a computer, 37 Player can also be installed as an app (the install icon in the address bar, or the ⋮ menu). It opens in a window of its own, with its own icon, and shares the website's library. Browsers are more likely to mark an installed app's storage **persistent**, protected from being cleared when the disk fills up. 37 Player asks for persistent storage every time it starts; if the browser shows a prompt about it, choose **Allow**. To check whether it's been granted, open Settings → **Library info**.
+
+### The new address
+
+37 Player moved from player.37dakinis.net to **37player.com** in October 2026. Because the browser keeps a library separately for each address, a device that used the old address still has its library there. The old address shows **37 Player has moved** in the top bar, with the way across for the open library: a shared library is simply joined again at 37player.com; any other library is exported there and imported at 37player.com, or restored from its backup folder. On an iPad or phone, the Home Screen app is then removed and added again from the new address.

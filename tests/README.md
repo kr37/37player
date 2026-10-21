@@ -81,6 +81,7 @@ By hand: `./serve.sh` in one terminal (servers on ports 8861 and 8870), then
 | share | The welcome's sharing question, "In sync", who keeps backups, restoring on a joined device |
 | choose | What's on this device: unticking, New, ticking, albums, back to Everything |
 | drive | Google Drive libraries against a fake Google and the real token.php: sign-in, making a folder, joining, a true tie, an expired token, signing in again |
+| moved | The move to 37player.com: a new browser goes straight there, a used one stays with "37 Player has moved" and the way across; saved addresses follow |
 | big413 | A file the server refuses as too big isn't sent again at every sync, and the status says so |
 
 ## The converter test page (tests/convert/)
