@@ -51,6 +51,6 @@ Settings → **File format** sets one **preferred format** for the library — S
 - **Reduce uncompressed audio** (recommended): WAV and AIFF files are converted as they come in.
 - **Choose the rules:** uncompressed audio, a bitrate above a limit, a sample rate or channel count other than the preferred format's, or less widely playable types (Opus, Ogg, WebM).
 
-The page says what the settings would mean for the library as it is ("12 tracks would be converted…"), with **Convert them now**. In a shared library these settings belong to the library, so a change on one device applies on all of them, and a file about to be converted is never sent before its converted version is ready.
+The page says what the settings would mean for the library as it is ("12 tracks would be converted…"). Converting them is in Settings → **Library cleanup** → Convert to the preferred format, with **Convert them now** and the list of those tracks (name, album, type, size, sample rate, bit rate, channels). In a shared library these settings belong to the library, so a change on one device applies on all of them, and a file about to be converted is never sent before its converted version is ready.
 
 Videos (a recorded teaching, say) can come in too: 37 Player asks whether to take their sound as audio tracks. The video itself isn't kept.

@@ -65,3 +65,9 @@ window.__moved = {to: ()=> MOVED_TO, newAddress: newAddressFor, open: openMovedD
   setShared: (cfg)=>{ root.settings.sharedLibrary = cfg; }};
 // re-tagging on Safari (webkitstore.js)
 window.__wk = {rewrite: rewriteFileTagsIfPossible, stored: async (id)=>{ const r = await idbGet("audio", id); return r ? {size: r.blob.size, read: (await r.blob.arrayBuffer()).byteLength, type: r.blob.type} : null; }, tags: async (id)=>{ const r = await idbGet("audio", id); return parseAudioTags(r.blob); }};
+// damaged stored files (damaged.js)
+window.__dmg = {ids: ()=> [...damagedAudio.ids], get: async (id)=> (await idbGet("audio", id)).blob, salvage: salvageOldFile, skipped: ()=> zipSkipped.slice(),
+  zip: (entries)=> buildZipBlob(entries),
+  // This browser stores files properly, so "damaged" is pretended: a stored
+  // WAV whose second RIFF header starts at byte 12 (the Safari pattern).
+  pretend: ()=>{ storedAudioDamaged = async (id)=>{ const r = await idbGet("audio", id); if(!r || !r.blob) return false; const h = new Uint8Array(await r.blob.slice(0, 16).arrayBuffer()); return String.fromCharCode(...h.subarray(12, 16)) === "RIFF"; }; }};
