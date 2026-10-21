@@ -35,6 +35,8 @@ const closeSettings = p=> p.evaluate(()=> document.querySelector('#settingsClose
   await A.evaluate((c,u)=> window.__dbg3.join(u,c,'Laptop'), CODE, URL_SYNC); await waitIdle(A);
   const B = await device(b, 'B');
   await B.evaluate((c,u)=> window.__dbg3.join(u,c,'iPad'), CODE, URL_SYNC); await waitIdle(B);
+  const disp = await A.evaluate(()=>{ const st = window.__dbg.getRoot().settings; return {mc: st.moreContrast, scale: st.uiScale}; });
+  ok(disp.mc === true && disp.scale === 1.3, 'a fresh install starts with More contrast and the second-largest text');
   const pol0 = await A.evaluate(()=> window.__conv.policy());
   ok(pol0.preset === 'standard' && pol0.when === 'reduce', 'by default: Standard (MP3 192k), Reduce uncompressed audio');
 
@@ -103,6 +105,14 @@ const closeSettings = p=> p.evaluate(()=> document.querySelector('#settingsClose
   await A.evaluate(()=>window.__dbg3.sync()); await waitIdle(A);
   ok((await A.evaluate(()=> window.__conv.policy())).when === 'reduce', 'a change made on B reaches A');
 
+  // While a long conversion runs, the File format page isn't redrawn under
+  // a drop-down in use.
+  await import_(A, ['longtalk.wma']);
+  await waitFor(A, ()=> window.__conv.state().worker, 30000);
+  await openFormat(A);
+  await A.evaluate(()=>{ const sel = document.getElementById('fmtPreset'); sel.__mark = 1; sel.focus(); });
+  await sleep(9000);
+  ok(await A.evaluate(()=> { const sel = document.getElementById('fmtPreset'); return !!(sel && sel.__mark); }), 'the page isn\'t redrawn while its drop-down is in use, during converting');
   await b.close();
   console.log(fails ? fails + ' FAILED' : 'ALL OK');
   process.exit(fails ? 1 : 0);
