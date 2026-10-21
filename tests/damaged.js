@@ -2,7 +2,8 @@
 // old file + tags): Library cleanup → Damaged files finds them and repairs
 // them from the old file inside; export leaves a damaged file out and says
 // so rather than failing. (This browser stores files properly, so the
-// damage is made by hand and its detection pretended.)
+// damage is made by hand: a copy like one that travelled through a shared
+// library, its size agreeing with its data, found by Safari's pattern.)
 //   node damaged.js
 const puppeteer = require('puppeteer-core'); const sleep = ms=>new Promise(r=>setTimeout(r,ms));
 const APP = 'http://localhost:8861/37-player.html';
@@ -36,7 +37,6 @@ const clickText = (p, sel, src) => p.evaluate((sel, src)=>{ const re=new RegExp(
     const old = new Uint8Array(await (await window.__dmg.get(id)).arrayBuffer());
     const head = old.slice(0, 12), list = new Uint8Array(94); list.set([76, 73, 83, 84]);
     await window.__dbg3.put('audio', {id, blob: new Blob([head, old, old, list], {type: 'audio/wav'})});
-    window.__dmg.pretend();
   }, id);
   const dsize = await p.evaluate(async(id)=> (await window.__dmg.get(id)).size, id);
   ok(dsize === origSize * 2 + 12 + 94, 'set up: a stored WAV damaged the Safari way (' + origSize + ' → ' + dsize + ')');
