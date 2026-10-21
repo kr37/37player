@@ -85,6 +85,7 @@ By hand: `./serve.sh` in one terminal (servers on ports 8861 and 8870), then
 | emptyshared | A shared library with nothing in it yet: joining it sends everything up without "use the shared library or combine", and restoring a backup on a device joined to it restores straight in and stays joined |
 | webkitstore | Re-tagging stores the new file in one piece and reads it back on Safari (pretended), and as before elsewhere: MP3 and WAV keep playing with the new tags |
 | damaged | Library cleanup → Damaged files finds a stored file damaged the Safari way and repairs it from the old file inside; export leaves a damaged file out and names it |
+| starter | A library that is still only the starter prayer: no "Back up library", and restoring a backup over it gives no "older than your library" warning; once a track of the person's own is added, both behave as before |
 | big413 | A file the server refuses as too big isn't sent again at every sync, and the status says so |
 
 ## The converter test page (tests/convert/)
