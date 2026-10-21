@@ -4,8 +4,8 @@ Phones and tablets
 
 Safari on an iPad or iPhone erases a website's data after 7 days without a visit, and the library with it. A 37 Player added to the Home Screen keeps its library. It's a separate app with a library of its own, so do this **before** importing anything:
 
-1. In Safari, open 37 Player and tap the **Share** button (a square with an arrow pointing up). With Safari's compact tab layout it's hidden: tap **•••** first.
-2. Choose **Add to Home Screen**. If it isn't showing, scroll down the list. Then tap **Add**.
+1. In Safari, open 37 Player and tap the **Share** button (a square with an arrow pointing up), then **View More**. If Share isn't showing, tap **•••** first.
+2. Choose **Add to Home Screen**. Leave **Open as Web App** turned on: turned off, the icon only opens the website in Safari, with Safari's library and its 7-day limit. Then tap **Add**.
 3. Open **37 Player** from the Home Screen, and set it up there.
 
 Already built a library in Safari? Use 'Import / Export' → Export there, then Import in the Home Screen app.
