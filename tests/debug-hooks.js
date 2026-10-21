@@ -44,3 +44,7 @@ window.__flat = (id)=> isStandInPeaks(findLibraryTrack(id).peaks);
 window.__setPeaks = (id)=>{ findLibraryTrack(id).peaks = Array.from({length:720}, (_, i)=> (i%7)/7); };
 window.__slog = ()=> sharedLogLines.slice(-3);
 window.__ver = versionFromHtml;
+// libraries on one device (libs.js)
+window.__lib = {id: ()=> LIBRARY_ID, list: readLibraryList, create: createLibrary, switchTo: switchLibrary, del: deleteLibrary, rename: renameLibrary,
+  converter: ()=> converterStored().then(r=> !!r), putConverter: ()=> mainStatePut({key: "converter", version: "t", js: new Blob(["x"]), wasm: new Blob(["y"]), size: 2, at: Date.now()}),
+  name: currentLibraryName, popover: openLibraryPopover};
