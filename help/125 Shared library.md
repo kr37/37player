@@ -19,7 +19,14 @@ There's nothing to do. 37 Player checks a few seconds after every change, every 
 
 - **Working offline** is fine: everything plays from this device as always, and changes are sent the next time it's online.
 - **Each device keeps its own settings**: display, PIN, backups and volume aren't shared.
-- **Backups still matter.** A shared library protects against losing one device. It doesn't protect against a mistake made on one device, because that mistake is shared too.
+- **The shared library is this device's backup.** Once everything on a device has reached the shared library, the **Back up library** button reads **In the shared library**, and 37 Player stops reminding you to back up. Until then (just after a change, or while audio is being sent), it says **Sending to the shared library**.
+- **Who keeps backups.** A shared library still needs one device that backs it up: it protects against losing a device, but not against a mistake, because a mistake is shared too. A computer with Chrome or Edge and a backup folder (see 'Backing up') does it by itself, and every device shows when it last did, for example "Backed up by Gen's laptop, today" (on the button's tooltip, and in Settings → Backups and Shared library).
+
+### If a device loses its library
+
+If a device's browser data is cleared, or you want to undo a mess on one device, don't restore an old backup into it: join the shared library again, and choose **Use the shared library here**. That brings back everything as it is now, with everyone's latest changes.
+
+Restoring a backup on a device that's in a shared library offers **Get the current shared library** for this reason. Restoring an older backup there instead first leaves the shared library, because otherwise everything deleted since the backup was made would come back for everyone. A backup made on a device in a shared library says so when it's restored, and suggests joining that shared library instead.
 
 ### When two devices change the same thing
 

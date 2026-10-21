@@ -29,6 +29,10 @@ Anyone can back up, even without the PIN — a backup never changes the library.
 
 The backup is a mirror, not a history: something deleted in 37 Player is removed from the backup too. For a snapshot you can go back to, use 'Import / Export' → Export now and then, and keep that file somewhere else.
 
+### Devices in a shared library
+
+A device in a shared library doesn't need backups of its own: the shared library keeps everything, and 37 Player stops asking once everything on the device has reached it. One computer that keeps a backup folder is still worth having, for mistakes that reach everyone. See 'Shared library'.
+
 ### Restoring
 
 If the browser's data is ever cleared, 37 Player starts as if new, and its setup appears again. Choose the same backup folder and pick **Restore this backup** — everything comes back, and backups carry on in that folder.

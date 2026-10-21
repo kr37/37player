@@ -51,3 +51,8 @@ window.__lib = {id: ()=> LIBRARY_ID, list: readLibraryList, create: createLibrar
 // the welcome (welcome.js)
 window.IMPORT_ACCEPT_FOR_TEST = IMPORT_ACCEPT;
 window.backupInfoForTest = ()=> backupInfo;
+// shared library as the backup (share.js)
+window.__share = {offer: (meta)=> offerNativeImport(meta, {}, {}, null, {backupRestore: true}), meta: ()=> buildNativeMeta({type: "library"}).meta,
+  prompt: backupPromptNeeded, covered: sharedCoversLibrary, keepers: ()=> root.backupKeepers, keeperLines,
+  noteKept: ()=>{ root.backupKeepers = Object.assign({}, root.backupKeepers, {[sharedConfig().deviceName]: Date.now()}); return saveState(); },
+  label: ()=> document.getElementById("btnBackup").textContent, setup: ()=> backupInfo.setupDone};
