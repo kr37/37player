@@ -1,7 +1,8 @@
 // The move from player.37dakinis.net to 37player.com. At the old address
 // (pretended here with window.__p37MovedTo), a browser that never used it is
 // sent straight to the new one; one with a library stays, and is shown
-// "37 Player has moved" with the way across for that library. Saved
+// "37 Player has moved" in the top bar, which opens the way across for that
+// library (nothing pops up by itself). Saved
 // addresses (sync.php, the update check) follow the move.
 //   node moved.js
 const puppeteer = require('puppeteer-core'); const sleep = ms=>new Promise(r=>setTimeout(r,ms));
@@ -51,15 +52,15 @@ async function page(ctx, moved){
   ok(p2.url() === APP, 'used here: stays at the old address');
   const s = await p2.evaluate(()=> window.__dbg.getRoot().settings);
   ok(s.sharedLastUrl === 'https://37player.com/sync.php' && s.updateUrl === 'https://test.37player.com/37-player.html' && s.librariesUrl === 'https://example.org/libraries/', 'saved addresses follow the move: ' + [s.sharedLastUrl, s.updateUrl, s.librariesUrl].join(', '));
-  let m = await modal(p2);
-  ok(/37 Player has a new address/.test(m) && /37player\.com/.test(m), 'the "new address" notice opens by itself');
-  ok(/export it here/.test(m) && /Export…/.test(m) && !/join code/.test(m), 'a library of its own: export here, import there');
-  await p2.screenshot({path: 'shots/moved-notice.png'});
+  ok(!(await modal(p2)), 'nothing pops up by itself: just the button in the top bar');
   ok(await p2.evaluate(()=> document.getElementById('btnMoved').textContent) === '37 Player has moved', 'the top bar says "37 Player has moved"');
+  await p2.evaluate(()=> document.getElementById('btnMoved').click()); await sleep(400);
+  let m = await modal(p2);
+  ok(/37 Player has a new address/.test(m) && /37player\.com/.test(m), 'the button opens the "new address" notice');
+  ok(/export it here/.test(m) && /Export…/.test(m) && !/join code/.test(m), 'a library of its own: export here, import there');
+  ok(/change your bookmark to 37player\.com/.test(m) && !/Home Screen/.test(m), 'in a browser tab on a computer: change the bookmark (no Home Screen talk)');
+  await p2.screenshot({path: 'shots/moved-notice.png'});
   await clickText(p2, '.modal button', '^Decide later$'); await sleep(400);
-  // once a session
-  await p2.reload({waitUntil: 'networkidle0'}); await sleep(1000);
-  ok(!/new address/.test(await modal(p2)), 'not opened again in the same session');
   // the top bar button opens it; Export… opens Import / Export
   await p2.evaluate(()=> document.getElementById('btnMoved').click()); await sleep(400);
   ok(/new address/.test(await modal(p2)), 'the top bar button opens it');
@@ -68,7 +69,6 @@ async function page(ctx, moved){
   await p2.close();
   p2 = await page(ctx, OLD);
   await p2.goto(APP, {waitUntil: 'networkidle0'}); await sleep(1200);
-  await clickText(p2, '.modal button', '^Decide later$'); await sleep(300);
   // a shared library: join again with the code
   await p2.evaluate(()=> window.__moved.setShared({url: 'https://37player.com/sync.php', code: 'ikrc Death comes to us all', deviceName: 'Laptop'}));
   await p2.evaluate(()=>{ window.__moved.open(); }); await sleep(400);
