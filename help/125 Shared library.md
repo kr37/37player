@@ -79,7 +79,9 @@ If anything changes while the list is open (someone else syncs, say), Synchroniz
 
 - **Tick** a playlist or folder to bring it here; **untick** it to take it off this device. The shared library keeps it, and so do the other devices. A track used by two playlists stays while either is ticked.
 - **Nothing changes until Apply.** The bar at the bottom says what Apply will do, for example "Brings 12 tracks (840 MB to download) · Takes 3 tracks off this device".
-- **Tracks in no playlist** have a group of their own at the bottom.
+- **Albums**, below the playlists, list every album in the shared library. Tick one to bring its tracks here, for example to make playlists from them, without bringing any playlist. An album shows as ticked when all its tracks will be here, and partly ticked when some come with a playlist.
+- **Folders** open and close by their arrow or their name; the box beside them ticks everything inside.
+- **Cancel** leaves everything as it was.
 
 ### Everything, or only what you choose
 

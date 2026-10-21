@@ -61,6 +61,7 @@ async function open(b, name){
   ok(await B.evaluate(()=> window.__share.setup()), 'setup is done, with no backup advice');
   ok(/Morning/.test(await tree(B)) && await B.evaluate(()=> window.__dbg.getRoot().library.length) === 1, 'B has the shared library: ' + await tree(B));
   ok(await waitFor(B, ()=> window.__share.covered(), 15000), 'B: everything is in the shared library');
+  ok(await B.evaluate(()=> !!document.querySelector(".sh-status-row #shSyncNow")), 'Sync now sits beside Last checked');
   const lines = await B.evaluate(()=> window.__share.keeperLines());
   ok(lines.length === 1 && /Backed up by Laptop, today/.test(lines[0]), 'B sees who keeps backups: ' + lines.join(' / '));
   ok(/Backed up by Laptop/.test(await B.evaluate(()=> document.getElementById('btnBackup').title)), 'and says so on the button');

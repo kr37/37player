@@ -55,6 +55,7 @@ const addPl = (p, name)=> p.evaluate(async(name)=>{ const r = window.__dbg.getRo
   let text = await B.evaluate(()=> document.getElementById('reviewPage')?.innerText || '');
   ok(/What's on this device/.test(text) && /has everything in the shared library/.test(text), 'the overview opens, saying this device has everything');
   ok((await row(B, 'Two')).state === 'all' && (await row(B, 'Festival')).state === 'all', 'everything is ticked');
+  ok(await B.evaluate(()=>{ const r = document.querySelector('.ch-list'); return r.getBoundingClientRect().width <= 610; }), 'the list is no wider than it needs');
   // a folder's name opens it; it doesn't tick
   await B.evaluate(()=> [...document.querySelectorAll('.ch-folder .ch-name')].find(e=> /Festival/.test(e.textContent)).click()); await sleep(200);
   ok(!!(await row(B, 'Opening')) && (await row(B, 'Festival')).state === 'all', 'tapping a folder\'s name opens it without ticking anything');
@@ -86,13 +87,18 @@ const addPl = (p, name)=> p.evaluate(async(name)=>{ const r = window.__dbg.getRo
   await B.evaluate(()=> document.getElementById('chGo').click()); await sleep(2500); await waitIdle(B);
   ok(/Fresh/.test(await names(B)), 'ticked and applied: Fresh is on B');
   // ---- an album: its tracks come here without its playlists
-  const twoTracks = await A.evaluate(()=>{ const r = window.__dbg.getRoot(); const two = r.tree.find(n=> n.name === 'Two'); return two.items.filter(i=> i.kind === 'track').map(i=> i.refId); });
-  const onB = await B.evaluate(()=> window.__dbg.getRoot().library.map(t=> t.id));
-  const missing = twoTracks.filter(id=> !onB.includes(id));
-  const album = await A.evaluate((ids)=>{ const r = window.__dbg.getRoot(); const tr = r.library.find(t=> ids.includes(t.id)); return tr ? (tr.album || '') : null; }, missing);
-  console.log('album of a track only in Two:', JSON.stringify(album), missing.length);
+  // A adds a track to its library, in no playlist; B (Only what I choose) doesn't get it
+  await A.evaluate(async()=>{ const blob = await (await fetch('/ten.mp3')).blob(); window.__dbg.bulkImportFolder([new File([blob], 'ten.mp3', {type: 'audio/mpeg'})]); });
+  for(let k=0; k<60; k++){ const h = await A.evaluate(()=> document.querySelector('.modal h3')?.textContent || ''); if(/Review/.test(h)) await clickText(A, '.modal button', '^Import$'); if(/Import finished/.test(h)){ await A.evaluate(()=> document.querySelectorAll('.modal [data-close], .modal .btn.primary').forEach(x=>x.click())); break; } await sleep(200); }
+  await A.evaluate(()=> window.__dbg3.sync()); await waitIdle(A);
+  await B.evaluate(()=> window.__dbg3.sync()); await waitIdle(B);
+  const loose = await A.evaluate(()=>{ const r = window.__dbg.getRoot(); const tr = r.library.find(t=> t.filename === 'ten.mp3' || /ten/.test(t.name)); return tr ? {id: tr.id, album: tr.album || ''} : null; });
+  const missing = loose ? [loose.id] : [];
+  const album = loose ? loose.album : null;
+  console.log('the new track:', JSON.stringify(loose));
+  ok(loose && !(await B.evaluate((id)=> window.__dbg.getRoot().library.some(t=> t.id === id), loose.id)), 'a track in no playlist doesn\'t come to B by itself');
   await B.evaluate(()=> document.getElementById('btnSharedReview') && 0); await B.evaluate(()=> window.__choose.open()); await sleep(1200);
-  await B.evaluate(()=> [...document.querySelectorAll('.ch-section-title')][0].click()); await sleep(300);
+  await B.evaluate(()=>{ const b = document.querySelector('.ch-section .ch-twist'); if(b && b.getAttribute('aria-expanded') !== 'true') b.click(); }); await sleep(300);
   const albumName = album || 'No album';
   const before = await row(B, albumName);
   ok(before && before.state !== 'all', 'Albums lists ' + albumName + ', not all here: ' + JSON.stringify(before));
@@ -101,11 +107,11 @@ const addPl = (p, name)=> p.evaluate(async(name)=>{ const r = window.__dbg.getRo
   ok((await row(B, albumName)).state === 'all', 'ticking it ticks the album');
   await B.evaluate(()=> document.getElementById('chGo').click()); await sleep(2500); await waitIdle(B);
   const onB2 = await B.evaluate(()=> window.__dbg.getRoot().library.map(t=> t.id));
-  ok(missing.every(id=> onB2.includes(id)) && !/Two/.test(await names(B)), 'the album\'s tracks are on B, without the playlist Two');
+  ok(missing.every(id=> onB2.includes(id)) && !/Two/.test(await names(B)), 'the album\'s tracks are on B, without bringing any playlist');
   await B.evaluate(()=> window.__dbg3.sync()); await waitIdle(B);
   ok(missing.every(id=> onB2.includes(id)) && (await B.evaluate(()=> window.__dbg.getRoot().library.map(t=> t.id))).length === onB2.length, 'and they stay after the next sync');
   await B.evaluate(()=> window.__choose.open()); await sleep(1200);
-  await B.evaluate(()=> [...document.querySelectorAll('.ch-section-title')][0].click()); await sleep(300);
+  await B.evaluate(()=>{ const b = document.querySelector('.ch-section .ch-twist'); if(b && b.getAttribute('aria-expanded') !== 'true') b.click(); }); await sleep(300);
   ok((await row(B, albumName)).state === 'all', 'opened again, the album shows as here');
   await B.evaluate(()=> document.getElementById('chClose').click()); await sleep(300);
   // ---- come by themselves
