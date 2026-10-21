@@ -28,7 +28,7 @@ async function open(b, name){
   // ---- A: starts its own library, then joins (the first device)
   const A = await open(b, 'A');
   let m = await modal(A);
-  ok(/share a library with your other devices/.test(m) && /Start a library on this device/.test(m) && /Join a shared library/.test(m), 'the welcome asks about sharing first');
+  ok(/share a library with other devices\?/.test(m) && /Start a library on this device/.test(m) && /Join a shared library/.test(m), 'the welcome asks about sharing first');
   await A.screenshot({path: 'shots/share-welcome.png'});
   await clickText(A, '.modal button', '^Start a library on this device$'); await sleep(300);
   ok(/First, a backup folder/.test(await modal(A)), 'starting here goes on to the backup folder');
@@ -75,10 +75,12 @@ async function open(b, name){
 
   // ---- restoring on a joined device
   const oldMeta = await A.evaluate(()=> window.__share.meta());
+  await A.evaluate(async()=>{ const r = window.__dbg.getRoot(); r.tree.push({id:'pA', kind:'playlist', name:'Only on A', order:9, items:[]}); await window.__dbg.saveState(); });
   ok(oldMeta.sharedFrom && oldMeta.sharedFrom.name === 'Test' && !JSON.stringify(oldMeta).includes(CODE.split(' ')[1]), 'a backup says which shared library it\'s from, without the join code');
   await A.evaluate((m)=>{ window.__share.offer(m); }, oldMeta); await sleep(400);
   m = await modal(A);
   ok(/This library is shared/.test(m) && /Get the current shared library/.test(m), 'restoring on a joined device offers the current shared library first');
+  ok(/aren't in the shared library yet, and would be removed from this device/.test(m), 'and warns that what\'s only here would go');
   await A.screenshot({path: 'shots/share-restore.png'});
   await clickText(A, '.modal button', '^Get the current shared library$');
   for(let k=0; k<30; k++){ if(await clickText(A, '.modal button', '^Join$')) break; await sleep(250); }
@@ -87,6 +89,22 @@ async function open(b, name){
   ok(await tree(A) === 'Morning prayers', 'with the current library: B\'s rename, and Evening stays deleted (' + await tree(A) + ')');
   await waitIdle(B); await B.evaluate(()=> window.__dbg3.sync()); await waitIdle(B);
   ok(await tree(B) === 'Morning prayers', 'and nothing came back for B either');
+
+  // ---- D joins from the welcome with partial sync ticked
+  const D = await open(b, 'D');
+  await clickText(D, '.modal button', '^Join a shared library$'); await sleep(300);
+  m = await modal(D);
+  ok(/Bring only the playlists I choose/.test(m) && /next step says how much will travel/.test(m), 'partial sync can be chosen with the join code, and the next step is promised');
+  await D.evaluate((c, u)=>{ document.getElementById('swCode').value = c; document.getElementById('swDevice').value = 'Phone'; document.getElementById('swUrl').value = u; document.getElementById('swPartial').checked = true; document.getElementById('swJoin').click(); }, CODE, URL_SYNC);
+  await waitFor(D, ()=> /Partial sync/.test(document.querySelector('.modal')?.innerText || ''), 10000);
+  const first = await D.evaluate(()=> { const b = document.querySelector('.modal .btn.primary'); return b ? b.textContent : ''; });
+  ok(first === 'Partial sync', 'ticked, the next step leads with Partial sync: ' + first);
+  await D.screenshot({path: 'shots/share-partial.png'});
+  await clickText(D, '.modal button', '^Partial sync$'); await sleep(800); await waitIdle(D);
+  ok(await D.evaluate(()=> !!(window.__dbg.getRoot().settings.sharedLibrary || {}).partial), 'D joined with partial sync');
+  // a track the server has comes "from the shared library", not from a device
+  const note = await D.evaluate(()=> window.__share.missingNote());
+  ok(/on its way from the shared library/.test(note) && !/Laptop/.test(note), 'a file on the server is "on its way from the shared library": ' + note);
 
   // ---- a backup of a shared library, restored on a fresh device
   const C = await open(b, 'C');
