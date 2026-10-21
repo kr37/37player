@@ -91,7 +91,7 @@ const closeSettings = p=> p.evaluate(()=> document.querySelector('#settingsClose
   await A.evaluate(()=> document.querySelector('#fmtEffect details summary').click()); await sleep(300);
   const rows = await A.evaluate(()=> [...document.querySelectorAll('#fmtEffect table tr')].map(r=> [...r.cells].map(c=> c.innerText.trim())));
   console.log('list:', JSON.stringify(rows));
-  ok(rows.length === 2 && rows[0].join('|') === 'Track|Type|Size|Sample rate|Bit rate' && rows[1][1] === 'WAV' && /(KB|MB)$/.test(rows[1][2]) && /kHz$/.test(rows[1][3]) && /kbps$/.test(rows[1][4]), 'opened: name, type, size, sample rate and bit rate of each');
+  ok(rows.length === 2 && rows[0].join('|') === 'Track|Type|Size|Sample rate|Bit rate|Channels' && rows[1][1] === 'WAV' && /(KB|MB)$/.test(rows[1][2]) && /kHz$/.test(rows[1][3]) && /kbps$/.test(rows[1][4]) && /^(mono|stereo)$/.test(rows[1][5]), 'opened: name, type, size, sample rate, bit rate and channels of each');
   await A.evaluate(()=> document.getElementById('fmtEffect').scrollIntoView({block: 'center'})); await sleep(200);
   await A.screenshot({path: 'shots/conv5-format-list.png'});
   await A.evaluate(()=> [...document.querySelectorAll('#fmtEffect th')].find(th=> th.textContent === 'Size').click()); await sleep(200);
