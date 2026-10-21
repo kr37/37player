@@ -99,3 +99,19 @@ limit for sync.php only, add this to the site's Apache config (inside its
 
 Then `sudo apachectl configtest && sudo systemctl reload apache2`, and press
 "Sync now" on the device that has the file.
+
+## The converter (ffmpeg.wasm)
+
+37 Player converts formats a browser can't play (WMA, Apple Lossless,
+compressed AIFF) with ffmpeg.wasm, which devices download from the site the
+first time they need it. To put it there, from the site's folder:
+
+```
+scripts/get_ffmpeg.sh
+```
+
+It writes `ffmpeg/` beside `37-player.html` (about 32 MB, not in git), with an
+`.htaccess` that adds the CORS header (so copies opened from a file can fetch
+it), the `.wasm` type and compression. If the vhost doesn't allow `.htaccess`
+files, put the same lines in it, inside a `<Directory>` for that `ffmpeg/`
+folder. Do this on both sites (player and playertest).

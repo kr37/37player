@@ -71,5 +71,26 @@ By hand: `./serve.sh` in one terminal (servers on ports 8861 and 8870), then
 | af | Autofill off on text fields; viewport resizes for the keyboard |
 | twowin | An older copy in another window is told a newer one is open, stops syncing and asks to be reloaded |
 | conv | Files this browser can't play (WMA, ALAC, compressed AIFF) kept and marked at import; AIFF dropped on a playlist comes in as WAV; Playing says how many can't play; Library cleanup's Check again repairs an old 0:00 AIFF |
+| conv3 | Converting: "Convert them now" asks to download the converter, then WMA and Apple Lossless become MP3 in place; the other device in the shared library gets the MP3; a conversion stops when playback starts and is done again after |
+| conv4 | Two windows: converting in one waits while the other plays; with "Only when nothing is playing" off it carries on, and turned back on it stops and waits |
+| conv5 | The File format settings: a WAV converted under the default, kept under "Don't touch my files" (a WMA still converted, its original kept without asking), Choose the rules with custom AAC showing and converting what it would, FLAC asking first, the settings travelling both ways through a shared library |
+| conv6 | Audio from video files (AAC copied out, Vorbis to MP3, a silent video reported, the tracks in the playlist), and a portable export converted to the preferred format |
 | conv2 | The same through a folder import: the playlist keeps its place for the WMA, and another device in the shared library sees it marked |
 | big413 | A file the server refuses as too big isn't sent again at every sync, and the status says so |
+
+## The converter test page (tests/convert/)
+
+A page to try ffmpeg.wasm (ffmpeg compiled for browsers) on real devices
+before it goes into 37 Player: load time, conversion speed and memory, and
+whether converted files play without gaps. It never touches a 37 Player
+library.
+
+On the test site, once: `cd tests/convert && ./get-ffmpeg.sh` (downloads
+ffmpeg.wasm 0.12.10, about 32 MB, into `tests/convert/ffmpeg/`, not kept in
+git). Then open `https://playertest.37dakinis.net/tests/convert/` on each
+device, and press "Copy results" at the end.
+
+`convert-page.js` runs the same page headless: `(cd .. && python3 -m
+http.server 8862)`, then `node convert-page.js [more files]`; `FMT=aac`
+(or `flac`, `small`) picks the format. Speeds from it say little about a real
+device.

@@ -22,4 +22,13 @@ ffmpeg -loglevel error -y -f lavfi -i "sine=frequency=600:duration=3" -ac 2 -c:a
 ffmpeg -loglevel error -y -f lavfi -i "sine=frequency=700:duration=3" -ac 2 -c:a pcm_s16be conv/song.aiff
 ffmpeg -loglevel error -y -f lavfi -i "sine=frequency=800:duration=3" -ac 2 -c:a adpcm_ima_qt -f aiff conv/ima.aif
 printf '#EXTM3U\n#EXTINF:3,Song\nsong.mp3\n' > conv/notaudio.mp3
+ffmpeg -loglevel error -y -f lavfi -i "sine=frequency=300:duration=1500" -ac 2 -c:a wmav2 -b:a 128k conv/longtalk.wma
+ffmpeg -loglevel error -y -f lavfi -i "sine=frequency=520:duration=90" -ac 2 -c:a libmp3lame -b:a 128k conv/playme.mp3
+ffmpeg -loglevel error -y -f lavfi -i "sine=frequency=330:duration=10" -ac 2 -c:a pcm_s16le conv/tone.wav
+ffmpeg -loglevel error -y -f lavfi -i "sine=frequency=350:duration=10" -ac 2 -c:a pcm_s16le conv/tone2.wav
+ffmpeg -loglevel error -y -f lavfi -i "testsrc=duration=6:size=320x240:rate=15" -f lavfi -i "sine=frequency=440:duration=6" -c:v mpeg4 -c:a aac -b:a 128k -shortest conv/teaching.mp4
+ffmpeg -loglevel error -y -f lavfi -i "testsrc=duration=5:size=320x240:rate=15" -f lavfi -i "sine=frequency=550:duration=5" -c:v mpeg4 -c:a libvorbis -shortest conv/clip.mkv
+ffmpeg -loglevel error -y -f lavfi -i "testsrc=duration=3:size=160x120:rate=10" -c:v mpeg4 conv/silent.mp4
+# The converter, where the test copy looks for it (conv3.js).
+../../scripts/get_ffmpeg.sh > /dev/null && mkdir -p ffmpeg && cp ../../ffmpeg/ffmpeg-core.js ../../ffmpeg/ffmpeg-core.wasm ../../ffmpeg/VERSION ffmpeg/
 echo "Test audio made in tests/www"

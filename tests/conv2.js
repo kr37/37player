@@ -17,6 +17,8 @@ async function device(b, name){
   const p = await (await b.createBrowserContext()).newPage(); await p.setViewport({width:1300,height:900});
   p.on('pageerror', e=>console.log(name,'PAGE ERROR:', e.message));
   p.on('dialog', d=>{ console.log(name,'ALERT:', d.message()); d.dismiss(); });
+  // No converter here: files that can't be played stay as they are, marked.
+  await p.setRequestInterception(true); p.on('request', r=> r.url().includes('/ffmpeg/') ? r.abort() : r.continue());
   await p.goto('http://localhost:8861/37-player.html',{waitUntil:'networkidle0'}); await sleep(800);
   for(const x of ['^English$','^Skip for now$','^Finish$']){ await clickText(p,'.modal button',x); await sleep(300); }
   await p.evaluate(()=> document.querySelector('.modal [data-close]')?.click());
