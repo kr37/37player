@@ -60,7 +60,7 @@ const waitIdle = async (p)=>{ for(let k=0;k<400;k++){ const s = await p.evaluate
   await A.evaluate(()=>window.__dbg3.sync()); await waitIdle(A);
   const libA2 = await lib(A); ok(libA2.tree===libB2.tree && libA2.tracks===libB2.tracks, 'A and B agree after conflict');
   // ---- A frees a track from its playlists and deletes it; B loses it
-  const victim = await A.evaluate(async()=>{ const r=window.__dbg.getRoot(); const t=r.library.find(x=>x.name==='02 loud'); (function w(a){a.forEach(n=>{ if(n.items) n.items=n.items.filter(i=>i.refId!==t.id); if(n.children) w(n.children); });})(r.tree); r.library=r.library.filter(x=>x!==t); await window.__dbg.saveState(); return t.name; });
+  const victim = await A.evaluate(async()=>{ const r=window.__dbg.getRoot(); const t=r.library.find(x=>x.name==='02 loud') || r.library.find(x=>x.name==='Renamed on iPad'); (function w(a){a.forEach(n=>{ if(n.items) n.items=n.items.filter(i=>i.refId!==t.id); if(n.children) w(n.children); });})(r.tree); r.library=r.library.filter(x=>x!==t); await window.__dbg.saveState(); return t.name; });
   await A.evaluate(()=>window.__dbg3.sync()); await waitIdle(A); await B.evaluate(()=>window.__dbg3.sync()); await waitIdle(B);
   ok(!(await lib(B)).tracks.split('|').includes(victim), 'deletion reached B ('+victim+')');
   // ---- B replaces a track's audio (as Standardize or Replace audio would) -> A gets the new file
