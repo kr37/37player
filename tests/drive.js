@@ -50,8 +50,11 @@ const openShared = async p=>{ await p.evaluate(()=>{ window.__dbg.setMode('editi
     await A.evaluate(()=> document.querySelectorAll('.modal [data-close], .modal .btn.primary').forEach(b=>b.click())); await sleep(500);
     const all = await names(A); console.log('A playlists:', all);
     await openShared(A);
+    // "Where the shared library is kept": the server's fields first, Google Drive's once chosen.
+    ok(await A.evaluate(()=> document.getElementById('shWhere').value === 'server' && document.getElementById('shWhereDrive').style.display === 'none' && document.getElementById('shCode').offsetParent !== null), 'Shared library: server chosen at first, Drive fields hidden');
+    await A.evaluate(()=>{ const sel = document.getElementById('shWhere'); sel.value = 'gdrive'; sel.dispatchEvent(new Event('change')); });
     let sec = await A.evaluate(()=> document.getElementById('settingsBody').innerText);
-    ok(/Or keep it on Google Drive/.test(sec) && /Use Google Drive/.test(sec), 'Settings → Shared library offers Google Drive');
+    ok(/Use Google Drive/.test(sec) && !/Join code/i.test(sec), 'choosing Google Drive shows only its part (' + sec.slice(0, 200).replace(/\n/g, ' | ') + ')');
     await signIn(A, ()=> document.getElementById('shDrive').click());
     let m = await modal(A);
     ok(/37 Player libraries on Google Drive/.test(m) && /no 37 Player libraries/.test(m), 'back from signing in: the Drive chooser, with nothing there yet');
