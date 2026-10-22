@@ -43,6 +43,10 @@ A folder with no playlist files in it can still come in as playlists. The review
 
 Tracks are in track-number order, then by file name ("2" before "10"); a track with no number comes after the numbered ones. Since these playlists use every file, this and **Import only tracks that are in playlists** can't both be on.
 
+### Stopping an import part-way
+
+**Stop** during an import doesn't throw anything away: the audio already in stays in. A short dialog says how far it got and how many playlists have all their tracks so far, and offers to make **the complete playlists**, **all of them** (tracks not imported yet become Stops, and the playlist is flagged), or **none** — or to **carry on importing** from where it stopped. Importing the same folder again later brings in the rest: what's already in is recognized, and a playlist made the first time is offered for **Replace**.
+
 ### When a playlist is already here
 
 A playlist with the same name, in the same folder, as one already in 'Edit Playlists' (from a playlist file, or a folder made into a playlist) is listed for review before anything is imported: **Replace** it (the usual choice when bringing in a newer version), **Skip** it, or **Import as new** alongside it.

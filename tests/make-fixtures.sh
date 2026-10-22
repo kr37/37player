@@ -47,6 +47,10 @@ for n in one two three; do ffmpeg -loglevel error -y -f lavfi -i "sine=frequency
 printf '#EXTM3U\n../audio/one.mp3\n../audio/two.mp3\n' > plmiss/Set/Playlists/Good.m3u8
 printf '#EXTM3U\n../audio/one.mp3\n../audio/three.mp3\n../audio/gone.mp3\n' > plmiss/Set/Playlists/Mostly.m3u8
 printf '#EXTM3U\n../audio/three.mp3\n../audio/old1.mp3\n../audio/old2.mp3\n../audio/old3.mp3\n' > plmiss/Set/Playlists/Old.m3u8
+# A slower folder to stop part-way, for the stop dialog (stopimport.js): A has 3 tracks, B 22.
+rm -rf stopimp && mkdir -p stopimp/Set/A stopimp/Set/B
+for i in 1 2 3; do ffmpeg -loglevel error -y -f lavfi -i "sine=frequency=$((300+i*10)):duration=120" -b:a 128k "stopimp/Set/A/a$i.mp3"; done
+for i in $(seq 1 22); do ffmpeg -loglevel error -y -f lavfi -i "sine=frequency=$((400+i*10)):duration=120" -b:a 128k "stopimp/Set/B/b$i.mp3"; done
 # The converter, where the test copy looks for it (conv3.js).
 ../../scripts/get_ffmpeg.sh > /dev/null && mkdir -p ffmpeg && cp ../../ffmpeg/ffmpeg-core.js ../../ffmpeg/ffmpeg-core.wasm ../../ffmpeg/VERSION ffmpeg/
 echo "Test audio made in tests/www"
