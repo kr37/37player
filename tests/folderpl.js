@@ -20,6 +20,8 @@ const DIR = path.join(__dirname, 'www', 'folderpl', 'Pujas');
     return false;
   };
   const go = async ()=>{
+    // Every name the dialog shows while importing ("Importing x.mp3").
+    await p.evaluate(()=>{ window.__seen = new Set(); new MutationObserver(()=>{ const el = document.getElementById('bulkImportFile'); if(el && el.textContent) window.__seen.add(el.textContent); }).observe(document.body, {subtree:true, childList:true, characterData:true}); });
     await p.click('#folderImportGo');
     for(let i=0; i<120; i++){ await sleep(250); const done = await p.evaluate(()=> [...document.querySelectorAll('.modal h3')].some(h=> /import/i.test(h.textContent) && !document.getElementById('bulkImportStatus'))); if(done) break; }
     await sleep(500);
@@ -42,6 +44,8 @@ const DIR = path.join(__dirname, 'www', 'folderpl', 'Pujas');
     {f:'Teachings', c:[{p:'Teachings', i:['Intro']}, {p:'Day 1', i:['Session']}]},
   ]}];
   ok(JSON.stringify(s1) === JSON.stringify(want), 'folders, names and order as expected');
+  const seen = await p.evaluate(()=> [...window.__seen]);
+  ok(seen.includes('Importing Tara 10.mp3') && seen.length >= 7, 'the import names each file as it goes (' + seen.length + ' names)');
 
   // Same folder again: the four show as already here, Replace by default; unticking hides them.
   ok(await pick(), 'review appears again');
