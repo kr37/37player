@@ -60,6 +60,7 @@ By hand: `./serve.sh` in one terminal (servers on ports 8861 and 8870), then
 | folderpl | Folder import making a playlist of each folder: names, nesting, track-number order, re-importing, unticked |
 | plmiss | Playlists whose audio isn't all there: import all, only complete ones, or none |
 | stopimport | Stopping a folder import part-way: complete / all / no playlists, and Carry on |
+| quota | Storage filling up during a folder import: stops at once, says why, never hangs |
 | play | Pressing play on a track still downloading: one download, no restarts, never starts by itself |
 | bridge3 | Screen off: silent loop through track → silence → track, lock-screen buttons |
 | stoplock | Stops keep the lock screen ready; ▶ there continues |
