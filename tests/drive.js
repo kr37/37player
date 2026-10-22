@@ -135,6 +135,23 @@ const openShared = async p=>{ await p.evaluate(()=>{ window.__dbg.setMode('editi
     await A.evaluate(()=> window.__dbg3.sync()); await waitIdle(A);
     ok(await A.evaluate(()=> window.__dbg3.status().state) !== 'error', 'signed in again, A syncs');
     ok(await A.evaluate(()=> window.__dbg.getRoot().settings.sharedLibrary.refreshToken) !== cfgA.refreshToken, 'with the new sign-in kept');
+    // ---- C: Switch libraries → New library → Join a shared library → Google Drive…
+    const C = await device(b, 'C'); await settle(C);
+    await C.evaluate(()=> window.__lib.newDialog()); await sleep(400);
+    await C.evaluate(()=>{ document.querySelector('input[name=libNewHow][value=join]').click(); document.getElementById('libNewDevice').value = 'Laptop'; });
+    ok(await C.evaluate(()=> !!document.getElementById('libNewDrive') && document.getElementById('libNewDrive').offsetParent !== null), 'New library → Join a shared library offers Google Drive');
+    await C.screenshot({path: 'shots/drive-newlib.png'});
+    await C.evaluate(()=> document.getElementById('libNewDrive').click());
+    let chooser = false;
+    for(let k = 0; k < 120 && !chooser; k++){ await sleep(300); try{ chooser = await C.evaluate(()=> !!document.querySelector('.drive-libs [data-lib]')); }catch(e){} }
+    ok(chooser, 'the new library opens, signs in to Google and shows the Drive\'s libraries');
+    ok(await C.evaluate(()=> document.getElementById('drDevice').value) === 'Laptop', 'with the device name carried over');
+    ok(await C.evaluate(()=> window.__lib.id()) !== 'main', 'in the new library, not the first one');
+    await C.evaluate(()=>{ [...document.querySelectorAll('.drive-libs [data-lib]')].find(x=> x.textContent === 'IKRC').click(); });
+    for(let k=0; k<40; k++){ if(await clickText(C, '.modal button', '^Join$') || await clickText(C, '.modal button', '^Use the shared library here')) break; await sleep(250); }
+    await sleep(1000); await waitIdle(C);
+    ok(await C.evaluate(()=> (window.__dbg.getRoot().settings.sharedLibrary || {}).kind) === 'gdrive' && /From iPad/.test(await names(C)), 'and joins it: ' + await names(C));
+    ok(await C.evaluate(()=> window.__lib.list().list.find(l=> l.id === window.__lib.id()).name) === 'IKRC', 'taking its name');
   } finally {
     console.log(fails ? fails + ' FAILED' : 'ALL OK');
     await b.close(); g.close(); php.kill();
