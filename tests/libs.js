@@ -30,7 +30,7 @@ const addPlaylist = (p, name)=> p.evaluate(async (name)=>{ const r = window.__db
   await A.goto(APP, {waitUntil:'networkidle0'}); await sleep(800); await settle(A);
   ok(await A.evaluate(()=> window.__lib.id()) === 'main', 'the first library is the original database');
   ok(await A.evaluate(()=> getComputedStyle(document.getElementById('btnLibrary')).display === 'none'), 'with one library, the top bar shows no library name');
-  await A.evaluate(async()=>{ const r = window.__dbg.getRoot(); r.tree = r.tree.filter(n=> n.name !== 'Classes'); delete r.settings.starterPlaylistId; r.settings.pin = '1234'; window.__dbg.disp('dark', false); await window.__dbg.saveState(); });
+  await A.evaluate(async()=>{ const r = window.__dbg.getRoot(); r.tree = r.tree.filter(n=> n.name !== 'Archive'); delete r.settings.starterPlaylistId; r.settings.pin = '1234'; window.__dbg.disp('dark', false); await window.__dbg.saveState(); });
   await addPlaylist(A, 'Dharma');
   await A.evaluate(()=> window.__lib.putConverter());
 
