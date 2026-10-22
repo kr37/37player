@@ -4,7 +4,7 @@
 window.__dbg = {getRoot:()=>root, saveState, bulkImportFolder, setMode:(m)=>{appMode=m; applyAppMode();}, editPl:(id)=>{editingPlaylistId=id; renderEditorScreen();}, render:()=>renderPlayer(), disp:(th,mc)=>{ root.settings.theme=th; root.settings.moreContrast=mc; applyDisplaySettings(); }};
 window.__dbg3 = {put: (s,v)=>idbPut(s,v),
   // joins, pressing the join dialog's "Join" itself
-  join: async (u,c,n)=>{ const pr = joinSharedLibrary(u,c,n); const iv = setInterval(()=>{ const b=[...document.querySelectorAll('.modal button')].find(b=>b.textContent.trim()==='Join'); if(b){ window.__joinDialog = b.closest('.modal').innerText; b.click(); } }, 150); try{ return await pr; } finally { clearInterval(iv); } },
+  join: async (u,c,n,o)=>{ const pr = joinSharedLibrary(u,c,n,o); const iv = setInterval(()=>{ const b=[...document.querySelectorAll('.modal button')].find(b=>b.textContent.trim()==='Join'); if(b){ window.__joinDialog = b.closest('.modal').innerText; b.click(); } }, 150); try{ return await pr; } finally { clearInterval(iv); } },
   fetchNow: sharedFetchTracksNow, missing: sharedTrackMissing, review: openSharedReview, rvState: ()=>sharedReviewState,
   sync: (o)=>runSharedSync(Object.assign({force:true},o||{})), status: ()=>sharedStatus, pending: ()=>sharedPending,
   leave: leaveSharedLibrary, render: renderSharedSection, awake: sharedAwakeStart, awakeOn: ()=>!!sharedAwake};
@@ -80,3 +80,6 @@ window.__hold = ()=> sharedTransferHold(); window.__opbar = (on)=>{ if(on) setAc
 window.__lib.newDialog = ()=> openNewLibraryDialog();
 // exporting files unzipped (exportfile.js)
 window.__exp = {select: (ids)=>{ appMode = "library"; applyAppMode(); libSelectedTracks.clear(); ids.forEach(i=> libSelectedTracks.add(i)); }, dialog: ()=> openExportDialog()};
+// the radio-button decision dialogs (askRadio): pick by label, press its button
+window.__radio = (labelRe)=>{ const re = new RegExp(labelRe); const l = [...document.querySelectorAll('#askRadios label')].find(x=> re.test(x.querySelector('strong').textContent)); if(!l) return false; l.querySelector('input').checked = true; document.getElementById('askGo').click(); return true; };
+window.__radioChecked = ()=> document.querySelector('#askRadios input:checked')?.closest('label').querySelector('strong').textContent || '';

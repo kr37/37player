@@ -34,9 +34,7 @@ const waitIdle = async (p)=>{ for(let k=0;k<400;k++){ const s = await p.evaluate
   console.log('A:', await names(A));
   const B = await device(b,'B');
   await B.evaluate(async()=>{ const r = window.__dbg.getRoot(); r.tree = []; r.library = []; delete r.settings.starterPlaylistId; await window.__dbg.saveState(); });
-  B.evaluate((c,u)=> window.__dbg3.join(u,c,'iPad'), CODE, URL_SYNC).catch(()=>{});
-  // the wrapper clicks "Join" — beat it to "Only what I choose"
-  for(let k=0;k<40;k++){ const done = await B.evaluate(()=>{ const b=[...document.querySelectorAll('.modal button')].find(b=>b.textContent.trim()==='Only what I choose'); if(b){ b.click(); return true; } return false; }); if(done) break; await sleep(50); }
+  B.evaluate((c,u)=> window.__dbg3.join(u,c,'iPad',{partial: true}), CODE, URL_SYNC).catch(()=>{}); // Only what I choose ticked: the wrapper's Join takes it
   await sleep(3000);
   console.log('B after join:', await names(B), ' review open:', await B.evaluate(()=>!!document.getElementById('reviewPage')));
   ok(!(await names(B)).includes('One') && await B.evaluate(()=>!!document.querySelector('#reviewPage.choose-page')), 'partial join: nothing arrives, What\'s on this device opens');

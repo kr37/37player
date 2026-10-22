@@ -47,7 +47,7 @@ const waitIdle = async (p)=>{ for(let k=0;k<400;k++){ const s = await p.evaluate
   await build(F,'F');
   F.evaluate((c,u)=> window.__dbg3.join(u,c,'Phone'), CODE, URL_SYNC).catch(()=>{});
   await sleep(1500);
-  await clickText(F, '.modal button', '^Combine');
+  await F.evaluate(()=> window.__radio('^Combine'));
   await sleep(1500); await waitIdle(F); await A.evaluate(()=>window.__dbg3.sync()); await sleep(800); await waitIdle(A);
   const tA = await lib(A), tF = await lib(F);
   console.log('A tree:', tA.tree); console.log('F tree:', tF.tree);

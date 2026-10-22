@@ -42,7 +42,7 @@ const waitIdle = async (p)=>{ for(let k=0;k<400;k++){ const s = await p.evaluate
   await sleep(1500);
   const dlg = await F.evaluate(()=> document.querySelector('.modal')?.innerText || '');
   console.log('preview dialog:\n' + dlg.split('\n').filter(Boolean).join('\n'));
-  await clickText(F, '.modal button', '^Combine');
+  await F.evaluate(()=> window.__radio('^Combine'));
   for(let k=0;k<100;k++){ const v = await F.evaluate(()=>window.__dbg3.status().version); if(v>=2) break; await sleep(200); }
   console.log('F at version', await F.evaluate(()=>window.__dbg3.status().version));
   await waitIdle(F); await A.evaluate(()=>window.__dbg3.sync()); await sleep(500); await waitIdle(A);
