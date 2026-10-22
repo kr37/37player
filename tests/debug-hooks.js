@@ -72,3 +72,5 @@ window.__dmg = {ids: ()=> [...damagedAudio.ids], get: async (id)=> (await idbGet
   // WAV whose second RIFF header starts at byte 12 (the Safari pattern).
   pretend: ()=>{ storedAudioDamaged = async (id)=>{ const r = await idbGet("audio", id); if(!r || !r.blob) return false; const h = new Uint8Array(await r.blob.slice(0, 16).arrayBuffer()); return String.fromCharCode(...h.subarray(12, 16)) === "RIFF"; }; }};
 window.__starter = {just: ()=> libraryIsJustStarter(), check: (meta)=> checkRestoreAgainstLibrary(meta), label: ()=> { const b = document.getElementById("btnBackup"); return b.style.display === "none" ? "" : b.textContent; }, update: ()=> updateBackupIndicator()};
+// files opened with 37 Player (openwith.js)
+window.__open = {take: (files)=> takeOpenedFiles(files), lastImport: ()=> [...(lastImportIds() || [])], preview: ()=> libPreviewTrackId};

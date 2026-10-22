@@ -33,6 +33,15 @@ On Android, the welcome offers to install 37 Player as an app (or use Chrome's �
 
 In Chrome or Edge on a computer, 37 Player can also be installed as an app (the install icon in the address bar, or the ⋮ menu). It opens in a window of its own, with its own icon, and shares the website's library. Browsers are more likely to mark an installed app's storage **persistent**, protected from being cleared when the disk fills up. 37 Player asks for persistent storage every time it starts; if the browser shows a prompt about it, choose **Allow**. To check whether it's been granted, open Settings → **Library info**.
 
+### Opening audio files with 37 Player
+
+Installed as an app, 37 Player can open audio files from outside it:
+
+- **On a computer** (Chrome, Edge or Brave): it's offered under **Open with** for MP3, M4A, WAV, FLAC and the other audio types. It can be made the default for a type the usual way: Default apps on Windows, Get Info → Open with → Change All on a Mac, or the file manager's settings on Linux. The first time, the browser asks once whether to allow it.
+- **On Android:** it's in the **Share** menu, so a recording can be shared to it from Files, a chat, or a recorder app.
+
+Either way, 37 Player asks: **Play it now** (in a little player of its own; the library stays as it is, and anything playing in 37 Player is paused first), **Import** (the usual import, behind the PIN), or **Play and import** (imported, then played from the Library). This isn't possible on an iPad or iPhone, in Safari on a Mac, or in Firefox.
+
 ### The new address
 
 37 Player moved from player.37dakinis.net to **37player.com** in October 2026. Because the browser keeps a library separately for each address, a device that used the old address still has its library there. The old address shows **37 Player has moved** in the top bar, with the way across for the open library: a shared library is simply joined again at 37player.com; any other library is exported there and imported at 37player.com, or restored from its backup folder. On an iPad or phone, the Home Screen app is then removed and added again from the new address.
