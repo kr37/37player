@@ -6,6 +6,7 @@ cd "$(dirname "$0")"
 [ -f www/ten.mp3 ] || ./make-fixtures.sh || exit 1
 mkdir -p shots syncdata
 python3 make-debug-copy.py || exit 1
+rm -f www/libraries/starter.mp3 # only starter.js serves the starter track; other tests' new libraries start without it
 SYNC37_DATA_DIR="$PWD/syncdata" php -S 127.0.0.1:8870 -t .. > php.log 2>&1 &
 PHP=$!
 (cd www && exec python3 -m http.server 8861 > ../http.log 2>&1) &
