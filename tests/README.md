@@ -63,6 +63,7 @@ By hand: `./serve.sh` in one terminal (servers on ports 8861 and 8870), then
 | quota | Storage filling up during a folder import: stops at once, says why, never hangs |
 | libdel | New library → Start empty skips the sharing question; deleting a library deletes its backup folder only if asked, only 37 Player's files, only while it's that library's |
 | place | Reloads keep the theme (no dark flash) and the place: Settings section, Help topic, tab; a PIN is still asked |
+| phonecols | Phone: dragging the line between columns with a finger, portrait and landscape, kept after a reload |
 | play | Pressing play on a track still downloading: one download, no restarts, never starts by itself |
 | bridge3 | Screen off: silent loop through track → silence → track, lock-screen buttons |
 | stoplock | Stops keep the lock screen ready; ▶ there continues |
