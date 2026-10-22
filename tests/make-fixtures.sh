@@ -29,6 +29,17 @@ ffmpeg -loglevel error -y -f lavfi -i "sine=frequency=350:duration=10" -ac 2 -c:
 ffmpeg -loglevel error -y -f lavfi -i "testsrc=duration=6:size=320x240:rate=15" -f lavfi -i "sine=frequency=440:duration=6" -c:v mpeg4 -c:a aac -b:a 128k -shortest conv/teaching.mp4
 ffmpeg -loglevel error -y -f lavfi -i "testsrc=duration=5:size=320x240:rate=15" -f lavfi -i "sine=frequency=550:duration=5" -c:v mpeg4 -c:a libvorbis -shortest conv/clip.mkv
 ffmpeg -loglevel error -y -f lavfi -i "testsrc=duration=3:size=160x120:rate=10" -c:v mpeg4 conv/silent.mp4
+# A folder of albums with no playlist files, for "Make a playlist of each folder" (folderpl.js).
+# Track numbers deliberately disagree with the file names' order.
+rm -rf folderpl && mkdir -p "folderpl/Pujas/Heruka" "folderpl/Pujas/Tara" "folderpl/Pujas/Teachings/Day 1"
+fp(){ ffmpeg -loglevel error -y -f lavfi -i "sine=frequency=$3:duration=1" -metadata title="$2" ${4:+-metadata track=$4} -b:a 64k "$1"; }
+fp "folderpl/Pujas/Heruka/b-10 Dedication.mp3" Dedication 300 10
+fp "folderpl/Pujas/Heruka/z-2 Prayers.mp3" Prayers 310 2
+fp "folderpl/Pujas/Heruka/a-untagged.mp3" Untagged 320
+fp "folderpl/Pujas/Tara/Tara 10.mp3" T10 330
+fp "folderpl/Pujas/Tara/Tara 2.mp3" T2 340
+fp "folderpl/Pujas/Teachings/Intro.mp3" Intro 350 1
+fp "folderpl/Pujas/Teachings/Day 1/Session.mp3" Session 360 1
 # The converter, where the test copy looks for it (conv3.js).
 ../../scripts/get_ffmpeg.sh > /dev/null && mkdir -p ffmpeg && cp ../../ffmpeg/ffmpeg-core.js ../../ffmpeg/ffmpeg-core.wasm ../../ffmpeg/VERSION ffmpeg/
 echo "Test audio made in tests/www"

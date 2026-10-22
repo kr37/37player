@@ -31,6 +31,16 @@ So for the tidiest result, gather the playlist files into a "playlists" folder, 
 
 Playlists from Music.app's Library.xml are the exception: they keep the playlist folders they had in Music.app.
 
+### Folders as playlists
+
+A folder with no playlist files in it can still come in as playlists. The review before importing offers **Make a playlist of each folder** — ticked to begin with when the folder has no playlists of its own, unticked when it does. Each folder holding audio becomes a playlist named after it, inside playlist folders arranged like the folders you chose, counting the chosen folder itself:
+
+- `Pujas/Heruka/…` and `Pujas/Tara/…` → **Pujas** → **Heruka**, and **Pujas** → **Tara**
+- `Heart Jewel/…` on its own → one playlist, **Heart Jewel**, at the top level
+- `Teachings/Intro.mp3` beside `Teachings/Day 1/…` → **Teachings** → **Teachings** (the loose tracks) and **Teachings** → **Day 1**
+
+Tracks are in track-number order, then by file name ("2" before "10"); a track with no number comes after the numbered ones. Since these playlists use every file, this and **Import only tracks that are in playlists** can't both be on.
+
 ### When a playlist is already here
 
-A playlist with the same name, in the same folder, as one already in 'Edit Playlists' is listed for review before anything is imported: **Replace** it (the usual choice when bringing in a newer version), **Skip** it, or **Import as new** alongside it.
+A playlist with the same name, in the same folder, as one already in 'Edit Playlists' (from a playlist file, or a folder made into a playlist) is listed for review before anything is imported: **Replace** it (the usual choice when bringing in a newer version), **Skip** it, or **Import as new** alongside it.
