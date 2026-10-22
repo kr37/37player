@@ -76,3 +76,4 @@ window.__starter = {just: ()=> libraryIsJustStarter(), check: (meta)=> checkRest
 window.__open = {take: (files)=> takeOpenedFiles(files), lastImport: ()=> [...(lastImportIds() || [])], preview: ()=> libPreviewTrackId};
 // the converter crashing once (conv5.js): the next conversion throws as ffmpeg.wasm did
 window.__crashNext = ()=>{ const real = converterConvert; let once = true; converterConvert = async (...a)=>{ if(once){ once = false; throw new Error("memory access out of bounds"); } return real(...a); }; };
+window.__hold = ()=> sharedTransferHold(); window.__opbar = (on)=>{ if(on) setActiveOperationProgress("Sending 3 of 9", null); else clearActiveOperation(); };

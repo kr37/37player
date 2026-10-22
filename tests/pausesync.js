@@ -24,5 +24,21 @@ let fails=0; const ok=(c,m)=>{ console.log((c?'ok   ':'FAIL ')+m); if(!c) fails+
   await p.evaluate(()=> window.__ah.pause()); await sleep(1500); // the button some lock screens show while the silent loop plays
   s = await p.evaluate(()=> window.__st());
   ok(!s.paused, 'pause shown during syncing also resumes the paused track');
+  // Sending and receiving follow File format's switch: held while playing, unless "Any time"
+  s = await p.evaluate(()=> window.__st());
+  if(s.paused){ await p.evaluate(()=> window.__ah.play()); await sleep(1200); }
+  ok(await p.evaluate(()=> window.__hold()) === 'playing', '"Only when not playing": files wait while playing');
+  await p.evaluate(()=>{ window.__dbg.getRoot().settings.standardizeOnlyWhenIdle = false; });
+  ok(await p.evaluate(()=> window.__hold()) === null, '"Any time": files go on during playback');
+  await p.evaluate(()=>{ window.__dbg.getRoot().settings.standardizeOnlyWhenIdle = true; });
+  // Settings sits above the bar at the bottom while it shows
+  await p.evaluate(()=> window.__dbg4.settings()); await sleep(400);
+  const gap0 = await p.evaluate(()=> parseFloat(getComputedStyle(document.querySelector('.settings-page')).bottom));
+  await p.evaluate(()=> window.__opbar(true)); await sleep(400);
+  const bar = await p.evaluate(()=> document.getElementById('globalOperationBar').getBoundingClientRect().height);
+  const gap1 = await p.evaluate(()=> parseFloat(getComputedStyle(document.querySelector('.settings-page')).bottom));
+  await p.evaluate(()=> window.__opbar(false)); await sleep(400);
+  const gap2 = await p.evaluate(()=> parseFloat(getComputedStyle(document.querySelector('.settings-page')).bottom));
+  ok(bar > 20 && Math.abs(gap1 - (gap0 + bar)) < 2 && Math.abs(gap2 - gap0) < 1, 'Settings moves up above the bottom bar, and back: ' + [gap0, bar, gap1, gap2].map(Math.round).join(' / '));
   console.log(fails? fails+' FAILED':'ALL OK'); await b.close();
 })();
