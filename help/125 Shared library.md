@@ -4,12 +4,12 @@ A shared library keeps the same tracks and playlists on several devices: the roo
 
 ### Joining
 
-You need a **join code** from whoever runs your shared library. Enter it with a name for this device (for example "Gompa iPad"), either in the welcome when 37 Player first opens (**Join a shared library**) or later in Settings → **Shared library**, and choose **Join**.
+You need a **join code** from whoever runs your shared library. Enter it with a name for this device (for example "Temple iPad"), either in the welcome when 37 Player first opens (**Join a shared library**) or later in Settings → **Shared library**, and choose **Join**.
 
 To bring only some of the shared library to this device, tick **Bring only the playlists I choose (partial sync)** beside the code. Nothing moves yet: the next step says how much would travel either way, with partial sync first, and you choose there. Partial sync can also be turned on or off later. See 'Partial sync' below.
 
 - **A device with nothing in it yet** simply receives the shared library.
-- **A device that already has a library** asks first, and shows how many tracks are already in the shared library, only on this device, and only in the shared library. **Use the shared library here** replaces what's on this device with the shared one. **Combine them** adds this device's tracks and playlists to the shared library, which is how the first device fills an empty shared library. A recording this device imported separately (so 37 Player knows it by a different ID) is matched to the shared copy by its name, album, artist and length, so combining doesn't create duplicates. Folders and playlists work the same way: a folder or playlist with the same name in the same place becomes one with the shared one, such as the **Archive** folder every new library starts with. If a playlist's tracks differ, this device's version is kept beside the shared one as "Name (device name)", marked ⚠.
+- **A device that already has a library** asks first. Each choice says what it removes, sends and downloads. **Use the shared library here** replaces what's on this device with the shared one, so anything only on this device is removed. **Combine them** (the suggested choice, since it loses nothing) adds this device's tracks and playlists to the shared library, which is how the first device fills an empty shared library. A recording this device imported separately (so 37 Player knows it by a different ID) is matched to the shared copy by its name, album, artist and length, so combining doesn't create duplicates. Folders and playlists work the same way: a folder or playlist with the same name in the same place becomes one with the shared one, such as the **Archive** folder every new library starts with. If a playlist's tracks differ, this device's version is kept beside the shared one as "Name (device name)", marked ⚠.
 
 Before anything moves, 37 Player says how much joining will download or send (for example "about 2.1 GB"). On mobile data or a slow connection, you can cancel and join later.
 
@@ -53,7 +53,7 @@ Restoring a backup on a device that's in a shared library offers **Get the curre
 A track whose audio isn't on this device yet shows its name in **bold**, with the reason under it:
 
 - **"On its way from the shared library"** means the shared library has the audio, and it's downloading. On Playing, **Get them now** above the list fetches a playlist's missing tracks straight away, even while something plays.
-- **"Waiting for Gompa laptop to send it"** means the device that added the track hasn't sent its audio yet, perhaps because it was closed too soon. It arrives once that device is open and online again.
+- **"Waiting for Office laptop to send it"** means the device that added the track hasn't sent its audio yet, perhaps because it was closed too soon. It arrives once that device is open and online again.
 
 Playing also says above the list how many of the playlist's tracks can't play yet, so check before a session starts.
 

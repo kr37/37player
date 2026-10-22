@@ -57,6 +57,10 @@ By hand: `./serve.sh` in one terminal (servers on ports 8861 and 8870), then
 | dup | The same recordings imported on two devices are matched |
 | ipad | Touch: selecting, dragging, folders (iPad emulation) |
 | miss, miss2 | Tracks not arrived yet: banner, "waiting for (device)", clearing when they land; miss2 in the order an import writes |
+| folderpl | Folder import making a playlist of each folder: names, nesting, track-number order, re-importing, unticked |
+| plmiss | Playlists whose audio isn't all there: import all, only complete ones, or none |
+| stopimport | Stopping a folder import part-way: complete / all / no playlists, and Carry on |
+| quota | Storage filling up during a folder import: stops at once, says why, never hangs |
 | play | Pressing play on a track still downloading: one download, no restarts, never starts by itself |
 | bridge3 | Screen off: silent loop through track → silence → track, lock-screen buttons |
 | stoplock | Stops keep the lock screen ready; ▶ there continues |
