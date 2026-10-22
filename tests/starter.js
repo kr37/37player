@@ -2,7 +2,7 @@
 // is added, it isn't treated as their library: restoring a backup doesn't
 // warn that the backup is older, and there's no "Back up library".
 //   node starter.js
-const puppeteer = require('puppeteer-core'); const sleep = ms=>new Promise(r=>setTimeout(r,ms));
+const puppeteer = require('puppeteer-core'); const fs = require('fs'), path = require('path'); const sleep = ms=>new Promise(r=>setTimeout(r,ms));
 const APP = 'http://localhost:8861/37-player.html';
 let fails = 0; const ok=(c,m)=>{ console.log((c?'ok   ':'FAIL ')+m); if(!c) fails++; };
 const clickText = (p, sel, src) => p.evaluate((sel, src)=>{ const re=new RegExp(src); const el=[...document.querySelectorAll(sel)].find(e=>e.offsetParent!==null && re.test(e.textContent.trim())); if(el){ el.click(); return true; } return false; }, sel, src);
@@ -53,5 +53,16 @@ async function open(b){
   C.evaluate((m)=>{ window.__starter.check(m); }, meta); await sleep(800);
   const mc = await modal(C);
   ok(/older/i.test(mc), 'and restoring an older backup over it warns, as before: ' + mc.replace(/\s+/g, ' ').slice(0, 100));
+  // A brand-new device: the starter track is fetched (libraries/starter.mp3) into Archive → Acoustic
+  fs.mkdirSync(path.join(__dirname, 'www', 'libraries'), {recursive: true});
+  fs.copyFileSync(path.join(__dirname, 'fixtures', 'starter.mp3'), path.join(__dirname, 'www', 'libraries', 'starter.mp3'));
+  const D = await (await b.createBrowserContext()).newPage(); await D.setViewport({width: 1200, height: 900});
+  await D.evaluateOnNewDocument(()=>{ window.__noAutoConverter = true; try{ if(!localStorage.getItem('37player.device')) localStorage.setItem('37player.device', JSON.stringify({librariesUrl: 'http://localhost:8861/libraries/'})); }catch(e){} });
+  D.on('pageerror', e=> console.log('PAGE ERROR:', e.message)); D.on('dialog', d=> d.dismiss());
+  await D.goto(APP, {waitUntil: 'networkidle0'}); await sleep(600);
+  let got = null;
+  for(let k = 0; k < 40 && !got; k++){ await sleep(250); got = await D.evaluate(()=>{ const r = window.__dbg.getRoot(); const t = r.library[0]; return t ? {name: t.name, file: t.filename, tree: JSON.stringify(r.tree.map(n=> [n.name, (n.children || []).map(c=> [c.name, (c.items || []).length])])), just: window.__starter.just()} : null; }); }
+  ok(got && got.name === 'Spontaneous Accomplishment of Wishes - Acoustic' && got.tree === '[["Archive",[["Acoustic",1]]]]', 'a new library gets the starter track in Archive → Acoustic: ' + JSON.stringify(got));
+  ok(got && got.file === 'Spontaneous Accomplishment of Wishes - Acoustic.mp3' && got.just, 'named after the track, and still "not yet the person\'s library"');
   console.log(fails ? fails + ' FAILED' : 'ALL OK'); await b.close();
 })();
