@@ -78,6 +78,7 @@ const openShared = async p=>{ await p.evaluate(()=>{ window.__dbg.setMode('editi
     const B = await device(b, 'B');
     await clickText(B, '.modal button', '^English$'); await sleep(400);
     await clickText(B, '.modal button', '^Join a shared library$'); await sleep(400);
+    ok(await B.evaluate(()=>{ const sel = document.getElementById('swWhere'); sel.value = 'gdrive'; sel.dispatchEvent(new Event('change')); return document.getElementById('swDrive').offsetParent !== null && document.getElementById('swJoin').offsetParent === null && document.getElementById('swCode').offsetParent === null; }), 'welcome join: choosing Google Drive swaps Join for Use Google Drive…');
     await signIn(B, ()=> document.getElementById('swDrive').click());
     m = await modal(B);
     ok(/IKRC/.test(m), 'B, back from signing in, sees IKRC in the chooser');
@@ -142,9 +143,9 @@ const openShared = async p=>{ await p.evaluate(()=>{ window.__dbg.setMode('editi
     const C = await device(b, 'C'); await settle(C);
     await C.evaluate(()=> window.__lib.newDialog()); await sleep(400);
     await C.evaluate(()=>{ document.querySelector('input[name=libNewHow][value=join]').click(); document.getElementById('libNewDevice').value = 'Laptop'; });
-    ok(await C.evaluate(()=> !!document.getElementById('libNewDrive') && document.getElementById('libNewDrive').offsetParent !== null), 'New library → Join a shared library offers Google Drive');
+    ok(await C.evaluate(()=>{ const sel = document.getElementById('libNewWhere'); sel.value = 'gdrive'; sel.dispatchEvent(new Event('change')); return document.getElementById('libNewCode').offsetParent === null && document.getElementById('libNewDevice').offsetParent !== null; }), 'New library → Join a shared library offers Google Drive in the dropdown');
     await C.screenshot({path: 'shots/drive-newlib.png'});
-    await C.evaluate(()=> document.getElementById('libNewDrive').click());
+    await C.evaluate(()=> document.getElementById('libNewGo').click());
     let chooser = false;
     for(let k = 0; k < 120 && !chooser; k++){ await sleep(300); try{ chooser = await C.evaluate(()=> !!document.querySelector('.drive-libs [data-lib]')); }catch(e){} }
     ok(chooser, 'the new library opens, signs in to Google and shows the Drive\'s libraries');
