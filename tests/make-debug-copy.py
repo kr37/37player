@@ -18,4 +18,8 @@ open(os.path.join(here, 'www', '37-player.html'), 'w', encoding='utf-8').write(s
 import re
 old = re.sub(r'<meta name="app-version" content="[^"]+"', '<meta name="app-version" content="1.0.000"', src, count=1)
 open(os.path.join(here, 'www', 'old.html'), 'w', encoding='utf-8').write(old)
+# the manifest, so the test copy links a real one (openwith.js); not sw.js,
+# whose caching would change what the other tests see
+import shutil
+shutil.copyfile(os.path.join(here, '..', 'manifest.webmanifest'), os.path.join(here, 'www', 'manifest.webmanifest'))
 print('tests/www/37-player.html and old.html written')

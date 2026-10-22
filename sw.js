@@ -2,7 +2,8 @@
 // without an internet connection.
 //
 // It looks after exactly two things — the app page itself and help.json —
-// and lets every other request go straight to the network untouched. That
+// and lets every other request go straight to the network untouched (apart
+// from files shared to the app, below). That
 // matters because the app can share a site with other pages: at
 // 37player.com the app is /37-player.html, next to an about page
 // (/index.html) and the libraries/ folder, none of which this should ever
@@ -34,14 +35,34 @@ self.addEventListener("install", (event) => {
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
-      Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))
+      Promise.all(keys.filter((k) => k !== CACHE_NAME && k !== SHARE_CACHE).map((k) => caches.delete(k)))
     )
   );
   self.clients.claim();
 });
 
+// Files shared to 37 Player (Android's Share menu, from the manifest's
+// share_target) arrive as a POST to the app with ?share-target. A static
+// site can't take a POST, so they're kept here, in a cache of their own,
+// and the app is opened with ?shared, which picks them up and empties it.
+const SHARE_CACHE = "37player-share";
+async function takeShare(req) {
+  const form = await req.formData();
+  const files = form.getAll("audio").filter((f) => f && typeof f === "object" && f.size);
+  await caches.delete(SHARE_CACHE);
+  const cache = await caches.open(SHARE_CACHE);
+  await Promise.all(files.map((f, i) => cache.put(FOLDER + "__shared/" + i, new Response(f, {
+    headers: {"Content-Type": f.type || "application/octet-stream", "X-Name": encodeURIComponent(f.name || ("shared-" + i)), "X-Modified": String(f.lastModified || Date.now())},
+  }))));
+  return Response.redirect(APP_PATH + "?shared=" + files.length, 303);
+}
+
 self.addEventListener("fetch", (event) => {
   const req = event.request;
+  if (req.method === "POST" && new URL(req.url).pathname === APP_PATH && new URL(req.url).searchParams.has("share-target")) {
+    event.respondWith(takeShare(req).catch(() => Response.redirect(APP_PATH, 303)));
+    return;
+  }
   if (req.method !== "GET" || req.headers.has("range")) return; // partial requests (update checks, library downloads) go straight through
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;

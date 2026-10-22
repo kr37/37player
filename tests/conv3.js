@@ -44,7 +44,7 @@ const import_ = (p, names)=> p.evaluate(async(names)=>{
   ok(await waitFor(A, ()=> /Keep the originals\?/.test(document.querySelector('.modal')?.innerText || ''), 120000), 'the run ends with "Keep the originals?"');
   const ask = await A.evaluate(()=> document.querySelector('.modal')?.innerText || '');
   console.log('asked:', JSON.stringify(ask));
-  ok(/2 file\(s\) were converted to MP3/.test(ask) && /talk\.wma → talk\.mp3/.test(ask), 'it says which files were converted');
+  ok(/2 files were converted to MP3/.test(ask) && /talk\.wma → talk\.mp3/.test(ask), 'it says which files were converted');
   ok(await A.evaluate(()=> window.__conv.stored()), 'the converter was fetched without a question');
   await clickText(A, '.modal button', '^Keep$'); await sleep(300);
   const after = await tracks(A);
