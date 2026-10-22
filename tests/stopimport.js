@@ -3,7 +3,7 @@
 // Set/A (3 tracks), Set/B (22), imported with "Make a playlist of each folder".
 const puppeteer = require('puppeteer-core'); const path = require('path'); const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const clickText = (p, sel, src) => p.evaluate((sel, src)=>{ const re=new RegExp(src); const el=[...document.querySelectorAll(sel)].find(e=>e.offsetParent!==null && re.test(e.textContent.trim())); if(el){ el.click(); return true; } return false; }, sel, src);
-let fails=0; const ok=(c,m)=>{ console.log((c?'ok   ':'FAIL ')+m); if(!c) fails++; };
+let fails=0, stoppingShown = null; const ok=(c,m)=>{ console.log((c?'ok   ':'FAIL ')+m); if(!c) fails++; };
 const DIR = path.join(__dirname, 'www', 'stopimp', 'Set');
 (async()=>{
   const b = await puppeteer.launch({executablePath: process.env.CHROME || '/usr/bin/google-chrome', args:['--no-sandbox']});
@@ -23,7 +23,8 @@ const DIR = path.join(__dirname, 'www', 'stopimp', 'Set');
   const startAndStop = async (after)=>{
     await p.click('#folderImportGo');
     for(let i=0; i<400; i++){ await sleep(50); const n = await p.evaluate(()=> +((document.getElementById('bulkImportStatus')?.textContent || '').match(/\d+/) || [0])[0]); if(n >= after) break; }
-    await p.evaluate(()=> document.getElementById('bulkImportStop').click());
+    // At once, before the file in hand finishes: the dialog and the bar say so.
+    stoppingShown = await p.evaluate(()=>{ document.getElementById('bulkImportStop').click(); const btn = document.getElementById('bulkImportStop'); return [btn.disabled && /Stopping/.test(btn.textContent), /Stopping once this file is done/.test(document.getElementById('bulkImportStatus').textContent), /^Stopping…/.test(document.querySelector('#globalOperationBar span').textContent), !document.querySelector('#globalOperationBar button')]; });
     for(let i=0; i<200; i++){ await sleep(100); if(await p.$('#stopDone')) return true; }
     return false;
   };
@@ -42,6 +43,7 @@ const DIR = path.join(__dirname, 'www', 'stopimp', 'Set');
 
   ok(await pick(), 'review appears');
   ok(await startAndStop(5), 'Stop brings up the stop dialog');
+  ok(stoppingShown.every(Boolean), 'Stop says "Stopping…" at once in the dialog and on the bar ' + JSON.stringify(stoppingShown));
   let txt = await p.evaluate(()=> document.querySelector('.modal').textContent);
   ok(/Stopped after \d+ of 25/.test(txt) && /1 of the 2 playlists have all their tracks/.test(txt), 'says how far, and 1 of 2 complete');
   ok(await p.evaluate(()=> document.querySelector('input[name="stopPlChoice"]:checked').value) === 'complete', 'B is mostly not imported: complete ones by default');
