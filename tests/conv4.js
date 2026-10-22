@@ -31,6 +31,7 @@ const clickText = (p, sel, src) => p.evaluate((sel, src)=>{ const re=new RegExp(
   ok(await B.evaluate(()=> window.__dbg.getRoot().library.length) === 3, 'the second window has the same library');
 
   // A plays; B is asked to convert.
+  await B.evaluate(()=>{ window.__dbg.getRoot().settings.standardizeOnlyWhenIdle = true; }); // "Only when not playing" (a computer's default is now "Any time")
   await A.bringToFront(); await A.evaluate((id)=>{ window.__play(id); }, ids.play); await sleep(5000);
   await B.bringToFront(); await B.evaluate((id)=>{ window.__conv.convert([id]); }, ids.talk); await sleep(600);
   await clickText(B, '.modal button', '^Download and convert$');

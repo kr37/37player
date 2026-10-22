@@ -88,6 +88,8 @@ const import_ = (p, names)=> p.evaluate(async(names)=>{
   await A.evaluate(()=> document.querySelector('#settingsClose')?.click()); await sleep(300);
 
   // Playback stops a conversion, which is done again after.
+  // "Only when not playing" (a computer's default is now "Any time")
+  await A.evaluate(()=>{ window.__dbg.getRoot().settings.standardizeOnlyWhenIdle = true; });
   await import_(A, ['playme.mp3']);
   await import_(A, ['longtalk.wma']);
   const longId = await A.evaluate(()=> window.__dbg.getRoot().library.find(t=> t.filename === 'longtalk.wma' || t.filename === 'longtalk.mp3').id);

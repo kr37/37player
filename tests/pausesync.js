@@ -27,6 +27,9 @@ let fails=0; const ok=(c,m)=>{ console.log((c?'ok   ':'FAIL ')+m); if(!c) fails+
   // Sending and receiving follow File format's switch: held while playing, unless "Any time"
   s = await p.evaluate(()=> window.__st());
   if(s.paused){ await p.evaluate(()=> window.__ah.play()); await sleep(1200); }
+  await p.evaluate(()=>{ delete window.__dbg.getRoot().settings.standardizeOnlyWhenIdle; });
+  ok(await p.evaluate(()=> window.__hold()) === 'playing', 'never set, on an iPad: files wait while playing');
+  await p.evaluate(()=>{ window.__dbg.getRoot().settings.standardizeOnlyWhenIdle = true; });
   ok(await p.evaluate(()=> window.__hold()) === 'playing', '"Only when not playing": files wait while playing');
   await p.evaluate(()=>{ window.__dbg.getRoot().settings.standardizeOnlyWhenIdle = false; });
   ok(await p.evaluate(()=> window.__hold()) === null, '"Any time": files go on during playback');
