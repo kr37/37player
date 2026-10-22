@@ -48,7 +48,10 @@ const DIR = path.join(__dirname, 'www', 'folderpl', 'Pujas');
   ok(seen.includes('Importing Tara 10.mp3') && seen.length >= 7, 'the import names each file as it goes (' + seen.length + ' names)');
 
   // Same folder again: the four show as already here, Replace by default; unticking hides them.
+  await p.evaluate(()=>{ window.__chk = new Set(); new MutationObserver(()=>{ const el = document.getElementById('analyzingFolderFile'); if(el && el.textContent) window.__chk.add(el.textContent); }).observe(document.body, {subtree:true, childList:true, characterData:true}); });
   ok(await pick(), 'review appears again');
+  const chk = await p.evaluate(()=> [...window.__chk]);
+  ok(chk.some(x=> /^Checking Tara 2\.mp3 — possible duplicate\?$/.test(x)), 'the check says when it\'s looking at a possible duplicate (' + chk.slice(0, 3).join(' | ') + ')');
   let rows = await p.evaluate(()=> [...document.querySelectorAll('#folderImportPlaylistCollisionsList > div')].filter(r=> r.style.display!=='none').map(r=> r.querySelector('.playlist-collision-name').textContent));
   ok(rows.length === 4 && rows.includes('Pujas → Teachings → Day 1'), 'four clashes listed with their folders: ' + rows.join(' | '));
   await p.click('#reviewFolderPlaylists'); await sleep(200);
