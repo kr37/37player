@@ -146,6 +146,7 @@ const openShared = async p=>{ await p.evaluate(()=>{ window.__dbg.setMode('editi
     await C.evaluate(()=> window.__lib.newDialog()); await sleep(400);
     await C.evaluate(()=>{ document.querySelector('input[name=libNewHow][value=join]').click(); document.getElementById('libNewDevice').value = 'Laptop'; });
     ok(await C.evaluate(()=>{ const sel = document.getElementById('libNewWhere'); sel.value = 'gdrive'; sel.dispatchEvent(new Event('change')); return document.getElementById('libNewCode').offsetParent === null && document.getElementById('libNewDevice').offsetParent !== null; }), 'New library → Join a shared library offers Google Drive in the dropdown');
+    ok(await C.evaluate(()=> document.getElementById('libNewGo').textContent) === 'Join, in a new library', 'the button says it joins, in a new library');
     await C.screenshot({path: 'shots/drive-newlib.png'});
     await C.evaluate(()=> document.getElementById('libNewGo').click());
     let chooser = false;
