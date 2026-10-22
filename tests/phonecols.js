@@ -17,10 +17,16 @@ let fails = 0; const ok=(c,m)=>{ console.log((c?'ok   ':'FAIL ')+m); if(!c) fail
   const h = await p.evaluate(()=>{ const el = document.getElementById('editorColA').nextElementSibling; const r = el.getBoundingClientRect(); return {vis: getComputedStyle(el).display !== 'none' && r.width > 0, x: r.left + r.width/2, y: r.top + 200}; });
   ok(h.vis, 'the handle between the first two columns shows on a phone');
   await p.touchscreen.touchStart(h.x, h.y);
-  for(let i = 1; i <= 6; i++){ await p.touchscreen.touchMove(h.x + i*10, h.y); await sleep(30); }
+  let snapDuring = '';
+  for(let i = 1; i <= 6; i++){ await p.touchscreen.touchMove(h.x + i*10, h.y); await sleep(30); if(i === 3) snapDuring = await p.evaluate(()=> getComputedStyle(document.querySelector('.editor-screen')).scrollSnapType); }
   await p.touchscreen.touchEnd(); await sleep(400);
   const after = await widths();
-  ok(after[0] >= before[0] + 40 && after[1] <= before[1] - 40, 'dragging it with a finger widens the first column and narrows the second (' + before.join('/') + ' → ' + after.join('/') + ')');
+  ok(snapDuring === 'none' && await p.evaluate(()=> getComputedStyle(document.querySelector('.editor-screen')).scrollSnapType) !== 'none', 'snapping is off while the finger is on the line, and back on after (' + snapDuring + ')');
+  ok(after[0] >= before[0] + 25 && after[1] <= before[1] - 25, 'dragging it with a finger widens the first column and narrows the second (' + before.join('/') + ' → ' + after.join('/') + ')');
+  ok(after[0] <= Math.round(412 * 0.9) + 2, 'but no wider than 90% of the screen, so its line still shows (' + after[0] + ' of 412)');
+  // Column B, scrolled into place: its own right-hand line is on screen.
+  const bLine = await p.evaluate(async ()=>{ const scr = document.querySelector('.editor-screen'), bEl = document.getElementById('editorColB'); scr.scrollLeft = bEl.offsetLeft; await new Promise(r=> setTimeout(r, 400)); const r = bEl.nextElementSibling.getBoundingClientRect(); return Math.round(r.left) + '–' + Math.round(r.right); });
+  ok(parseInt(bLine) < 412, 'with column B in view, its own line is on screen to drag (' + bLine + ')');
   const saved = await p.evaluate(()=> JSON.stringify(window.__dbg.getRoot().settings.narrowColumnWidths || {}));
   ok(/editorColA/.test(saved) && /editorColB/.test(saved), 'the shares are saved (' + saved + ')');
   await p.reload({waitUntil:'networkidle0'}); await sleep(1200);
