@@ -40,6 +40,13 @@ fp "folderpl/Pujas/Tara/Tara 10.mp3" T10 330
 fp "folderpl/Pujas/Tara/Tara 2.mp3" T2 340
 fp "folderpl/Pujas/Teachings/Intro.mp3" Intro 350 1
 fp "folderpl/Pujas/Teachings/Day 1/Session.mp3" Session 360 1
+# Playlists with audio that isn't there, for the review's playlist choice (plmiss.js):
+# Good finds all its tracks, Mostly 2 of 3, Old 1 of 4.
+rm -rf plmiss && mkdir -p plmiss/Set/audio plmiss/Set/Playlists
+for n in one two three; do ffmpeg -loglevel error -y -f lavfi -i "sine=frequency=500:duration=1" -metadata title=$n -b:a 64k plmiss/Set/audio/$n.mp3; done
+printf '#EXTM3U\n../audio/one.mp3\n../audio/two.mp3\n' > plmiss/Set/Playlists/Good.m3u8
+printf '#EXTM3U\n../audio/one.mp3\n../audio/three.mp3\n../audio/gone.mp3\n' > plmiss/Set/Playlists/Mostly.m3u8
+printf '#EXTM3U\n../audio/three.mp3\n../audio/old1.mp3\n../audio/old2.mp3\n../audio/old3.mp3\n' > plmiss/Set/Playlists/Old.m3u8
 # The converter, where the test copy looks for it (conv3.js).
 ../../scripts/get_ffmpeg.sh > /dev/null && mkdir -p ffmpeg && cp ../../ffmpeg/ffmpeg-core.js ../../ffmpeg/ffmpeg-core.wasm ../../ffmpeg/VERSION ffmpeg/
 echo "Test audio made in tests/www"

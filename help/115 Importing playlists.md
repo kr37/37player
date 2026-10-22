@@ -10,6 +10,8 @@ Playlists from other players come in along with their audio: choose the folder t
 
 A playlist file can be anywhere in the folder you choose. Its tracks are found wherever they are in that folder too — by where the playlist says they are, or, when that's a path on another computer, by the last few folder names and the file name. A track that can't be found leaves a **Stop** named "MISSING TRACK: …" in its place, and the playlist is flagged.
 
+**Playlists with missing audio:** when some playlists here refer to audio that isn't in the folder (old playlist files left behind, say), the review says how many, lists them with how much of each was found, and asks: **import all** of them (each missing track becomes a Stop), **only the ones with all their audio**, or **no playlists, only the audio**. It starts at "all" while every such playlist found at least half its tracks, and otherwise at "only the ones with all their audio". When every playlist is complete, nothing is asked.
+
 **Only what the playlists use:** everything in the folder is imported unless you say otherwise. When the folder has playlists, the review before importing offers **Import only tracks that are in playlists** (off to begin with) — handy for bringing in a friend's session playlists without their whole music collection.
 
 ### Where the playlists end up
