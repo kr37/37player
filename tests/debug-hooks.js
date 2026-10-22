@@ -78,3 +78,5 @@ window.__open = {take: (files)=> takeOpenedFiles(files), lastImport: ()=> [...(l
 window.__crashNext = ()=>{ const real = converterConvert; let once = true; converterConvert = async (...a)=>{ if(once){ once = false; throw new Error("memory access out of bounds"); } return real(...a); }; };
 window.__hold = ()=> sharedTransferHold(); window.__opbar = (on)=>{ if(on) setActiveOperationProgress("Sending 3 of 9", null); else clearActiveOperation(); };
 window.__lib.newDialog = ()=> openNewLibraryDialog();
+// exporting files unzipped (exportfile.js)
+window.__exp = {select: (ids)=>{ appMode = "library"; applyAppMode(); libSelectedTracks.clear(); ids.forEach(i=> libSelectedTracks.add(i)); }, dialog: ()=> openExportDialog()};

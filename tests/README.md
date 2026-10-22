@@ -87,6 +87,7 @@ By hand: `./serve.sh` in one terminal (servers on ports 8861 and 8870), then
 | damaged | Library cleanup → Damaged files finds a stored file damaged the Safari way and repairs it from the old file inside; export leaves a damaged file out and names it |
 | starter | A library that is still only the starter prayer: no "Back up library", and restoring a backup over it gives no "older than your library" warning; once a track of the person's own is added, both behave as before |
 | openwith | Audio files opened with 37 Player (Open with, Android Share): Play it now leaves the library alone, Import imports, Play and import does both; the manifest offers the right types |
+| exportfile | Exporting without a zip: one track as just its file, several as separate files into a chosen folder (a stand-in), a name already there kept |
 | big413 | A file the server refuses as too big isn't sent again at every sync, and the status says so |
 
 ## The converter test page (tests/convert/)
