@@ -27427,7 +27427,7 @@ function renderCleanupConvert(){
   b.addEventListener("click", async ()=>{
     const go = await askChoice(t("fmtConvertConfirmTitle", {n: list.length}), `<p>${t("fmtConvertConfirmBody", {format: escapeHtmlText(formatLabel(target))})}</p>`, [
       {label: t("fmtEffectBtn"), value: "go", kind: "primary"}, {label: t("cancel"), value: null}]);
-    if(go === "go"){ await convertTracks(list.map(tr=> tr.id)); renderSettingsSection(); }
+    if(go === "go"){ await convertTracks(list.map(tr=> tr.id)); renderCleanupConvert(); }
   });
   row.appendChild(b);
   el.appendChild(row);
