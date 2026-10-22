@@ -101,9 +101,17 @@ const closeSettings = p=> p.evaluate(()=> document.querySelector('#settingsClose
   await A.screenshot({path: 'shots/conv5-format-list.png'});
   await A.evaluate(()=> [...document.querySelectorAll('#cleanupConvertNote th')].find(th=> th.textContent === 'Size').click()); await sleep(200);
   ok(await A.evaluate(()=> document.querySelector('#cleanupConvertNote th[data-sorted]')?.textContent) === 'Size', 'a click on a column sorts by it');
+  // the converter crashes on the first try (as ffmpeg.wasm did on the 39th of 40 WAVs): tried again with a fresh one
+  await A.evaluate(()=>{ window.__crashNext(); document.getElementById('missingAudioNote').__mark = 1; });
   await clickText(A, '#cleanupConvertNote button', '^Convert them now$'); await sleep(500);
   await clickText(A, '.modal button', '^Convert them now$');
-  ok(await waitFor(A, ()=> /Keep the originals\?/.test(document.querySelector('.modal')?.innerText || ''), 60000), 'they\'re converted, and the originals question asked');
+  let during = '';
+  for(let k = 0; k < 40 && !during; k++){ const x = await A.evaluate(()=> document.getElementById('cleanupConvertNote')?.innerText || ''); if(/Converting now/.test(x)) during = x; else await sleep(150); }
+  ok(/Converting now: \d of 1 done/.test(during) && !/already matches/.test(during), 'while converting, Library cleanup says so: ' + during.split('\n')[0]);
+  ok(await waitFor(A, ()=> /Keep the originals\?/.test(document.querySelector('.modal')?.innerText || ''), 60000), 'they\'re converted (a crash is tried again), and the originals question asked');
+  const keep = await A.evaluate(()=> document.querySelector('.modal')?.innerText || '');
+  ok(/1 file was converted/.test(keep) && /Keep the original as well/.test(keep) && !/couldn't be converted/.test(keep) && !/\(s\)/.test(keep), 'in plain words, with no failure: ' + keep.split('\n').slice(0, 2).join(' / '));
+  ok(await A.evaluate(()=> document.getElementById('missingAudioNote')?.__mark === 1), 'and the rest of Library cleanup wasn\'t redrawn meanwhile (missing audio checked once)');
   await clickText(A, '.modal button', '^Discard$'); await sleep(300);
   ok((await tracks(A)).some(t=> t.file === 'tone2.m4a'), 'tone2.wav is tone2.m4a now');
 
