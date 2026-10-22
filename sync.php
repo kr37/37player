@@ -305,7 +305,12 @@ function cli($argv) {
         }
         return 0;
     }
-    fwrite(STDERR, "Usage: php sync.php create <library> [\"Display name\"] [\"passphrase\"] | newcode <library> [\"passphrase\"] | list | cleanup [days]\n");
+    $usageMsg = "Usage: \n"
+              . "       php sync.php create <library> [\"Display name\"] [\"passphrase\"]\n"
+              . "       php sync.php newcode <library> [\"passphrase\"]\n"
+              . "       php sync.php list\n"
+              . "       php sync.php cleanup [days]\n";
+    fwrite(STDERR, $usageMsg);
     return 1;
 }
 // Keeps every version from the last $days days and the newest KEEP_VERSIONS;
