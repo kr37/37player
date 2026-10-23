@@ -80,6 +80,8 @@ const addPl = (p, name)=> p.evaluate(async(name)=>{ const r = window.__dbg.getRo
   await B.evaluate(()=> document.getElementById('btnSharedReview').click()); await sleep(1200);
   const fresh = await row(B, 'Fresh');
   ok(fresh && fresh.state === 'none' && fresh.isNew, 'the badge opens the overview, with Fresh marked New');
+  await sleep(500);
+  ok(await B.evaluate(()=> document.getElementById('btnSharedReview').style.display === 'none'), 'looking clears the count at the top (Fresh still marked New here)');
   await B.screenshot({path: 'shots/choose-partial.png'});
   await tick(B, 'Fresh'); await sleep(200);
   text = await B.evaluate(()=> document.getElementById('rvFoot').innerText);
