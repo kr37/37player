@@ -34,7 +34,17 @@ const bytes = s=>{ const m = /([\d.,]+)\s*(B|KB|MB|GB)/.exec(s); if(!m) return 0
   await p.evaluate(()=> window.__dbg.setMode('library')); await sleep(500);
   ok(await p.evaluate(()=> !!document.querySelector('.lib-view-toggle button[data-view="table"]')), 'the Library page has Browse | Table');
   await p.evaluate(()=>{ const r = window.__dbg.getRoot(); r.library[r.library.length - 1].needsConvert = 'Windows Media Audio (WMA)'; });
+  // Browse | Table at the top left, in the same place in both views; the
+  // "missing artist…" chip only in Table
+  const toggleX = ()=> p.evaluate(()=>{ const t = document.getElementById('libViewToggle'); return {x: Math.round(t.getBoundingClientRect().left), first: t.parentElement.firstElementChild === t}; });
+  const chipTexts = ()=> p.evaluate(()=> [...document.querySelectorAll('#libHeaderBanners .lib-filter-chip')].map(c=> c.textContent));
+  const tx1 = await toggleX();
+  ok(tx1.first, 'Browse | Table comes first in the header, at the left');
+  ok(!(await chipTexts()).some(c=> /missing artist/.test(c)), 'Browse has no "missing artist, album or artwork" chip');
   await p.click('.lib-view-toggle button[data-view="table"]'); await sleep(500);
+  ok((await toggleX()).x === tx1.x, 'Browse | Table stays put in Table (' + tx1.x + ')');
+  ok((await chipTexts()).some(c=> /missing artist/.test(c)), 'Table has it');
+  ok(await p.evaluate(()=> !!document.querySelector('#libTableTotals #libColumnsBtn')), 'Columns sits beside the totals line');
   ok(await p.evaluate(()=> getComputedStyle(document.getElementById('libColArtists')).display === 'none' && getComputedStyle(document.getElementById('libTableWrap')).display !== 'none'), 'Table replaces Artists and Albums');
   const h = await heads(p);
   ok(['name','artist','album','length','type','size','kbps','rate','ch','loud','used'].every(k=> h.includes(k)) && !h.includes('file') && !h.includes('trackNo'), 'the columns shown at first: ' + h.join(', '));
@@ -75,10 +85,12 @@ const bytes = s=>{ const m = /([\d.,]+)\s*(B|KB|MB|GB)/.exec(s); if(!m) return 0
   await p.click(`#libTableWrap tr.lt-row[data-id="${all[1]}"] td.c-name`, {clickCount: 2}); await sleep(250); // these tracks last a second: soon the preview moves on
   ok(await p.evaluate((id)=> document.querySelector(`#libTableWrap tr.lt-row[data-id="${id}"]`).classList.contains('previewing'), all[1]), 'a double-click plays it in the Library\'s own player');
   // ✎ edits
+  await p.click(`#libTableWrap tr.lt-row[data-id="${all[1]}"] td.c-name`); await sleep(450); // just it
   await p.click(`#libTableWrap tr.lt-row[data-id="${all[1]}"] [data-act="edit"]`); await sleep(500);
   dlg = await p.evaluate(()=> document.querySelector('.modal-backdrop.show .modal h3')?.textContent || '');
   ok(!!dlg, '✎ opens the details: ' + dlg);
-  await p.evaluate(()=> document.querySelectorAll('.modal [data-close]').forEach(b=>b.click())); await p.keyboard.press('Escape'); await sleep(300);
+  await p.evaluate(()=> document.querySelectorAll('.modal [data-close]').forEach(b=>b.click())); await p.keyboard.press('Escape');
+  for(let k=0; k<20 && await p.evaluate(()=> document.querySelector('.modal-backdrop.show')); k++) await sleep(150);
   // Columns
   await p.click('#libColumnsBtn'); await sleep(300);
   await p.evaluate(()=> document.querySelector('#libColsList input[data-key="type"]').click()); await sleep(200);
@@ -94,6 +106,22 @@ const bytes = s=>{ const m = /([\d.,]+)\s*(B|KB|MB|GB)/.exec(s); if(!m) return 0
   const cp = await col(p, 'name');
   ok(cp.length === 1 && /⚠/.test(cp[0]), 'it shows just that one, marked ⚠: ' + JSON.stringify(cp));
   await clickText(p, '#libHeaderBanners .lib-filter-chip', "Can't be played"); await sleep(400);
+  // Convert, for tracks that can't be played
+  const wmaId = await p.evaluate(()=>{ const r = window.__dbg.getRoot(); return r.library[r.library.length - 1].id; });
+  await p.evaluate(()=> document.querySelector('.modal-backdrop.show') && document.querySelectorAll('.modal [data-close]').forEach(b=>b.click()));
+  await p.click(`#libTableWrap tr.lt-row[data-id="${wmaId}"] td.c-name`); await sleep(450);
+  ok(await p.evaluate(()=> !!document.getElementById('libConvertSelBtn')), 'selecting a track that can\'t be played: Convert in the bar above');
+  await p.keyboard.down('Shift'); await p.click(`#libTableWrap tr.lt-row[data-id="${(await ids(p)).find(x=> x !== wmaId)}"] td.c-name`); await p.keyboard.up('Shift'); await sleep(450);
+  ok(await p.evaluate(()=> !document.getElementById('libConvertSelBtn')), 'not when the selection also has playable ones');
+  await p.click(`#libTableWrap tr.lt-row[data-id="${wmaId}"] td.c-name`); await sleep(450); // just it
+  await p.click(`#libTableWrap tr.lt-row[data-id="${wmaId}"] [data-act="edit"]`); await sleep(500);
+  const ed = await p.evaluate(()=>({btn: !!document.getElementById('editConvertNow'), note: document.getElementById('editCantPlayNote')?.textContent || ''}));
+  ok(ed.btn && /Windows Media Audio/.test(ed.note), 'and in its details (✎): why, and Convert it now: ' + ed.note);
+  await p.evaluate(()=> document.querySelectorAll('.modal [data-close]').forEach(b=>b.click())); await sleep(300);
+  // The player: one row above the waveform at a computer's width
+  const rows = await p.evaluate(()=>{ const r = document.querySelector('.lib-preview-row'); const kids = [...r.children].map(k=>{ const b = k.getBoundingClientRect(); return Math.round(b.top + b.height / 2); }); return {tops: kids, wave: !!document.querySelector('#libPreviewPanel > canvas#libWaveform')}; });
+  ok(rows.wave && Math.max(...rows.tops) - Math.min(...rows.tops) <= 4, 'the player is one row above its waveform: ' + JSON.stringify(rows.tops));
+  await p.screenshot({path: 'shots/table-1300-selected.png'});
   // Kept after a reload
   await p.reload({waitUntil:'networkidle0'}); await sleep(1200); await settle(p);
   await p.evaluate(()=> window.__dbg.setMode('library')); await sleep(600);
