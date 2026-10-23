@@ -64,6 +64,7 @@ By hand: `./serve.sh` in one terminal (servers on ports 8861 and 8870), then
 | full | A full device: a failed save shows in the top bar (and once as a dialog), is retried and clears once there's room, nothing lost; a failed audio write keeps the track's revision; receiving stops at a file it can't store, says so, and resumes at Sync now |
 | notloaded | Storage that comes back empty on a device that had a library: "Your library didn't load", can't be dismissed, nothing written, Try again / Start empty; a library just made isn't warned about; storage that never answers is said after 8 seconds |
 | dlcrash | A download that closes the page: noted first, named at the next start, not received again by itself, received at Sync now |
+| pieces | Receiving in pieces (256 KB here): byte for byte, carried on after being cut off, a file that comes out the wrong size not kept and not retried until Sync now |
 | libdel | New library → Start empty skips the sharing question; deleting a library deletes its backup folder only if asked, only 37 Player's files, only while it's that library's |
 | place | Reloads keep the theme (no dark flash) and the place: Settings section, Help topic, tab; a PIN is still asked |
 | phonecols | Phone: dragging the line between columns with a finger, portrait and landscape, kept after a reload |
