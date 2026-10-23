@@ -118,11 +118,11 @@ async function open(b, name){
   await clickText(D, '.modal button', '^Join a shared library$'); await sleep(300);
   await D.evaluate(()=>{ document.querySelector('input[name=sjWhere][value=server]').click(); document.getElementById('sjNext').click(); }); await sleep(300);
   m = await modal(D);
-  ok(/Bring only the playlists I choose/.test(m) && /next step says how much will travel/.test(m), 'partial sync can be chosen with the join code, and the next step is promised');
-  await D.evaluate((c, u)=>{ document.getElementById('sjCode').value = c; document.getElementById('sjDevice').value = 'Phone'; document.getElementById('sjUrl').value = u; document.getElementById('sjPartial').checked = true; document.getElementById('sjGo').click(); }, CODE, URL_SYNC);
+  ok(!/Bring only the playlists I choose/.test(m) && /says how much will travel/.test(m) && !(await D.evaluate(()=> !!document.getElementById('sjPartial'))), 'no partial-sync box with the code: the next step, with the sizes, is where it\'s chosen');
+  await D.evaluate((c, u)=>{ document.getElementById('sjCode').value = c; document.getElementById('sjDevice').value = 'Phone'; document.getElementById('sjUrl').value = u; document.getElementById('sjGo').click(); }, CODE, URL_SYNC);
   await waitFor(D, ()=> /Only what I choose/.test(document.querySelector('.modal')?.innerText || ''), 10000);
   const first = await D.evaluate(()=> window.__radioChecked());
-  ok(first === 'Only what I choose' && await D.evaluate(()=> document.getElementById('askGo')?.textContent) === 'Join', 'ticked, the next step has Only what I choose chosen, and a Join button: ' + first);
+  ok(first === 'Everything' && await D.evaluate(()=> document.getElementById('askGo')?.textContent) === 'Join', 'the next step offers Everything (chosen) or Only what I choose, with a Join button: ' + first);
   await D.screenshot({path: 'shots/share-partial.png'});
   await D.evaluate(()=> window.__radio('^Only what I choose$')); await sleep(800); await waitIdle(D);
   ok(await D.evaluate(()=> !!(window.__dbg.getRoot().settings.sharedLibrary || {}).partial), 'D joined with partial sync');

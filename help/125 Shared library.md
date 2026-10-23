@@ -6,7 +6,7 @@ A shared library keeps the same tracks and playlists on several devices: the roo
 
 Start from the welcome when 37 Player first opens (**Join a shared library**), from Settings → **Shared library** (**Join or create a shared library…**), or from Switch libraries → **New library**. All three ask the same two things. First, where the shared library is kept: **I have a join code** (on 37player.com or another server) or **Google Drive**. Then only what that needs. For a join code, that's the code from whoever runs your shared library and a name for this device (for example "Temple iPad"); then choose **Join**. A new library on a server is made by whoever runs the server, so from 37 Player you can only join one there.
 
-To bring only some of the shared library to this device, tick **Bring only the playlists I choose (partial sync)** beside the code. Nothing moves yet: the next step says how much would travel either way, with partial sync first, and you choose there. Partial sync can also be turned on or off later. See 'Partial sync' below.
+To bring only some of the shared library to this device, choose **Only what I choose** at the step after the code. Nothing moves before then: that step says how much would travel either way, with the numbers for this device and the shared library, and you choose there. Partial sync can also be turned on or off later. See 'Partial sync' below.
 
 - **A device with nothing in it yet** simply receives the shared library.
 - **A device that already has a library** asks first. Each choice says what it removes, sends and downloads. **Use the shared library here** replaces what's on this device with the shared one, so anything only on this device is removed. **Combine them** (the suggested choice, since it loses nothing) adds this device's tracks and playlists to the shared library, which is how the first device fills an empty shared library. A recording this device imported separately (so 37 Player knows it by a different ID) is matched to the shared copy by its name, album, artist and length, so combining doesn't create duplicates. Folders and playlists work the same way: a folder or playlist with the same name in the same place becomes one with the shared one, such as the **Archive** folder every new library starts with. If a playlist's tracks differ, this device's version is kept beside the shared one as "Name (device name)", marked ⚠.
@@ -103,7 +103,7 @@ Under **On this device** in Settings → Shared library:
   - **Deleting asks which you mean.** Deleting a folder, playlist or track offers **Remove from this device** (the shared library keeps it, and What's on this device can bring it back) or **Delete everywhere** (it's deleted from the shared library and every device). Anything that disappears from this device some other way, such as through Library cleanup, counts as removed from this device. Only **Delete everywhere** deletes from the shared library.
   - **Choosing Everything again** brings the whole shared library here. 37 Player says how much that is first.
 
-When joining, tick **Bring only the playlists I choose** beside the join code for Only what I choose. Everything already on the device joins the shared library, and What's on this device opens so you can tick what else to bring.
+When joining, choose **Only what I choose** at the step that says how much will travel. Everything already on the device joins the shared library, and What's on this device opens so you can tick what else to bring.
 
 ### Receive updates only
 
