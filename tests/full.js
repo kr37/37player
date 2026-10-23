@@ -145,6 +145,27 @@ const waitIdle = async (p)=>{ for(let k=0;k<300;k++){ const s = await p.evaluate
   lb = await log(B);
   ok(/received “/.test(lb) && await B.evaluate(()=> Object.keys(window.__dbg3.pending().audio).length) === 0, 'Sync now with room again: it arrives');
 
+  // --- What a failed sync says: a full device isn't "couldn't reach the shared library"
+  await renamePl(A, 'Renamed for B'); await A.evaluate(()=> window.__dbg3.sync()); await waitIdle(A);
+  await B.evaluate(()=>{ window.__full = true; window.__fullStores = null; window.__fullName = 'silentAbort'; });
+  await B.evaluate(()=> window.__dbg3.sync().catch(()=>{})); await sleep(1500);
+  let st = await B.evaluate(()=> window.__dbg3.status());
+  ok(st.state === 'error' && /This device is full/.test(st.message), 'a sync that can\'t store says the device is full: ' + JSON.stringify(st.message));
+  ok(/sync failed: AbortError.*\(this device is full\)/.test(await log(B)), 'and the sync log says so');
+  await B.evaluate(()=>{ window.__full = false; delete window.__fullName; });
+  await B.evaluate(()=>{ const f = window.fetch; window.__realFetch = f; window.fetch = (u, o)=> /8870/.test(String(u)) ? Promise.reject(new TypeError('Load failed')) : f(u, o); });
+  await B.evaluate(()=> window.__dbg3.sync().catch(()=>{})); await sleep(1500);
+  st = await B.evaluate(()=> window.__dbg3.status());
+  ok(st.state === 'error' && /Couldn.t reach the shared library/.test(st.message), 'no answer from the server: "Couldn\'t reach the shared library": ' + JSON.stringify(st.message));
+  await B.evaluate(()=>{ window.fetch = (u, o)=> /8870/.test(String(u)) ? Promise.resolve(new Response('oops', {status: 500})) : window.__realFetch(u, o); });
+  await B.evaluate(()=> window.__dbg3.sync().catch(()=>{})); await sleep(1500);
+  st = await B.evaluate(()=> window.__dbg3.status());
+  ok(st.state === 'error' && /server answered with an error \(500\)/.test(st.message), 'a server error says so: ' + JSON.stringify(st.message));
+  await B.evaluate(()=>{ window.fetch = window.__realFetch; });
+  await B.evaluate(()=> window.__dbg3.sync().catch(()=>{})); await sleep(1500); await waitIdle(B);
+  st = await B.evaluate(()=> window.__dbg3.status());
+  ok(st.state !== 'error' && (await firstPl(B)) === 'Renamed for B', 'and with all well again, the rename arrives');
+
   console.log(fails ? fails+' FAILED' : 'ALL OK');
   await b.close();
 })();
