@@ -99,7 +99,7 @@ const addPlaylist = (p, name)=> p.evaluate(async (name)=>{ const r = window.__db
   // ---- joining a shared library into a new library
   if(CODE){
     await reloading(A, (a)=> window.__lib.create('', a), {url: URL_SYNC, code: CODE, device: 'Rak-ma laptop'});
-    for(let k=0; k<40; k++){ if(await A.evaluate(()=> !!(window.__dbg.getRoot().settings.sharedLibrary))) break; await clickText(A, '.modal button', '^Join$'); await sleep(250); }
+    for(let k=0; k<40; k++){ if(await A.evaluate(()=> !!(window.__dbg.getRoot().settings.sharedLibrary))) break; await clickText(A, '.modal button', '^Do it now$'); await sleep(250); }
     const j = await A.evaluate(()=>({id: window.__lib.id(), name: window.__lib.name(), cfg: window.__dbg.getRoot().settings.sharedLibrary, tree: window.__dbg.getRoot().tree.length}));
     ok(j.id !== 'main' && j.cfg && j.cfg.code && j.cfg.deviceName === 'Rak-ma laptop', 'New library with a join code joins straight away');
     ok(j.name === 'Test', 'and takes the shared library\'s name: ' + j.name);
@@ -110,9 +110,12 @@ const addPlaylist = (p, name)=> p.evaluate(async (name)=>{ const r = window.__db
     await A.evaluate(async()=>{ const r = window.__dbg.getRoot(); r.library.push({id:'fake1', name:'A chant', duration: 10}); window.__dbg.setMode('editing'); document.getElementById('btnSettings').click(); });
     await sleep(400);
     await A.evaluate(()=> [...document.querySelectorAll('#settingsNav .settings-nav-item')].find(e=> /Shared/.test(e.textContent)).click()); await sleep(300);
-    await A.evaluate((c)=>{ document.getElementById('shCode').value = c; document.getElementById('shJoin').click(); }, CODE); await sleep(500);
+    await A.evaluate(()=> document.getElementById('shJoinOrCreate').click()); await sleep(300);
+    await A.evaluate(()=>{ document.querySelector('input[name=sjWhere][value=server]').click(); document.getElementById('sjNext').click(); }); await sleep(300);
+    await A.evaluate((c)=>{ document.getElementById('sjCode').value = c; document.getElementById('sjGo').click(); }, CODE); await sleep(500);
     const ask = await A.evaluate(()=> document.querySelector('.modal') ? document.querySelector('.modal').innerText : '');
-    ok(/Join in a new library\?/.test(ask) && /Make a new library for it/.test(ask), 'joining from a library with tracks offers a new library first');
+    ok(/Joining “/.test(ask) && /Make a new library on this device for/.test(ask) && /Join from “/.test(ask), 'joining from a library with tracks: a new library on this device, or join from this one: ' + JSON.stringify(ask.slice(0, 160)));
+    ok(/On this device, “[^”]*” has 1 tracks/.test(ask) || /On this device/.test(ask), 'it says what each library holds');
     await A.screenshot({path:'shots/libs-joinnew.png'});
     await clickText(A, '.modal button', '^Cancel$'); await sleep(300);
     ok(!(await A.evaluate(()=> window.__dbg.getRoot().settings.sharedLibrary)), 'Cancel leaves it unjoined');

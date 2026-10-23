@@ -42,6 +42,11 @@ const waitIdle = async (p)=>{ for(let k=0;k<400;k++){ const s = await p.evaluate
   await sleep(1500);
   const dlg = await F.evaluate(()=> document.querySelector('.modal')?.innerText || '');
   console.log('preview dialog:\n' + dlg.split('\n').filter(Boolean).join('\n'));
+  await F.hover('#askRadios label:nth-child(2)').catch(()=>{}); await sleep(150);
+  await F.screenshot({path: 'shots/dup-choice.png'});
+  ok(/Sends everything from “[^”]*” that isn't in the shared library yet/.test(dlg), 'what\'s sent is said as everything from this library');
+  ok(/The library “My library” on this device already has tracks/.test(dlg) && /On this device, “My library” has 3 tracks, and 2 of them are already in the shared library/.test(dlg), 'the question names the library on this device: ' + JSON.stringify(dlg.slice(0, 160)));
+  ok(await F.evaluate(()=> document.getElementById('askGo').textContent) === 'Do it now', 'and its button, the last step, says Do it now');
   await F.evaluate(()=> window.__radio('^Combine'));
   for(let k=0;k<100;k++){ const v = await F.evaluate(()=>window.__dbg3.status().version); if(v>=2) break; await sleep(200); }
   console.log('F at version', await F.evaluate(()=>window.__dbg3.status().version));

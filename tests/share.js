@@ -49,11 +49,15 @@ async function open(b, name){
   const B = await open(b, 'B');
   await clickText(B, '.modal button', '^Join a shared library$'); await sleep(300);
   m = await modal(B);
-  ok(/Join code/.test(m), 'Join a shared library asks for the code in the welcome');
-  await B.evaluate((c, u)=>{ document.getElementById('swCode').value = c; document.getElementById('swDevice').value = 'iPad'; document.getElementById('swUrl').value = u; }, CODE, URL_SYNC);
+  ok(/Choose where the shared library is kept/.test(m) && /I have a join code/.test(m) && /Google Drive/.test(m), 'Join a shared library asks first where it\'s kept');
+  await B.screenshot({path: 'shots/share-where.png'});
+  await B.evaluate(()=>{ document.querySelector('input[name=sjWhere][value=server]').click(); document.getElementById('sjNext').click(); }); await sleep(300);
+  m = await modal(B);
+  ok(/Join code/.test(m), 'then asks for the code');
+  await B.evaluate((c, u)=>{ document.getElementById('sjCode').value = c; document.getElementById('sjDevice').value = 'iPad'; document.getElementById('sjUrl').value = u; }, CODE, URL_SYNC);
   await B.screenshot({path: 'shots/share-join.png'});
-  await B.evaluate(()=> document.getElementById('swJoin').click());
-  for(let k=0; k<30; k++){ if(await B.evaluate(()=> window.__radio('^Use the shared library here'))) break; if(await clickText(B, '.modal button', '^Join$')) break; await sleep(250); }
+  await B.evaluate(()=> document.getElementById('sjGo').click());
+  for(let k=0; k<30; k++){ if(await B.evaluate(()=> window.__radio('^Use the shared library here'))) break; if(await clickText(B, '.modal button', '^Do it now$')) break; await sleep(250); }
   await sleep(500); await waitIdle(B);
   m = await modal(B);
   ok(/Keep backups on this computer too\?/.test(m), 'a computer that can keep a folder is offered one, as optional');
@@ -102,7 +106,7 @@ async function open(b, name){
   ok(/aren't in the shared library yet, and would be removed from this device/.test(m), 'and warns that what\'s only here would go');
   await A.screenshot({path: 'shots/share-restore.png'});
   await clickText(A, '.modal button', '^Get the current shared library$');
-  for(let k=0; k<30; k++){ if(await clickText(A, '.modal button', '^Join$')) break; await sleep(250); }
+  for(let k=0; k<30; k++){ if(await clickText(A, '.modal button', '^Do it now$')) break; await sleep(250); }
   await sleep(500); await waitIdle(A);
   ok(await A.evaluate(()=> !!window.__dbg.getRoot().settings.sharedLibrary), 'A is in the shared library again');
   ok(await tree(A) === 'Morning prayers', 'with the current library: B\'s rename, and Evening stays deleted (' + await tree(A) + ')');
@@ -112,12 +116,13 @@ async function open(b, name){
   // ---- D joins from the welcome with partial sync ticked
   const D = await open(b, 'D');
   await clickText(D, '.modal button', '^Join a shared library$'); await sleep(300);
+  await D.evaluate(()=>{ document.querySelector('input[name=sjWhere][value=server]').click(); document.getElementById('sjNext').click(); }); await sleep(300);
   m = await modal(D);
-  ok(/Bring only the playlists I choose/.test(m) && /next step says how much will travel/.test(m), 'partial sync can be chosen with the join code, and the next step is promised');
-  await D.evaluate((c, u)=>{ document.getElementById('swCode').value = c; document.getElementById('swDevice').value = 'Phone'; document.getElementById('swUrl').value = u; document.getElementById('swPartial').checked = true; document.getElementById('swJoin').click(); }, CODE, URL_SYNC);
+  ok(!/Bring only the playlists I choose/.test(m) && /says how much will travel/.test(m) && !(await D.evaluate(()=> !!document.getElementById('sjPartial'))), 'no partial-sync box with the code: the next step, with the sizes, is where it\'s chosen');
+  await D.evaluate((c, u)=>{ document.getElementById('sjCode').value = c; document.getElementById('sjDevice').value = 'Phone'; document.getElementById('sjUrl').value = u; document.getElementById('sjGo').click(); }, CODE, URL_SYNC);
   await waitFor(D, ()=> /Only what I choose/.test(document.querySelector('.modal')?.innerText || ''), 10000);
   const first = await D.evaluate(()=> window.__radioChecked());
-  ok(first === 'Only what I choose' && await D.evaluate(()=> document.getElementById('askGo')?.textContent) === 'Join', 'ticked, the next step has Only what I choose chosen, and a Join button: ' + first);
+  ok(first === 'Everything' && await D.evaluate(()=> document.getElementById('askGo')?.textContent) === 'Do it now', 'the next step offers Everything (chosen) or Only what I choose, with a Join button: ' + first);
   await D.screenshot({path: 'shots/share-partial.png'});
   await D.evaluate(()=> window.__radio('^Only what I choose$')); await sleep(800); await waitIdle(D);
   ok(await D.evaluate(()=> !!(window.__dbg.getRoot().settings.sharedLibrary || {}).partial), 'D joined with partial sync');
@@ -132,7 +137,7 @@ async function open(b, name){
   m = await modal(C);
   ok(/This backup is of a shared library/.test(m) && /“Test”/.test(m) && /Join the shared library instead/.test(m), 'a backup of a shared library points to joining it');
   await clickText(C, '.modal button', '^Join the shared library instead$'); await sleep(600);
-  ok(await C.evaluate(()=> !!document.getElementById('shCode')), 'and "Join instead" opens Settings → Shared library');
+  ok(await C.evaluate(()=> !!document.getElementById('shJoinOrCreate')), 'and "Join instead" opens Settings → Shared library');
 
   console.log(fails ? fails + ' FAILED' : 'ALL OK'); await b.close();
 })();

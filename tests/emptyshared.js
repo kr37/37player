@@ -20,7 +20,7 @@ async function through(p, run, ...args){
     const m = await modal(p);
     if(m && !seen.includes(m)) seen.push(m);
     if(/Use the shared library/.test(m)) break;
-    if(await clickText(p, '.modal button', '^Join$')) { await sleep(300); continue; }
+    if(await clickText(p, '.modal button', '^Do it now$')) { await sleep(300); continue; }
     if(await Promise.race([pr.then(()=> true), sleep(250).then(()=> false)])) break;
   }
   return seen;
@@ -71,7 +71,7 @@ async function open(b, name){
   ok(!/This library is shared/.test(m) && /Restore exactly|exactly/i.test(m), 'restoring there skips "This library is shared" and goes straight to the restore: ' + m.slice(0, 80));
   await B.screenshot({path: 'shots/emptyshared-restore.png'});
   await B.evaluate(()=> document.getElementById('replaceGo').click());
-  for(let k = 0; k < 40; k++){ await clickText(B, '.modal button', '^Join$'); if(await B.evaluate(()=> !!(window.__dbg.getRoot().settings.sharedLibrary || {}).code) && !(await modal(B))) break; await sleep(250); }
+  for(let k = 0; k < 40; k++){ await clickText(B, '.modal button', '^Do it now$'); if(await B.evaluate(()=> !!(window.__dbg.getRoot().settings.sharedLibrary || {}).code) && !(await modal(B))) break; await sleep(250); }
   await sleep(500); await waitIdle(B); await B.evaluate(()=> window.__dbg3.sync()); await waitIdle(B);
   ok(await B.evaluate(()=> (window.__dbg.getRoot().settings.sharedLibrary || {}).code) === CODE2, 'after the restore, B is still in the shared library');
   ok(/Morning/.test(await B.evaluate(()=> JSON.stringify(window.__dbg.getRoot().tree))), 'with the restored playlist');
