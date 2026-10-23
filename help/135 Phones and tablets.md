@@ -36,7 +36,7 @@ Copy and paste work too, from the bar above each list.
 
 On a tablet, drag the thin line between two columns to make a column wider, such as the right-hand one, so long titles can be read. Turning on **Wrap long titles** in Display settings (◐) shows titles in full on every row.
 
-On a phone, the columns are a fixed width, and the screen slides sideways between them.
+On a phone, the screen slides sideways between the columns. Drag the thin line at a column's right-hand edge with a finger to make that column wider or narrower (up to nine tenths of the screen, so its line always shows); the columns to its right just move along. The widths are kept for next time, separately for holding the phone upright and on its side.
 
 ### Playing with the screen off
 
