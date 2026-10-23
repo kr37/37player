@@ -110,7 +110,9 @@ const addPlaylist = (p, name)=> p.evaluate(async (name)=>{ const r = window.__db
     await A.evaluate(async()=>{ const r = window.__dbg.getRoot(); r.library.push({id:'fake1', name:'A chant', duration: 10}); window.__dbg.setMode('editing'); document.getElementById('btnSettings').click(); });
     await sleep(400);
     await A.evaluate(()=> [...document.querySelectorAll('#settingsNav .settings-nav-item')].find(e=> /Shared/.test(e.textContent)).click()); await sleep(300);
-    await A.evaluate((c)=>{ document.getElementById('shCode').value = c; document.getElementById('shJoin').click(); }, CODE); await sleep(500);
+    await A.evaluate(()=> document.getElementById('shJoinOrCreate').click()); await sleep(300);
+    await A.evaluate(()=>{ document.querySelector('input[name=sjWhere][value=server]').click(); document.getElementById('sjNext').click(); }); await sleep(300);
+    await A.evaluate((c)=>{ document.getElementById('sjCode').value = c; document.getElementById('sjGo').click(); }, CODE); await sleep(500);
     const ask = await A.evaluate(()=> document.querySelector('.modal') ? document.querySelector('.modal').innerText : '');
     ok(/Join in a new library\?/.test(ask) && /Make a new library for it/.test(ask), 'joining from a library with tracks offers a new library first');
     await A.screenshot({path:'shots/libs-joinnew.png'});

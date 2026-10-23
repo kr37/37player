@@ -4,7 +4,7 @@ A shared library keeps the same tracks and playlists on several devices: the roo
 
 ### Joining
 
-You need a **join code** from whoever runs your shared library. Enter it with a name for this device (for example "Temple iPad"), either in the welcome when 37 Player first opens (**Join a shared library**) or later in Settings → **Shared library**, and choose **Join**.
+Start from the welcome when 37 Player first opens (**Join a shared library**), from Settings → **Shared library** (**Join or create a shared library…**), or from Switch libraries → **New library**. All three ask the same two things. First, where the shared library is kept: **I have a join code** (on 37player.com or another server) or **Google Drive**. Then only what that needs. For a join code, that's the code from whoever runs your shared library and a name for this device (for example "Temple iPad"); then choose **Join**. A new library on a server is made by whoever runs the server, so from 37 Player you can only join one there.
 
 To bring only some of the shared library to this device, tick **Bring only the playlists I choose (partial sync)** beside the code. Nothing moves yet: the next step says how much would travel either way, with partial sync first, and you choose there. Partial sync can also be turned on or off later. See 'Partial sync' below.
 
@@ -17,7 +17,7 @@ The tracks' details and playlists arrive straight away, on every device. The aud
 
 ### On Google Drive
 
-A shared library can also live in a folder of your Google Drive. In Settings → **Shared library** (or the welcome's join step), choose **Use Google Drive…** and sign in with Google. 37 Player then shows the 37 Player libraries in that Google Drive: choose one to join, or **Make a new library on Google Drive**. It appears in your Drive as a folder called "37 Player – " and the library's name.
+A shared library can also live in a folder of your Google Drive. Choose **Google Drive** where 37 Player asks where the shared library is kept, then **Use Google Drive…**, and sign in with Google. 37 Player then shows the 37 Player libraries in that Google Drive: choose one to join, or **Make a new library on Google Drive**. It appears in your Drive as a folder called "37 Player – " and the library's name.
 
 - **Every device that shares it signs in with the same Google account,** a Center's account, say. Sharing one Drive library between several people's own Google accounts isn't possible yet.
 - **37 Player sees only what it made** in that Google Drive, nothing else.
