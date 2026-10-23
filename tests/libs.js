@@ -114,7 +114,8 @@ const addPlaylist = (p, name)=> p.evaluate(async (name)=>{ const r = window.__db
     await A.evaluate(()=>{ document.querySelector('input[name=sjWhere][value=server]').click(); document.getElementById('sjNext').click(); }); await sleep(300);
     await A.evaluate((c)=>{ document.getElementById('sjCode').value = c; document.getElementById('sjGo').click(); }, CODE); await sleep(500);
     const ask = await A.evaluate(()=> document.querySelector('.modal') ? document.querySelector('.modal').innerText : '');
-    ok(/Join in a new library\?/.test(ask) && /Make a new library for it/.test(ask), 'joining from a library with tracks offers a new library first');
+    ok(/Joining “/.test(ask) && /Make a new library on this device for/.test(ask) && /Join from “/.test(ask), 'joining from a library with tracks: a new library on this device, or join from this one: ' + JSON.stringify(ask.slice(0, 160)));
+    ok(/On this device, “[^”]*” has 1 tracks/.test(ask) || /On this device/.test(ask), 'it says what each library holds');
     await A.screenshot({path:'shots/libs-joinnew.png'});
     await clickText(A, '.modal button', '^Cancel$'); await sleep(300);
     ok(!(await A.evaluate(()=> window.__dbg.getRoot().settings.sharedLibrary)), 'Cancel leaves it unjoined');
