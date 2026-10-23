@@ -1,6 +1,6 @@
 # 37 Player: notes
 
-The big picture as of October 2026 (version 1.4.000: converting, and the library's file format). Commit messages hold the detail of each change. This file says how the whole thing works and why it is the way it is. Update it when a decision changes.
+The big picture as of 22 October 2026 (version 1.4.059). Commit messages hold the detail of each change. This file says how the whole thing works and why it is the way it is. Update it when a decision changes.
 
 ## What it is
 
@@ -51,6 +51,7 @@ A playlist player for live sessions at Kadampa centers: chanting, prayers, manda
 - **Silences and stops.** Silences tick on their own clock. Stops wait for a click.
 - **Only the latest press counts.** If a track's audio must be fetched first (shared library), a press that's still waiting is dropped when another is made. Playback never starts by itself minutes later.
 - **Loudness.** "Even out loudness" and per-track +/- adjustments use `el.volume` when turning down. Turning up needs Web Audio (`createMediaElementSource` into a GainNode). Once an element is routed that way, it stays routed until reload.
+- **The peak limit is evening out's only** (1.4.059, `trackLevel`). Evening out never turns a track up past its loudest peak. A boost set on the track itself (✎, `volumeDb`) goes on top of that, even past the peak: brief clipping is inaudible and small speakers need the level. The details say how far past full volume the peaks go (`over`). Turning down is unchanged.
 
 ### Playing with the screen off (phones and iPads)
 
@@ -115,6 +116,7 @@ The full plan and history are in the project doc `shared-library-sync.md`. In sh
 - **Phone columns are shares of the screen** (1.4.053–1.4.055). At 900px and under, Edit Playlists' and Library's columns are percentages of the screen (`--nw900`, and `--nw600` on a portrait phone), kept per device in `settings.narrowColumnWidths`, one set per band; the row scrolls sideways with snapping. A line sizes only the column to its left, 20–90% (`NARROW_MAX`), so its line and a sliver of the next column always show; the last column gets a phone-only line (`.narrow-only`). Snapping is off while a finger is on a line. Computers keep pixel widths traded between neighbours.
 - **Reloads keep the look and the place** (1.4.052). A script right after `<body>` applies the device's theme from localStorage before the first paint (a light theme used to flash dark). On `pagehide` the tab, the Settings section or the Help topic go into sessionStorage (`PLACE_KEY`) and come back after a refresh or library switch, through `requestAppMode`, so a PIN is still asked.
 - **Folder import** (1.4.035–1.4.045): "Make a playlist of each folder" builds ordinary playlist plans (`folderPlaylistPlans`), ordered by track number at commit time. Playlists whose audio isn't all there get one choice in the review (all / only complete / none). Stop leads to a dialog: carry on (the loop resumes from `nextIdx`), or finish with complete / all / no playlists. Full storage (`isQuotaError`) ends an import at once; `commitFolderImport` wraps the whole import so its dialog can never hang.
+- **Column widths to begin with:** Library's Artists 270px and Albums 300px (1.4.058), Edit Playlists' columns 210 / 480 / 210. Display settings (◐) → **Reset column widths** clears both the computer's and the phone's saved widths (1.4.057).
 - **Deleting a library can delete its backup folder** (1.4.051): only 37 Player's files, and only while the folder's meta.json still names that library's copy. Manual backup files carry the library's name (`backupNamePart`).
 
 ## Browser quirks and workarounds
@@ -158,6 +160,10 @@ The full plan and history are in the project doc `shared-library-sync.md`. In sh
 
 ## Open / later
 
+- **Evening out with a little overshoot:** allow about 1 dB past the loudest peak when peaks are rare. Needs the loudness measurement to record how often samples come near full scale (a percentile), not just the single loudest sample.
+- **Full test run:** `tests/run-all.sh` wasn't run in one go during the 22 Oct session (each change ran the tests near it). Worth a full run on the T470. Tests with non-ASCII file names need a UTF-8 locale (`LANG=C.UTF-8`), or Chromium can't open the files and a long name looks like a bug.
+- **Not checked on a real device:** the iPad with 1.4.052–1.4.059 (reload keeping the place, the theme before the first paint). Android was checked. The phone top bar was laid out at 412px; on a 360px phone the ? may move to the second row (still two rows).
+- **Undecoded audio in an incognito import (22 Oct):** many "Unable to decode audio data" lines, probably .m4a files or memory pressure. If such files come in marked "can't play" in a normal window, look at them.
 - **First-time guidance:** on-screen instructions for new users (Edit Playlists especially: which column is for what). Column B's "Edit playlist here" bar (1.4.056) is the start; quieter labels for columns C and D are a possible next step.
 
 - **File formats and converting** (talked through 20 Oct 2026; keeping unplayable files done in 1.3.048, converting them in 1.3.049, above):
