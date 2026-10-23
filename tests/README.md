@@ -61,6 +61,7 @@ By hand: `./serve.sh` in one terminal (servers on ports 8861 and 8870), then
 | plmiss | Playlists whose audio isn't all there: import all, only complete ones, or none |
 | stopimport | Stopping a folder import part-way: complete / all / no playlists, and Carry on |
 | quota | Storage filling up during a folder import: stops at once, says why, never hangs |
+| full | A full device: a failed save shows in the top bar (and once as a dialog), is retried and clears once there's room, nothing lost; a failed audio write keeps the track's revision; receiving stops at a file it can't store, says so, and resumes at Sync now |
 | libdel | New library → Start empty skips the sharing question; deleting a library deletes its backup folder only if asked, only 37 Player's files, only while it's that library's |
 | place | Reloads keep the theme (no dark flash) and the place: Settings section, Help topic, tab; a PIN is still asked |
 | phonecols | Phone: dragging the line between columns with a finger, portrait and landscape, kept after a reload |
