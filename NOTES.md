@@ -112,6 +112,10 @@ The full plan and history are in the project doc `shared-library-sync.md`. In sh
 - **The PIN only guards against accidental edits.** The repo is public.
 - **sync.php carries its own version** (`SYNC_VERSION`): set it to the app's version whenever sync.php itself changes, not otherwise, both in `SYNC_VERSION` and in the comment at the top of the file. The app shows it in Settings → Shared library; `php sync.php version` prints it.
 - **Every shipped change bumps** `<meta name="app-version">`. Replace only that first tag: a blanket search-and-replace of `app-version" content="…"` also rewrote the pattern in `versionFromHtml`, which broke Check for updates from 1.3.022 to 1.3.037 (fixed in 1.3.038; the pattern is now built so it can't be matched). The version stays visible in the header, and it's a button that checks for updates.
+- **Phone columns are shares of the screen** (1.4.053–1.4.055). At 900px and under, Edit Playlists' and Library's columns are percentages of the screen (`--nw900`, and `--nw600` on a portrait phone), kept per device in `settings.narrowColumnWidths`, one set per band; the row scrolls sideways with snapping. A line sizes only the column to its left, 20–90% (`NARROW_MAX`), so its line and a sliver of the next column always show; the last column gets a phone-only line (`.narrow-only`). Snapping is off while a finger is on a line. Computers keep pixel widths traded between neighbours.
+- **Reloads keep the look and the place** (1.4.052). A script right after `<body>` applies the device's theme from localStorage before the first paint (a light theme used to flash dark). On `pagehide` the tab, the Settings section or the Help topic go into sessionStorage (`PLACE_KEY`) and come back after a refresh or library switch, through `requestAppMode`, so a PIN is still asked.
+- **Folder import** (1.4.035–1.4.045): "Make a playlist of each folder" builds ordinary playlist plans (`folderPlaylistPlans`), ordered by track number at commit time. Playlists whose audio isn't all there get one choice in the review (all / only complete / none). Stop leads to a dialog: carry on (the loop resumes from `nextIdx`), or finish with complete / all / no playlists. Full storage (`isQuotaError`) ends an import at once; `commitFolderImport` wraps the whole import so its dialog can never hang.
+- **Deleting a library can delete its backup folder** (1.4.051): only 37 Player's files, and only while the folder's meta.json still names that library's copy. Manual backup files carry the library's name (`backupNamePart`).
 
 ## Browser quirks and workarounds
 
@@ -138,6 +142,7 @@ The full plan and history are in the project doc `shared-library-sync.md`. In sh
 
 - **Screen off:** filling only the gap between tracks with silence didn't stop the drop-out. Routing all playback through Web Audio didn't either: the phone also paused tracks itself.
 - **Wi-Fi-only syncing:** removed. Devices that quietly stayed out of date were worse than the data use.
+- **Phone columns trading width with their neighbour** (1.4.053): a pair's total stayed fixed and the line to their left ate into it, so columns 3 and 4 often fit in less than the screen. On a phone each line sizes one column.
 - **Merging two people's reordering of the same playlist:** that's where automatic merges go wrong. Keep both copies instead.
 - **Master/follower roles for sync:** a joined device can edit, and can have things of its own.
 - **Google Drive via OAuth as the *only* storage:** Google Cloud setup, sign-in tied to one site, and uncertain sharing across accounts. It comes back as one storage among several, per library (see Open / later).
@@ -152,6 +157,8 @@ The full plan and history are in the project doc `shared-library-sync.md`. In sh
 - **Simulating the screen off:** override `document.hidden` and send `visibilitychange`. This tests the logic only. Real phone behavior has to be checked on a phone, with the playback log.
 
 ## Open / later
+
+- **First-time guidance:** on-screen instructions for new users (Edit Playlists especially: which column is for what). Column B's "Edit playlist here" bar (1.4.056) is the start; quieter labels for columns C and D are a possible next step.
 
 - **File formats and converting** (talked through 20 Oct 2026; keeping unplayable files done in 1.3.048, converting them in 1.3.049, above):
   - **Principle:** keep everything, and let a capable device fix it. A file only needs converting once, anywhere: the result syncs to every device. Works the same with the droplet, Google Drive or no sync at all.
