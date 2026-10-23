@@ -71,5 +71,9 @@ let fails = 0; const ok=(c,m)=>{ console.log((c?'ok   ':'FAIL ')+m); if(!c) fail
   ok(la[0] <= lb[0] - 30 && Math.abs(la[1] - lb[1]) <= 1, 'landscape, Library: dragging left narrows Artists, Albums keeps its width (' + lb.join('/') + ' → ' + la.join('/') + ')');
   const saved2 = await p.evaluate(()=> window.__dbg.getRoot().settings.narrowColumnWidths || {});
   ok(saved2['900'] && saved2['900'].libColArtists && saved2['600'] && saved2['600'].editorColA, 'portrait and landscape keep their own shares (' + JSON.stringify(saved2) + ')');
+  // Display → Reset column widths: every column back to where it started.
+  await p.evaluate(()=> document.getElementById('resetColumnsBtn').click()); await sleep(300);
+  const reset = await lw();
+  ok(Math.abs(reset[0] - lb[0]) <= 2 && !(await p.evaluate(()=> window.__dbg.getRoot().settings.narrowColumnWidths)), 'Reset column widths puts them back and forgets the saved ones (' + la.join('/') + ' → ' + reset.join('/') + ')');
   console.log(fails ? fails + ' FAILED' : 'ALL OK'); await b.close();
 })();
