@@ -116,6 +116,48 @@ const addPl = (p, name)=> p.evaluate(async(name)=>{ const r = window.__dbg.getRo
   await B.evaluate(()=>{ const b = document.querySelector('.ch-section .ch-twist'); if(b && b.getAttribute('aria-expanded') !== 'true') b.click(); }); await sleep(300);
   ok((await row(B, albumName)).state === 'all', 'opened again, the album shows as here');
   await B.evaluate(()=> document.getElementById('chClose').click()); await sleep(300);
+  // ---- single tracks, from inside an album (1.4.068)
+  await B.evaluate(()=> window.__choose.open()); await sleep(1200);
+  await B.evaluate(()=>{ const b = document.querySelector('.ch-section .ch-twist'); if(b && b.getAttribute('aria-expanded') !== 'true') b.click(); }); await sleep(300);
+  // An album with a track not on B
+  // Albums opened one by one: every track listed, ticked or not
+  const nAlb = await B.evaluate(()=> document.querySelectorAll('.ch-row[data-album]').length);
+  for(let k=0; k<nAlb; k++){ await B.evaluate((k)=>{ const r = document.querySelectorAll('.ch-row[data-album]')[k]; const tw = r && r.querySelector('.ch-twist'); if(tw && tw.getAttribute('aria-expanded') !== 'true') tw.click(); }, k); await sleep(150); }
+  const pick = nAlb;
+  await B.screenshot({path: 'shots/choose-tracks.png'});
+  const tracksShown = await B.evaluate(()=> [...document.querySelectorAll('.ch-row[data-track]')].map(r=> ({id: r.dataset.track, ticked: r.querySelector('.ch-box').classList.contains('all'), locked: r.classList.contains('ch-locked'), text: r.innerText})));
+  console.log('album', JSON.stringify(pick), 'tracks:', JSON.stringify(tracksShown.map(x=> [x.text.replace(/\n/g, ' '), x.ticked, x.locked])));
+  ok(tracksShown.length > 0 && tracksShown.every(x=> /\d+(\.\d+)? (KB|MB|GB)/.test(x.text)), 'an album opens into its tracks, each with its size');
+  const lockedOk = tracksShown.filter(x=> x.locked).every(x=> x.ticked && /comes with a playlist/.test(x.text));
+  ok(lockedOk, 'a track that comes with a playlist shows ticked, "comes with a playlist"');
+  const single = tracksShown.find(x=> !x.ticked);
+  if(single){
+    await B.evaluate((id)=> document.querySelector('.ch-row[data-track="' + id + '"]').click(), single.id); await sleep(300);
+    ok(await B.evaluate((id)=> document.querySelector('.ch-row[data-track="' + id + '"] .ch-box').classList.contains('all'), single.id), 'ticking a single track ticks just it');
+    const others = tracksShown.filter(x=> !x.ticked && x.id !== single.id).map(x=> x.id);
+    await B.evaluate(()=> document.getElementById('chGo').click()); await sleep(2500); await waitIdle(B);
+    const onB3 = await B.evaluate(()=> window.__dbg.getRoot().library.map(t=> t.id));
+    ok(onB3.includes(single.id) && others.every(id=> !onB3.includes(id)), 'applied: that track is on B, the album\'s others aren\'t');
+  } else {
+    // Everything in it already here: untick one that isn't locked, and back
+    const free = tracksShown.find(x=> x.ticked && !x.locked);
+    ok(!!free, 'an album with a track to tick or untick (' + JSON.stringify(tracksShown) + ')');
+    // Every track here: unticking one takes just it off B
+    await B.evaluate((id)=> document.querySelector('.ch-row[data-track="' + id + '"]').click(), free.id); await sleep(300);
+    ok(await B.evaluate((id)=> !document.querySelector('.ch-row[data-track="' + id + '"] .ch-box').classList.contains('all'), free.id), 'unticking a single track unticks just it');
+    const before = await B.evaluate(()=> window.__dbg.getRoot().library.length);
+    await B.evaluate(()=> document.getElementById('chGo').click()); await sleep(2500); await waitIdle(B);
+    const onB3 = await B.evaluate(()=> window.__dbg.getRoot().library.map(t=> t.id));
+    ok(!onB3.includes(free.id) && onB3.length === before - 1, 'applied: just that track is off B');
+    // and back
+    await B.evaluate(()=> window.__choose.open()); await sleep(1200);
+    await B.evaluate(()=>{ const b = document.querySelector('.ch-section .ch-twist'); if(b && b.getAttribute('aria-expanded') !== 'true') b.click(); }); await sleep(300);
+    const nA = await B.evaluate(()=> document.querySelectorAll('.ch-row[data-album]').length);
+    for(let k=0; k<nA; k++){ await B.evaluate((k)=>{ const r = document.querySelectorAll('.ch-row[data-album]')[k]; const tw = r && r.querySelector('.ch-twist'); if(tw && tw.getAttribute('aria-expanded') !== 'true') tw.click(); }, k); await sleep(150); }
+    await B.evaluate((id)=> document.querySelector('.ch-row[data-track="' + id + '"]').click(), free.id); await sleep(300);
+    await B.evaluate(()=> document.getElementById('chGo').click()); await sleep(2500); await waitIdle(B);
+    ok((await B.evaluate(()=> window.__dbg.getRoot().library.map(t=> t.id))).includes(free.id), 'ticked again: it comes back');
+  }
   // ---- come by themselves
   await B.evaluate(async()=>{ window.__choose.cfg().autoNew = true; await window.__choose.markAllSeen(); await window.__dbg.saveState(); });
   await addPl(A, 'Fresher'); await A.evaluate(()=> window.__dbg3.sync()); await waitIdle(A);
