@@ -99,7 +99,7 @@ const addPlaylist = (p, name)=> p.evaluate(async (name)=>{ const r = window.__db
   // ---- joining a shared library into a new library
   if(CODE){
     await reloading(A, (a)=> window.__lib.create('', a), {url: URL_SYNC, code: CODE, device: 'Rak-ma laptop'});
-    for(let k=0; k<40; k++){ if(await A.evaluate(()=> !!(window.__dbg.getRoot().settings.sharedLibrary))) break; await clickText(A, '.modal button', '^Join$'); await sleep(250); }
+    for(let k=0; k<40; k++){ if(await A.evaluate(()=> !!(window.__dbg.getRoot().settings.sharedLibrary))) break; await clickText(A, '.modal button', '^Do it now$'); await sleep(250); }
     const j = await A.evaluate(()=>({id: window.__lib.id(), name: window.__lib.name(), cfg: window.__dbg.getRoot().settings.sharedLibrary, tree: window.__dbg.getRoot().tree.length}));
     ok(j.id !== 'main' && j.cfg && j.cfg.code && j.cfg.deviceName === 'Rak-ma laptop', 'New library with a join code joins straight away');
     ok(j.name === 'Test', 'and takes the shared library\'s name: ' + j.name);

@@ -37,8 +37,9 @@ const waitIdle = async (p)=>{ for(let k=0;k<400;k++){ const s = await p.evaluate
   await sleep(1200);
   const askE = await A.evaluate(()=> document.querySelector('.modal')?.innerText || '');
   ok(/is empty so far/.test(askE) && (await A.evaluate(()=> window.__radioChecked())).startsWith('Join from'), 'an empty shared library: joining from this library is suggested, to fill it: ' + JSON.stringify(askE.slice(0, 140)));
+  ok(await A.evaluate(()=> document.getElementById('askGo').textContent) === 'Next', 'that question\'s button says Next: more comes after');
   ok(await A.evaluate(()=> window.__radio('^Join from')), 'a library with tracks is asked first: a new library, or join from this one');
-  await sleep(1500); await A.screenshot({path:'shots/e2e-joindlg.png'}); await clickText(A,'.modal button','^Join$');
+  await sleep(1500); await A.screenshot({path:'shots/e2e-joindlg.png'}); await clickText(A,'.modal button','^Do it now$');
   await sleep(1500); console.log('A wait:', JSON.stringify(await waitIdle(A)));
   await A.screenshot({path:'shots/e2e-joined.png'});
   const st = await A.evaluate(()=>window.__dbg3.status()); ok(st.version===1, 'A pushed version 1 (got '+st.version+')');

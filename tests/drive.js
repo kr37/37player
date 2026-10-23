@@ -62,9 +62,9 @@ const openShared = async p=>{ await p.evaluate(()=>{ window.__dbg.setMode('editi
     let m = await modal(A);
     ok(/37 Player libraries on Google Drive/.test(m) && /no 37 Player libraries/.test(m), 'back from signing in: the Drive chooser, with nothing there yet');
     await A.screenshot({path: 'shots/drive-chooser-empty.png'});
-    ok(await A.evaluate(()=> document.getElementById('drLib').value === 'new' && document.getElementById('drNewBox').style.display !== 'none' && document.getElementById('drGo').textContent === 'Make it and join'), 'nothing there yet: "Make a new library" chosen, its name field showing, one button');
+    ok(await A.evaluate(()=> document.getElementById('drLib').value === 'new' && document.getElementById('drNewBox').style.display !== 'none' && document.getElementById('drGo').textContent === 'Next'), 'nothing there yet: "Make a new library" chosen, its name field showing, one button');
     await A.evaluate(()=>{ document.getElementById('drName').value = 'IKRC'; document.getElementById('drDevice').value = 'Laptop'; document.getElementById('drGo').click(); });
-    for(let k=0; k<40; k++){ if(await clickText(A, '.modal button', '^Join$')) break; await sleep(250); }
+    for(let k=0; k<40; k++){ if(await clickText(A, '.modal button', '^Do it now$')) break; await sleep(250); }
     await sleep(1000); console.log('A:', JSON.stringify(await waitIdle(A)));
     const cfgA = await A.evaluate(()=> window.__dbg.getRoot().settings.sharedLibrary);
     ok(cfgA && cfgA.kind === 'gdrive' && cfgA.folderId && cfgA.refreshToken, 'A is in a Drive library, with a lasting sign-in kept here');
@@ -88,9 +88,9 @@ const openShared = async p=>{ await p.evaluate(()=>{ window.__dbg.setMode('editi
     m = await modal(B);
     ok(/IKRC/.test(m), 'B, back from signing in, sees IKRC in the chooser');
     await B.screenshot({path: 'shots/drive-chooser.png'});
-    ok(await B.evaluate(()=> document.getElementById('drNewBox').style.display === 'none' && document.getElementById('drGo').textContent === 'Join' && [...document.getElementById('drLib').options].map(o=> o.textContent).join('|') === 'IKRC|Make a new library on Google Drive'), 'the dropdown lists IKRC, then Make a new library; joining is one button, no name field');
+    ok(await B.evaluate(()=> document.getElementById('drNewBox').style.display === 'none' && document.getElementById('drGo').textContent === 'Next' && [...document.getElementById('drLib').options].map(o=> o.textContent).join('|') === 'IKRC|Make a new library on Google Drive'), 'the dropdown lists IKRC, then Make a new library; joining is one button, no name field');
     await B.evaluate(()=>{ document.getElementById('drDevice').value = 'iPad'; { const sel = document.getElementById('drLib'); sel.value = [...sel.options].find(o=> o.textContent === 'IKRC').value; sel.dispatchEvent(new Event('change')); document.getElementById('drGo').click(); } });
-    for(let k=0; k<40; k++){ if(await clickText(B, '.modal button', '^Join$') || await B.evaluate(()=> window.__radio('^Use the shared library here'))) break; await sleep(250); }
+    for(let k=0; k<40; k++){ if(await clickText(B, '.modal button', '^Do it now$') || await B.evaluate(()=> window.__radio('^Use the shared library here'))) break; await sleep(250); }
     await sleep(1000); console.log('B:', JSON.stringify(await waitIdle(B)));
     await B.evaluate(()=> document.querySelectorAll('.modal [data-close]').forEach(x=> x.click()));
     ok(await names(B) === all, 'B has the library: ' + await names(B));
@@ -149,7 +149,7 @@ const openShared = async p=>{ await p.evaluate(()=>{ window.__dbg.setMode('editi
     const C = await device(b, 'C'); await settle(C);
     await C.evaluate(()=> window.__lib.newDialog()); await sleep(400);
     await C.evaluate(()=>{ window.__dbg.getRoot().settings.sharedLastDevice = 'Laptop'; document.querySelector('input[name=libNewHow][value=join]').click(); });
-    ok(await C.evaluate(()=> document.getElementById('libNewGo').textContent) === 'Continue' && await C.evaluate(()=> document.getElementById('libNewNameBox').style.display === 'none'), 'New library → Join a shared library: Continue, no name to give');
+    ok(await C.evaluate(()=> document.getElementById('libNewGo').textContent) === 'Next' && await C.evaluate(()=> document.getElementById('libNewNameBox').style.display === 'none'), 'New library → Join a shared library: Continue, no name to give');
     await C.evaluate(()=> document.getElementById('libNewGo').click()); await sleep(300);
     ok(await C.evaluate(()=> !!document.querySelector('input[name=sjWhere][value=gdrive]')), 'it opens the same dialog, offering Google Drive');
     await C.evaluate(()=>{ document.querySelector('input[name=sjWhere][value=gdrive]').click(); document.getElementById('sjNext').click(); }); await sleep(300);
@@ -161,7 +161,7 @@ const openShared = async p=>{ await p.evaluate(()=>{ window.__dbg.setMode('editi
     ok(await C.evaluate(()=> document.getElementById('drDevice').value) === 'Laptop', 'with the device name carried over');
     ok(await C.evaluate(()=> window.__lib.id()) !== 'main', 'in the new library, not the first one');
     await C.evaluate(()=>{ const sel = document.getElementById('drLib'); sel.value = [...sel.options].find(o=> o.textContent === 'IKRC').value; sel.dispatchEvent(new Event('change')); document.getElementById('drGo').click(); });
-    for(let k=0; k<40; k++){ if(await clickText(C, '.modal button', '^Join$') || await C.evaluate(()=> window.__radio('^Use the shared library here'))) break; await sleep(250); }
+    for(let k=0; k<40; k++){ if(await clickText(C, '.modal button', '^Do it now$') || await C.evaluate(()=> window.__radio('^Use the shared library here'))) break; await sleep(250); }
     await sleep(1000); await waitIdle(C);
     ok(await C.evaluate(()=> (window.__dbg.getRoot().settings.sharedLibrary || {}).kind) === 'gdrive' && /From iPad/.test(await names(C)), 'and joins it: ' + await names(C));
     ok(await C.evaluate(()=> window.__lib.list().list.find(l=> l.id === window.__lib.id()).name) === 'IKRC', 'taking its name');

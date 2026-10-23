@@ -3,8 +3,10 @@
 // `window`, so tests reach them through these.
 window.__dbg = {getRoot:()=>root, saveState, bulkImportFolder, setMode:(m)=>{appMode=m; applyAppMode();}, editPl:(id)=>{editingPlaylistId=id; renderEditorScreen();}, render:()=>renderPlayer(), disp:(th,mc)=>{ root.settings.theme=th; root.settings.moreContrast=mc; applyDisplaySettings(); }};
 window.__dbg3 = {put: (s,v)=>idbPut(s,v),
-  // joins, pressing the join dialog's "Join" itself
-  join: async (u,c,n,o)=>{ const pr = joinSharedLibrary(u,c,n,o); const iv = setInterval(()=>{ const b=[...document.querySelectorAll('.modal button')].find(b=>b.textContent.trim()==='Join'); if(b){ window.__joinDialog = b.closest('.modal').innerText; b.click(); } }, 150); try{ return await pr; } finally { clearInterval(iv); } },
+  // joins, pressing the last step's "Do it now" itself (the size to confirm,
+  // or Everything / Only what I choose), but never answering Use the shared
+  // library / Combine / Only what I choose: tests choose that with __radio
+  join: async (u,c,n,o)=>{ const pr = joinSharedLibrary(u,c,n,o); const iv = setInterval(()=>{ const b=[...document.querySelectorAll('.modal button')].find(b=>(b.textContent.trim()==='Do it now' || b.textContent.trim()==='Join') && !/Combine them/.test(b.closest('.modal').innerText)); if(b){ window.__joinDialog = b.closest('.modal').innerText; b.click(); } }, 150); try{ return await pr; } finally { clearInterval(iv); } },
   fetchNow: sharedFetchTracksNow, missing: sharedTrackMissing, review: openSharedReview, rvState: ()=>sharedReviewState,
   sync: (o)=>runSharedSync(Object.assign({force:true},o||{})), status: ()=>sharedStatus, pending: ()=>sharedPending,
   leave: leaveSharedLibrary, render: renderSharedSection, awake: sharedAwakeStart, awakeOn: ()=>!!sharedAwake};
