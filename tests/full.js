@@ -37,6 +37,7 @@ const breakable = p=> p.evaluate(()=>{
   if(window.__breakable) return; window.__breakable = true;
   const orig = IDBObjectStore.prototype.put;
   IDBObjectStore.prototype.put = function(...a){
+    if(window.__full && window.__fullName === 'silentAbort'){ const r = orig.apply(this, a); this.transaction.abort(); return r; } // Safari: aborted, no reason given
     if(window.__full && (!window.__fullStores || window.__fullStores.includes(this.name))) throw new DOMException(window.__fullName === 'UnknownError' ? 'An internal error was encountered in the Indexed Database server' : 'The quota has been exceeded.', window.__fullName || 'QuotaExceededError');
     return orig.apply(this, a);
   };
@@ -106,6 +107,17 @@ const waitIdle = async (p)=>{ for(let k=0;k<300;k++){ const s = await p.evaluate
   ok(!(await bar(A)).shown, 'coming back on screen saved it, and the bar went');
   await opened(A);
   ok((await firstPl(A)) === 'Renamed during UnknownError', 'kept after a reload');
+
+  // --- Safari's way: the write is aborted with no reason given. Counts as full.
+  await breakable(A);
+  await A.evaluate(()=>{ window.__full = true; window.__fullName = 'silentAbort'; });
+  const r3 = await renamePl(A, 'Renamed during a silent abort'); await sleep(400);
+  bb = await bar(A);
+  ok(/failed: AbortError/.test(r3) && bb.shown && /Device full/.test(bb.text), 'an abort with no reason given counts as a full device: ' + JSON.stringify(bb.text));
+  await A.evaluate(()=> document.querySelectorAll('.modal [data-close]').forEach(b=>b.click())); await sleep(200);
+  await A.evaluate(()=>{ window.__full = false; delete window.__fullName; });
+  await A.click('#btnNotSaving'); await sleep(300); await A.click('#notSavingRetry'); await sleep(800);
+  ok(!(await bar(A)).shown, 'and clears once saving works');
 
   // --- Receiving on a full device
   await A.evaluate((c,u)=> window.__dbg3.join(u,c,'Laptop'), CODE, URL_SYNC); await waitIdle(A); await sleep(1500); await waitIdle(A);
