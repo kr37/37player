@@ -52,7 +52,7 @@ let fails = 0; const ok=(c,m)=>{ console.log((c?'ok   ':'FAIL ')+m); if(!c) fail
     const has = await p.evaluate(()=> !!document.querySelector('[data-log="sync"] [data-log-act="copy"]'));
     ok(has, 'sync log has Copy all');
     if(has){
-      await p.evaluate(()=>{ document.getElementById('shLog').closest('details').open = true; });
+      await p.evaluate(()=>{ const more = document.getElementById('shMore'); if(more) more.open = true; document.getElementById('shLog').closest('details').open = true; });
       await p.click('[data-log="sync"] [data-log-act="copy"]'); await sleep(600);
       clip = await p.evaluate(()=> navigator.clipboard.readText());
       if(process.env.SHOW) console.log(clip.split('----')[0] + '----\n' + clip.split('----')[1].split('\n').slice(1,6).join('\n'));

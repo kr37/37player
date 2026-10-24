@@ -6,6 +6,6 @@ import os
 here = os.path.dirname(os.path.abspath(__file__))
 s = open(os.path.join(here, '..', '..', '37-player.html'), encoding='utf-8').read()
 a = s.index('/* SYNC-MERGE:BEGIN */'); b = s.index('/* SYNC-MERGE:END */') + len('/* SYNC-MERGE:END */')
-out = s[a:b] + '\nmodule.exports={syncReviewRows,syncApplyReview,syncDefaultChoice,syncApplyDependencies,syncMerge,syncEq,syncMergePartial,syncClassifyPartial,syncMergeKeepers};\n'
+out = s[a:b] + '\nmodule.exports={syncReviewRows,syncApplyReview,syncDefaultChoice,syncApplyDependencies,syncMerge,syncEq,syncMergePartial,syncClassifyPartial,syncMergeKeepers,syncChangeSummary,syncRestore};\n'
 open(os.path.join(here, 'engine.js'), 'w', encoding='utf-8').write(out)
 print('engine/engine.js written')
