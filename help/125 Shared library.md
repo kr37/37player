@@ -115,6 +115,6 @@ For a player nobody edits on, such as a meditation room's laptop, turn on **Rece
 
 ### If something goes wrong
 
-- **Sync log:** Settings → Shared library → **Sync log** lists what syncing did recently: each file sent or received, what it saved, and any errors, with a line every 10 minutes while 37 Player is open. It's kept on this device even if 37 Player closes or crashes, so a gap in those lines shows when it stopped. Copy it into a message if you're reporting a problem.
+- **Sync log:** Settings → Shared library → **Sync log** lists what syncing did recently: each file sent or received, what it saved, and any errors, with a line every 10 minutes while 37 Player is open. It's kept on this device even if 37 Player closes or crashes, so a gap in those lines shows when it stopped. **Copy all** puts the whole log on the clipboard, and **Share…** sends it as a text file (on a computer without sharing, **Save as a file** saves it): both start with this device's version, browser and storage, so whoever helps you can tell where it came from. That's easier and safer than selecting lines by hand, which can leave an older copy on the clipboard.
 - **Going round in circles:** if this device saves to the shared library 30 times in 2 minutes, syncing stops by itself and says so. **Sync now** starts it again.
 - **Opening without syncing:** add `?nosync` to the end of 37 Player's address (for example `https://37player.com/37-player.html?nosync`). Sharing stays off for that session, and Settings lets you leave the shared library.
