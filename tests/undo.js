@@ -62,6 +62,13 @@ async function device(b, name){
   await A.keyboard.down('Control'); await A.keyboard.down('Shift'); await A.keyboard.press('KeyZ'); await A.keyboard.up('Shift'); await A.keyboard.up('Control'); await sleep(600);
   ok((await lib(A)).pl.some(x=> /^Morning:/.test(x)), 'Ctrl-Shift-Z redoes');
 
+  // Not while Settings is open over the screen (1.4.085)
+  await A.evaluate(()=> window.__dbg4.settings()); await sleep(300);
+  const cov = await A.evaluate(()=> document.getElementById('btnUndo').disabled);
+  await A.keyboard.down('Control'); await A.keyboard.press('KeyZ'); await A.keyboard.up('Control'); await sleep(400);
+  ok(cov && (await lib(A)).pl.some(x=> /^Morning:/.test(x)), 'with Settings open, Undo is greyed out and Ctrl-Z does nothing');
+  await A.keyboard.press('Escape'); await sleep(400);
+  ok(await A.evaluate(()=> !document.getElementById('btnUndo').disabled), 'Settings closed: Undo is back');
   // Quick saves join into one step
   const before = (await st(A)).undo;
   await edit(A, "r.library[0].artist='X';"); await sleep(200); await edit(A, "r.library[0].album='Y';");

@@ -36,13 +36,7 @@ There's nothing to do. (The less used switches, the sync log and the server's ve
 
 ### History: going back
 
-Every time a device saves a change to the shared library, the shared library keeps that version: on 37player.com for 30 days, on Google Drive all of them. **History…** (in Settings → Shared library, and in Settings → Backups) lists them, newest first, each with the time, the device that saved it and what it changed, such as "1 track changed · changed “Heart Jewel”". The arrows at the top step through them one at a time.
-
-Choose a version to see **what restoring would change**: one row for each difference between now and then (a playlist, a track, or the order inside a folder), with now on the left and then on the right. A playlist's row can show its two versions side by side, with what was added or taken away marked. Every row starts as **Keep now**. Tap its button to make it **Restore**, or use **Restore everything**, then **Restore** at the bottom. Tracks a restored playlist needs come back with it.
-
-Restoring never erases anything: it's saved as a new version at the top of the list, and every device gets it at its next sync. A restore you regret can be restored away again from History.
-
-**What changed at this point** shows only what one save changed, before and after, to find when something went wrong. A device set to **Receive updates only** can look but not restore.
+Every version of the shared library from the last 30 days is kept (on Google Drive, all of them). **History…**, here in Settings → Shared library, compares now with any of them and brings back what you choose. See 'History and Undo'.
 
 ### If a device loses its library
 

@@ -4,7 +4,7 @@ Cool stuff
 
 - **No editing on 'Playing'** — the 'Playing' tab never lets you change a playlist, so an operator who's unsure or unpracticed can't accidentally break anything just by using it.
 - **PIN lockout** — set a PIN in Settings and both 'Edit Playlists' and 'Library' will ask for it before they open, if you want to keep them out of reach.
-- **Undo and redo** — on 'Edit Playlists' and 'Library', the ↶ and ↷ buttons beside Settings (or Ctrl/⌘-Z and Ctrl/⌘-Shift-Z) take back and redo your last changes to tracks, playlists and folders, one at a time, up to 30, even after closing and reopening 37 Player. Hold the pointer over ↶ to see what it will undo. A deleted track comes back in its playlists, with its sound (kept on the device for a day, or fetched again from a shared library). In a shared library, Undo takes back only your own change: if another device has changed the same thing since, that's left as it is, and Undo says so. To go further back, or to undo another device's change, use History (Settings → Shared library).
+- **Undo and redo** — on 'Edit Playlists' and 'Library', ↶ and ↷ beside Settings (or Ctrl/⌘-Z) take back and redo your last changes, even after reopening 37 Player; a shared library also keeps a History of every version from the last 30 days. See 'History and Undo'.
 - **10-minute revert** — leave 'Edit Playlists' or 'Library' untouched for 10 minutes and the app quietly switches the display back to 'Playing' on its own — it doesn't start any playback, just brings that tab back to the front — so whoever finds it next isn't looking at an editing screen they didn't expect.
 
 ### Handy features
