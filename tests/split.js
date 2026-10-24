@@ -61,7 +61,7 @@ async function run(b, webkit){
     const ctx = new OfflineAudioContext(2, 1, 44100);
     const dec = async id=> ctx.decodeAudioData(await (await blobOf(id)).arrayBuffer());
     const w1 = await blobOf(w.track1.id), w2 = await blobOf(w.track2.id);
-    const F15 = Math.round(44100 * 0.015); // the fade's length
+    const F15 = Math.round(44100 * 0.005); // the fade's length
     const s1 = new DataView(await w1.slice(w1.size - 4 * (F15 + 1), w1.size - 4 * F15).arrayBuffer()).getInt16(0, true);
     const s2 = new DataView(await w2.slice(44 + 4 * F15, 48 + 4 * F15).arrayBuffer()).getInt16(0, true);
     const e1 = new DataView(await w1.slice(w1.size - 4).arrayBuffer()).getInt16(0, true);
@@ -90,7 +90,7 @@ async function run(b, webkit){
   ok(res.during === 0, tag + 'nothing was decoded to split (' + res.during + ')');
   ok(Math.abs(res.tracks.w1 - 7) < 1e-6 && Math.abs(res.tracks.w2 - 13) < 1e-6, tag + 'WAV parts are 7 s and 13 s');
   ok(res.w1size === 44 + 7 * 44100 * 4 && res.w2size === 44 + 13 * 44100 * 4, tag + 'with a 44-byte header and exactly their samples');
-  ok(res.s1 === ((7 * 44100 - Math.round(44100 * 0.015) - 1) % 20000) - 10000 && res.s2 === ((7 * 44100 + Math.round(44100 * 0.015)) % 20000) - 10000, tag + 'outside the fade, the samples are exactly the source\'s');
+  ok(res.s1 === ((7 * 44100 - Math.round(44100 * 0.005) - 1) % 20000) - 10000 && res.s2 === ((7 * 44100 + Math.round(44100 * 0.005)) % 20000) - 10000, tag + 'outside the fade, the samples are exactly the source\'s');
   ok(Math.abs(res.e1) <= 2 && Math.abs(res.e2) <= 2, tag + 'at the cut itself, the WAV fades to silence (' + res.e1 + ', ' + res.e2 + ')');
   for(const k of ['w1', 'w2', 'm1', 'm2']){
     const e = res.tone[k], what = (k[0] === 'w' ? 'WAV' : 'MP3') + ' tone, ' + (k[1] === '1' ? 'end of part 1' : 'start of part 2');
