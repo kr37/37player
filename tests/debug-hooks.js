@@ -58,7 +58,7 @@ window.__share = {offer: (meta)=> offerNativeImport(meta, {}, {}, null, {backupR
   prompt: backupPromptNeeded, covered: sharedCoversLibrary, keepers: ()=> root.backupKeepers, keeperLines,
   noteKept: ()=>{ root.backupKeepers = Object.assign({}, root.backupKeepers, {[sharedConfig().deviceName]: Date.now()}); return saveState(); },
   label: ()=> document.getElementById("btnBackup").textContent, setup: ()=> backupInfo.setupDone};
-window.__share.manualBackup = downloadManualBackup; window.__share.manualPlan = manualBackupPlan;
+window.__share.manualBackup = downloadManualBackup; window.__share.judge = judgeBackupFiles; window.__share.manualPlan = manualBackupPlan;
 window.__share.missingNote = ()=> sharedMissingNote({waiting: false, from: "Laptop"});
 window.openImportExportForTest = openImportExportDialog;
 window.__choose = {open: openSharedChoose, markAllSeen: sharedMarkAllSeen, cfg: ()=> sharedConfig()};

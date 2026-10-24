@@ -36,7 +36,14 @@ const dialog = p=> p.evaluate(()=>{ const m = document.querySelector('.modal-bac
 
   ok(await p.evaluate(()=> window.__dbg.getRoot().library.length) === 1, 'one track imported');
   await setBase(1);
+  // Not confirmed yet: asks whether that full backup still exists (1.4.078).
   let d = await ask();
+  ok(d && /Do you still have your full backup/.test(d.text) && /can't see your files/.test(d.text), 'a changes backup first asks whether the full backup still exists');
+  const yes = d && d.buttons.find(x=>/^Yes: back up the changes/.test(x.t)), no = d && d.buttons.find(x=>/^No, or not sure: new full backup/.test(x.t));
+  ok(yes && yes.primary && no && !no.primary, 'with Yes (changes) suggested and No, or not sure (full) beside it');
+  await cancel(); await sleep(400);
+  await p.evaluate(()=>{ window.backupInfoForTest().manualBase.confirmedAt = Date.now(); });
+  d = await ask();
   ok(d && /can't see whether you still have it/.test(d.text), 'says the app cannot see whether the full backup still exists');
   ok(d && !/two weeks/.test(d.text), 'a day-old full backup is not called old');
   const ch1 = d && d.buttons.find(x=>/^Back up changes/.test(x.t));
