@@ -59,6 +59,8 @@ window.__share = {offer: (meta)=> offerNativeImport(meta, {}, {}, null, {backupR
   noteKept: ()=>{ root.backupKeepers = Object.assign({}, root.backupKeepers, {[sharedConfig().deviceName]: Date.now()}); return saveState(); },
   label: ()=> document.getElementById("btnBackup").textContent, setup: ()=> backupInfo.setupDone};
 window.__share.manualBackup = downloadManualBackup; window.__share.judge = judgeBackupFiles; window.__share.manualPlan = manualBackupPlan;
+window.__hist = {open: openSharedHistory};
+window.__undo = {undo: doUndo, redo: doRedo, del: deleteLibraryTracks, stacks: ()=> ({undo: undoStack.length, redo: redoStack.length, labels: undoStack.map(undoLabel)}), rebase: undoRebase};
 window.__split = performTrackSplit; window.__queueSplit = queueTrackSplit; window.__audioUrl = getAudioUrl; window.__retag = rewriteFileTagsIfPossible;
 window.__share.missingNote = ()=> sharedMissingNote({waiting: false, from: "Laptop"});
 window.openImportExportForTest = openImportExportDialog;

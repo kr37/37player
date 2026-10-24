@@ -21,6 +21,8 @@ async function run(b, webkit){
   await p.evaluate(()=> document.querySelector('.modal [data-close]')?.click()); await sleep(800);
   for(const x of ['^English$','^Skip for now$','^Finish$','^OK$','^Close$']){ await clickText(p,'.modal button',x); await sleep(300); }
   const tag = webkit ? '[webkit] ' : '';
+  // Files kept as imported: with the converter present, the default setting would turn the WAV into an MP3.
+  await p.evaluate(async()=>{ const r = window.__dbg.getRoot(); r.formatPolicy = Object.assign({}, r.formatPolicy, {when: 'untouched'}); await window.__dbg.saveState(); });
   // A 20 s stereo 16-bit WAV whose samples count up, and the starter MP3.
   await p.evaluate((b64, tone64)=>{
     const rate = 44100, secs = 20, n = rate * secs, data = new DataView(new ArrayBuffer(44 + n * 4));

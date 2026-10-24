@@ -27,4 +27,9 @@ Keyboard Shortcuts
 <tr><td style="padding:6px 14px 6px 0; vertical-align:top; white-space:nowrap;"><kbd>↑</kbd> / <kbd>↓</kbd></td><td style="padding:6px 0;">Moves the selection within whichever list — Artists, Albums, or Tracks — was last clicked. Only when exactly one item is selected there.</td></tr>
 <tr><td style="padding:6px 14px 6px 0; vertical-align:top; white-space:nowrap;"><kbd>E</kbd></td><td style="padding:6px 0;">Edits the selected track(s), or renames the selected artist/album across every track that uses it.</td></tr>
 </table>
+<h3 style="margin:24px 0 8px 0;">Edit Playlists and Library</h3>
+<table style="width:100%; border-collapse:collapse; margin-bottom:12px;">
+<tr><td style="padding:6px 14px 6px 0; vertical-align:top; white-space:nowrap;"><kbd>Ctrl/Cmd</kbd>+<kbd>Z</kbd></td><td style="padding:6px 0;">Undoes the last change to tracks, playlists or folders.</td></tr>
+<tr><td style="padding:6px 14px 6px 0; vertical-align:top; white-space:nowrap;"><kbd>Ctrl/Cmd</kbd>+<kbd>Shift</kbd>+<kbd>Z</kbd>, <kbd>Ctrl</kbd>+<kbd>Y</kbd></td><td style="padding:6px 0;">Redoes what was undone.</td></tr>
+</table>
 <p style="font-size:13px; color:var(--text-faint);">None of these are active while a dialog is open, or while typing in a text field.</p>

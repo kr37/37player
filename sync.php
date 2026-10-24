@@ -1,7 +1,7 @@
 <?php
 /*
  * 37 Player — shared library sync server.
- * Version 1.3.043 (the 37 Player version this file was last changed for;
+ * Version 1.4.084 (the 37 Player version this file was last changed for;
  * keep it the same as SYNC_VERSION below).
  *
  * One file, plain PHP (7.4+), no database. It keeps each shared library in
@@ -12,6 +12,7 @@
  *     latest               current version number
  *     lock                 held briefly while a new version is written
  *     state/000123.json.gz the library document at each version (its history)
+ *     state/000123.json    who saved that version and what it changed, for History
  *     audio/<id>.<rev>     audio files, never overwritten
  *     artwork/<id>.<rev>   artwork files, never overwritten
  *     peaks/<id>.<rev>     waveform data for each audio file (small JSON)
@@ -34,7 +35,9 @@
  *   PUT  op=file&kind=K&name=X    upload one (kept as-is if it already exists;
  *                                 a waveform can be replaced with &replace=1)
  *   POST op=peaks                 {"names":[...]} → {"name": peaks, ...}
- *   GET  op=history               recent versions: number, time, size
+ *   GET  op=history               recent versions: number, time, size, and
+ *                                 who saved each and what it changed ("by",
+ *                                 "what"), when the device said so
  *
  * Command line (as the web server's user, e.g. sudo -u www-data php sync.php …):
  *   php sync.php version                            which version this file is
@@ -60,14 +63,14 @@ const KINDS = ['audio', 'artwork', 'peaks'];
 // The 37 Player version this file was last changed for (it doesn't change
 // with every release of the app, only when this file does). Shown in the
 // app's Settings → Shared library, and by `php sync.php version`.
-const SYNC_VERSION = '1.3.043';
+const SYNC_VERSION = '1.4.084';
 
 if (PHP_SAPI === 'cli') { exit(cli($argv)); }
 
 // ---------- web ----------
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, PUT, HEAD, OPTIONS');
-header('Access-Control-Allow-Headers: X-Library, Content-Type, Range, X-Body-Gzip');
+header('Access-Control-Allow-Headers: X-Library, Content-Type, Range, X-Body-Gzip, X-Saved-By, X-Change');
 header('Access-Control-Expose-Headers: X-Version, X-Library-Name, X-Accepts-Gzip, X-Sync-Version, Content-Range, Content-Length, Accept-Ranges');
 header('X-Sync-Version: ' . SYNC_VERSION);
 header('Cache-Control: no-store');
@@ -114,6 +117,16 @@ if ($op === 'state' && $method === 'POST') {
     $tmp = state_file($dir, $new) . '.tmp';
     file_put_contents($tmp, gzencode($body, 6));
     rename($tmp, state_file($dir, $new));
+    // Who saved it and what it changed, as the device says (1.4.084): small,
+    // and read by op=history without opening the documents themselves.
+    $by = substr(rawurldecode($_SERVER['HTTP_X_SAVED_BY'] ?? ''), 0, 120);
+    $what = substr(rawurldecode($_SERVER['HTTP_X_CHANGE'] ?? ''), 0, 1000);
+    if ($by !== '' || $what !== '') {
+        $info = ['by' => $by];
+        $w = json_decode($what, true);
+        if (is_array($w)) $info['what'] = $w;
+        file_put_contents(info_file($dir, $new), json_encode($info, JSON_UNESCAPED_UNICODE));
+    }
     file_put_contents($dir . '/latest.tmp', (string)$new);
     rename($dir . '/latest.tmp', $dir . '/latest');
     flock($lock, LOCK_UN);
@@ -186,7 +199,10 @@ if ($op === 'history' && $method === 'GET') {
     $rows = [];
     foreach (versions($dir) as $v) {
         $f = state_file($dir, $v);
-        $rows[] = ['version' => $v, 'time' => filemtime($f) * 1000, 'size' => filesize($f)];
+        $row = ['version' => $v, 'time' => filemtime($f) * 1000, 'size' => filesize($f)];
+        $i = info_file($dir, $v);
+        if (is_file($i)) { $info = json_decode(file_get_contents($i), true); if (is_array($info)) $row += $info; }
+        $rows[] = $row;
     }
     usort($rows, fn($a, $b) => $b['version'] - $a['version']);
     json_out(array_slice($rows, 0, 500));
@@ -217,6 +233,7 @@ function authenticate() {
 }
 function latest($dir) { $f = "$dir/latest"; return is_file($f) ? intval(trim(file_get_contents($f))) : 0; }
 function state_file($dir, $v) { return sprintf('%s/state/%06d.json.gz', $dir, $v); }
+function info_file($dir, $v) { return sprintf('%s/state/%06d.json', $dir, $v); }
 function versions($dir) {
     $vs = [];
     foreach (scandir("$dir/state") ?: [] as $n) if (preg_match('/^(\d+)\.json\.gz$/', $n, $m)) $vs[] = intval($m[1]);
@@ -323,7 +340,8 @@ function cleanup_library($dir, $days) {
     $kept = [];
     foreach ($vs as $i => $v) {
         $f = state_file($dir, $v);
-        if ($i >= $keepFrom || filemtime($f) >= $cutoff) $kept[] = $v; else unlink($f);
+        if ($i >= $keepFrom || filemtime($f) >= $cutoff) $kept[] = $v;
+        else { unlink($f); if (is_file(info_file($dir, $v))) unlink(info_file($dir, $v)); }
     }
     $used = ['audio' => [], 'artwork' => [], 'peaks' => []];
     foreach ($kept as $v) {

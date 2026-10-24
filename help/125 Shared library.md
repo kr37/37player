@@ -27,12 +27,22 @@ A shared library can also live in a folder of your Google Drive. Choose **Google
 
 ### Day to day
 
-There's nothing to do. 37 Player checks a few seconds after every change, every few minutes while it's open, and whenever it comes back on screen. **Sync now** in Settings does it at once. Settings also shows when this device last checked, and whether it's **up to date**, still **updating** (downloading or sending audio), or **waiting** for files from other devices that haven't sent them yet.
+There's nothing to do. (The less used switches, the sync log and the server's version are under **More** in Settings → Shared library.) 37 Player checks a few seconds after every change, every few minutes while it's open, and whenever it comes back on screen. **Sync now** in Settings does it at once. Settings also shows when this device last checked, and whether it's **up to date**, still **updating** (downloading or sending audio), or **waiting** for files from other devices that haven't sent them yet.
 
 - **Working offline** is fine: everything plays from this device as always, and changes are sent the next time it's online.
 - **Each device keeps its own settings**: display, PIN, backups and volume aren't shared.
 - **The shared library is this device's backup.** Once everything on a device has reached the shared library, the **Back up library** button at the top reads **In sync**, and 37 Player stops reminding you to back up. Until then (just after a change, or while audio is being sent), it says **Syncing…**. Tapping **In sync** still lets you save a backup on this device: it opens with **Up to date**, then the usual backup choices.
 - **Who keeps backups.** A shared library still needs one device that backs it up: it protects against losing a device, but not against a mistake, because a mistake is shared too. A computer with Chrome or Edge and a backup folder (see 'Backing up') does it by itself, and every device shows when it last did, for example "Backed up by Gen's laptop, today" (on the button's tooltip, and in Settings → Backups and Shared library).
+
+### History: going back
+
+Every time a device saves a change to the shared library, the shared library keeps that version: on 37player.com for 30 days, on Google Drive all of them. **History…** (in Settings → Shared library, and in Settings → Backups) lists them, newest first, each with the time, the device that saved it and what it changed, such as "1 track changed · changed “Heart Jewel”". The arrows at the top step through them one at a time.
+
+Choose a version to see **what restoring would change**: one row for each difference between now and then (a playlist, a track, or the order inside a folder), with now on the left and then on the right. A playlist's row can show its two versions side by side, with what was added or taken away marked. Every row starts as **Keep now**. Tap its button to make it **Restore**, or use **Restore everything**, then **Restore** at the bottom. Tracks a restored playlist needs come back with it.
+
+Restoring never erases anything: it's saved as a new version at the top of the list, and every device gets it at its next sync. A restore you regret can be restored away again from History.
+
+**What changed at this point** shows only what one save changed, before and after, to find when something went wrong. A device set to **Receive updates only** can look but not restore.
 
 ### If a device loses its library
 
