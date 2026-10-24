@@ -10,7 +10,7 @@ window.__dbg3 = {put: (s,v)=>idbPut(s,v),
   fetchNow: sharedFetchTracksNow, missing: sharedTrackMissing, review: openSharedReview, rvState: ()=>sharedReviewState,
   sync: (o)=>runSharedSync(Object.assign({force:true},o||{})), status: ()=>sharedStatus, pending: ()=>sharedPending,
   leave: leaveSharedLibrary, render: renderSharedSection, awake: sharedAwakeStart, awakeOn: ()=>!!sharedAwake};
-window.__dbg4 = {settings: openSettingsPage, help: openHelpPage};
+window.__dbg4 = {settings: openSettingsPage, help: openHelpPage, section: goToSettingsSection};
 window.__rv = {rows: syncReviewRows, classify: (r,m)=>syncClassifyPartial(r,m,new Set()), def: syncDefaultChoice, set: (st)=>{ const page=document.createElement("div"); page.id="reviewPage"; page.className="settings-page rv-page"; placeOverlayPage(page, closeSharedReview); page.innerHTML='<div class="rv-scroll" id="rvScroll"></div><div class="rv-foot" id="rvFoot"></div>'; document.body.appendChild(page); sharedReviewState=st; renderSharedReview(); }};
 window.__aa = {analyze: analyzeAudio};
 // files this browser can't play (conv.js)
@@ -58,7 +58,8 @@ window.__share = {offer: (meta)=> offerNativeImport(meta, {}, {}, null, {backupR
   prompt: backupPromptNeeded, covered: sharedCoversLibrary, keepers: ()=> root.backupKeepers, keeperLines,
   noteKept: ()=>{ root.backupKeepers = Object.assign({}, root.backupKeepers, {[sharedConfig().deviceName]: Date.now()}); return saveState(); },
   label: ()=> document.getElementById("btnBackup").textContent, setup: ()=> backupInfo.setupDone};
-window.__share.manualBackup = downloadManualBackup; window.__share.manualPlan = manualBackupPlan;
+window.__share.manualBackup = downloadManualBackup; window.__share.judge = judgeBackupFiles; window.__share.manualPlan = manualBackupPlan;
+window.__split = performTrackSplit;
 window.__share.missingNote = ()=> sharedMissingNote({waiting: false, from: "Laptop"});
 window.openImportExportForTest = openImportExportDialog;
 window.__choose = {open: openSharedChoose, markAllSeen: sharedMarkAllSeen, cfg: ()=> sharedConfig()};
