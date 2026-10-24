@@ -102,6 +102,20 @@ async function run(b, webkit){
   ok(res.msizes <= res.mp3size && res.mp3size - res.msizes < 64 * 1024, tag + 'the MP3 parts are the file\'s frames (without its tag)');
   ok(res.peaks === 720 || res.peaks > 100, tag + 'each part has a waveform from the source');
   ok(res.leftover === 0, tag + 'no pieces left behind');
+  // A full device: the alert says so (1.4.083), and nothing is added.
+  const alerts = []; const onDlg = d=>{ alerts.push(d.message()); d.dismiss(); }; p.on('dialog', onDlg);
+  const before = await p.evaluate(()=> window.__dbg.getRoot().library.length);
+  await p.evaluate(()=>{
+    const orig = IDBObjectStore.prototype.put; window.__origPut = orig;
+    IDBObjectStore.prototype.put = function(...a){ if(this.name === 'audio' || this.name === 'state' && String((a[0] || {}).key || '').startsWith('splitpart:')) throw new DOMException('The quota has been exceeded.', 'QuotaExceededError'); return orig.apply(this, a); };
+    const tr = window.__dbg.getRoot().library.find(x=> /count/.test(x.filename));
+    window.__queueSplit(tr, 5, {name: 'q1', artist: '', album: '', trackNo: null}, {name: 'q2', artist: '', album: '', trackNo: null});
+  });
+  for(let i = 0; i < 40 && !alerts.length; i++) await sleep(150);
+  await p.evaluate(()=>{ IDBObjectStore.prototype.put = window.__origPut; });
+  p.off('dialog', onDlg);
+  ok(alerts.length === 1 && /ran out of storage/.test(alerts[0]), tag + 'a full device: the alert says the device ran out of storage');
+  ok(await p.evaluate(()=> window.__dbg.getRoot().library.length) === before, tag + 'and no track was added');
   await ctx.close();
 }
 (async()=>{
