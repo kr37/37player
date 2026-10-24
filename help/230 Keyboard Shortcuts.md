@@ -27,6 +27,19 @@ Keyboard Shortcuts
 <tr><td style="padding:6px 14px 6px 0; vertical-align:top; white-space:nowrap;"><kbd>↑</kbd> / <kbd>↓</kbd></td><td style="padding:6px 0;">Moves the selection within whichever list — Artists, Albums, or Tracks — was last clicked. Only when exactly one item is selected there.</td></tr>
 <tr><td style="padding:6px 14px 6px 0; vertical-align:top; white-space:nowrap;"><kbd>E</kbd></td><td style="padding:6px 0;">Edits the selected track(s), or renames the selected artist/album across every track that uses it.</td></tr>
 </table>
+<h3 style="margin:24px 0 8px 0;">The splitter</h3>
+<table style="width:100%; border-collapse:collapse; margin-bottom:20px;">
+<tr><td style="padding:6px 14px 6px 0; vertical-align:top; white-space:nowrap;"><kbd>Space</kbd></td><td style="padding:6px 0;">Plays from the cursor, or pauses.</td></tr>
+<tr><td style="padding:6px 14px 6px 0; vertical-align:top; white-space:nowrap;"><kbd>←</kbd> / <kbd>→</kbd></td><td style="padding:6px 0;">Moves the cursor 10 milliseconds, or the selected mark if there is one. With <kbd>Shift</kbd>, 100 milliseconds; with <kbd>Ctrl</kbd> (or <kbd>Alt</kbd>), a second.</td></tr>
+<tr><td style="padding:6px 14px 6px 0; vertical-align:top; white-space:nowrap;"><kbd>M</kbd> / <kbd>Enter</kbd></td><td style="padding:6px 0;">Puts a mark at the cursor.</td></tr>
+<tr><td style="padding:6px 14px 6px 0; vertical-align:top; white-space:nowrap;"><kbd>Delete</kbd> / <kbd>Backspace</kbd></td><td style="padding:6px 0;">Removes the selected mark.</td></tr>
+<tr><td style="padding:6px 14px 6px 0; vertical-align:top; white-space:nowrap;"><kbd>[</kbd> / <kbd>]</kbd></td><td style="padding:6px 0;">Goes to the previous or next mark, and selects it.</td></tr>
+<tr><td style="padding:6px 14px 6px 0; vertical-align:top; white-space:nowrap;"><kbd>,</kbd> / <kbd>.</kbd></td><td style="padding:6px 0;">Hear the two seconds up to the cursor (stopping on it), or from it.</td></tr>
+<tr><td style="padding:6px 14px 6px 0; vertical-align:top; white-space:nowrap;"><kbd>S</kbd></td><td style="padding:6px 0;">Moves the selected mark to the quietest moment within half a second.</td></tr>
+<tr><td style="padding:6px 14px 6px 0; vertical-align:top; white-space:nowrap;"><kbd>↑</kbd> / <kbd>↓</kbd>, <kbd>+</kbd> / <kbd>−</kbd></td><td style="padding:6px 0;">Shows less, closer, or more of the track.</td></tr>
+<tr><td style="padding:6px 14px 6px 0; vertical-align:top; white-space:nowrap;"><kbd>Home</kbd> / <kbd>End</kbd></td><td style="padding:6px 0;">Puts the cursor at the start or the end.</td></tr>
+<tr><td style="padding:6px 14px 6px 0; vertical-align:top; white-space:nowrap;"><kbd>Escape</kbd></td><td style="padding:6px 0;">Unselects a mark; pressed again, leaves the splitter (asking first if there are marks).</td></tr>
+</table>
 <h3 style="margin:24px 0 8px 0;">Edit Playlists and Library</h3>
 <table style="width:100%; border-collapse:collapse; margin-bottom:12px;">
 <tr><td style="padding:6px 14px 6px 0; vertical-align:top; white-space:nowrap;"><kbd>Ctrl/Cmd</kbd>+<kbd>Z</kbd></td><td style="padding:6px 0;">Undoes the last change to tracks, playlists or folders.</td></tr>

@@ -1,7 +1,8 @@
 // Splitting without decoding (1.4.079): a WAV or MP3 is cut by copying
 // bytes at a sample or frame boundary, never decoded whole (a 1.2 GB WAV
-// closed 37 Player on the iPad). Checks: no decodeAudioData during the
-// split, the parts' lengths and sizes, the WAV samples carry on exactly
+// closed 37 Player on the iPad). Checks: the source is never decoded whole
+// (each piece's own waveform is measured from the piece, since 1.4.086), the
+// parts' lengths and sizes, the WAV samples carry on exactly
 // across the cut, both parts play (decode), and on WebKit's path (pieces
 // stored on their own, then checked) the same, with no pieces left behind.
 const puppeteer = require('puppeteer-core');
@@ -49,15 +50,15 @@ async function run(b, webkit){
   for(const x of ['^OK$','^Close$','^Not now$','^Keep them$']){ await clickText(p,'.modal button',x); await sleep(300); }
 
   const res = await p.evaluate(async ()=>{
-    let decodes = 0;
+    let biggest = 0; // the most bytes handed to the decoder at once
     const orig = BaseAudioContext.prototype.decodeAudioData;
-    BaseAudioContext.prototype.decodeAudioData = function(...a){ decodes++; return orig.apply(this, a); };
+    BaseAudioContext.prototype.decodeAudioData = function(...a){ biggest = Math.max(biggest, a[0] && a[0].byteLength || 0); return orig.apply(this, a); };
     const lib = window.__dbg.getRoot().library;
     const wav = lib.find(x=> /count/.test(x.filename)), mp3 = lib.find(x=> /starter/.test(x.filename));
     const F = (n)=> ({name: n, artist: '', album: '', trackNo: null});
     const w = await window.__split(wav, 7, F('w1'), F('w2'), ()=>{});
     const m = await window.__split(mp3, 50, F('m1'), F('m2'), ()=>{});
-    const during = decodes;
+    const during = biggest;
     BaseAudioContext.prototype.decodeAudioData = orig;
     const blobOf = id=> window.__dmg.get(id);
     const ctx = new OfflineAudioContext(2, 1, 44100);
@@ -85,11 +86,12 @@ async function run(b, webkit){
     const keys = await new Promise(r=>{ const rq = indexedDB.open('temple-sound-library'); rq.onsuccess = ()=>{ const g = rq.result.transaction('state').objectStore('state').getAllKeys(); g.onsuccess = ()=> r(g.result.filter(k=> String(k).startsWith('splitpart:'))); }; });
     const d = {w1: (await dec(w.track1.id)).duration, w2: (await dec(w.track2.id)).duration, m1: (await dec(m.track1.id)).duration, m2: (await dec(m.track2.id)).duration};
     const mp3Src = await blobOf(mp3.id);
-    return {during, d, tone, e1, e2, w1size: w1.size, w2size: w2.size, s1, s2, expect1: ((cut - 1) % 20000) - 10000, expect2: (cut % 20000) - 10000,
+    const srcMax = Math.max((await blobOf(wav.id)).size, (await blobOf(mp3.id)).size);
+    return {during, srcMax, d, tone, e1, e2, w1size: w1.size, w2size: w2.size, s1, s2, expect1: ((cut - 1) % 20000) - 10000, expect2: (cut % 20000) - 10000,
       tracks: {w1: w.track1.duration, w2: w.track2.duration, m1: m.track1.duration, m2: m.track2.duration, mp3: mp3.duration},
       msizes: (await blobOf(m.track1.id)).size + (await blobOf(m.track2.id)).size, mp3size: mp3Src.size, peaks: w.track1.peaks.length, leftover: keys.length};
   });
-  ok(res.during === 0, tag + 'nothing was decoded to split (' + res.during + ')');
+  ok(res.during < res.srcMax * 0.75, tag + 'the source is never decoded whole (largest decode ' + res.during + ' bytes)');
   ok(Math.abs(res.tracks.w1 - 7) < 1e-6 && Math.abs(res.tracks.w2 - 13) < 1e-6, tag + 'WAV parts are 7 s and 13 s');
   ok(res.w1size === 44 + 7 * 44100 * 4 && res.w2size === 44 + 13 * 44100 * 4, tag + 'with a 44-byte header and exactly their samples');
   ok(res.s1 === ((7 * 44100 - Math.round(44100 * 0.005) - 1) % 20000) - 10000 && res.s2 === ((7 * 44100 + Math.round(44100 * 0.005)) % 20000) - 10000, tag + 'outside the fade, the samples are exactly the source\'s');
