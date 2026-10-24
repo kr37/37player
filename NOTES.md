@@ -210,6 +210,16 @@ The full plan and history are in the project doc `shared-library-sync.md`. In sh
   - **Library cleanup becomes one page laid out like Help and Settings:** Library info (stats) → Can't play → Duplicates → Missing artwork and tags (the "571 missing…" selector moves here from the Library page; "Find duplicates" stays on the Library page too) → Storage → Format.
   - **Server conversion** (sync.php with ffmpeg): held back as a fallback; Gen isn't willing to host many centers' or friends' libraries.
 
+- **Left from 24 Oct 2026** (logs, backups, splitting, History, Undo):
+  - **Feedback:** `feedback.php` on the droplet mailing rinzin@kr37.net (check Postfix or Exim first; Dovecot only reads), subject `37-Player: …`, logs attached, only ever to Gen, size cap and rate limit, a copy kept on the droplet, optional reply address; **Sent messages** on the device. Maybe also filed in a private GitHub repo (`kr37/37player-reports`, token only on the droplet) so a Claude session can read reports.
+  - **Logs in the shared library:** each device keeps a short copy of its logs there; the feedback form lists them with checkboxes.
+  - **Keeper warning:** every device says so when no device has backed up the shared library for ~7 days. And the droplet's own backup to the T470 (`pull_droplet_backup.sh`) still isn't running.
+  - **New icon:** waiting on Gen: a Kadampa motif (bell, lotus, a "37" mark) or something neutral; "37" in it or not (hard to read at 32 px). Then 512/192 maskable PNGs, 180 Apple, .ico, SVG source.
+  - **History's wording:** "Restore" for rows that take something out (above).
+  - **Buttons:** wherever two buttons act as a switch, use radios or a selected state that isn't colour alone (Gen: the selected one is hard to read and to tell apart).
+  - **On the iPad, to check:** Share… on a log into WhatsApp; Back up library (should say no file is needed; if made anyway, does Save to Files… cope with many GB); splitting the 1.2 GB WAV (now says why if it fails); History and Undo there.
+  - **Tests:** `ipad.js` is out of date (fails the same on `main`); split's MP3 CRC rewrite untested on a real file.
+  - **Optional:** a length (Xing) header in split MP3 parts for other players' seeking; splitting M4A without re-encoding.
 - **Next conversation (from 23 Oct 2026):**
   - **Feedback and logs** (decided 23–24 Oct 2026; Copy all and Share… done in 1.4.077):
     - **Send to Gen Rinzin:** a form in the app posting to a small `feedback.php` beside sync.php, which mails rinzin@kr37.net through the droplet's own mail (Postfix or Exim: check which; Dovecot only reads). Subject `37-Player: <first line>`, logs attached. Works on every browser (the share sheet can't send files from Linux Chrome). It only ever mails Gen: no "copy to me" at a typed address, which would let anyone use the droplet to mail strangers. Size cap, a rate limit per address, a copy kept in a folder on the droplet. An optional "your email, so I can reply". The device keeps what was sent under **Sent messages**, as the sender's record. GitHub issues need an account, so not for users.
