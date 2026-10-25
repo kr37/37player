@@ -89,3 +89,10 @@ window.__exp = {select: (ids)=>{ appMode = "library"; applyAppMode(); libSelecte
 // the radio-button decision dialogs (askRadio): pick by label, press its button
 window.__radio = (labelRe)=>{ const re = new RegExp(labelRe); const l = [...document.querySelectorAll('#askRadios label')].find(x=> re.test(x.querySelector('strong').textContent)); if(!l) return false; l.querySelector('input').checked = true; document.getElementById('askGo').click(); return true; };
 window.__radioChecked = ()=> document.querySelector('#askRadios input:checked')?.closest('label').querySelector('strong').textContent || '';
+// the splitter (splitter.js)
+window.__splitter = {open: openSplitter, state: ()=> spl, close: closeSplitter, into: splitTrackInto, job: queueSplitJob, busy: ()=> splitWorking || splitQueue.length > 0,
+  fineOf: async (id)=>{ const tr = findLibraryTrack(id); return splitFineAnalysis(tr, (await idbGet("audio", id)).blob, null, ()=> false); },
+  quiet: splitFindQuiet, offset: async (id)=> mp3PlaybackOffset((await idbGet("audio", id)).blob), ensure: ensureConverter,
+  cursor: (s)=> splitSetCursor(s), editItem: openEditItem, find: findNode};
+// still sending audio (switchsend.js)
+window.__fakeSending = ()=>{ sharedUploading = true; sharedStatus.transfer = {kind: "up", done: 0, total: 1}; };
