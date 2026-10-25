@@ -15,11 +15,16 @@
 // app is that folder's index.html.
 //
 // Both are network-first: with a connection you always get the latest
-// version; the cached copy is used only when the network fails entirely.
+// version. The cached copy is used when the network fails, when the server
+// answers with an error instead of the page (a 404 or 500: the droplet's
+// site partition unmounted gave "Page not found" at IKRC, 25 Oct 2026, where
+// the copy should have opened), or when the server doesn't answer within
+// NAV_TIMEOUT_MS (a server that's down can take a minute to fail).
 // help.json isn't pre-cached (it's optional — a missing file would fail the
 // whole install, since cache.addAll is all-or-nothing); it's cached the
 // first time it loads.
 const CACHE_NAME = "37player-shell-v5";
+const NAV_TIMEOUT_MS = 8000;
 
 const SCOPE = new URL(self.registration.scope);
 const SCOPE_IS_FILE = /\.html?$/i.test(SCOPE.pathname);
@@ -71,15 +76,23 @@ self.addEventListener("fetch", (event) => {
   if (!isApp && !isHelp) return; // everything else: not ours
 
   const key = isApp ? APP_PATH : HELP_PATH; // one cached copy, whatever query string was used
-  event.respondWith(
-    fetch(req)
-      .then((response) => {
-        if (response && response.status === 200) {
-          const copy = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(key, copy));
-        }
-        return response;
-      })
-      .catch(() => caches.match(key))
-  );
+  event.respondWith((async () => {
+    const cached = await caches.match(key);
+    const net = fetch(req).then((response) => {
+      if (response && response.status === 200) {
+        const copy = response.clone();
+        caches.open(CACHE_NAME).then((cache) => cache.put(key, copy));
+      }
+      return response;
+    });
+    if (!cached) return net; // nothing to fall back on: whatever the server says
+    const slow = new Promise((resolve) => setTimeout(() => resolve(null), NAV_TIMEOUT_MS));
+    try {
+      const response = await Promise.race([net, slow]);
+      if (response && response.ok) return response;
+      return cached; // an error page, or no answer in time
+    } catch (err) {
+      return cached; // no connection
+    }
+  })());
 });
