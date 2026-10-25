@@ -44,6 +44,14 @@ let fails = 0; const ok=(c,m)=>{ console.log((c?'ok   ':'FAIL ')+m); if(!c) fail
   await Promise.all([p.waitForNavigation({waitUntil: 'networkidle0', timeout: 8000}).catch(()=>{}), clickText(p, '.modal button', '^Switch anyway$')]);
   await sleep(800);
   ok(await p.evaluate(()=> window.__lib.id()) === second, 'Switch anyway really switches (the page isn\'t held back)');
+  // A browser that ignores the page's own reload: after a few seconds it says so, and Refresh now works.
+  await p.evaluate(()=> window.__ignoreReload());
+  p.evaluate((id)=> window.__lib.switchTo(id), first).catch(()=>{});
+  for(let i = 0; i < 30 && !(await p.$('#libReloadNow')); i++) await sleep(250);
+  ok(/didn't refresh the page/.test(await p.evaluate(()=> document.querySelector('.modal')?.innerText || '')), 'if the page doesn\'t reload, it says so, with Refresh now and F5');
+  await Promise.all([p.waitForNavigation({waitUntil: 'networkidle0', timeout: 8000}).catch(()=>{}), p.click('#libReloadNow')]);
+  await sleep(800);
+  ok(await p.evaluate(()=> window.__lib.id()) === first, 'Refresh now opens the library chosen');
   await b.close();
   console.log(fails ? fails + ' FAILED' : 'ALL OK'); process.exit(fails ? 1 : 0);
 })();

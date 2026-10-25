@@ -97,3 +97,5 @@ window.__splitter = {open: openSplitter, state: ()=> spl, close: closeSplitter, 
 // a save that never finishes (savehang.js)
 window.__hangSaves = ()=>{ doSaveState = ()=> new Promise(()=>{}); };
 window.__fakeSending = ()=>{ sharedUploading = true; sharedStatus.transfer = {kind: "up", done: 0, total: 1}; };
+// a browser that ignores the page's own reload (savehang.js)
+window.__ignoreReload = ()=>{ pageReload = ()=>{}; pageReplace = ()=>{}; };
