@@ -205,6 +205,20 @@ function makeSignal(){
   await p.evaluate(()=> window.__splitter.cursor(4.95)); await p.evaluate(()=>{ const s = window.__splitter.state(); s.view.span = 1; s.view.start = 4.5; }); await p.keyboard.press('ArrowUp'); await p.keyboard.press('ArrowDown');
   await p.screenshot({path: path.join(SHOTS, 'splitter-light.png')});
   await p.evaluate(()=> window.__dbg.disp('dark', false)); await sleep(300);
+  // Each piece in its own colour; marks red; the speeds; scrolling on the whole-track view.
+  const look = await p.evaluate(()=>{
+    const rows = [...document.querySelectorAll('#spPieces tbody tr')].map(r=> getComputedStyle(r.querySelector('.sp-num')).backgroundColor);
+    const speeds = [...document.querySelectorAll('#spSpeed option')].map(o=> o.value).join(',');
+    return {rows, speeds};
+  });
+  ok(new Set(look.rows).size === 3, 'each piece\'s number has its own colour (' + look.rows.join(' | ') + ')');
+  ok(look.speeds === '0.5,1,2,3', 'speeds 0.5×, 1×, 2×, 3× (' + look.speeds + ')');
+  const v0 = await p.evaluate(()=>{ const s = window.__splitter.state(); s.view.span = 2; s.view.start = 4; return s.view.start; });
+  const ob = await (await p.$('#spOver')).boundingBox();
+  await p.mouse.move(ob.x + ob.width / 2, ob.y + ob.height / 2);
+  await p.mouse.wheel({deltaX: 300});
+  await sleep(200);
+  ok(await p.evaluate(()=> window.__splitter.state().view.start) > v0 + 0.2, 'sideways scrolling on the whole-track view moves the stretch shown');
   // Split → "And in the playlist?" → Do it now (Put the 2 pieces in its place).
   await p.click('#spGo'); await sleep(500);
   ok(/And in the playlist/.test(await p.evaluate(()=> document.querySelector('.modal')?.innerText || '')), 'Split asks about the playlist entry');
