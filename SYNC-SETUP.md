@@ -69,7 +69,7 @@ Every saved change is kept as a version, so mistakes can be traced and, later, u
 
 ## 6. Backup to the T470
 
-`scripts/pull_droplet_backup.sh` pulls a dated copy of `/var/lib/37player` into `~/backups/37player/YYYY-MM-DD`, hard-linked to the day before (an unchanged file takes no extra space), and keeps the newest 30 days. It never deletes a file because the droplet did (no `--delete`), and if a day's copy comes back less than half the size of the one before (the droplet's data gone, say), it stops pruning and exits with an error, so the good copies stay. Put `~/backups/37player` inside a pCloud-synced folder for a copy off the laptop too.
+`scripts/pull_droplet_backup.sh` pulls a dated copy of `/var/lib/37player` into `/mnt/Docs1/home/rinzin/Documents/Personal-USB/MyOther/37-Player/backups/YYYY-MM-DD`, hard-linked to the day before (an unchanged file takes no extra space), and keeps the newest 30 days. It never deletes a file because the droplet did (no `--delete`), and if a day's copy comes back less than half the size of the one before (the droplet's data gone, say), it stops pruning and exits with an error, so the good copies stay. If the folder above `backups` isn't there (the drive not mounted), it stops without doing anything, rather than making the path on the laptop's own disk. If the drive can't make hard links (exFAT or FAT), each day is a full copy, so it keeps only 3 days and says so. It pulls with rsync over SSH (`rinzin@kr37.net`, the same login as `ssh rinzin@143.198.147.233`), not through the sshfs mount at `/mnt/kr37.net`, which is much slower; the droplet needs `rsync` installed, and the laptop an SSH key the droplet accepts, since a timer can't type a password.
 
 **Read access on the droplet:** the SSH user needs to read `/var/lib/37player`, which belongs to `www-data`:
 
@@ -110,7 +110,7 @@ systemctl --user start 37player-backup.service     # once now, to check
 journalctl --user -u 37player-backup               # what it said
 ```
 
-`SRC=other-host:/var/lib/37player/` overrides where it pulls from (the default is the SSH alias `kr37`).
+`SRC=other-host:/var/lib/37player/` overrides where it pulls from (the default is `rinzin@kr37.net:/var/lib/37player/`), `DEST=…` where the dated folders go, and `KEEP=…` how many days are kept.
 
 ## Notes
 

@@ -58,6 +58,7 @@ By hand: `./serve.sh` in one terminal (servers on ports 8861 and 8870), then
 | ipad | Touch: selecting, dragging, folders (iPad emulation) |
 | miss, miss2 | Tracks not arrived yet: banner, "waiting for (device)", clearing when they land; miss2 in the order an import writes |
 | table | Library → Table: switching views, sorting both ways, search and chips, selecting (click, Shift, Ctrl-A), Delete asking, double-click playing, ✎, Columns, kept after a reload, an iPad's width with the name pinned |
+| swfallback | The service worker opens the last version that started properly when the server answers 404 or 500, doesn't answer, is down, sends a cut-off file, or a version that doesn't start (the watchdog), says so, and takes a working version afterwards |
 | switchsend | Switching library while audio is still being sent: 37 Player asks, in words, instead of the browser's "Leave this page?" |
 | splitter | The splitter (1.4.086): three cuts in WAV, MP3, M4A and FLAC with a piece left out, the format each comes out in (and a WAV the settings would convert), clicks landing where they're heard (the MP3 gapless offset), loudness and volume kept, own waveforms, the keyboard, column B's entry becoming the pieces and one Undo taking it back, phone width |
 | folderpl | Folder import making a playlist of each folder: names, nesting, track-number order, re-importing, unticked |

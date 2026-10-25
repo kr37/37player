@@ -22,6 +22,10 @@ Only a few things use the internet:
 
 A copy opened from a file (such as the 37-player.html in your backup folder) doesn't need the internet even the first time — only for updates.
 
+### If the website has a problem
+
+The copy the browser keeps also protects you from the website itself. Whenever what the website sends can't be trusted, 37 Player opens the last version that worked on this device instead: when the website answers with an error ("Page not found"), doesn't answer within a few seconds, sends a file that was cut off, or sends a new version that doesn't start properly. In that last case, the new version tries for up to a minute, then 37 Player reloads into the previous one and says so, and that broken version isn't tried again; a corrected one is taken as soon as it appears. Your library isn't touched by any of this.
+
 ### What can erase the library — and what protects it
 
 - **Clearing the browser's data.** "Clear browsing data", clearing history with site data included, or cleanup tools such as CleanMyMac or CCleaner erase it on the spot. Nothing inside the browser can prevent that; only a backup protects against it.
