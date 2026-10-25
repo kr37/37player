@@ -94,8 +94,5 @@ window.__splitter = {open: openSplitter, state: ()=> spl, close: closeSplitter, 
   fineOf: async (id)=>{ const tr = findLibraryTrack(id); return splitFineAnalysis(tr, (await idbGet("audio", id)).blob, null, ()=> false); },
   quiet: splitFindQuiet, offset: async (id)=> mp3PlaybackOffset((await idbGet("audio", id)).blob), ensure: ensureConverter,
   cursor: (s)=> splitSetCursor(s), editItem: openEditItem, find: findNode};
-// a save that never finishes (savehang.js)
-window.__hangSaves = ()=>{ doSaveState = ()=> new Promise(()=>{}); };
+// still sending audio (switchsend.js)
 window.__fakeSending = ()=>{ sharedUploading = true; sharedStatus.transfer = {kind: "up", done: 0, total: 1}; };
-// a browser that ignores the page's own reload (savehang.js)
-window.__ignoreReload = ()=>{ pageReload = ()=>{}; pageReplace = ()=>{}; };
