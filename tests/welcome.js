@@ -56,19 +56,26 @@ const libCount = p=> p.evaluate(()=> window.__dbg.getRoot().library.length);
   // ---- Chrome on a computer
   let p = await open(b, 'chrome');
   let m = await modal(p);
-  ok(/join code for a shared library\?/.test(m) && /No, just start/.test(m) && /Yes, join a shared library/.test(m), 'the welcome asks only whether to join a shared library');
+  ok(/join \(or create\) a shared library at this time\?/.test(m) && /No, just start/.test(m) && /Yes, join or create one/.test(m), 'the welcome asks only whether to join a shared library');
   ok(!/backup|browser|Home Screen/i.test(m), 'and nothing about backups, browsers or the Home Screen');
   await p.screenshot({path: 'shots/welcome-chrome.png'});
   await clickText(p, '.modal button', '^No, just start$'); await sleep(500);
   ok(!(await modal(p)) && await p.evaluate(()=> backupInfoForTest().setupDone), 'No, just start: that\'s the whole first run');
-  ok(await p.evaluate(()=> document.body.dataset.glow) === 'play import display', '▶, Import / Export and the display button glow: ' + await p.evaluate(()=> document.body.dataset.glow));
+  ok(await p.evaluate(()=> document.body.dataset.glow) === 'play import display', '▶, Import (the Library tab, then Import / Export) and the display button glow: ' + await p.evaluate(()=> document.body.dataset.glow));
   await p.evaluate(()=> document.getElementById('btnDisplaySettings').click()); await sleep(300);
   await p.keyboard.press('Escape'); await sleep(200);
   ok(await p.evaluate(()=> document.body.dataset.glow) === 'play import', 'clicking one stops its glow, the others go on');
   await p.reload({waitUntil: 'networkidle0'}); await sleep(800);
   ok(await p.evaluate(()=> document.body.dataset.glow) === 'play import' && !(await modal(p)), 'after a reload: still glowing, no welcome again');
-  // The first import: the Heads-up.
+  const anim = id=> p.evaluate(id=>{ const el = document.getElementById(id); return el && el.offsetParent ? getComputedStyle(el).animationName : 'hidden'; }, id);
+  ok(await anim('tabLibrary') === 'firstGlow', 'on Playing, the Library tab glows (the way to Import)');
+  // The big ▶ Play, with a playlist chosen and nothing queued.
+  await p.evaluate(()=>{ const r = window.__dbg.getRoot(); const pl = r.tree.find(n=> n.kind === 'playlist') || (r.tree.find(n=> n.children) || {children: []}).children.find(n=> n.kind === 'playlist'); if(pl) document.querySelector('[data-id="' + pl.id + '"]')?.click(); }); await sleep(300);
+  const big = await anim('btnStartPlaylist');
+  ok(big === 'firstGlow' || big === 'hidden', 'the big ▶ Play glows too, while ▶ does (' + big + ')');
   await p.evaluate(()=>{ window.__dbg.setMode('library'); }); await sleep(300);
+  ok(await anim('tabLibrary') !== 'firstGlow' && await anim('btnImportExport') === 'firstGlow', 'in Library: the tab stops, Import / Export glows');
+  // The first import: the Heads-up.
   await importOne(p); await sleep(800);
   m = await modal(p);
   ok(/Heads up!/.test(m) && /starting to build your library/.test(m), 'the first import: Heads up!');
@@ -107,7 +114,7 @@ const libCount = p=> p.evaluate(()=> window.__dbg.getRoot().library.length);
   const ipad = {ua: IPAD_UA, noFolder: true, touch: true, viewport: {width: 820, height: 1180, hasTouch: true, isMobile: true}};
   p = await open(b, 'ipad', ipad);
   m = await modal(p);
-  ok(/join code/.test(m) && !/Home Screen/.test(m), 'iPad Safari: the welcome too asks only about joining, not the Home Screen');
+  ok(/join \(or create\) a shared library/.test(m) && !/Home Screen/.test(m), 'iPad Safari: the welcome too asks only about joining, not the Home Screen');
   await clickText(p, '.modal button', '^No, just start$'); await sleep(400);
   await importOne(p); await sleep(800);
   m = await modal(p);

@@ -28,7 +28,7 @@ async function open(b, name){
   // ---- A: starts its own library, then joins (the first device)
   const A = await open(b, 'A');
   let m = await modal(A);
-  ok(/join code for a shared library\?/.test(m) && /No, just start/.test(m) && /Yes, join a shared library/.test(m), 'the welcome asks only whether to join a shared library');
+  ok(/join \(or create\) a shared library at this time\?/.test(m) && /No, just start/.test(m) && /Yes, join or create one/.test(m), 'the welcome asks only whether to join a shared library');
   await A.screenshot({path: 'shots/share-welcome.png'});
   await clickText(A, '.modal button', '^No, just start$'); await sleep(400);
   ok(!(await modal(A)) && await A.evaluate(()=> window.__share.setup()), 'No, just start: nothing more is asked (no backup folder yet)');
@@ -46,7 +46,7 @@ async function open(b, name){
 
   // ---- B: joins from the welcome
   const B = await open(b, 'B');
-  await clickText(B, '.modal button', '^Yes, join a shared library$'); await sleep(300);
+  await clickText(B, '.modal button', '^Yes, join or create one$'); await sleep(300);
   m = await modal(B);
   ok(/Choose where the shared library is kept/.test(m) && /I have a join code/.test(m) && /Google Drive/.test(m), 'Join a shared library asks first where it\'s kept');
   await B.screenshot({path: 'shots/share-where.png'});
@@ -113,7 +113,7 @@ async function open(b, name){
 
   // ---- D joins from the welcome with partial sync ticked
   const D = await open(b, 'D');
-  await clickText(D, '.modal button', '^Yes, join a shared library$'); await sleep(300);
+  await clickText(D, '.modal button', '^Yes, join or create one$'); await sleep(300);
   await D.evaluate(()=>{ document.querySelector('input[name=sjWhere][value=server]').click(); document.getElementById('sjNext').click(); }); await sleep(300);
   m = await modal(D);
   ok(!/Bring only the playlists I choose/.test(m) && /says how much will travel/.test(m) && !(await D.evaluate(()=> !!document.getElementById('sjPartial'))), 'no partial-sync box with the code: the next step, with the sizes, is where it\'s chosen');

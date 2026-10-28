@@ -1,6 +1,6 @@
 Setup
 
-The first time 37 Player opens, it asks only for your language and whether you have a join code for a shared library. Then you can look around and play. The first time you import audio, a **Heads up!** shows what matters on the device and browser you're using, with a button for each step: where to keep your library, installing, and keeping it safe. For why these steps matter, see 'Reliability'.
+The first time 37 Player opens, it asks only for your language and whether you want to join (or create) a shared library now. Then you can look around and play. The first time you import audio, a **Heads up!** shows what matters on the device and browser you're using, with a button for each step: where to keep your library, installing, and keeping it safe. For why these steps matter, see 'Reliability'.
 
 If you're only using 37 Player for one job (splitting a recording, say), choose **I'm only using it for a quick job**: it stops reminding you about installing and backing up on that device until the library grows or you open Settings.
 
