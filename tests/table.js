@@ -47,7 +47,13 @@ const bytes = s=>{ const m = /([\d.,]+)\s*(B|KB|MB|GB)/.exec(s); if(!m) return 0
   ok(await p.evaluate(()=> !!document.querySelector('#libTableTotals #libColumnsBtn')), 'Columns sits beside the totals line');
   ok(await p.evaluate(()=> getComputedStyle(document.getElementById('libColArtists')).display === 'none' && getComputedStyle(document.getElementById('libTableWrap')).display !== 'none'), 'Table replaces Artists and Albums');
   const h = await heads(p);
-  ok(['name','artist','album','length','type','size','kbps','rate','ch','loud','used'].every(k=> h.includes(k)) && !h.includes('file') && !h.includes('trackNo'), 'the columns shown at first: ' + h.join(', '));
+  // Since 1.4.097 the file's technical details start hidden, and In playlists comes right after Length.
+  ok(['name','artist','album','length','used','loud'].every(k=> h.includes(k)) && !['file','trackNo','type','size','kbps','rate','ch'].some(k=> h.includes(k)), 'the columns shown at first: ' + h.join(', '));
+  ok(h.indexOf('used') === h.indexOf('length') + 1, 'In playlists right after Length');
+  // The details back, for the sorting below
+  await p.click('#libColumnsBtn'); await sleep(300);
+  for(const k of ['type','size','kbps','rate','ch']) await p.evaluate((k)=> document.querySelector(`#libColsList input[data-key="${k}"]`).click(), k);
+  await p.evaluate(()=> document.querySelector('.modal [data-close]').click()); await sleep(300);
   ok((await ids(p)).length === n, 'every track is a row (' + n + ')');
   const tot = await p.evaluate(()=> document.getElementById('libTableTotals').textContent);
   ok(new RegExp('^' + n + ' tracks · ').test(tot), 'the totals line: ' + tot);
@@ -132,7 +138,7 @@ const bytes = s=>{ const m = /([\d.,]+)\s*(B|KB|MB|GB)/.exec(s); if(!m) return 0
   await p.click('#libColsReset'); await sleep(200);
   await p.evaluate(()=> document.querySelector('.modal [data-close]').click()); await sleep(300);
   h2 = await heads(p);
-  ok(h2.includes('type') && !h2.includes('file'), 'As at first puts the columns back');
+  ok(!h2.includes('type') && !h2.includes('file') && h2.includes('used'), 'As at first puts the columns back');
   // iPad width
   await p.setViewport({width: 820, height: 1180}); await sleep(600);
   await p.screenshot({path: 'shots/table-820.png'});

@@ -34,7 +34,7 @@ Copy and paste work too, from the bar above each list.
 
 ### Column widths
 
-On a tablet, drag the thin line between two columns to make a column wider, such as the right-hand one, so long titles can be read. Turning on **Wrap long titles** in Display settings (◐) shows titles in full on every row.
+On a tablet, drag the thin line between two columns to make a column wider, such as the right-hand one, so long titles can be read. Turning on **Wrap** in the bar along the top of 'Playing' (or 'Library' → Table) shows titles in full on every row.
 
 On a phone, the screen slides sideways between the columns. Drag the thin line at a column's right-hand edge with a finger to make that column wider or narrower (up to nine tenths of the screen, so its line always shows); the columns to its right just move along. The widths are kept for next time, separately for holding the phone upright and on its side. To put every column back as it started, use **Reset column widths** at the bottom of Display settings (◐).
 
