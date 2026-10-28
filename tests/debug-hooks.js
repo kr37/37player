@@ -100,3 +100,5 @@ window.__splitter = {open: openSplitter, state: ()=> spl, close: closeSplitter, 
 // still sending audio (switchsend.js)
 window.__fakeSending = ()=>{ sharedUploading = true; sharedStatus.transfer = {kind: "up", done: 0, total: 1}; };
 window.__openWith = (files)=> openWithFiles(files);
+// automatic restore (restore.js)
+window.__ar = {send: ()=> autoRestoreSend(), on: ()=> autoRestoreOn(), entry: ()=> autoRestoreEntry(), backupInfo: ()=> backupInfo};

@@ -59,6 +59,7 @@ By hand: `./serve.sh` in one terminal (servers on ports 8861 and 8870), then
 | miss, miss2 | Tracks not arrived yet: banner, "waiting for (device)", clearing when they land; miss2 in the order an import writes |
 | table | Library → Table: switching views, sorting both ways, search and chips, selecting (click, Shift, Ctrl-A), Delete asking, double-click playing, ✎, Columns, kept after a reload, an iPad's width with the name pinned |
 | p37 | Backups as .37p: the name, a zip inside, restoring when picked and when opened with 37 Player, the iPad picker |
+| restore | Automatic restore: the switch, the sealed HttpOnly cookie from restore.php, the library erased, "Bring your library back?" rejoining in one tap; backups only; Start fresh not asked again (its own `php -S` on port 8863) |
 | swfallback | The service worker opens the last version that started properly when the server answers 404 or 500, doesn't answer, is down, sends a cut-off file, or a version that doesn't start (the watchdog), says so, and takes a working version afterwards |
 | switchsend | Switching library while audio is still being sent: 37 Player asks, in words, instead of the browser's "Leave this page?" |
 | splitter | The splitter (1.4.086): three cuts in WAV, MP3, M4A and FLAC with a piece left out, the format each comes out in (and a WAV the settings would convert), clicks landing where they're heard (the MP3 gapless offset), loudness and volume kept, own waveforms, the keyboard, column B's entry becoming the pieces and one Undo taking it back, phone width |

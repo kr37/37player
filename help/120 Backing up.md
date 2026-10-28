@@ -6,7 +6,7 @@ Backing up
 
 In Chrome or Edge on a computer (Windows, Mac, Linux, or Chromebook), 37 Player can keep a backup folder up to date by itself, a few seconds after every change. Most other browsers built on the same engine can too; in Brave, first turn on "File System Access API" at brave://flags.
 
-- **Setting it up:** the first time 37 Player starts, it asks for a backup folder. Create a new, empty folder and choose it — not your existing music folder. You can change it later in Settings. If Chrome asks whether 37 Player may keep access to the folder, choose **Allow on every visit**; otherwise it will ask again each time you open 37 Player (the button at the top will say **Resume backups** — click it to continue).
+- **Setting it up:** Settings → **Backups** → Choose backup folder (37 Player also offers it when you first import music). Create a new, empty folder and choose it — not your existing music folder. You can change it later in Settings. If Chrome asks whether 37 Player may keep access to the folder, choose **Allow on every visit**; otherwise it will ask again each time you open 37 Player (the button at the top will say **Resume backups** — click it to continue).
 - **A synced folder** (Dropbox, Google Drive, Syncthing, or similar) also gives you a copy off this computer.
 - **The button at the top** shows how things stand, on every tab: **✓ Backed up** when all is well, **Backing up…** while it catches up.
 
@@ -44,6 +44,12 @@ A device in a shared library doesn't need backups of its own: the shared library
 If the browser's data is ever cleared, 37 Player starts as if new. Choose the same backup folder (Settings → **Backups** → Choose backup folder) and pick **Restore this backup** — everything comes back, and backups carry on in that folder.
 
 You can also restore at any time, in any browser, from 'Import / Export' → **Restore backup from folder**.
+
+### Automatic restore (on 37player.com)
+
+Turn on **Automatic restore** in Settings → Backups, and 37 Player keeps a note, with the website, of how each library on this device could be brought back: its shared library (the join code, or which Google Drive library) and where its backups went (the folder's name — browsers never tell a website a folder's full location — or the last backup file's, with the date). The note is sealed so only 37player.com can read it, and kept in a cookie the browser holds apart from the library, so it survives what usually erases a library: Safari's one-week rule and the browser making room. Clearing the browser's data on purpose removes it too.
+
+If 37 Player then opens with nothing in it, it asks **Bring your library back?**, naming what it found. **Bring it back** joins the shared library again in one tap; for a Google Drive library it asks you to sign in to Google again; for backups, it says where they were and opens the folder or file picker. **Start fresh** carries on with an empty library and doesn't ask again there. Turning the switch off forgets the note. It's only on the website, not in a copy opened from a file.
 
 ### One folder, one copy of 37 Player
 

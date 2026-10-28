@@ -57,6 +57,16 @@ You should see `X-Version: 0` and `null`. A wrong code gives a 403.
 
 Then in 37 Player, go to Settings → **Shared library**, enter the code and a device name, and **Join**. The first device to join is the one whose library you want to share. Its playlists and tracks appear in the shared library within moments, and its audio follows in the background, which takes as long as uploading that many gigabytes takes. Other devices can join straight away: they see everything at once, and get each audio file as soon as it's arrived.
 
+## 4b. Automatic restore (restore.php)
+
+Copy `restore.php` next to `37-player.html` too. It needs nothing else: the first time a device turns on **Settings → Backups → Automatic restore**, it makes a key, `restore.key`, in the same data folder (mode 0600). Check it with:
+
+```
+curl -s https://37player.com/restore.php?op=status
+```
+
+`{"available":true}` means it's working; `false` means the web server can't write the data folder. Nothing is stored on the server: each device's details are sealed with that key and kept in a cookie only restore.php can read. A new key (deleting `restore.key`) forgets every device's details. To keep the key elsewhere, set `P37_RESTORE_KEY_FILE` in the vhost.
+
 ## 5. Daily cleanup (cron)
 
 Every saved change is kept as a version, so mistakes can be traced and, later, undone. Cleanup keeps every version from the last 30 days and at least the latest 300. Audio and artwork no longer used by any kept version are deleted once they're 30 days old.
