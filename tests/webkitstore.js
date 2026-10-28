@@ -15,7 +15,7 @@ const clickText = (p, sel, src) => p.evaluate((sel, src)=>{ const re=new RegExp(
     p.on('pageerror', e=> console.log('PAGE ERROR:', e.message));
     await p.goto(APP, {waitUntil: 'networkidle0'}); await sleep(600);
     await clickText(p, '.modal button', '^English$'); await sleep(300);
-    await clickText(p, '.modal button', '^Start a library on this device$'); await sleep(300);
+    await clickText(p, '.modal button', '^No, just start$'); await sleep(300);
     await clickText(p, '.modal button', '^Skip for now$'); await sleep(300); await clickText(p, '.modal button', '^Finish$'); await sleep(300);
     for(const f of ['ten.mp3', 'w_s16.wav']){
       const have = await p.evaluate(async(f)=>{ const r = await fetch('/' + f); if(!r.ok) return false; const blob = await r.blob(); window.__dbg.bulkImportFolder([new File([blob], f, {type: blob.type})]); return true; }, f);

@@ -37,7 +37,7 @@ async function page(ctx, moved){
   p = await page(ctx, null);
   await p.goto(APP, {waitUntil: 'networkidle0'}); await sleep(700);
   await clickText(p, '.modal button', '^English$'); await sleep(400);
-  await clickText(p, '.modal button', '^Start a library on this device$'); await sleep(300);
+  await clickText(p, '.modal button', '^No, just start$'); await sleep(300);
   await clickText(p, '.modal button', '^Skip for now$'); await sleep(300);
   await clickText(p, '.modal button', '^Finish$'); await sleep(300);
   await p.evaluate(async()=>{ const blob = await (await fetch('/ten.mp3')).blob(); window.__dbg.bulkImportFolder([new File([blob], 'ten.mp3', {type: 'audio/mpeg'})]); });

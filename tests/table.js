@@ -12,7 +12,7 @@ const www = path.join(__dirname, 'www'); const files = [];
 (function walk(d){ for(const n of fs.readdirSync(d)){ const f = path.join(d,n); if(fs.statSync(f).isDirectory()) walk(f); else if(/\.(mp3)$/i.test(n)) files.push(['Set/' + path.relative(www, f), fs.readFileSync(f).toString('base64')]); } })(path.join(www, 'ovt'));
 (function walk(d){ for(const n of fs.readdirSync(d)){ const f = path.join(d,n); if(fs.statSync(f).isDirectory()) walk(f); else files.push(['Set/' + path.relative(www, f), fs.readFileSync(f).toString('base64')]); } })(path.join(www, 'folderpl'));
 let fails = 0; const ok=(c,m)=>{ console.log((c?'ok   ':'FAIL ')+m); if(!c) fails++; };
-const settle = async p=>{ for(const x of ['^English$','^Start a library on this device$','^Skip for now$','^Finish$']){ await clickText(p,'.modal button',x); await sleep(300); } await p.evaluate(()=> document.querySelectorAll('.modal [data-close]').forEach(b=>b.click())); await sleep(300); };
+const settle = async p=>{ for(const x of ['^English$','^Start a library on this device$','^No, just start$','^Skip for now$','^Finish$']){ await clickText(p,'.modal button',x); await sleep(300); } await p.evaluate(()=> document.querySelectorAll('.modal [data-close]').forEach(b=>b.click())); await sleep(300); };
 const heads = p=> p.evaluate(()=> [...document.querySelectorAll('#libTableWrap th[data-key]')].map(th=> th.dataset.key));
 const col = (p, key)=> p.evaluate((key)=>{ const i = [...document.querySelectorAll('#libTableWrap th')].findIndex(th=> th.dataset.key === key); return [...document.querySelectorAll('#libTableWrap tr.lt-row')].map(r=> r.children[i].textContent); }, key);
 const ids = p=> p.evaluate(()=> [...document.querySelectorAll('#libTableWrap tr.lt-row')].map(r=> r.dataset.id));

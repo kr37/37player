@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>pCloud test · 37 Player</title>
+<!--
+  Can a browser on 37player.com use pCloud for a shared library? (NOTES.md:
+  "an evening's test page first: sign in, upload, download from 37player.com.
+  If browser downloads fail, it offers nothing over the droplet.")
+  Signs in with pCloud's token flow (no server, no secret), then in a folder
+  "37 Player test" uploads a small file and a 30 MB one (in one go and in pieces),
+  checks that two saves of the same version can't both win, lists them, fetches
+  each back through its download link (checking CORS and Range), checks the
+  diff call 37 Player would use to notice changes, and deletes what it made.
+  Needs a pCloud app (https://docs.pcloud.com/my_apps/) whose redirect URI is
+  this page's address exactly. Nothing leaves this page except to pCloud.
+-->
+<style>
+  :root{ --bg:#181A22; --panel:#20232C; --line:#343947; --text:#EDE9E0; --dim:#9A9689; --amber:#D9A441; --ok:#7FA98B; --bad:#D97A63; }
+  @media (prefers-color-scheme: light){ :root{ --bg:#F6F3EC; --panel:#FFFFFF; --line:#DFD8C3; --text:#2A2620; --dim:#6E6858; --amber:#94591A; --ok:#3D6B4F; --bad:#8F3A26; } }
+  body{ margin:0; background:var(--bg); color:var(--text); font:15px/1.5 -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main{ max-width:760px; margin:0 auto; padding:24px 16px 48px; }
+  h1{ font-family:Georgia, serif; font-weight:normal; font-size:28px; margin:0 0 6px; }
+  p.dim{ color:var(--dim); margin-top:0; }
+  .card{ background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:16px; margin:16px 0; }
+  label{ display:block; font-size:13px; color:var(--dim); margin-bottom:4px; }
+  input[type=text]{ width:100%; box-sizing:border-box; padding:8px 10px; border-radius:7px; border:1px solid var(--line); background:var(--bg); color:var(--text); font-size:15px; }
+  button{ font:inherit; padding:8px 14px; border-radius:999px; border:1px solid var(--line); background:transparent; color:var(--text); cursor:pointer; }
+  button.primary{ background:var(--amber); border-color:var(--amber); color:#1d1a16; font-weight:600; }
+  button:disabled{ opacity:.5; cursor:default; }
+  .row{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top:12px; }
+  table{ width:100%; border-collapse:collapse; font-size:14px; }
+  td{ padding:6px 4px; border-bottom:1px solid var(--line); vertical-align:top; }
+  td.s{ width:28px; font-weight:700; }
+  .ok{ color:var(--ok); } .bad{ color:var(--bad); } .run{ color:var(--amber); }
+  code{ font-size:13px; }
+  pre{ white-space:pre-wrap; font-size:12.5px; background:var(--bg); padding:10px; border-radius:7px; border:1px solid var(--line); }
+</style>
+</head>
+<body>
+<main>
+  <h1>pCloud test</h1>
+  <p class="dim">Can 37 Player keep a shared library in pCloud, from this site? This signs in to your pCloud account, makes a folder <strong>37 Player test</strong>, sends two files there and fetches them back, then deletes them.</p>
+
+  <div class="card">
+    <label for="cid">pCloud app's Client ID</label>
+    <input type="text" id="cid" placeholder="from https://docs.pcloud.com/my_apps/" autocomplete="off">
+    <p class="dim" style="margin:8px 0 0;">The app's redirect URI must be exactly: <code id="here"></code></p>
+    <div class="row"><button class="primary" id="signin">Sign in to pCloud</button><span id="who" class="dim"></span></div>
+  </div>
+
+  <div class="card">
+    <div class="row" style="margin-top:0;"><button class="primary" id="go" disabled>Run the test</button><button id="copy" disabled>Copy the report</button></div>
+    <table id="steps" style="margin-top:12px;"></table>
+  </div>
+  <pre id="report" hidden></pre>
+</main>
+<script>
+(function(){
+  const here = location.href.split(/[?#]/)[0];
+  document.getElementById("here").textContent = here;
+  const cidEl = document.getElementById("cid");
+  try{ cidEl.value = localStorage.getItem("p37pcloudClientId") || ""; }catch(e){}
+  let auth = null; // {token, host}
+  try{ auth = JSON.parse(sessionStorage.getItem("p37pcloudAuth") || "null"); }catch(e){}
+  // Back from pCloud: #access_token=…&hostname=…&locationid=…&state=…
+  if(location.hash.includes("access_token=")){
+    const h = new URLSearchParams(location.hash.slice(1));
+    let st = null; try{ st = sessionStorage.getItem("p37pcloudState"); }catch(e){}
+    if(h.get("state") && h.get("state") === st){
+      auth = {token: h.get("access_token"), host: h.get("hostname") || (h.get("locationid") === "2" ? "eapi.pcloud.com" : "api.pcloud.com"), locationid: h.get("locationid")};
+      try{ sessionStorage.setItem("p37pcloudAuth", JSON.stringify(auth)); }catch(e){}
+    }
+    history.replaceState(null, "", here);
+  }
+  document.getElementById("signin").addEventListener("click", ()=>{
+    const cid = cidEl.value.trim();
+    if(!cid){ cidEl.focus(); return; }
+    try{ localStorage.setItem("p37pcloudClientId", cid); }catch(e){}
+    const state = Math.random().toString(36).slice(2) + Date.now().toString(36);
+    try{ sessionStorage.setItem("p37pcloudState", state); }catch(e){}
+    location.href = "https://my.pcloud.com/oauth2/authorize?" + new URLSearchParams({client_id: cid, response_type: "token", redirect_uri: here, state});
+  });
+
+  const rows = [];
+  const steps = document.getElementById("steps");
+  function step(name){
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td class="s run">…</td><td><strong></strong><div class="dim"></div></td>`;
+    tr.querySelector("strong").textContent = name;
+    steps.appendChild(tr);
+    const r = {name, ok: null, note: ""};
+    rows.push(r);
+    return {
+      done(ok, note){ r.ok = ok; r.note = note || ""; tr.querySelector(".s").textContent = ok ? "✓" : "✗"; tr.querySelector(".s").className = "s " + (ok ? "ok" : "bad"); tr.querySelector(".dim").textContent = r.note; },
+    };
+  }
+  async function api(method, params, opts){
+    const url = "https://" + auth.host + "/" + method + "?" + new URLSearchParams(Object.assign({access_token: auth.token}, params || {}));
+    const r = await fetch(url, opts || {});
+    const j = await r.json();
+    if(j.result !== 0) throw new Error(method + ": " + (j.error || ("result " + j.result)));
+    return j;
+  }
+  const secs = t0=> ((performance.now() - t0) / 1000).toFixed(1) + " s";
+  const mbps = (bytes, t0)=> (bytes / 1048576 / ((performance.now() - t0) / 1000)).toFixed(1) + " MB/s";
+  async function upload(folderid, name, blob){
+    const fd = new FormData(); fd.append("file", blob, name);
+    return api("uploadfile", {folderid, filename: name, nopartial: 1, renameifexists: 0}, {method: "POST", body: fd});
+  }
+  async function linkFor(fileid){ const j = await api("getfilelink", {fileid}); return "https://" + j.hosts[0] + j.path; }
+
+  if(auth){
+    document.getElementById("go").disabled = false;
+    api("userinfo").then(j=>{ document.getElementById("who").textContent = "Signed in as " + j.email + " (" + (auth.locationid === "2" ? "Europe" : "US") + ", " + auth.host + ")"; })
+      .catch(err=>{ document.getElementById("who").textContent = "Signed in, but userinfo failed: " + err.message; });
+  }
+
+  document.getElementById("go").addEventListener("click", async (e)=>{
+    e.target.disabled = true; steps.innerHTML = ""; rows.length = 0;
+    let folderid = null; const made = [];
+    const s0 = step("Reach the pCloud API from this page (CORS)");
+    try{ const j = await api("userinfo"); s0.done(true, j.email + " · " + Math.round((j.quota - j.usedquota) / 1073741824) + " GB free of " + Math.round(j.quota / 1073741824) + " GB"); }
+    catch(err){ s0.done(false, err.message + " — if this is a network/CORS error, the browser can't use pCloud from this site at all"); return finish(); }
+    const s1 = step("Make the folder “37 Player test”");
+    try{ const j = await api("createfolderifnotexists", {folderid: 0, name: "37 Player test"}); folderid = j.metadata.folderid; s1.done(true, "folderid " + folderid); }
+    catch(err){ s1.done(false, err.message); return finish(); }
+    const small = new Blob([JSON.stringify({test: "37 Player", at: new Date().toISOString()})], {type: "application/json"});
+    const big = new Blob([new Uint8Array(30 * 1048576).map((_, i)=> i * 7 & 255)], {type: "application/octet-stream"});
+    const s2 = step("Send a small file");
+    let smallId = null, bigId = null;
+    try{ const t0 = performance.now(); const j = await upload(folderid, "state-000001.json", small); smallId = j.metadata[0].fileid; made.push(smallId); s2.done(true, secs(t0)); }
+    catch(err){ s2.done(false, err.message); }
+    const s3 = step("Send a 30 MB file (a recording)");
+    try{ const t0 = performance.now(); const j = await upload(folderid, "audio-test.bin", big); bigId = j.metadata[0].fileid; made.push(bigId); s3.done(j.metadata[0].size === big.size, secs(t0) + " · " + mbps(big.size, t0) + " · size " + j.metadata[0].size); }
+    catch(err){ s3.done(false, err.message); }
+    const s4 = step("List the folder");
+    try{ const j = await api("listfolder", {folderid}); const names = (j.metadata.contents || []).map(x=> x.name); s4.done(names.includes("state-000001.json"), names.join(", ")); }
+    catch(err){ s4.done(false, err.message); }
+    const sR = step("Two devices saving the same version at once (only one may win)");
+    try{
+      // 37 Player saves version N+1 as state/00000N+1.json "only if nobody else has": upload with
+      // renameifexists, and whoever's file came back renamed ("000002 (2).json") lost.
+      const one = new Blob(["{\"from\":\"one\"}"]), two = new Blob(["{\"from\":\"two\"}"]);
+      const fd = (b)=>{ const f = new FormData(); f.append("file", b, "000002.json"); return f; };
+      const [a, b] = await Promise.all([one, two].map(x=> api("uploadfile", {folderid, filename: "000002.json", nopartial: 1, renameifexists: 1}, {method: "POST", body: fd(x)})));
+      const names = [a.metadata[0].name, b.metadata[0].name]; made.push(a.metadata[0].fileid, b.metadata[0].fileid);
+      sR.done(names.filter(n=> n === "000002.json").length === 1, names.join(" and "));
+    }catch(err){ sR.done(false, err.message); }
+    const sP = step("Send 30 MB in pieces, resumable (upload_create / upload_write / upload_save)");
+    try{
+      const t0 = performance.now();
+      const c = await api("upload_create");
+      const half = Math.floor(big.size / 2);
+      // POST with an untyped body needs no CORS preflight; PUT does, if POST isn't taken.
+      let how = "POST";
+      const write = async (offset, piece)=>{
+        if(how === "POST") try{ return await api("upload_write", {uploadid: c.uploadid, uploadoffset: offset}, {method: "POST", body: new Blob([piece])}); }catch(err){ how = "PUT"; }
+        return api("upload_write", {uploadid: c.uploadid, uploadoffset: offset}, {method: "PUT", body: piece});
+      };
+      await write(0, big.slice(0, half));
+      const info = await api("upload_info", {uploadid: c.uploadid});
+      await write(half, big.slice(half));
+      const saved = await api("upload_save", {uploadid: c.uploadid, folderid, name: "pieces.bin"});
+      made.push(saved.metadata.fileid);
+      sP.done(saved.metadata.size === big.size && info.size === half, secs(t0) + " · by " + how + " · after the first piece upload_info said " + info.size + " · saved " + saved.metadata.size + " (optional: without it, big files go in one request)");
+    }catch(err){ sP.done(false, err.message + " (optional: without it, big files go in one request)"); }
+    const s5 = step("Fetch the small file back (download link, CORS)");
+    if(smallId) try{ const t0 = performance.now(); const r = await fetch(await linkFor(smallId)); const txt = await r.text(); s5.done(r.ok && txt.includes("37 Player"), r.status + " · " + secs(t0)); }
+    catch(err){ s5.done(false, err.message + " — a CORS error here means the browser can't read files back from pCloud"); }
+    const s6 = step("Fetch the 30 MB file back");
+    if(bigId) try{ const t0 = performance.now(); const r = await fetch(await linkFor(bigId)); const b = await r.blob(); const v = new Uint8Array(await b.slice(1000, 1001).arrayBuffer())[0]; s6.done(r.ok && b.size === big.size && v === (1000 * 7 & 255), r.status + " · " + secs(t0) + " · " + mbps(b.size, t0)); }
+    catch(err){ s6.done(false, err.message); }
+    const s7 = step("Fetch part of it (Range, for resuming)");
+    if(bigId) try{ const r = await fetch(await linkFor(bigId), {headers: {Range: "bytes=1000-1999"}}); const b = await r.arrayBuffer(); s7.done(r.status === 206 && b.byteLength === 1000, r.status + " · " + b.byteLength + " bytes"); }
+    catch(err){ s7.done(false, err.message); }
+    const s8 = step("Notice changes (diff)");
+    try{ const j = await api("diff", {last: 1}); const j2 = await api("diff", {diffid: j.diffid, block: 0}); s8.done(true, "diffid " + j.diffid + " · " + (j2.entries || []).length + " new since"); }
+    catch(err){ s8.done(false, err.message); }
+    const s9 = step("Delete what this test made");
+    try{ await api("deletefolderrecursive", {folderid}); s9.done(true, made.length + " files and the folder (also in pCloud's Trash, which empties itself)"); }
+    catch(err){ s9.done(false, err.message); }
+    finish();
+    function finish(){
+      e.target.disabled = false;
+      const rep = ["pCloud test from " + location.host + ", " + new Date().toLocaleString(), navigator.userAgent, "host: " + (auth && auth.host), ""]
+        .concat(rows.map(r=> (r.ok ? "✓ " : r.ok === false ? "✗ " : "· ") + r.name + (r.note ? " — " + r.note : ""))).join("\n");
+      const pre = document.getElementById("report"); pre.textContent = rep; pre.hidden = false;
+      document.getElementById("copy").disabled = false;
+      document.getElementById("copy").onclick = ()=> navigator.clipboard.writeText(rep).catch(()=>{});
+    }
+  });
+})();
+</script>
+</body>
+</html>

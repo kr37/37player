@@ -34,6 +34,8 @@ The copy the browser keeps also protects you from the website itself. Whenever w
 - **Private or incognito windows** keep nothing once they're closed. Never build a library in one.
 - **Uninstalling or resetting the browser**, deleting the browser's user profile, or the computer failing or being lost.
 
+On 37player.com, **Automatic restore** (Settings → Backups) adds a safety net for the first three: when 37 Player opens empty, it offers to bring each library back from its shared library or says where its backups were. See 'Backing up'.
+
 For everything on that list, the real protection is a **backup**. In Chrome, Edge, and other browsers built on the same engine, backups to a folder happen automatically (in Brave, first turn on "File System Access API" at brave://flags). In Firefox and Safari, and on phones and tablets, backups are manual. See 'Backing up'.
 
 ### If the computer freezes or loses power
@@ -64,8 +66,8 @@ The surest way to trust a backup is to restore from one. With automatic backups 
 
 1. Check that the button at the top says **✓ Backed up**. Anything not yet backed up would be lost.
 2. Clear 37 Player's data — **only** 37 Player's, not the whole browser's (see below).
-3. Open 37 Player again, while online: clearing its data also removes the browser's saved copy of the app, so this one visit needs the internet. It starts as if new, and its setup appears.
-4. Choose the same backup folder, and pick **Restore this backup**. Everything comes back, and backups carry on as before.
+3. Open 37 Player again, while online: clearing its data also removes the browser's saved copy of the app, so this one visit needs the internet. It starts as if new, and its setup appears. (Clearing site data also clears Automatic restore's note, so it won't offer anything here.)
+4. Answer **No, just start**, then in Settings → **Backups** choose the same backup folder, and pick **Restore this backup**. Everything comes back, and backups carry on as before.
 
 With manual backups (Firefox, Safari), first click **Back up library** and keep the downloaded file in a folder of its own. After clearing, use 'Import / Export' → **Restore backup from folder** and choose that folder.
 

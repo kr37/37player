@@ -12,7 +12,7 @@ let fails = 0; const ok=(c,m)=>{ console.log((c?'ok   ':'FAIL ')+m); if(!c) fail
   p.on('pageerror', e=>console.log('PAGE ERROR:', e.message));
   let browserAsked = false; p.on('dialog', d=>{ if(d.type() === 'beforeunload') browserAsked = true; d.accept(); });
   await p.goto('http://localhost:8861/37-player.html', {waitUntil: 'networkidle0'}); await sleep(800);
-  const skip = async ()=>{ for(const x of ['^English$','^Start a library on this device$','^Start empty$','^Skip for now$','^Finish$','^OK$','^Close$']){ await clickText(p,'.modal button',x); await sleep(300); } await p.evaluate(()=> document.querySelector('.modal [data-close]')?.click()); await sleep(500); };
+  const skip = async ()=>{ for(const x of ['^English$','^Start a library on this device$','^No, just start$','^Start empty$','^Skip for now$','^Finish$','^OK$','^Close$']){ await clickText(p,'.modal button',x); await sleep(300); } await p.evaluate(()=> document.querySelector('.modal [data-close]')?.click()); await sleep(500); };
   await skip();
   const first = await p.evaluate(()=> window.__lib.id());
   await Promise.all([p.waitForNavigation({waitUntil: 'networkidle0'}).catch(()=>{}), p.evaluate(()=> window.__lib.create('Second'))]);

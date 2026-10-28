@@ -58,6 +58,8 @@ By hand: `./serve.sh` in one terminal (servers on ports 8861 and 8870), then
 | ipad | Touch: selecting, dragging, folders (iPad emulation) |
 | miss, miss2 | Tracks not arrived yet: banner, "waiting for (device)", clearing when they land; miss2 in the order an import writes |
 | table | Library → Table: switching views, sorting both ways, search and chips, selecting (click, Shift, Ctrl-A), Delete asking, double-click playing, ✎, Columns, kept after a reload, an iPad's width with the name pinned |
+| p37 | Backups as .37p: the name, a zip inside, restoring when picked and when opened with 37 Player, the iPad picker |
+| restore | Automatic restore: the switch, the sealed HttpOnly cookie from restore.php, the library erased, "Bring your library back?" rejoining in one tap; backups only; Start fresh not asked again (its own `php -S` on port 8863) |
 | swfallback | The service worker opens the last version that started properly when the server answers 404 or 500, doesn't answer, is down, sends a cut-off file, or a version that doesn't start (the watchdog), says so, and takes a working version afterwards |
 | switchsend | Switching library while audio is still being sent: 37 Player asks, in words, instead of the browser's "Leave this page?" |
 | splitter | The splitter (1.4.086): three cuts in WAV, MP3, M4A and FLAC with a piece left out, the format each comes out in (and a WAV the settings would convert), clicks landing where they're heard (the MP3 gapless offset), loudness and volume kept, own waveforms, the keyboard, column B's entry becoming the pieces and one Undo taking it back, phone width |
@@ -92,7 +94,7 @@ By hand: `./serve.sh` in one terminal (servers on ports 8861 and 8870), then
 | conv6 | Audio from video files (AAC copied out, Vorbis to MP3, a silent video reported, the tracks in the playlist), and a portable export converted to the preferred format |
 | conv2 | The same through a folder import: the playlist keeps its place for the WMA, and another device in the shared library sees it marked |
 | libs | Several libraries on one device: making, switching, two windows, deleting, joining into a new library |
-| welcome | The welcome for each kind of device and browser |
+| welcome | The first run (language, then only whether to join), the glowing buttons, the Heads-up at the first import on Chrome, Firefox, iPad Safari (Are you sure?, a quick job), the iPad Home Screen app and Android (Install), the red backup button, nothing asking on leaving, the daily prompt, a sync that doesn't finish |
 | share | The welcome's sharing question, "In sync", who keeps backups, restoring on a joined device |
 | choose | What's on this device: unticking, New, ticking, albums, back to Everything |
 | drive | Google Drive libraries against a fake Google and the real token.php: sign-in, making a folder, joining, a true tie, an expired token, signing in again |

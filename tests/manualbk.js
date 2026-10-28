@@ -15,7 +15,7 @@ const dialog = p=> p.evaluate(()=>{ const m = document.querySelector('.modal-bac
   const p = await b.newPage(); await p.setViewport({width:1300,height:900});
   p.on('pageerror', e=>console.log('PAGE ERROR:', e.message));
   await p.goto('http://localhost:8861/37-player.html',{waitUntil:'networkidle0'}); await sleep(800);
-  for(const x of ['^English$','^Start a library on this device$','^Skip for now$','^Finish$','^OK$','^Close$']){ await clickText(p,'.modal button',x); await sleep(300); }
+  for(const x of ['^English$','^Start a library on this device$','^No, just start$','^Skip for now$','^Finish$','^OK$','^Close$']){ await clickText(p,'.modal button',x); await sleep(300); }
   await p.evaluate(()=> document.querySelector('.modal [data-close]')?.click()); await sleep(800);
   for(const x of ['^English$','^Skip for now$','^Finish$','^OK$','^Close$']){ await clickText(p,'.modal button',x); await sleep(300); }
   await p.evaluate(()=>{ const bi = window.backupInfoForTest(); bi.handle = null; });

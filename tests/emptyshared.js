@@ -32,7 +32,7 @@ async function open(b, name){
   p.on('dialog', d=>{ console.log(name, 'ALERT:', d.message()); d.dismiss(); });
   await p.goto(APP, {waitUntil: 'networkidle0'}); await sleep(700);
   await clickText(p, '.modal button', '^English$'); await sleep(500);
-  await clickText(p, '.modal button', '^Start a library on this device$'); await sleep(300);
+  await clickText(p, '.modal button', '^No, just start$'); await sleep(300);
   await clickText(p, '.modal button', '^Skip for now$'); await sleep(300); await clickText(p, '.modal button', '^Finish$'); await sleep(300);
   await p.evaluate(async()=>{ const r = window.__dbg.getRoot(); r.tree = []; delete r.settings.starterPlaylistId; await window.__dbg.saveState(); });
   return p;

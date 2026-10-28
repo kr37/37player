@@ -10,7 +10,7 @@ let fails = 0; const ok=(c,m)=>{ console.log((c?'ok   ':'FAIL ')+m); if(!c) fail
   await p.emulate({viewport:{width:412, height:900, deviceScaleFactor:2, isMobile:true, hasTouch:true}, userAgent:'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0 Mobile Safari/537.36'});
   p.on('pageerror', e=>console.log('PAGE ERROR:', e.message));
   await p.goto(APP, {waitUntil:'networkidle0'}); await sleep(800);
-  for(let k=0;k<8;k++){ const more = await p.evaluate(()=>{ if(!document.querySelector('.modal-backdrop').classList.contains('show')) return false; const btns=[...document.querySelectorAll('.modal button')].filter(e=>e.offsetParent); const b=btns.find(x=>/^(English|Start a library on this device|Skip for now|Finish|Not now|Later|OK|Close)$/i.test(x.textContent.trim()))||btns[btns.length-1]; b&&b.click(); return true; }); if(!more) break; await sleep(400); }
+  for(let k=0;k<8;k++){ const more = await p.evaluate(()=>{ if(!document.querySelector('.modal-backdrop').classList.contains('show')) return false; const btns=[...document.querySelectorAll('.modal button')].filter(e=>e.offsetParent); const b=btns.find(x=>/^(English|No, just start|Start a library on this device|Skip for now|Finish|Not now|Later|OK|Close)$/i.test(x.textContent.trim()))||btns[btns.length-1]; b&&b.click(); return true; }); if(!more) break; await sleep(400); }
   await p.evaluate(()=> window.__dbg.setMode('editing')); await sleep(500);
   const widths = ()=> p.evaluate(()=> ['editorColA','editorColB'].map(id=> Math.round(document.getElementById(id).getBoundingClientRect().width)));
   const before = await widths();

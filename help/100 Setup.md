@@ -1,6 +1,8 @@
 Setup
 
-The first time 37 Player opens, it asks for your language, then walks you through what matters on the device and browser you're using. For why these steps matter, see 'Reliability'.
+The first time 37 Player opens, it asks only for your language and whether you want to join (or create) a shared library now. Then you can look around and play. The first time you import audio, a **Heads up!** shows what matters on the device and browser you're using, with a button for each step: where to keep your library, installing, and keeping it safe. For why these steps matter, see 'Reliability'.
+
+If you're only using 37 Player for one job (splitting a recording, say), choose **I'm only using it for a quick job**: it stops reminding you about installing and backing up on that device until the library grows or you open Settings.
 
 ### Choose one home for your library
 
@@ -15,19 +17,19 @@ Settings → **Library info** shows where the library you're looking at lives. T
 
 **Chrome or Edge on a computer** (Windows, Mac, Linux or Chromebook) is the best home: they keep a backup folder up to date by themselves. Most browsers built on the same engine can too; in Brave, first turn on "File System Access API" at brave://flags.
 
-In **Firefox** or **Safari** on a computer, 37 Player works, but backups are files you save yourself. If you have Chrome or Edge, it's easiest to switch before adding anything, because a library doesn't move from one browser to another by itself. The welcome offers to copy the address so you can paste it into Chrome or Edge.
+In **Firefox** or **Safari** on a computer, 37 Player works, but backups are files you save yourself. If you have Chrome or Edge, it's easiest to switch before adding anything, because a library doesn't move from one browser to another by itself. The Heads-up at your first import offers to copy the address so you can paste it into Chrome or Edge.
 
 ### Choose a backup folder
 
-In Chrome, Edge and similar browsers, the welcome asks for a backup folder. Create a new, empty folder and choose it: 37 Player then keeps it up to date by itself, and also keeps a copy of 37 Player itself there (37-player.html). If your library is ever lost, open 37 Player again and choose that folder to bring everything back. In other browsers, and on phones and tablets, backups are manual. See 'Backing up'.
+In Chrome, Edge and similar browsers, the Heads-up at your first import offers automatic backups (or Settings → **Backups**, at any time). Create a new, empty folder and choose it: 37 Player then keeps it up to date by itself, and also keeps a copy of 37 Player itself there (37-player.html). If your library is ever lost, open 37 Player again and choose that folder to bring everything back. In other browsers, and on phones and tablets, backups are manual. See 'Backing up'.
 
 ### iPad and iPhone: the Home Screen first
 
-On an iPad or iPhone, Safari erases a website's data after 7 days without a visit. Added to the Home Screen, 37 Player keeps its library. The Home Screen app has a library of its own, separate from Safari's, so add it **before** importing anything. See 'Phones and tablets' for the steps.
+On an iPad or iPhone, Safari erases a website's data after 7 days without a visit. Added to the Home Screen, 37 Player keeps its library. The Home Screen app has a library of its own, separate from Safari's, so add it **before** importing anything: the Heads-up at your first import in Safari shows the steps, and asks once more if you carry on without it. See 'Phones and tablets'.
 
 ### Android: install it as an app
 
-On Android, the welcome offers to install 37 Player as an app (or use Chrome's ⋮ menu → Add to Home screen). Chrome then keeps the library safe rather than clearing it when space runs low. The app and the website share one library, so it can be done at any time.
+On Android, the Heads-up at your first import offers to install 37 Player as an app (or use Chrome's ⋮ menu → Add to Home screen). Chrome then keeps the library safe rather than clearing it when space runs low. The app and the website share one library, so it can be done at any time.
 
 ### On a computer, installing is optional
 

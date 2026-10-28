@@ -13,7 +13,7 @@ const clickText = (p, sel, src) => p.evaluate((sel, src)=>{ const re=new RegExp(
 const STARTER = fs.readFileSync(path.join(__dirname, 'fixtures', 'starter.mp3')).toString('base64');
 let fails = 0; const ok=(c,m)=>{ console.log((c?'ok   ':'FAIL ')+m); if(!c) fails++; };
 const dialog = p=> p.evaluate(()=> document.querySelector('.modal-backdrop.show .modal')?.innerText || '');
-const settle = async p=>{ for(const x of ['^English$','^Start a library on this device$','^Skip for now$','^Finish$']){ await clickText(p,'.modal button',x); await sleep(300); } await p.evaluate(()=> document.querySelectorAll('.modal [data-close]').forEach(b=>b.click())); await sleep(300); };
+const settle = async p=>{ for(const x of ['^English$','^Start a library on this device$','^No, just start$','^Skip for now$','^Finish$']){ await clickText(p,'.modal button',x); await sleep(300); } await p.evaluate(()=> document.querySelectorAll('.modal [data-close]').forEach(b=>b.click())); await sleep(300); };
 // Pretends, from the start of every page, that storage is persistent and/or
 // that the database never answers (localStorage flags, so a reload keeps them).
 const PRETEND = ()=>{

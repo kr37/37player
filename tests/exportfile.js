@@ -25,7 +25,7 @@ async function importAs(p, from, as){
   });
   p.on('pageerror', e=> console.log('PAGE ERROR:', e.message)); p.on('dialog', d=>{ console.log('ALERT:', d.message()); d.dismiss(); });
   await p.goto(APP, {waitUntil: 'networkidle0'}); await sleep(600);
-  for(const x of ['^English$', '^Start a library on this device$', '^Skip for now$', '^Finish$']){ await clickText(p, '.modal button', x); await sleep(300); }
+  for(const x of ['^English$', '^Start a library on this device$','^No, just start$', '^Skip for now$', '^Finish$']){ await clickText(p, '.modal button', x); await sleep(300); }
   await importAs(p, 'ten.mp3', 'ten.mp3');
   await importAs(p, 'w_mono48.wav', 'Second.wav');
   const ids = await p.evaluate(()=> window.__dbg.getRoot().library.map(t=> ({id: t.id, name: t.name, file: t.filename})));

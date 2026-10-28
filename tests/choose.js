@@ -20,7 +20,7 @@ async function device(b, name){
   p.on('dialog', d=>{ console.log(name, 'ALERT:', d.message()); d.dismiss(); });
   await p.setRequestInterception(true); p.on('request', r=> r.url().startsWith('http://localhost') || r.url().startsWith('http://127.0.0.1') ? r.continue() : r.abort());
   await p.goto(APP, {waitUntil: 'networkidle0'}); await sleep(700);
-  for(const x of ['^English$', '^Start a library on this device$', '^Skip for now$', '^Finish$']){ await clickText(p, '.modal button', x); await sleep(250); }
+  for(const x of ['^English$', '^Start a library on this device$','^No, just start$', '^Skip for now$', '^Finish$']){ await clickText(p, '.modal button', x); await sleep(250); }
   await p.evaluate(()=> document.querySelector('.modal [data-close]')?.click());
   await p.evaluate(async()=>{ const r = window.__dbg.getRoot(); r.tree = []; r.library = []; delete r.settings.starterPlaylistId; await window.__dbg.saveState(); });
   return p;
