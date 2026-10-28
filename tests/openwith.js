@@ -31,7 +31,7 @@ async function finishImport(p){
   await give(p, 'ten.mp3', 'Opened talk.mp3'); await sleep(800);
   ok(/language|English/i.test(await modal(p)) && !/Open “/.test(await modal(p)), 'a file opened while the welcome is up waits for it');
   await clickText(p, '.modal button', '^English$'); await sleep(300);
-  await clickText(p, '.modal button', '^Start a library on this device$'); await sleep(300);
+  await clickText(p, '.modal button', '^No, just start$'); await sleep(300);
   await clickText(p, '.modal button', '^Skip for now$'); await sleep(300); await clickText(p, '.modal button', '^Finish$'); await sleep(1500);
   let m = await modal(p);
   ok(/Open “Opened talk\.mp3”/.test(m) && /Play it now/.test(m) && /Import/.test(m) && /Play and import/.test(m), 'then asks: Play it now, Import, or Play and import');

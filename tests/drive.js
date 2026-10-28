@@ -24,7 +24,7 @@ async function device(b, name){
   await p.goto(APP, {waitUntil: 'networkidle0'}); await sleep(700);
   return p;
 }
-const settle = async p=>{ for(const x of ['^English$', '^Start a library on this device$', '^Skip for now$', '^Finish$']){ await clickText(p, '.modal button', x); await sleep(250); } await p.evaluate(()=> document.querySelector('.modal [data-close]')?.click()); };
+const settle = async p=>{ for(const x of ['^English$', '^Start a library on this device$','^No, just start$', '^Skip for now$', '^Finish$']){ await clickText(p, '.modal button', x); await sleep(250); } await p.evaluate(()=> document.querySelector('.modal [data-close]')?.click()); };
 // Clicks something that leaves for Google's sign-in, and waits until 37 Player is back.
 async function signIn(p, clickFn){
   const nav = p.waitForNavigation({waitUntil: 'networkidle0', timeout: 30000});
@@ -81,7 +81,7 @@ const openShared = async p=>{ await p.evaluate(()=>{ window.__dbg.setMode('editi
     // ---- B: joins from the welcome
     const B = await device(b, 'B');
     await clickText(B, '.modal button', '^English$'); await sleep(400);
-    await clickText(B, '.modal button', '^Join a shared library$'); await sleep(400);
+    await clickText(B, '.modal button', '^Yes, join a shared library$'); await sleep(400);
     await B.evaluate(()=>{ document.querySelector('input[name=sjWhere][value=gdrive]').click(); document.getElementById('sjNext').click(); }); await sleep(300);
     ok(await B.evaluate(()=> document.getElementById('sjGo').textContent === 'Use Google Drive…' && !document.getElementById('sjCode')), 'welcome join: Google Drive leads to Use Google Drive…, no code');
     await signIn(B, ()=> document.getElementById('sjGo').click());

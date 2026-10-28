@@ -17,7 +17,7 @@ const clickText = (p, sel, src) => p.evaluate((sel, src)=>{ const re=new RegExp(
   p.on('dialog', d=>{ console.log('ALERT:', d.message()); p.__alert = d.message(); d.dismiss(); });
   await p.goto(APP, {waitUntil: 'networkidle0'}); await sleep(600);
   await clickText(p, '.modal button', '^English$'); await sleep(300);
-  await clickText(p, '.modal button', '^Start a library on this device$'); await sleep(300);
+  await clickText(p, '.modal button', '^No, just start$'); await sleep(300);
   await clickText(p, '.modal button', '^Skip for now$'); await sleep(300); await clickText(p, '.modal button', '^Finish$'); await sleep(300);
   // Don't touch my files: the WAV stays a WAV (the default would convert it as it comes in)
   await p.evaluate(async()=>{ const r = window.__dbg.getRoot(); r.formatPolicy = Object.assign({}, window.__conv.policy(), {when: 'untouched'}); await window.__dbg.saveState(); });

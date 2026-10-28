@@ -19,6 +19,9 @@ window.__conv = {importFiles, recheck: recheckStoredAudio, cantPlay: trackCantPl
   musicEntries: (ids, convert)=>buildMusicEntries(new Set(ids), null, {convert: !!convert}), dropOriginal: (id)=>dropKeptOriginal(findLibraryTrack(id)), policy: ()=>formatPolicy(), matches: (id)=>trackMatchesPolicy(findLibraryTrack(id))};
 // No quiet converter download 20 s after opening, unless a test asks for it.
 window.__noAutoConverter = true;
+// The Heads-up at the first import and the once-a-day backup prompt (1.4.092)
+// would interrupt tests that aren't about them; welcome.js turns them on.
+if(window.__headsUpOn !== true){ window.__noHeadsUp = true; window.__noDailyPrompt = true; }
 // playback
 window.__play = (id)=>playItem(id);
 window.__pause = ()=> togglePlay();
@@ -55,7 +58,7 @@ window.IMPORT_ACCEPT_FOR_TEST = IMPORT_ACCEPT;
 window.backupInfoForTest = ()=> backupInfo;
 // shared library as the backup (share.js)
 window.__share = {offer: (meta)=> offerNativeImport(meta, {}, {}, null, {backupRestore: true}), meta: ()=> buildNativeMeta({type: "library"}).meta,
-  prompt: backupPromptNeeded, covered: sharedCoversLibrary, keepers: ()=> root.backupKeepers, keeperLines,
+  prompt: ()=> libraryNeedsBackup() && !libraryProtected() && !sharedAboutToCover(), covered: sharedCoversLibrary, keepers: ()=> root.backupKeepers, keeperLines,
   noteKept: ()=>{ root.backupKeepers = Object.assign({}, root.backupKeepers, {[sharedConfig().deviceName]: Date.now()}); return saveState(); },
   label: ()=> document.getElementById("btnBackup").textContent, setup: ()=> backupInfo.setupDone};
 window.__share.manualBackup = downloadManualBackup; window.__share.judge = judgeBackupFiles; window.__share.manualPlan = manualBackupPlan;
@@ -96,3 +99,4 @@ window.__splitter = {open: openSplitter, state: ()=> spl, close: closeSplitter, 
   cursor: (s)=> splitSetCursor(s), editItem: openEditItem, find: findNode};
 // still sending audio (switchsend.js)
 window.__fakeSending = ()=>{ sharedUploading = true; sharedStatus.transfer = {kind: "up", done: 0, total: 1}; };
+window.__openWith = (files)=> openWithFiles(files);

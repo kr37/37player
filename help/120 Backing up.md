@@ -12,7 +12,7 @@ In Chrome or Edge on a computer (Windows, Mac, Linux, or Chromebook), 37 Player 
 
 ### Manual backups (other browsers, phones, and tablets)
 
-Firefox, Safari, and browsers on phones and tablets can't write to a folder, so backups there are manual — at your own risk. When the library has changes that haven't been backed up, a **Back up library** button appears at the top: amber at first, red after an hour. Clicking it downloads a backup file; keep it somewhere safe. The first one is a full backup of everything. After that you can choose between backing up just the changes since the full backup — usually tiny and quick — or a new full backup; 37 Player shows the size of each, and recommends a new full backup once the changes grow past half its size, or the full backup is more than two weeks old. A changes backup is no use without the full backup it builds on, and 37 Player can't see your files: if you've deleted that full backup, or aren't sure you still have it, choose **New full backup**. When a changes backup would be the usual choice, 37 Player asks first whether you still have that full backup (at most once a week), naming its file.
+Firefox, Safari, and browsers on phones and tablets can't write to a folder, so backups there are manual — at your own risk. When the library has changes that haven't been backed up, a **Back up library** button appears at the top, red straight away. Clicking it downloads a backup file, ending in **.37p** (a zip inside; before version 1.4.092 backups ended in .zip, and still restore). Keep it somewhere safe; installed as an app on a computer, double-clicking a .37p file opens 37 Player and offers to restore it. The first one is a full backup of everything. After that you can choose between backing up just the changes since the full backup — usually tiny and quick — or a new full backup; 37 Player shows the size of each, and recommends a new full backup once the changes grow past half its size, or the full backup is more than two weeks old. A changes backup is no use without the full backup it builds on, and 37 Player can't see your files: if you've deleted that full backup, or aren't sure you still have it, choose **New full backup**. When a changes backup would be the usual choice, 37 Player asks first whether you still have that full backup (at most once a week), naming its file.
 
 **Check my backup files** (Settings → Backups) looks at the backup files you choose, or the folder they're in, and says which to keep (the latest full backup and the latest changes made on it) and which can be deleted, with the total. It reads only each file's list of contents, so even a large backup takes a moment. It can't delete files itself: delete them in Files or your file manager. If the full backup that 37 Player's next changes backup would build on isn't among them, **Make the next backup a full one** starts afresh.
 
@@ -20,7 +20,9 @@ Firefox, Safari, and browsers on phones and tablets can't write to a folder, so 
 
 Browsers save downloads to their Downloads folder unless told otherwise, and 37 Player can't choose the folder for them. So set your browser to ask where to save — in Firefox, Settings → General → **Always ask you where to save files**; in Safari, Settings → General → File download location → **Ask for each download** — then choose your backups folder once, and the browser remembers it next time.
 
-It's also worth keeping a copy of 37 Player itself in that folder, so your backups never depend on the website: download **37-player.html** from 37player.com (37 Player offers it during setup, too). Opened from the file, it keeps a library of its own — restore into it from your backups. When you leave 'Edit Playlists' or 'Library' with changes that haven't been backed up, 37 Player also asks whether to back up first.
+It's also worth keeping a copy of 37 Player itself in that folder, so your backups never depend on the website: download **37-player.html** from 37player.com (37 Player offers it during setup, too). Opened from the file, it keeps a library of its own — restore into it from your backups.
+
+If the library isn't protected (no shared library, no automatic backups), has changes that aren't backed up, and hasn't been backed up for over a day, 37 Player asks once a day, the first time you open 'Edit Playlists' or 'Library': **Time for a backup**, with the ways to stop needing it. Nothing asks when you leave those screens: the red button says it instead.
 
 Anyone can back up, even without the PIN — a backup never changes the library.
 
@@ -39,7 +41,7 @@ A device in a shared library doesn't need backups of its own: the shared library
 
 ### Restoring
 
-If the browser's data is ever cleared, 37 Player starts as if new, and its setup appears again. Choose the same backup folder and pick **Restore this backup** — everything comes back, and backups carry on in that folder.
+If the browser's data is ever cleared, 37 Player starts as if new. Choose the same backup folder (Settings → **Backups** → Choose backup folder) and pick **Restore this backup** — everything comes back, and backups carry on in that folder.
 
 You can also restore at any time, in any browser, from 'Import / Export' → **Restore backup from folder**.
 

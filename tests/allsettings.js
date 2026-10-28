@@ -14,7 +14,7 @@ const row = (p, name)=> p.evaluate((name)=>{ const tr = [...document.querySelect
   await p.evaluateOnNewDocument(()=>{ window.__noAutoConverter = true; });
   p.on('pageerror', e=> console.log('PAGE ERROR:', e.message)); p.on('dialog', d=> d.dismiss());
   await p.goto(APP, {waitUntil: 'networkidle0'}); await sleep(600);
-  for(const x of ['^English$', '^Start a library on this device$', '^Skip for now$', '^Finish$']){ await clickText(p, '.modal button', x); await sleep(300); }
+  for(const x of ['^English$', '^Start a library on this device$','^No, just start$', '^Skip for now$', '^Finish$']){ await clickText(p, '.modal button', x); await sleep(300); }
   await p.evaluate(()=> window.__dbg4.settings()); await sleep(400);
   await clickText(p, '#settingsNav .settings-nav-item', '^All settings$'); await sleep(500);
   const groups = await p.evaluate(()=> [...document.querySelectorAll('.all-settings tr.all-group')].map(r=> r.textContent));

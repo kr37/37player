@@ -26,7 +26,7 @@ async function open(b, ua){
   p.dl = fs.mkdtempSync(path.join(os.tmpdir(), 'p37bk-'));
   const cdp = await p.createCDPSession(); await cdp.send('Browser.setDownloadBehavior', {behavior: 'allow', downloadPath: p.dl, browserContextId: ctx._contextId || ctx.id}).catch(()=> cdp.send('Page.setDownloadBehavior', {behavior: 'allow', downloadPath: p.dl}));
   await p.goto('http://localhost:8861/37-player.html',{waitUntil:'networkidle0'}); await sleep(800);
-  for(const x of ['^English$','^Start a library on this device$','^Use it in Safari anyway$','^Skip for now$','^Finish$','^OK$','^Close$']){ await clickText(p,'.modal button, .modal a',x); await sleep(300); }
+  for(const x of ['^English$','^Start a library on this device$','^No, just start$','^Use it in Safari anyway$','^Skip for now$','^Finish$','^OK$','^Close$']){ await clickText(p,'.modal button, .modal a',x); await sleep(300); }
   await p.evaluate(()=> document.querySelector('.modal [data-close]')?.click()); await sleep(800);
   for(const x of ['^English$','^Skip for now$','^Finish$','^OK$','^Close$']){ await clickText(p,'.modal button',x); await sleep(300); }
   await p.evaluate(()=> document.querySelector('.modal [data-close]')?.click()); await sleep(300);
@@ -50,7 +50,7 @@ async function importStarter(p){
   let d = await waitDialog(A, /full backup of your library/);
   ok(d && d.buttons.some(x=>/^New full backup/.test(x.t)), 'the first backup is a full one');
   await clickText(A, '#askButtons button', '^New full backup');
-  const fullName = await waitFile(A.dl, /^lib-native-backup-full-.*\.zip$/);
+  const fullName = await waitFile(A.dl, /^lib-native-backup-full-.*\.37p$/);
   ok(!!fullName, 'full backup downloaded: ' + fullName);
   await sleep(500);
   const base = await A.evaluate(()=> window.backupInfoForTest().manualBase);
@@ -61,7 +61,7 @@ async function importStarter(p){
   d = await waitDialog(A, /Do you still have your full backup/);
   ok(d && d.text.includes(fullName), 'the question names that file');
   await clickText(A, '#askButtons button', '^Yes: back up the changes');
-  const chName = await waitFile(A.dl, /^lib-native-backup-changes-.*\.zip$/);
+  const chName = await waitFile(A.dl, /^lib-native-backup-changes-.*\.37p$/);
   ok(!!chName, 'changes backup downloaded: ' + chName);
   await sleep(500);
   A.evaluate(()=>{ window.__mb = window.__share.manualBackup(); });
@@ -125,7 +125,7 @@ async function importStarter(p){
   await clickText(I, '#askButtons button', '^New full backup');
   d = await waitDialog(I, /Safari is saving the backup|The backup is ready/);
   ok(d && /Safari is saving the backup/.test(d.text) && /Save to Files/.test(d.text), 'no file sharing here: downloaded, saying what to do on Safari\'s page');
-  ok(!!await waitFile(I.dl, /^lib-native-backup-full-.*\.zip$/), 'and the file was downloaded');
+  ok(!!await waitFile(I.dl, /^lib-native-backup-full-.*\.37p$/), 'and the file was downloaded');
   await b.close();
   console.log(fails ? fails + ' FAILED' : 'ALL OK'); process.exit(fails ? 1 : 0);
 })();

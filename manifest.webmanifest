@@ -94,6 +94,14 @@
      ".snd"
     ]
    }
+  },
+  {
+   "action": "./37-player.html",
+   "accept": {
+    "application/x-37player-backup": [
+     ".37p"
+    ]
+   }
   }
  ],
  "share_target": {

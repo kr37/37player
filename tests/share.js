@@ -1,5 +1,5 @@
-// A shared library is a joined device's backup: the welcome asks about
-// sharing first and a device that joins gets no backup advice; "Back up
+// A shared library is a joined device's backup: the welcome asks only
+// whether to join one (1.4.092) and a device that joins gets no backup advice; "Back up
 // library" goes away once everything is in the shared library; the devices
 // see who keeps backups; restoring on a joined device takes the shared
 // library again rather than bringing back what was deleted; a backup of a
@@ -28,26 +28,25 @@ async function open(b, name){
   // ---- A: starts its own library, then joins (the first device)
   const A = await open(b, 'A');
   let m = await modal(A);
-  ok(/share a library with other devices\?/.test(m) && /Start a library on this device/.test(m) && /Join a shared library/.test(m), 'the welcome asks about sharing first');
+  ok(/join code for a shared library\?/.test(m) && /No, just start/.test(m) && /Yes, join a shared library/.test(m), 'the welcome asks only whether to join a shared library');
   await A.screenshot({path: 'shots/share-welcome.png'});
-  await clickText(A, '.modal button', '^Start a library on this device$'); await sleep(300);
-  ok(/First, a backup folder/.test(await modal(A)), 'starting here goes on to the backup folder');
-  await clickText(A, '.modal button', '^Skip for now$'); await sleep(300); await clickText(A, '.modal button', '^Finish$'); await sleep(300);
+  await clickText(A, '.modal button', '^No, just start$'); await sleep(400);
+  ok(!(await modal(A)) && await A.evaluate(()=> window.__share.setup()), 'No, just start: nothing more is asked (no backup folder yet)');
   await A.evaluate(async()=>{ const r = window.__dbg.getRoot(); r.tree = []; delete r.settings.starterPlaylistId; await window.__dbg.saveState(); });
   await A.evaluate(async()=>{ const blob = await (await fetch('/ten.mp3')).blob(); window.__dbg.bulkImportFolder([new File([blob], 'ten.mp3', {type: 'audio/mpeg'})]); });
   for(let k=0; k<60; k++){ const h = await A.evaluate(()=> document.querySelector('.modal h3')?.textContent || ''); if(/Review/.test(h)) await clickText(A, '.modal button', '^Import$'); if(/Import finished/.test(h)){ await A.evaluate(()=> document.querySelectorAll('.modal [data-close], .modal .btn.primary').forEach(x=>x.click())); break; } await sleep(200); }
   await A.evaluate(async()=>{ const r = window.__dbg.getRoot(); const id = r.library[0].id; r.tree.push({id:'p1', kind:'playlist', name:'Morning', order:0, items:[{id:'i1', kind:'track', refId:id, order:0}]}, {id:'p2', kind:'playlist', name:'Evening', order:1, items:[]}); await window.__dbg.saveState(); });
   ok(await A.evaluate(()=> window.__share.label()) === 'Back up library', 'unshared, with a track: "Back up library"');
-  ok(await A.evaluate(()=> window.__share.prompt()), 'and the reminder on leaving Edit');
+  ok(await A.evaluate(()=> window.__share.prompt()), 'and a backup is asked for');
   await A.evaluate((c,u)=> window.__dbg3.join(u, c, 'Laptop'), CODE, URL_SYNC); await waitIdle(A);
   ok(await waitFor(A, ()=> window.__share.covered(), 15000), 'joined and sent: everything is in the shared library');
   ok(await A.evaluate(()=> window.__share.label()) === 'In sync', 'the button says "In sync": ' + await A.evaluate(()=> window.__share.label()));
-  ok(!(await A.evaluate(()=> window.__share.prompt())), 'and there\'s no reminder on leaving Edit');
+  ok(!(await A.evaluate(()=> window.__share.prompt())), 'and no backup is asked for');
   await A.evaluate(()=> window.__share.noteKept()); await A.evaluate(()=> window.__dbg3.sync()); await waitIdle(A);
 
   // ---- B: joins from the welcome
   const B = await open(b, 'B');
-  await clickText(B, '.modal button', '^Join a shared library$'); await sleep(300);
+  await clickText(B, '.modal button', '^Yes, join a shared library$'); await sleep(300);
   m = await modal(B);
   ok(/Choose where the shared library is kept/.test(m) && /I have a join code/.test(m) && /Google Drive/.test(m), 'Join a shared library asks first where it\'s kept');
   await B.screenshot({path: 'shots/share-where.png'});
@@ -60,8 +59,7 @@ async function open(b, name){
   for(let k=0; k<30; k++){ if(await B.evaluate(()=> window.__radio('^Use the shared library here'))) break; if(await clickText(B, '.modal button', '^Do it now$')) break; await sleep(250); }
   await sleep(500); await waitIdle(B);
   m = await modal(B);
-  ok(/Keep backups on this computer too\?/.test(m), 'a computer that can keep a folder is offered one, as optional');
-  await clickText(B, '.modal button', '^Skip for now$'); await sleep(300);
+  ok(!/backup/i.test(m), 'joined: nothing is asked about backups');
   ok(await B.evaluate(()=> window.__share.setup()), 'setup is done, with no backup advice');
   ok(/Morning/.test(await tree(B)) && await B.evaluate(()=> window.__dbg.getRoot().library.length) === 1, 'B has the shared library: ' + await tree(B));
   ok(await waitFor(B, ()=> window.__share.covered(), 15000), 'B: everything is in the shared library');
@@ -115,7 +113,7 @@ async function open(b, name){
 
   // ---- D joins from the welcome with partial sync ticked
   const D = await open(b, 'D');
-  await clickText(D, '.modal button', '^Join a shared library$'); await sleep(300);
+  await clickText(D, '.modal button', '^Yes, join a shared library$'); await sleep(300);
   await D.evaluate(()=>{ document.querySelector('input[name=sjWhere][value=server]').click(); document.getElementById('sjNext').click(); }); await sleep(300);
   m = await modal(D);
   ok(!/Bring only the playlists I choose/.test(m) && /says how much will travel/.test(m) && !(await D.evaluate(()=> !!document.getElementById('sjPartial'))), 'no partial-sync box with the code: the next step, with the sizes, is where it\'s chosen');

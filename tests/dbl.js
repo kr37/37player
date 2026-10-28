@@ -20,7 +20,7 @@ const BYTES = Buffer.concat([Buffer.from([0x49,0x44,0x33,3,0,0,0,0,0,0]), ORIG])
 const STARTER = BYTES.toString('base64'), SHA = crypto.createHash('sha256').update(BYTES).digest('hex');
 const PIECE = 256 * 1024;
 let fails = 0; const ok=(c,m)=>{ console.log((c?'ok   ':'FAIL ')+m); if(!c) fails++; };
-const settle = async p=>{ for(const x of ['^English$','^Start a library on this device$','^Skip for now$','^Finish$']){ await clickText(p,'.modal button',x); await sleep(300); } await p.evaluate(()=> document.querySelectorAll('.modal [data-close]').forEach(b=>b.click())); await sleep(300); };
+const settle = async p=>{ for(const x of ['^English$','^Start a library on this device$','^No, just start$','^Skip for now$','^Finish$']){ await clickText(p,'.modal button',x); await sleep(300); } await p.evaluate(()=> document.querySelectorAll('.modal [data-close]').forEach(b=>b.click())); await sleep(300); };
 const log = p=> p.evaluate(()=> (JSON.parse(localStorage.getItem('37player.sharedLog') || '[]')).join('\n'));
 const waitIdle = async (p)=>{ for(let k=0;k<300;k++){ const s = await p.evaluate(()=>({st: window.__dbg3.status().state, tr: window.__dbg3.status().transfer})); if(s.st!=='syncing' && !s.tr) return s; await sleep(200); } return 'timeout'; };
 const pendingAudio = p=> p.evaluate(()=> Object.keys(window.__dbg3.pending().audio).length);

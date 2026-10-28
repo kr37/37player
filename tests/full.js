@@ -13,7 +13,7 @@ const STARTER = fs.readFileSync(path.join(__dirname, 'fixtures', 'starter.mp3'))
 let fails = 0; const ok=(c,m)=>{ console.log((c?'ok   ':'FAIL ')+m); if(!c) fails++; };
 async function opened(p){
   await p.goto('http://localhost:8861/37-player.html',{waitUntil:'networkidle0'}); await sleep(800);
-  for(const x of ['^English$','^Start a library on this device$','^Skip for now$','^Finish$']){ await clickText(p,'.modal button',x); await sleep(300); }
+  for(const x of ['^English$','^Start a library on this device$','^No, just start$','^Skip for now$','^Finish$']){ await clickText(p,'.modal button',x); await sleep(300); }
   await p.evaluate(()=> document.querySelector('.modal [data-close]')?.click()); await sleep(1500);
   // The welcome can come up again a moment later
   for(const x of ['^English$','^Skip for now$','^Finish$','^OK$','^Close$']){ await clickText(p,'.modal button',x); await sleep(300); }

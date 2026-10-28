@@ -18,7 +18,7 @@ async function open(b){
   p.on('dialog', d=> d.dismiss());
   await p.goto(APP, {waitUntil: 'networkidle0'}); await sleep(600);
   await clickText(p, '.modal button', '^English$'); await sleep(300);
-  await clickText(p, '.modal button', '^Start a library on this device$'); await sleep(300);
+  await clickText(p, '.modal button', '^No, just start$'); await sleep(300);
   await clickText(p, '.modal button', '^Skip for now$'); await sleep(300); await clickText(p, '.modal button', '^Finish$'); await sleep(300);
   return p;
 }
