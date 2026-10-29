@@ -44,7 +44,7 @@ const bytes = s=>{ const m = /([\d.,]+)\s*(B|KB|MB|GB)/.exec(s); if(!m) return 0
   await p.click('.lib-view-toggle button[data-view="table"]'); await sleep(500);
   ok((await toggleX()).x === tx1.x, 'Browse | Table stays put in Table (' + tx1.x + ')');
   ok((await chipTexts()).some(c=> /missing artist/.test(c)), 'Table has it');
-  ok(await p.evaluate(()=> !!document.querySelector('#libTableTotals #libColumnsBtn')), 'Columns sits beside the totals line');
+  ok(await p.evaluate(()=> !!document.querySelector('#libTableTotals #libColumnsBtn')), "Columns is in the Table's lower bar");
   ok(await p.evaluate(()=> getComputedStyle(document.getElementById('libColArtists')).display === 'none' && getComputedStyle(document.getElementById('libTableWrap')).display !== 'none'), 'Table replaces Artists and Albums');
   const h = await heads(p);
   // Since 1.4.097 the file's technical details start hidden, and In playlists comes right after Length.
@@ -55,7 +55,7 @@ const bytes = s=>{ const m = /([\d.,]+)\s*(B|KB|MB|GB)/.exec(s); if(!m) return 0
   for(const k of ['type','size','kbps','rate','ch']) await p.evaluate((k)=> document.querySelector(`#libColsList input[data-key="${k}"]`).click(), k);
   await p.evaluate(()=> document.querySelector('.modal [data-close]').click()); await sleep(300);
   ok((await ids(p)).length === n, 'every track is a row (' + n + ')');
-  const tot = await p.evaluate(()=> document.getElementById('libTableTotals').textContent);
+  const tot = await p.evaluate(()=> document.getElementById('libTableCount').textContent); // in the bar above since 1.4.107
   ok(new RegExp('^' + n + ' tracks · ').test(tot), 'the totals line: ' + tot);
   await p.screenshot({path: 'shots/table-1300.png'});
   // Sorting by size: largest first, then smallest first
