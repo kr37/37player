@@ -5,7 +5,7 @@ let fails=0; const ok=(c,m)=>{ console.log((c?'ok   ':'FAIL ')+m); if(!c) fails+
   const p = await b.newPage(); p.on('pageerror', e=>console.log('PAGE ERROR:', e.message));
   await p.setViewport({width:1180,height:820,isMobile:true,hasTouch:true,deviceScaleFactor:1});
   await p.goto('http://localhost:8861/37-player.html',{waitUntil:'networkidle0'}); await sleep(1000);
-  for(let i=0;i<4;i++){ await p.evaluate(()=>{ const m=document.querySelector('.modal'); if(!m) return; const b=[...m.querySelectorAll('button')].find(b=>/English|Start a library|Skip|Finish|Close|OK|Not now/.test(b.textContent)) || m.querySelector('[data-close]'); b && b.click(); }); await sleep(300); }
+  for(let i=0;i<4;i++){ await p.evaluate(()=>{ const m=document.querySelector('.modal'); if(!m) return; const b=[...m.querySelectorAll('button')].find(b=>/English|No, just start|Start a library|Skip|Finish|Close|OK|Not now/.test(b.textContent)) || m.querySelector('[data-close]'); b && b.click(); }); await sleep(300); }
   // library: Classes folder with two playlists, a second folder "Retreat" empty; tracks
   await p.evaluate(async()=>{
     const r = window.__dbg.getRoot();
@@ -19,7 +19,7 @@ let fails=0; const ok=(c,m)=>{ console.log((c?'ok   ':'FAIL ')+m); if(!c) fails+
       {id:'p3', kind:'playlist', name:'Loose playlist', order:2, items:[{id:'j1',kind:'track',refId:'t3',order:0}]}];
     delete r.settings.starterPlaylistId; await window.__dbg.saveState(); });
   await p.reload({waitUntil:'networkidle0'}); await sleep(1200);
-  for(let i=0;i<4;i++){ await p.evaluate(()=>{ const m=document.querySelector('.modal'); if(!m) return; const b=[...m.querySelectorAll('button')].find(b=>/English|Start a library|Skip|Finish|Close|OK|Not now/.test(b.textContent)) || m.querySelector('[data-close]'); b && b.click(); }); await sleep(300); }
+  for(let i=0;i<4;i++){ await p.evaluate(()=>{ const m=document.querySelector('.modal'); if(!m) return; const b=[...m.querySelectorAll('button')].find(b=>/English|No, just start|Start a library|Skip|Finish|Close|OK|Not now/.test(b.textContent)) || m.querySelector('[data-close]'); b && b.click(); }); await sleep(300); }
   await p.evaluate(()=>{ [...document.querySelectorAll('.mode-tab')].find(b=>/Edit Playlists/.test(b.textContent))?.click(); }); await sleep(800);
   for(let i=0;i<3;i++){ await p.evaluate(()=>{ const m=document.querySelector('.modal'); if(!m) return; const b=[...m.querySelectorAll('button')].find(b=>/Unlock|Edit|OK|Continue/.test(b.textContent)) || m.querySelector('[data-close]'); b && b.click(); }); await sleep(300); }
   const center = sel => p.evaluate((sel)=>{ const el = typeof sel==='string' ? document.querySelector(sel) : null; if(!el) return null; const r=el.getBoundingClientRect(); return {x:r.left+r.width/2, y:r.top+r.height/2}; }, sel);

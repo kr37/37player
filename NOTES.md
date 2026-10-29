@@ -226,7 +226,7 @@ The full plan and history are in the project doc `shared-library-sync.md`. In sh
 
 ## Open / later
 
-- **Full test run** (done 24 Oct 2026, in the cloud session, with `make-fixtures.sh`'s recordings): everything passes except `ipad.js`, which fails at its first tap the same way on `main`: it was written for an older folder list and needs bringing up to date. Tests with non-ASCII file names need a UTF-8 locale (`LANG=C.UTF-8`). With the converter in `tests/www/ffmpeg` (made by `make-fixtures.sh`), the default format setting converts imported WAVs: a test that needs a WAV kept sets `when: 'untouched'` (split.js, conv6.js, damaged.js).
+- **Full test run** (done 24 Oct 2026, in the cloud session, with `make-fixtures.sh`'s recordings): everything passes except `ipad.js`, which failed at its first tap the same way on `main` (fixed 29 Oct 2026: the first-run welcome's "No, just start" was left open over the screen). Tests with non-ASCII file names need a UTF-8 locale (`LANG=C.UTF-8`). With the converter in `tests/www/ffmpeg` (made by `make-fixtures.sh`), the default format setting converts imported WAVs: a test that needs a WAV kept sets `when: 'untouched'` (split.js, conv6.js, damaged.js).
 - **Not checked on a real device:** the iPad with 1.4.052–1.4.059 (reload keeping the place, the theme before the first paint). Android was checked. The phone top bar was laid out at 412px; on a 360px phone the ? may move to the second row (still two rows).
 - **Undecoded audio in an incognito import (22 Oct):** many "Unable to decode audio data" lines, probably .m4a files or memory pressure. If such files come in marked "can't play" in a normal window, look at them.
 - **First-time guidance:** on-screen instructions for new users (Edit Playlists especially: which column is for what). Column B's "Edit playlist here" bar (1.4.056) is the start; quieter labels for columns C and D are a possible next step.
@@ -272,7 +272,7 @@ The full plan and history are in the project doc `shared-library-sync.md`. In sh
   - **History's wording:** "Restore" for rows that take something out (above).
   - **Buttons:** wherever two buttons act as a switch, use radios or a selected state that isn't colour alone (Gen: the selected one is hard to read and to tell apart).
   - **On the iPad:** checked by Gen (29 Oct 2026), all working: Share… on a log into WhatsApp, Back up library, splitting the 1.2 GB WAV, Undo, and the splitter (marks by finger, −/+10 ms, slow speed, the detailed waveform of a 2-hour MP3). History not yet tried there: it's due for changes first.
-  - **Tests:** `ipad.js` is out of date (fails the same on `main`); split's MP3 CRC rewrite untested on a real file.
+  - **Tests:** split's MP3 CRC rewrite untested on a real file. (`ipad.js` fixed 29 Oct 2026: it didn't know the first-run welcome's "No, just start", added in 1.4.092, so its first tap landed on that dialog; all its touch checks pass.)
   - **Optional:** a length (Xing) header in split MP3 parts for other players' seeking. (Splitting M4A without re-encoding: done in 1.4.086.)
 - **Next conversation (from 23 Oct 2026):**
   - **Feedback and logs** (decided 23–24 Oct 2026; Copy all and Share… done in 1.4.077):
