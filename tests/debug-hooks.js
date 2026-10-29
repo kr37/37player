@@ -109,3 +109,4 @@ window.__pieces = {m4a: (b)=> analyzeM4aInPieces(b), whole: (b)=> analyzeAudio(b
   sameWay: async (b)=>{ const C = window.OfflineAudioContext; const buf = await new C(1, 1, 44100).decodeAudioData(await b.arrayBuffer()); const an = makePieceAnalyzer(buf.sampleRate, Math.min(2, buf.numberOfChannels)); const ch = [buf.getChannelData(0)]; if(buf.numberOfChannels > 1) ch.push(buf.getChannelData(1)); await an.push(ch); return an.finish(); }};
 window.__pieces.more = (b, k)=> analyzeInPieces(b, k);
 window.__idbDel = (store, id)=> idbDelete(store, id);
+window.__idbPut = (store, rec)=> idbPut(store, rec);
