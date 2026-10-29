@@ -91,3 +91,8 @@ while p < len(b):
     p += il + sl + sz
 open(sys.argv[2], 'wb').write(b)
 PY
+# Formats only the converter reads in pieces (convpieces.js): FLAC in Ogg, MP2.
+src2="sine=f=250:d=300,volume='0.08+0.3*abs(sin(2*PI*t/41))':eval=frame"
+ffmpeg -loglevel error -y -f lavfi -i "$src2" -ac 2 -ar 44100 -c:a flac longfmt/flac.oga
+ffmpeg -loglevel error -y -f lavfi -i "$src2" -ac 2 -ar 44100 -c:a mp2 -b:a 192k longfmt/x.mp2
+ffmpeg -loglevel error -y -i longfmt/x.mp2 -c:a pcm_s16le longfmt/x.mp2.wav

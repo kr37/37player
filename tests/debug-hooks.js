@@ -110,3 +110,4 @@ window.__pieces = {m4a: (b)=> analyzeM4aInPieces(b), whole: (b)=> analyzeAudio(b
 window.__pieces.more = (b, k)=> analyzeInPieces(b, k);
 window.__idbDel = (store, id)=> idbDelete(store, id);
 window.__idbPut = (store, rec)=> idbPut(store, rec);
+window.__pieces.conv = (b)=> analyzeWithConverter(b); window.__pieces.getConverter = ()=> downloadConverter();
