@@ -214,6 +214,8 @@ The full plan and history are in the project doc `shared-library-sync.md`. In sh
 
 ## Testing
 
+- **One file, one name space:** every function in 37-player.html is in the same scope, so a new helper with an existing name silently replaces the old one. 1.4.114's `concatBytes(parts)` replaced the WAV splitter's `concatBytes(a, b)`, and split WAV parts lost their header (caught by the full run; renamed `joinBytes`, 1.4.123). Before adding a top-level function, grep for its name.
+- **Tests and arguments:** run-all.sh passes every test two library names as arguments, so a test that picks things by `process.argv` must not; morepieces.js and convpieces.js take `ONLY=` instead.
 - **Ask Gen before running the full suite** (`run-all.sh` with no names): it uses a good share of his weekly usage. Single tests for what changed are fine; suggest a full run when it seems a good time, and he may add things first.
 
 - **Environment:** Puppeteer driving real Chromium, on a test copy with debug hooks injected. Never on the shipped file.

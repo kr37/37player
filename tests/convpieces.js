@@ -11,7 +11,7 @@ let fails = 0; const ok=(c,m)=>{ console.log((c?'ok   ':'FAIL ')+m); if(!c) fail
   p.on('pageerror', e=>{ console.log('PAGE ERROR:', e.message); fails++; });
   await p.goto('http://localhost:8861/37-player.html',{waitUntil:'networkidle0'}); await sleep(800);
   ok(await p.evaluate(async()=>{ await window.__pieces.getConverter(); return true; }), 'converter on the device');
-  for(const file of (process.argv[2] ? [process.argv[2]] : ['flac.oga', 'x.mp2'])){
+  for(const file of (process.env.ONLY ? [process.env.ONLY] : ['flac.oga', 'x.mp2'])){ // ONLY=x.mp2 for one (run-all passes library names as arguments)
     const r = await p.evaluate(async(file)=>{
       const blob = await (await fetch('/longfmt/' + file)).blob();
       const t0 = performance.now();
@@ -33,7 +33,7 @@ let fails = 0; const ok=(c,m)=>{ console.log((c?'ok   ':'FAIL ')+m); if(!c) fail
   }
   // The import's own path (analyzeAudio): a file this browser plays but won't
   // decode whole gets its waveform from the converter instead of a stand-in.
-  if(!process.argv[2]){
+  if(!process.env.ONLY){
     const viaImport = await p.evaluate(async()=>{
       const blob = await (await fetch('/longfmt/flac.oga')).blob();
       const C = window.AudioContext || window.webkitAudioContext, keep = C.prototype.decodeAudioData;
