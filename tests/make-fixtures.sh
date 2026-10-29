@@ -60,3 +60,34 @@ echo "Test audio made in tests/www"
 mkdir -p m4a
 ffmpeg -loglevel error -y -f lavfi -i "sine=f=200:d=480,volume='0.05+0.3*abs(sin(2*PI*t/97))':eval=frame" -ac 1 -ar 32000 -c:a aac -b:a 48k m4a/zoom.m4a
 ffmpeg -loglevel error -y -f lavfi -i "sine=f=300:d=420,volume='0.1+0.25*abs(sin(2*PI*t/61))':eval=frame" -ac 2 -ar 44100 -c:a aac -b:a 96k -movflags +faststart m4a/fast.m4a
+# Other formats read a piece at a time (morepieces.js): FLAC, Ogg Vorbis,
+# Opus, WebM (Opus), Matroska (Vorbis) and plain ADTS AAC, 7 minutes each.
+mkdir -p longfmt
+src="sine=f=250:d=420,volume='0.08+0.3*abs(sin(2*PI*t/53))':eval=frame"
+ffmpeg -loglevel error -y -f lavfi -i "$src" -ac 2 -ar 44100 -c:a flac longfmt/x.flac
+ffmpeg -loglevel error -y -f lavfi -i "$src" -ac 2 -ar 44100 -c:a libvorbis -q:a 2 longfmt/x.ogg
+ffmpeg -loglevel error -y -f lavfi -i "$src" -ac 2 -c:a libopus -b:a 64k longfmt/x.opus
+ffmpeg -loglevel error -y -f lavfi -i "$src" -ac 1 -c:a libopus -b:a 48k longfmt/x.webm
+ffmpeg -loglevel error -y -f lavfi -i "$src" -ac 2 -ar 44100 -c:a libvorbis -q:a 2 longfmt/x.mka
+ffmpeg -loglevel error -y -f lavfi -i "$src" -ac 2 -ar 44100 -c:a aac -b:a 96k -f adts longfmt/x.aac
+# The same WebM with its clusters of unknown size, as browsers record them.
+python3 - longfmt/x.webm longfmt/open.webm <<'PY'
+import sys
+b = bytearray(open(sys.argv[1], 'rb').read())
+def vint(i, keep):
+    f = b[i]; l = 1; m = 0x80
+    while not (f & m): l += 1; m >>= 1
+    v = f if keep else f & (m - 1)
+    for k in range(1, l): v = v * 256 + b[i + k]
+    return v, l
+p = 0
+idv, il = vint(p, True); sz, sl = vint(p + il, False); p += il + sl + sz
+idv, il = vint(p, True); sz, sl = vint(p + il, False); p += il + sl
+while p < len(b):
+    idv, il = vint(p, True); sz, sl = vint(p + il, False)
+    if idv == 0x1F43B675:
+        b[p + il] = 0xFF >> (sl - 1)
+        for k in range(1, sl): b[p + il + k] = 0xFF
+    p += il + sl + sz
+open(sys.argv[2], 'wb').write(b)
+PY
