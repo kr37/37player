@@ -37,13 +37,15 @@ const bytes = s=>{ const m = /([\d.,]+)\s*(B|KB|MB|GB)/.exec(s); if(!m) return 0
   // Browse | Table at the top left, in the same place in both views; the
   // "missing artist…" chip only in Table
   const toggleX = ()=> p.evaluate(()=>{ const t = document.getElementById('libViewToggle'); return {x: Math.round(t.getBoundingClientRect().left), first: t.parentElement.firstElementChild === t}; });
-  const chipTexts = ()=> p.evaluate(()=> [...document.querySelectorAll('#libHeaderBanners .lib-filter-chip')].map(c=> c.textContent));
+  // Show (1.4.112): one drop-down in both views, every choice listed with its count
+  const chipTexts = ()=> p.evaluate(()=> [...document.querySelectorAll('#libShowSelect option')].filter(o=> !o.disabled).map(c=> c.textContent));
+  const show = (key)=> p.evaluate((key)=>{ const s = document.getElementById('libShowSelect'); s.value = key; s.dispatchEvent(new Event('change')); }, key);
   const tx1 = await toggleX();
   ok(tx1.first, 'Browse | Table comes first in the header, at the left');
-  ok(!(await chipTexts()).some(c=> /missing artist/.test(c)), 'Browse has no "missing artist, album or artwork" chip');
+  ok((await chipTexts()).some(c=> /Missing artist/.test(c)), 'Browse has Show, with Missing artist, album or artwork');
   await p.click('.lib-view-toggle button[data-view="table"]'); await sleep(500);
   ok((await toggleX()).x === tx1.x, 'Browse | Table stays put in Table (' + tx1.x + ')');
-  ok((await chipTexts()).some(c=> /missing artist/.test(c)), 'Table has it');
+  ok((await chipTexts()).some(c=> /Missing artist/.test(c)), 'Table has it too');
   ok(await p.evaluate(()=> !!document.querySelector('#libTableTotals #libColumnsBtn')), "Columns is in the Table's lower bar");
   ok(await p.evaluate(()=> getComputedStyle(document.getElementById('libColArtists')).display === 'none' && getComputedStyle(document.getElementById('libTableWrap')).display !== 'none'), 'Table replaces Artists and Albums');
   const h = await heads(p);
@@ -105,13 +107,13 @@ const bytes = s=>{ const m = /([\d.,]+)\s*(B|KB|MB|GB)/.exec(s); if(!m) return 0
   let h2 = await heads(p);
   ok(!h2.includes('type') && h2.includes('file'), 'Columns: Type hidden, File name shown');
   // A chip
-  const chips = await p.evaluate(()=> [...document.querySelectorAll('#libHeaderBanners .lib-filter-chip')].map(c=> c.textContent));
-  console.log('chips:', JSON.stringify(chips));
-  ok(chips.some(c=> /Can't be played \(1\)/.test(c)), 'a chip for tracks that can\'t be played');
-  await clickText(p, '#libHeaderBanners .lib-filter-chip', "Can't be played"); await sleep(400);
+  const chips = await chipTexts();
+  console.log('show:', JSON.stringify(chips));
+  ok(chips.some(c=> /Can't be played \(1\)/.test(c)), 'Show offers the tracks that can\'t be played');
+  await show('cantPlay'); await sleep(400);
   const cp = await col(p, 'name');
   ok(cp.length === 1 && /⚠/.test(cp[0]), 'it shows just that one, marked ⚠: ' + JSON.stringify(cp));
-  await clickText(p, '#libHeaderBanners .lib-filter-chip', "Can't be played"); await sleep(400);
+  await show(''); await sleep(400);
   // Convert, for tracks that can't be played
   const wmaId = await p.evaluate(()=>{ const r = window.__dbg.getRoot(); return r.library[r.library.length - 1].id; });
   await p.evaluate(()=> document.querySelector('.modal-backdrop.show') && document.querySelectorAll('.modal [data-close]').forEach(b=>b.click()));
