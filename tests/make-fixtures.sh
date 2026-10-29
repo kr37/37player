@@ -54,3 +54,9 @@ for i in $(seq 1 22); do ffmpeg -loglevel error -y -f lavfi -i "sine=frequency=$
 # The converter, where the test copy looks for it (conv3.js).
 ../../scripts/get_ffmpeg.sh > /dev/null && mkdir -p ffmpeg && cp ../../ffmpeg/ffmpeg-core.js ../../ffmpeg/ffmpeg-core.wasm ../../ffmpeg/VERSION ffmpeg/
 echo "Test audio made in tests/www"
+# Long-ish AAC in .m4a, for reading a piece at a time (m4apieces.js): a
+# Zoom-like mono 32 kHz recording with its table at the end, and a stereo
+# one with its table at the front.
+mkdir -p m4a
+ffmpeg -loglevel error -y -f lavfi -i "sine=f=200:d=480,volume='0.05+0.3*abs(sin(2*PI*t/97))':eval=frame" -ac 1 -ar 32000 -c:a aac -b:a 48k m4a/zoom.m4a
+ffmpeg -loglevel error -y -f lavfi -i "sine=f=300:d=420,volume='0.1+0.25*abs(sin(2*PI*t/61))':eval=frame" -ac 2 -ar 44100 -c:a aac -b:a 96k -movflags +faststart m4a/fast.m4a

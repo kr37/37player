@@ -104,3 +104,6 @@ window.__openWith = (files)=> openWithFiles(files);
 window.__ar = {send: ()=> autoRestoreSend(), on: ()=> autoRestoreOn(), entry: ()=> autoRestoreEntry(), backupInfo: ()=> backupInfo};
 window.__ops = {set: (text, key)=> setActiveOperationProgress(text, null, key), stop: (text, fn)=> setActiveOperationProgress(text, fn), clear: (key)=> clearActiveOperation(key)};
 window.__check = {run: ()=> checkLibrary(), standIn: (p)=> isStandInPeaks(p)};
+window.__pieces = {m4a: (b)=> analyzeM4aInPieces(b), whole: (b)=> analyzeAudio(b), any: (b, k)=> analyzeInPieces(b, k),
+  // the whole file decoded at once, through the same measuring as the pieces
+  sameWay: async (b)=>{ const C = window.OfflineAudioContext; const buf = await new C(1, 1, 44100).decodeAudioData(await b.arrayBuffer()); const an = makePieceAnalyzer(buf.sampleRate, Math.min(2, buf.numberOfChannels)); const ch = [buf.getChannelData(0)]; if(buf.numberOfChannels > 1) ch.push(buf.getChannelData(1)); await an.push(ch); return an.finish(); }};
