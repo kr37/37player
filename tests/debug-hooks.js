@@ -102,3 +102,4 @@ window.__fakeSending = ()=>{ sharedUploading = true; sharedStatus.transfer = {ki
 window.__openWith = (files)=> openWithFiles(files);
 // automatic restore (restore.js)
 window.__ar = {send: ()=> autoRestoreSend(), on: ()=> autoRestoreOn(), entry: ()=> autoRestoreEntry(), backupInfo: ()=> backupInfo};
+window.__ops = {set: (text, key)=> setActiveOperationProgress(text, null, key), stop: (text, fn)=> setActiveOperationProgress(text, fn), clear: (key)=> clearActiveOperation(key)};
