@@ -147,6 +147,25 @@ const bytes = s=>{ const m = /([\d.,]+)\s*(B|KB|MB|GB)/.exec(s); if(!m) return 0
   ok(await p.evaluate(()=>{ const c = document.querySelector('#libTableWrap td.c-name'); return Math.abs(c.getBoundingClientRect().left - document.getElementById('libTableWrap').getBoundingClientRect().left) < 2; }), 'scrolled sideways, Name stays in view');
   await p.evaluate(()=>{ document.getElementById('libTableWrap').scrollLeft = 0; });
   ok(await p.evaluate(()=> { const w = document.getElementById('libTableWrap'); return w.getBoundingClientRect().width > innerWidth - 4; }), 'at an iPad\'s width the table has the whole width: ' + await p.evaluate(()=> Math.round(document.getElementById('libTableWrap').getBoundingClientRect().width) + ' of ' + innerWidth));
+  // Arrow keys follow the table's own order (not album by album) and keep
+  // the highlighted row in view; Page Down / Up scroll a page (1.4.110).
+  await p.setViewport({width: 1300, height: 560}); await sleep(400);
+  await p.evaluate(()=> document.querySelector('th.c-name').click()); await sleep(400);
+  const order = await p.evaluate(()=> [...document.querySelectorAll('#libTableBody tr.lt-row')].map(r=> r.dataset.id));
+  await p.evaluate(()=> document.querySelector('#libTableBody tr.lt-row').click()); await sleep(300);
+  let walked = true;
+  for(let k = 1; k < order.length; k++){
+    await p.keyboard.press('ArrowDown'); await sleep(80);
+    const st = await p.evaluate(()=> { const r = document.querySelectorAll('#libTableBody tr.lt-row.selected'); const w = document.getElementById('libTableWrap').getBoundingClientRect(); const b = r[0] && r[0].getBoundingClientRect(); return {n: r.length, id: r[0] && r[0].dataset.id, vis: !!b && b.top >= w.top && b.bottom <= w.bottom + 1}; });
+    if(st.n !== 1 || st.id !== order[k] || !st.vis){ walked = false; console.log('at', k, JSON.stringify(st)); break; }
+  }
+  ok(walked, 'Down arrow walks the table in its own order, the row in view');
+  await p.evaluate(()=> document.getElementById('libTableWrap').scrollTop = 0);
+  await p.keyboard.press('PageDown'); await sleep(200);
+  const pg = await p.evaluate(()=> { const w = document.getElementById('libTableWrap'); return [w.scrollTop, w.scrollHeight - w.clientHeight]; });
+  ok(pg[0] > 0, 'Page Down scrolls: ' + JSON.stringify(pg));
+  await p.keyboard.press('PageUp'); await sleep(200);
+  ok(await p.evaluate(()=> document.getElementById('libTableWrap').scrollTop === 0), 'Page Up scrolls back');
   // Back to Browse
   await p.setViewport({width: 1300, height: 900}); await sleep(300);
   await p.click('.lib-view-toggle button[data-view="browse"]'); await sleep(500);

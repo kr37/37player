@@ -25,7 +25,8 @@ Keyboard Shortcuts
 <tr><td style="padding:6px 14px 6px 0; vertical-align:top; white-space:nowrap;"><kbd>Space</kbd></td><td style="padding:6px 0;">Toggles play/pause — the previewed track if one is loaded, otherwise the main transport.</td></tr>
 <tr><td style="padding:6px 14px 6px 0; vertical-align:top; white-space:nowrap;"><kbd>Enter</kbd></td><td style="padding:6px 0;">Plays the first selected track.</td></tr>
 <tr><td style="padding:6px 14px 6px 0; vertical-align:top; white-space:nowrap;"><kbd>Delete</kbd> / <kbd>Backspace</kbd></td><td style="padding:6px 0;">Deletes the selected track(s), with confirmation.</td></tr>
-<tr><td style="padding:6px 14px 6px 0; vertical-align:top; white-space:nowrap;"><kbd>↑</kbd> / <kbd>↓</kbd></td><td style="padding:6px 0;">Moves the selection within whichever list — Artists, Albums, or Tracks — was last clicked. Only when exactly one item is selected there.</td></tr>
+<tr><td style="padding:6px 14px 6px 0; vertical-align:top; white-space:nowrap;"><kbd>↑</kbd> / <kbd>↓</kbd></td><td style="padding:6px 0;">Moves the selection within whichever list — Artists, Albums, or Tracks — was last clicked. Only when exactly one item is selected there. In Table, it goes down the table as it's shown, scrolling as it goes.</td></tr>
+<tr><td style="padding:6px 14px 6px 0; vertical-align:top; white-space:nowrap;"><kbd>Page Up</kbd> / <kbd>Page Down</kbd></td><td style="padding:6px 0;">In Table, scrolls the list up or down a page.</td></tr>
 <tr><td style="padding:6px 14px 6px 0; vertical-align:top; white-space:nowrap;"><kbd>E</kbd></td><td style="padding:6px 0;">Edits the selected track(s), or renames the selected artist/album across every track that uses it.</td></tr>
 </table>
 <h3 style="margin:24px 0 8px 0;">The splitter</h3>
