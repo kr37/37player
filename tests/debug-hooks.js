@@ -16,7 +16,7 @@ window.__aa = {analyze: analyzeAudio};
 // files this browser can't play (conv.js)
 window.__conv = {importFiles, recheck: recheckStoredAudio, cantPlay: trackCantPlay, describe: describeFormatProblem,
   convert: (ids)=>convertTracks(ids), state: ()=>({queue: convertQueue.slice(), running: convertRunning, worker: !!converterWorker, bar: activeOperation && activeOperation.text}), stored: ()=>converterStored().then(r=>!!r), libPreview: (id)=>playLibraryPreview(id), overlay: (id)=>openPlaylistOverlay(id),
-  musicEntries: (ids, convert)=>buildMusicEntries(new Set(ids), null, {convert: !!convert}), dropOriginal: (id)=>dropKeptOriginal(findLibraryTrack(id)), policy: ()=>formatPolicy(), matches: (id)=>trackMatchesPolicy(findLibraryTrack(id))};
+  musicEntries: (ids, convert)=>buildMusicEntries(new Set(ids), null, {convert: !!convert}), dropOriginal: (id)=>dropKeptOriginal(findLibraryTrack(id)), policy: ()=>formatPolicy(), matches: (id)=>trackMatchesPolicy(findLibraryTrack(id)), queueRecord: ()=>idbGet("state", "convertQueue").then(r=> r && r.value || null)};
 // No quiet converter download 20 s after opening, unless a test asks for it.
 window.__noAutoConverter = true;
 // The Heads-up at the first import and the once-a-day backup prompt (1.4.092)
@@ -102,3 +102,12 @@ window.__fakeSending = ()=>{ sharedUploading = true; sharedStatus.transfer = {ki
 window.__openWith = (files)=> openWithFiles(files);
 // automatic restore (restore.js)
 window.__ar = {send: ()=> autoRestoreSend(), on: ()=> autoRestoreOn(), entry: ()=> autoRestoreEntry(), backupInfo: ()=> backupInfo};
+window.__ops = {set: (text, key)=> setActiveOperationProgress(text, null, key), stop: (text, fn)=> setActiveOperationProgress(text, fn), clear: (key)=> clearActiveOperation(key)};
+window.__check = {run: ()=> checkLibrary(), standIn: (p)=> isStandInPeaks(p)};
+window.__pieces = {m4a: (b)=> analyzeM4aInPieces(b), whole: (b)=> analyzeAudio(b), any: (b, k)=> analyzeInPieces(b, k),
+  // the whole file decoded at once, through the same measuring as the pieces
+  sameWay: async (b)=>{ const C = window.OfflineAudioContext; const buf = await new C(1, 1, 44100).decodeAudioData(await b.arrayBuffer()); const an = makePieceAnalyzer(buf.sampleRate, Math.min(2, buf.numberOfChannels)); const ch = [buf.getChannelData(0)]; if(buf.numberOfChannels > 1) ch.push(buf.getChannelData(1)); await an.push(ch); return an.finish(); }};
+window.__pieces.more = (b, k)=> analyzeInPieces(b, k);
+window.__idbDel = (store, id)=> idbDelete(store, id);
+window.__idbPut = (store, rec)=> idbPut(store, rec);
+window.__pieces.conv = (b)=> analyzeWithConverter(b); window.__pieces.getConverter = ()=> downloadConverter();

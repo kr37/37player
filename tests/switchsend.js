@@ -22,7 +22,7 @@ let fails = 0; const ok=(c,m)=>{ console.log((c?'ok   ':'FAIL ')+m); if(!c) fail
   await p.evaluate(()=> window.__fakeSending());
   p.evaluate((id)=> window.__lib.switchTo(id), first).catch(()=>{});
   for(let i = 0; i < 20 && !(await p.$('#askButtons')); i++) await sleep(250);
-  ok(/Still sending audio/.test(await p.evaluate(()=> document.querySelector('.modal')?.innerText || '')), 'while audio is being sent, switching says so');
+  ok(/sending audio to the shared library/.test(await p.evaluate(()=> document.querySelector('.modal')?.innerText || '')), 'while audio is being sent, switching says so');
   await clickText(p, '.modal button', '^Cancel$'); await sleep(400);
   ok(await p.evaluate(()=> window.__lib.id()) === second, 'Cancel stays');
   p.evaluate((id)=> window.__lib.switchTo(id), first).catch(()=>{});

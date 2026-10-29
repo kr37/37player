@@ -37,19 +37,27 @@ const bytes = s=>{ const m = /([\d.,]+)\s*(B|KB|MB|GB)/.exec(s); if(!m) return 0
   // Browse | Table at the top left, in the same place in both views; the
   // "missing artist…" chip only in Table
   const toggleX = ()=> p.evaluate(()=>{ const t = document.getElementById('libViewToggle'); return {x: Math.round(t.getBoundingClientRect().left), first: t.parentElement.firstElementChild === t}; });
-  const chipTexts = ()=> p.evaluate(()=> [...document.querySelectorAll('#libHeaderBanners .lib-filter-chip')].map(c=> c.textContent));
+  // Show (1.4.112): one drop-down in both views, every choice listed with its count
+  const chipTexts = ()=> p.evaluate(()=> [...document.querySelectorAll('#libShowSelect option')].filter(o=> !o.disabled).map(c=> c.textContent));
+  const show = (key)=> p.evaluate((key)=>{ const s = document.getElementById('libShowSelect'); s.value = key; s.dispatchEvent(new Event('change')); }, key);
   const tx1 = await toggleX();
   ok(tx1.first, 'Browse | Table comes first in the header, at the left');
-  ok(!(await chipTexts()).some(c=> /missing artist/.test(c)), 'Browse has no "missing artist, album or artwork" chip');
+  ok((await chipTexts()).some(c=> /Missing artist/.test(c)), 'Browse has Show, with Missing artist, album or artwork');
   await p.click('.lib-view-toggle button[data-view="table"]'); await sleep(500);
   ok((await toggleX()).x === tx1.x, 'Browse | Table stays put in Table (' + tx1.x + ')');
-  ok((await chipTexts()).some(c=> /missing artist/.test(c)), 'Table has it');
-  ok(await p.evaluate(()=> !!document.querySelector('#libTableTotals #libColumnsBtn')), 'Columns sits beside the totals line');
+  ok((await chipTexts()).some(c=> /Missing artist/.test(c)), 'Table has it too');
+  ok(await p.evaluate(()=> !!document.querySelector('#libTableTotals #libColumnsBtn')), "Columns is in the Table's lower bar");
   ok(await p.evaluate(()=> getComputedStyle(document.getElementById('libColArtists')).display === 'none' && getComputedStyle(document.getElementById('libTableWrap')).display !== 'none'), 'Table replaces Artists and Albums');
   const h = await heads(p);
-  ok(['name','artist','album','length','type','size','kbps','rate','ch','loud','used'].every(k=> h.includes(k)) && !h.includes('file') && !h.includes('trackNo'), 'the columns shown at first: ' + h.join(', '));
+  // Since 1.4.097 the file's technical details start hidden, and In playlists comes right after Length.
+  ok(['name','artist','album','length','used','loud'].every(k=> h.includes(k)) && !['file','trackNo','type','size','kbps','rate','ch'].some(k=> h.includes(k)), 'the columns shown at first: ' + h.join(', '));
+  ok(h.indexOf('used') === h.indexOf('length') + 1, 'In playlists right after Length');
+  // The details back, for the sorting below
+  await p.click('#libColumnsBtn'); await sleep(300);
+  for(const k of ['type','size','kbps','rate','ch']) await p.evaluate((k)=> document.querySelector(`#libColsList input[data-key="${k}"]`).click(), k);
+  await p.evaluate(()=> document.querySelector('.modal [data-close]').click()); await sleep(300);
   ok((await ids(p)).length === n, 'every track is a row (' + n + ')');
-  const tot = await p.evaluate(()=> document.getElementById('libTableTotals').textContent);
+  const tot = await p.evaluate(()=> document.getElementById('libTableCount').textContent); // in the bar above since 1.4.107
   ok(new RegExp('^' + n + ' tracks · ').test(tot), 'the totals line: ' + tot);
   await p.screenshot({path: 'shots/table-1300.png'});
   // Sorting by size: largest first, then smallest first
@@ -99,13 +107,13 @@ const bytes = s=>{ const m = /([\d.,]+)\s*(B|KB|MB|GB)/.exec(s); if(!m) return 0
   let h2 = await heads(p);
   ok(!h2.includes('type') && h2.includes('file'), 'Columns: Type hidden, File name shown');
   // A chip
-  const chips = await p.evaluate(()=> [...document.querySelectorAll('#libHeaderBanners .lib-filter-chip')].map(c=> c.textContent));
-  console.log('chips:', JSON.stringify(chips));
-  ok(chips.some(c=> /Can't be played \(1\)/.test(c)), 'a chip for tracks that can\'t be played');
-  await clickText(p, '#libHeaderBanners .lib-filter-chip', "Can't be played"); await sleep(400);
+  const chips = await chipTexts();
+  console.log('show:', JSON.stringify(chips));
+  ok(chips.some(c=> /Can't be played \(1\)/.test(c)), 'Show offers the tracks that can\'t be played');
+  await show('cantPlay'); await sleep(400);
   const cp = await col(p, 'name');
   ok(cp.length === 1 && /⚠/.test(cp[0]), 'it shows just that one, marked ⚠: ' + JSON.stringify(cp));
-  await clickText(p, '#libHeaderBanners .lib-filter-chip', "Can't be played"); await sleep(400);
+  await show(''); await sleep(400);
   // Convert, for tracks that can't be played
   const wmaId = await p.evaluate(()=>{ const r = window.__dbg.getRoot(); return r.library[r.library.length - 1].id; });
   await p.evaluate(()=> document.querySelector('.modal-backdrop.show') && document.querySelectorAll('.modal [data-close]').forEach(b=>b.click()));
@@ -132,7 +140,7 @@ const bytes = s=>{ const m = /([\d.,]+)\s*(B|KB|MB|GB)/.exec(s); if(!m) return 0
   await p.click('#libColsReset'); await sleep(200);
   await p.evaluate(()=> document.querySelector('.modal [data-close]').click()); await sleep(300);
   h2 = await heads(p);
-  ok(h2.includes('type') && !h2.includes('file'), 'As at first puts the columns back');
+  ok(!h2.includes('type') && !h2.includes('file') && h2.includes('used'), 'As at first puts the columns back');
   // iPad width
   await p.setViewport({width: 820, height: 1180}); await sleep(600);
   await p.screenshot({path: 'shots/table-820.png'});
@@ -141,6 +149,25 @@ const bytes = s=>{ const m = /([\d.,]+)\s*(B|KB|MB|GB)/.exec(s); if(!m) return 0
   ok(await p.evaluate(()=>{ const c = document.querySelector('#libTableWrap td.c-name'); return Math.abs(c.getBoundingClientRect().left - document.getElementById('libTableWrap').getBoundingClientRect().left) < 2; }), 'scrolled sideways, Name stays in view');
   await p.evaluate(()=>{ document.getElementById('libTableWrap').scrollLeft = 0; });
   ok(await p.evaluate(()=> { const w = document.getElementById('libTableWrap'); return w.getBoundingClientRect().width > innerWidth - 4; }), 'at an iPad\'s width the table has the whole width: ' + await p.evaluate(()=> Math.round(document.getElementById('libTableWrap').getBoundingClientRect().width) + ' of ' + innerWidth));
+  // Arrow keys follow the table's own order (not album by album) and keep
+  // the highlighted row in view; Page Down / Up scroll a page (1.4.110).
+  await p.setViewport({width: 1300, height: 560}); await sleep(400);
+  await p.evaluate(()=> document.querySelector('th.c-name').click()); await sleep(400);
+  const order = await p.evaluate(()=> [...document.querySelectorAll('#libTableBody tr.lt-row')].map(r=> r.dataset.id));
+  await p.evaluate(()=> document.querySelector('#libTableBody tr.lt-row').click()); await sleep(300);
+  let walked = true;
+  for(let k = 1; k < order.length; k++){
+    await p.keyboard.press('ArrowDown'); await sleep(80);
+    const st = await p.evaluate(()=> { const r = document.querySelectorAll('#libTableBody tr.lt-row.selected'); const w = document.getElementById('libTableWrap').getBoundingClientRect(); const b = r[0] && r[0].getBoundingClientRect(); return {n: r.length, id: r[0] && r[0].dataset.id, vis: !!b && b.top >= w.top && b.bottom <= w.bottom + 1}; });
+    if(st.n !== 1 || st.id !== order[k] || !st.vis){ walked = false; console.log('at', k, JSON.stringify(st)); break; }
+  }
+  ok(walked, 'Down arrow walks the table in its own order, the row in view');
+  await p.evaluate(()=> document.getElementById('libTableWrap').scrollTop = 0);
+  await p.keyboard.press('PageDown'); await sleep(200);
+  const pg = await p.evaluate(()=> { const w = document.getElementById('libTableWrap'); return [w.scrollTop, w.scrollHeight - w.clientHeight]; });
+  ok(pg[0] > 0, 'Page Down scrolls: ' + JSON.stringify(pg));
+  await p.keyboard.press('PageUp'); await sleep(200);
+  ok(await p.evaluate(()=> document.getElementById('libTableWrap').scrollTop === 0), 'Page Up scrolls back');
   // Back to Browse
   await p.setViewport({width: 1300, height: 900}); await sleep(300);
   await p.click('.lib-view-toggle button[data-view="browse"]'); await sleep(500);

@@ -18,7 +18,7 @@ Only a few things use the internet:
 
 - the very first visit, to load the app;
 - a shared library, to sync;
-- checking for and installing updates. Click the version number at the top (v1.3…) to check. On a phone, it's under ☰. If there's a newer version, **Update** installs it and reloads 37 Player. The library stays as it is, but playback stops, so don't do it mid-session.
+- updates. 37 Player always opens at once from the copy it keeps, and looks for a newer version on the website meanwhile. When one has arrived, **Update now** appears under the version number at the top (on a phone, an **Update to …** button); click it to switch now, or leave it and the new version opens the next time 37 Player starts. The library stays as it is, but playback stops, so don't update mid-session. Clicking the version number also checks straight away. (On a computer, Ctrl+Shift+R, or Cmd+Shift+R on a Mac, always loads the newest version from the website.)
 
 A copy opened from a file (such as the 37-player.html in your backup folder) doesn't need the internet even the first time — only for updates.
 

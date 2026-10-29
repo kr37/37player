@@ -14,11 +14,20 @@
 // current layout, or a folder (e.g. /live/) under the older one, where the
 // app is that folder's index.html.
 //
-// The app page is network-first: with a connection you get the latest
-// version. But two copies are kept (1.4.091): the last version that started
-// properly on this device ("good") and the newest one fetched ("new"), and
-// the good copy opens instead whenever what the server sends can't be
-// trusted:
+// Since 1.4.104 the app page opens from the copy saved here, at once, with
+// no wait for the server (row 6 of Gen's 28 Oct list): the newest copy
+// fetched ("new") if there is one, else the last one that started properly
+// ("good"). Meanwhile the page is fetched from the server in the background;
+// a different, complete version is saved as "new", and the open page is told
+// ("37-update-ready"), so it can offer Update now. Otherwise it's used at the
+// next start. With nothing saved yet, the server's page as before. A hard
+// reload (Ctrl+Shift+R) skips this worker and gets the server's page; when
+// that version starts it's adopted as the good copy.
+//
+// Before 1.4.104 it was network-first. Two copies are kept (1.4.091): the
+// last version that started properly on this device ("good") and the newest
+// one fetched ("new"), and the good copy opens instead whenever what the
+// server sends can't be trusted:
 //   - no connection, or no answer within NAV_TIMEOUT_MS;
 //   - an error instead of the page (a 404 or 500: the droplet's site
 //     partition unmounted gave "Page not found" at IKRC, 25 Oct 2026);
@@ -96,7 +105,42 @@ async function saveState(st) {
   await (await caches.open(CACHE_NAME)).put(STATE_KEY, new Response(JSON.stringify(st), {headers: {"Content-Type": "application/json"}}));
 }
 
-async function appPage(req) {
+// The saved copy at once, and a look at the server meanwhile.
+async function appPage(req, event) {
+  const cache = await caches.open(CACHE_NAME);
+  const st = await loadState();
+  const fresh = st.fresh && !st.bad.includes(st.fresh.h) ? await cache.match(NEW_KEY) : null;
+  const saved = fresh || await cache.match(GOOD_KEY);
+  if (saved) {
+    if (event) event.waitUntil(refreshFromServer(req.url).catch(() => {}));
+    return saved;
+  }
+  return appPageFromServer(req);
+}
+// Fetches the page; a complete one that isn't already saved (or refused)
+// becomes the "new" copy, and open pages are told. Returns its version, or
+// the version already saved as new when the server has nothing newer.
+async function refreshFromServer(url) {
+  const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), 30000);
+  let text = null;
+  try {
+    const r = await fetch(url, {signal: ctl.signal, credentials: "same-origin", cache: "no-cache"});
+    if (r.ok) text = await r.text();
+  } finally { clearTimeout(timer); }
+  if (text == null || !complete(text)) return null;
+  const cache = await caches.open(CACHE_NAME), st = await loadState();
+  const h = await hashOf(text), v = versionOf(text);
+  if (st.bad.includes(h)) return null;
+  if ((st.good && st.good.h === h) || (st.fresh && st.fresh.h === h)) return v;
+  await cache.put(NEW_KEY, htmlResponse(text));
+  st.fresh = {v, h};
+  await saveState(st);
+  const clients = await self.clients.matchAll({type: "window"});
+  clients.forEach((c) => c.postMessage({type: "37-update-ready", version: v}));
+  return v;
+}
+// Nothing saved yet: the server's page, as before 1.4.104.
+async function appPageFromServer(req) {
   const cache = await caches.open(CACHE_NAME);
   const st = await loadState();
   let good = await cache.match(GOOD_KEY);
@@ -138,9 +182,28 @@ self.addEventListener("message", (event) => {
     if (st.fresh && st.fresh.v === m.version) {
       const r = await cache.match(NEW_KEY);
       if (r) { await cache.put(GOOD_KEY, r); st.good = st.fresh; st.fresh = null; await saveState(st); }
+    } else if (!(st.good && st.good.v === m.version) && !(st.fresh && st.fresh.v === m.version)) {
+      // Started from the server directly (a hard reload): that version,
+      // when it's what the server has, is the good copy from now on.
+      try {
+        const r = await fetch(APP_PATH, {credentials: "same-origin", cache: "no-cache"});
+        const text = r.ok ? await r.text() : null;
+        if (text && complete(text) && versionOf(text) === m.version) {
+          const h = await hashOf(text);
+          if (!st.bad.includes(h)) { await cache.put(GOOD_KEY, htmlResponse(text)); st.good = {v: m.version, h}; if (st.fresh && st.fresh.h === h) st.fresh = null; await saveState(st); }
+        }
+      } catch (err) {}
     }
-    reply({reverted: st.reverted || null});
+    const st2 = await loadState();
+    reply({reverted: st.reverted || null, fresh: st2.fresh && st2.fresh.v !== m.version ? st2.fresh.v : null});
     if (st.reverted) { st.reverted = null; await saveState(st); }
+  })());
+  else if (m.type === "37-fetch-now") event.waitUntil((async () => {
+    // Update now: the newest from the server, saved, before the page reloads into it.
+    let v = null;
+    try { v = await refreshFromServer(APP_PATH); } catch (err) {}
+    const st = await loadState();
+    reply({version: v, fresh: st.fresh ? st.fresh.v : null});
   })());
   else if (m.type === "37-failed") event.waitUntil((async () => {
     // A new version that didn't start: refused, if there's a good one to go back to.
@@ -184,7 +247,7 @@ self.addEventListener("fetch", (event) => {
   const isApp = url.pathname === APP_PATH || (!SCOPE_IS_FILE && url.pathname === FOLDER && req.mode === "navigate");
   const isHelp = url.pathname === HELP_PATH;
   if (!isApp && !isHelp) return; // everything else: not ours
-  if (isApp && req.mode === "navigate") { event.respondWith(appPage(req)); return; }
+  if (isApp && req.mode === "navigate") { event.respondWith(appPage(req, event)); return; }
   // help.json, and the app file fetched by the page itself (update checks
   // use a range request, above): network first, the saved copy if that fails.
   const key = isApp ? GOOD_KEY : HELP_PATH;

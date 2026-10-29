@@ -16,7 +16,8 @@ Keyboard Shortcuts
 <tr><td style="padding:6px 14px 6px 0; vertical-align:top; white-space:nowrap;"><kbd>Ctrl/Cmd</kbd>+<kbd>C</kbd></td><td style="padding:6px 0;">Copies the selected track(s), silence(s), or stop(s) from whichever pane (the playlist being edited, or the one being browsed alongside it) was last clicked into.</td></tr>
 <tr><td style="padding:6px 14px 6px 0; vertical-align:top; white-space:nowrap;"><kbd>Ctrl/Cmd</kbd>+<kbd>V</kbd></td><td style="padding:6px 0;">Pastes the copied items into the playlist currently being edited. Audio files copied in your computer's file manager can be pasted too — into the playlist (before the first selected entry, or at the end), or on 'Library' as an import — in browsers and systems that pass copied files on to web pages; otherwise, drag them in.</td></tr>
 <tr><td style="padding:6px 14px 6px 0; vertical-align:top; white-space:nowrap;"><kbd>Delete</kbd> / <kbd>Backspace</kbd></td><td style="padding:6px 0;">Removes the selected item(s) from the playlist being edited. Only acts there — the browse-only pane alongside it is unaffected.</td></tr>
-<tr><td style="padding:6px 14px 6px 0; vertical-align:top; white-space:nowrap;"><kbd>E</kbd></td><td style="padding:6px 0;">Edits the selected track, silence, or stop, in whichever pane was last clicked into.</td></tr>
+<tr><td style="padding:6px 14px 6px 0; vertical-align:top; white-space:nowrap;"><kbd>E</kbd></td><td style="padding:6px 0;">Edits the selected track, silence, or stop, in whichever pane was last clicked into. With several selected, it edits the one clicked last (marked with an amber edge); Paste goes before that one too.</td></tr>
+<tr><td style="padding:6px 14px 6px 0; vertical-align:top; white-space:nowrap;"><kbd>L</kbd></td><td style="padding:6px 0;">Shows the selected track(s) in 'Library': their artists and albums are selected, so the whole albums show, with the same tracks highlighted.</td></tr>
 </table>
 
 <h3 style="margin:24px 0 8px 0;">Library</h3>
@@ -24,7 +25,8 @@ Keyboard Shortcuts
 <tr><td style="padding:6px 14px 6px 0; vertical-align:top; white-space:nowrap;"><kbd>Space</kbd></td><td style="padding:6px 0;">Toggles play/pause — the previewed track if one is loaded, otherwise the main transport.</td></tr>
 <tr><td style="padding:6px 14px 6px 0; vertical-align:top; white-space:nowrap;"><kbd>Enter</kbd></td><td style="padding:6px 0;">Plays the first selected track.</td></tr>
 <tr><td style="padding:6px 14px 6px 0; vertical-align:top; white-space:nowrap;"><kbd>Delete</kbd> / <kbd>Backspace</kbd></td><td style="padding:6px 0;">Deletes the selected track(s), with confirmation.</td></tr>
-<tr><td style="padding:6px 14px 6px 0; vertical-align:top; white-space:nowrap;"><kbd>↑</kbd> / <kbd>↓</kbd></td><td style="padding:6px 0;">Moves the selection within whichever list — Artists, Albums, or Tracks — was last clicked. Only when exactly one item is selected there.</td></tr>
+<tr><td style="padding:6px 14px 6px 0; vertical-align:top; white-space:nowrap;"><kbd>↑</kbd> / <kbd>↓</kbd></td><td style="padding:6px 0;">Moves the selection within whichever list — Artists, Albums, or Tracks — was last clicked. Only when exactly one item is selected there. In Table, it goes down the table as it's shown, scrolling as it goes.</td></tr>
+<tr><td style="padding:6px 14px 6px 0; vertical-align:top; white-space:nowrap;"><kbd>Page Up</kbd> / <kbd>Page Down</kbd></td><td style="padding:6px 0;">In Table, scrolls the list up or down a page.</td></tr>
 <tr><td style="padding:6px 14px 6px 0; vertical-align:top; white-space:nowrap;"><kbd>E</kbd></td><td style="padding:6px 0;">Edits the selected track(s), or renames the selected artist/album across every track that uses it.</td></tr>
 </table>
 <h3 style="margin:24px 0 8px 0;">The splitter</h3>
