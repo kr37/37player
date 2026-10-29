@@ -51,7 +51,7 @@ A playlist player for live sessions at Kadampa centers: chanting, prayers, manda
 - **Silences and stops.** Silences tick on their own clock. Stops wait for a click.
 - **Only the latest press counts.** If a track's audio must be fetched first (shared library), a press that's still waiting is dropped when another is made. Playback never starts by itself minutes later.
 - **Loudness.** "Even out loudness" and per-track +/- adjustments use `el.volume` when turning down. Turning up needs Web Audio (`createMediaElementSource` into a GainNode). Once an element is routed that way, it stays routed until reload.
-- **The peak limit is evening out's only** (1.4.059, `trackLevel`). Evening out never turns a track up past its loudest peak. A boost set on the track itself (✎, `volumeDb`) goes on top of that, even past the peak: brief clipping is inaudible and small speakers need the level. The details say how far past full volume the peaks go (`over`). Turning down is unchanged.
+- **No peak limit** (1.4.098, `trackLevel`; before, 1.4.059, evening out stopped at the loudest peak). Evening out and a track's own boost (✎, `volumeDb`) both go past the peak if that's what it takes; the details say how far past full volume the peaks go (`over`) and that turning the track down by as much avoids the distortion. Gen: loud enough on small speakers, with a warning, beats too quiet. Album by album is the default kind (`levelKind`, Settings lists it first). Album mode is one gain per album (its combined loudness), and each track's own Volume is added on top in either mode, and also with evening out off.
 
 ### Playing with the screen off (phones and iPads)
 
@@ -214,7 +214,6 @@ The full plan and history are in the project doc `shared-library-sync.md`. In sh
 
 ## Open / later
 
-- **Evening out with a little overshoot:** allow about 1 dB past the loudest peak when peaks are rare. Needs the loudness measurement to record how often samples come near full scale (a percentile), not just the single loudest sample.
 - **Full test run** (done 24 Oct 2026, in the cloud session, with `make-fixtures.sh`'s recordings): everything passes except `ipad.js`, which fails at its first tap the same way on `main`: it was written for an older folder list and needs bringing up to date. Tests with non-ASCII file names need a UTF-8 locale (`LANG=C.UTF-8`). With the converter in `tests/www/ffmpeg` (made by `make-fixtures.sh`), the default format setting converts imported WAVs: a test that needs a WAV kept sets `when: 'untouched'` (split.js, conv6.js, damaged.js).
 - **Not checked on a real device:** the iPad with 1.4.052–1.4.059 (reload keeping the place, the theme before the first paint). Android was checked. The phone top bar was laid out at 412px; on a 360px phone the ? may move to the second row (still two rows).
 - **Undecoded audio in an incognito import (22 Oct):** many "Unable to decode audio data" lines, probably .m4a files or memory pressure. If such files come in marked "can't play" in a normal window, look at them.
