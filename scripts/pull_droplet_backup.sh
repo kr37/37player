@@ -47,7 +47,10 @@ rm -rf "$work"
 if [ -d "$DEST/$today" ]; then mv "$DEST/$today" "$work"; fi
 linkdest=()
 if [ "$links" = yes ] && [ -n "$prev" ]; then linkdest=(--link-dest="$prev"); fi
-rsync -a -e "ssh -o BatchMode=yes -o ConnectTimeout=20" "${linkdest[@]}" "$SRC" "$work/"
+# restore.key (Automatic restore's secret, restore.php) stays on the droplet:
+# only the web server can read it, and losing it just means devices register
+# their details again.
+rsync -a -e "ssh -o BatchMode=yes -o ConnectTimeout=20" --exclude=/restore.key "${linkdest[@]}" "$SRC" "$work/"
 mv "$work" "$DEST/$today"
 count() { find "$1" -type f | wc -l; }
 now_n=$(count "$DEST/$today")

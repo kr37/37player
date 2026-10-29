@@ -65,7 +65,7 @@ Copy `restore.php` next to `37-player.html` too. It needs nothing else: the firs
 curl -s https://37player.com/restore.php?op=status
 ```
 
-`{"available":true}` means it's working; `false` means the web server can't write the data folder. Nothing is stored on the server: each device's details are sealed with that key and kept in a cookie only restore.php can read. A new key (deleting `restore.key`) forgets every device's details. To keep the key elsewhere, set `P37_RESTORE_KEY_FILE` in the vhost.
+`{"available":true}` means it's working; `false` means the web server can't write the data folder. Nothing is stored on the server: each device's details are sealed with that key and kept in a cookie only restore.php can read. A new key (deleting `restore.key`) forgets every device's details. The backup to the T470 (section 6) leaves the key out: only the web server can read it, and it's better kept on the droplet alone. To keep the key elsewhere, set `P37_RESTORE_KEY_FILE` in the vhost.
 
 ## 5. Daily cleanup (cron)
 
