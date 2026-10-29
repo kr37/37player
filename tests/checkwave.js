@@ -44,6 +44,12 @@ const clickText = (p, sel, src) => p.evaluate((sel, src)=>{ const re=new RegExp(
   ok(/Tracks that play but still have no waveform: 1\./.test(msg2), 'says the one it still can\'t draw');
   ok(!/Tracks fixed/.test(msg2), 'and doesn\'t count it as fixed');
   ok(await p.evaluate(()=> window.__check.standIn(window.__dbg.getRoot().library[1].peaks) && !window.__check.standIn(window.__dbg.getRoot().library[0].peaks)), 'the first keeps its real waveform');
+  const item = await p.evaluate(()=> { const li = document.querySelector('.modal .chk-nowave li'); return li ? li.innerText.replace(/\s+/g,' ') : ''; });
+  const name = await p.evaluate(()=> window.__dbg.getRoot().library[1].name);
+  console.log('listed:', item);
+  ok(item.includes(name) && /MP3/.test(item) && /couldn't decode/.test(item), 'names the track, its format and why');
+  await p.evaluate(()=> document.getElementById('chkShowNoWave').click()); await new Promise(r=> setTimeout(r, 800));
+  ok(await p.evaluate(()=> { const l = document.getElementById('libraryScreen'); return !!(l && l.offsetParent !== null) && !document.querySelector('.modal-backdrop.show'); }), 'Show them in the Library goes to the Library');
   await b.close();
   console.log(fails ? fails + ' FAILED' : 'ALL OK');
   process.exit(fails ? 1 : 0);
