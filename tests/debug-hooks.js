@@ -111,3 +111,6 @@ window.__pieces.more = (b, k)=> analyzeInPieces(b, k);
 window.__idbDel = (store, id)=> idbDelete(store, id);
 window.__idbPut = (store, rec)=> idbPut(store, rec);
 window.__pieces.conv = (b)=> analyzeWithConverter(b); window.__pieces.getConverter = ()=> downloadConverter();
+// copying between libraries (copylib.js)
+window.__copyLib = {ie: openImportExportDialog, open: openCopyToLibraryDialog, apply: applyIncomingCopies,
+  audioIn: async (libId, id)=>{ const d = await openDbNamed(libraryDbName(libId)); try{ return !!(await dbOnce(d, "audio", "readonly", os=> os.get(id))); } finally { d.close(); } }};
