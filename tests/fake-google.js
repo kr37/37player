@@ -2,11 +2,15 @@
 // sign-in page and the token endpoint for 37 Player's Google Drive libraries.
 //   const g = require('./fake-google'); const srv = g.start(8872);
 //   srv.files (Map), srv.expireAccess(), srv.revokeRefresh()
+//   Accounts: sign-in picks login_hint, else srv.account; srv.forceAccount
+//   overrides both (someone picking another account). srv.lastAuth: the
+//   sign-in page's query.
 const http = require('http'), url = require('url'), crypto = require('crypto');
 function start(port){
   const files = new Map(); let seq = 0;
   const access = new Set(), refresh = new Set(); let tokSeq = 0;
   const sessions = new Map();
+  const who = new Map(); // code, access or refresh token → account
   const newId = ()=> 'f' + (++seq).toString(36) + crypto.randomBytes(3).toString('hex');
   const now = ()=> new Date(Date.now() + seq).toISOString(); // distinct, increasing
   const meta = (f, fields)=>{ const o = {id: f.id, name: f.name, mimeType: f.mimeType, parents: f.parents, appProperties: f.appProperties, createdTime: f.createdTime, modifiedTime: f.modifiedTime, size: f.data ? String(f.data.length) : undefined, trashed: f.trashed}; return o; };
@@ -32,18 +36,19 @@ function start(port){
     res.setHeader('Access-Control-Expose-Headers', 'Location, Range, Content-Range');
     if(req.method === 'OPTIONS'){ res.writeHead(204); return res.end(); }
     // ---- OAuth (no Authorization)
-    if(p === '/o/oauth2/v2/auth'){ res.writeHead(302, {Location: q.redirect_uri + '?code=CODE' + (++tokSeq) + '&state=' + encodeURIComponent(q.state)}); return res.end(); }
+    if(p === '/o/oauth2/v2/auth'){ srv.lastAuth = q; const code = 'CODE' + (tokSeq + 1); who.set(code, srv.forceAccount || q.login_hint || srv.account); res.writeHead(302, {Location: q.redirect_uri + '?code=CODE' + (++tokSeq) + '&state=' + encodeURIComponent(q.state)}); return res.end(); }
     if(p === '/token' && req.method === 'POST'){
       const form = new URLSearchParams((await body(req)).toString());
       if(form.get('client_secret') !== 'test-secret') return send(res, 401, {error: 'invalid_client'});
-      if(form.get('grant_type') === 'authorization_code'){ const a = 'acc' + (++tokSeq), r = 'ref' + tokSeq; access.add(a); refresh.add(r); return send(res, 200, {access_token: a, refresh_token: r, expires_in: 3600}); }
-      if(form.get('grant_type') === 'refresh_token'){ if(!refresh.has(form.get('refresh_token'))) return send(res, 400, {error: 'invalid_grant'}); const a = 'acc' + (++tokSeq); access.add(a); return send(res, 200, {access_token: a, expires_in: 3600}); }
+      if(form.get('grant_type') === 'authorization_code'){ const acct = who.get(form.get('code')) || srv.account; const a = 'acc' + (++tokSeq), r = 'ref' + tokSeq; access.add(a); refresh.add(r); who.set(a, acct); who.set(r, acct); return send(res, 200, {access_token: a, refresh_token: r, expires_in: 3600}); }
+      if(form.get('grant_type') === 'refresh_token'){ if(!refresh.has(form.get('refresh_token'))) return send(res, 400, {error: 'invalid_grant'}); const a = 'acc' + (++tokSeq); access.add(a); who.set(a, who.get(form.get('refresh_token'))); return send(res, 200, {access_token: a, expires_in: 3600}); }
       return send(res, 400, {error: 'unsupported_grant_type'});
     }
     // ---- Drive (Bearer token)
     const tok = (req.headers.authorization || '').replace(/^Bearer /, '');
     if(!access.has(tok)) return send(res, 401, {error: {code: 401, message: 'Invalid Credentials'}});
     srv.calls.push(req.method + ' ' + p);
+    if(p === '/drive/v3/about' && req.method === 'GET') return send(res, 200, {user: {emailAddress: who.get(tok) || srv.account}});
     if(p === '/drive/v3/files' && req.method === 'GET'){
       let list = [...files.values()].filter(f=> matches(f, q.q));
       if(/name desc/.test(q.orderBy || '')) list.sort((a, b)=> a.name < b.name ? 1 : a.name > b.name ? -1 : 0);
@@ -57,7 +62,7 @@ function start(port){
       const f = files.get(decodeURIComponent(m[1]));
       if(!f) return send(res, 404, {error: {code: 404, message: 'File not found'}});
       if(req.method === 'DELETE'){ files.delete(f.id); return send(res, 204); }
-      if(req.method === 'PATCH'){ const b = JSON.parse((await body(req)).toString() || '{}'); if(b.appProperties) f.appProperties = Object.assign({}, f.appProperties, b.appProperties); if(b.name) f.name = b.name; return send(res, 200, meta(f)); }
+      if(req.method === 'PATCH'){ const b = JSON.parse((await body(req)).toString() || '{}'); if(b.appProperties) f.appProperties = Object.assign({}, f.appProperties, b.appProperties); if(b.name) f.name = b.name; if('trashed' in b) f.trashed = !!b.trashed; return send(res, 200, meta(f)); }
       if(q.alt === 'media'){
         const data = f.data || Buffer.alloc(0), r = (req.headers.range || '').match(/bytes=(\d*)-(\d*)/);
         if(r){ const s = r[1] === '' ? data.length - parseInt(r[2], 10) : parseInt(r[1], 10), e = r[2] === '' || r[1] === '' ? data.length - 1 : Math.min(parseInt(r[2], 10), data.length - 1);
@@ -92,6 +97,7 @@ function start(port){
     if(m && req.method === 'PATCH'){ const f = files.get(decodeURIComponent(m[1])); if(!f) return send(res, 404, {}); f.data = await body(req); return send(res, 200, meta(f)); }
     send(res, 400, {error: 'fake-google: unknown ' + req.method + ' ' + p});
   });
+  srv.account = 'center@example.org'; srv.forceAccount = null; srv.lastAuth = null;
   srv.files = files; srv.calls = []; srv.uploads = [];
   srv.expireAccess = ()=> access.clear();
   srv.revokeRefresh = ()=>{ refresh.clear(); access.clear(); };

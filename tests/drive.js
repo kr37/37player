@@ -2,7 +2,9 @@
 // and the real token.php: signing in (the redirect there and back), making
 // a library folder, a second device joining it, changes both ways, saving
 // at the same moment on two devices, an access token expiring, a revoked
-// sign-in and signing in again, and a big file sent in pieces.
+// sign-in and signing in again, and a big file sent in pieces. The account:
+// remembered on joining, offered first when signing in again, a different
+// one refused with a plain message, and learned by a library that lacks it.
 //   node drive.js        (needs the app server from serve.sh on 8861)
 const puppeteer = require('puppeteer-core'); const sleep = ms=>new Promise(r=>setTimeout(r,ms));
 const fs = require('fs'), path = require('path'), {spawn} = require('child_process');
@@ -61,6 +63,7 @@ const openShared = async p=>{ await p.evaluate(()=>{ window.__dbg.setMode('editi
     await signIn(A, ()=> document.getElementById('sjGo').click());
     let m = await modal(A);
     ok(/37 Player libraries on Google Drive/.test(m) && /no 37 Player libraries/.test(m), 'back from signing in: the Drive chooser, with nothing there yet');
+    ok(/Signed in as center@example\.org/.test(m), 'the chooser names the account signed in');
     await A.screenshot({path: 'shots/drive-chooser-empty.png'});
     ok(await A.evaluate(()=> document.getElementById('drLib').value === 'new' && document.getElementById('drNewBox').style.display !== 'none' && document.getElementById('drGo').textContent === 'Next'), 'nothing there yet: "Make a new library" chosen, its name field showing, one button');
     await A.evaluate(()=>{ document.getElementById('drName').value = 'IKRC'; document.getElementById('drDevice').value = 'Laptop'; document.getElementById('drGo').click(); });
@@ -68,6 +71,7 @@ const openShared = async p=>{ await p.evaluate(()=>{ window.__dbg.setMode('editi
     await sleep(1000); console.log('A:', JSON.stringify(await waitIdle(A)));
     const cfgA = await A.evaluate(()=> window.__dbg.getRoot().settings.sharedLibrary);
     ok(cfgA && cfgA.kind === 'gdrive' && cfgA.folderId && cfgA.refreshToken, 'A is in a Drive library, with a lasting sign-in kept here');
+    ok(cfgA.account === 'center@example.org', 'and remembers which Google account it is: ' + cfgA.account);
     ok(!/#p37auth/.test(await A.evaluate(()=> location.href)), 'the tokens are gone from the address');
     const top = g.files.get(cfgA.folderId);
     ok(top && top.name === '37 Player – IKRC' && top.appProperties.p37 === 'library', 'the folder "37 Player – IKRC" is in Drive, marked as a 37 Player library');
@@ -140,11 +144,29 @@ const openShared = async p=>{ await p.evaluate(()=>{ window.__dbg.setMode('editi
     ok(again && /sign in again/.test(st), 'revoked: Settings says so and offers "Sign in to Google again": ' + st);
     ok(await A.evaluate(()=> document.getElementById('btnBackup').textContent) === 'Sign in to Google', 'and the top bar says "Sign in to Google", not "In sync"');
     await A.screenshot({path: 'shots/drive-signin-again.png'});
+    // someone picks another account in Google's chooser: refused, plainly
+    g.forceAccount = 'someone@gmail.com';
+    await signIn(A, ()=> document.getElementById('shDriveAgain').click());
+    ok(g.lastAuth && g.lastAuth.login_hint === 'center@example.org', 'signing in again offers the library\'s account first (login_hint): ' + (g.lastAuth && g.lastAuth.login_hint));
+    m = await modal(A);
+    ok(/A different Google account/.test(m) && /center@example\.org/.test(m) && /someone@gmail\.com/.test(m), 'another account: it says which the library needs and which was used: ' + m.replace(/\n/g, ' | ').slice(0, 200));
+    await A.screenshot({path: 'shots/drive-wrong-account.png'});
+    await clickText(A, '.modal button', '^Cancel$'); await sleep(500);
+    const afterWrong = await A.evaluate(()=> window.__dbg.getRoot().settings.sharedLibrary);
+    ok(afterWrong.account === 'center@example.org' && afterWrong.refreshToken === cfgA.refreshToken, 'and keeps nothing from that sign-in');
+    g.forceAccount = null;
+    await openShared(A);
     await signIn(A, ()=> document.getElementById('shDriveAgain').click());
     await A.evaluate(()=> document.getElementById('settingsClose')?.click());
     await A.evaluate(()=> window.__dbg3.sync()); await waitIdle(A);
     ok(await A.evaluate(()=> window.__dbg3.status().state) !== 'error', 'signed in again, A syncs');
     ok(await A.evaluate(()=> window.__dbg.getRoot().settings.sharedLibrary.refreshToken) !== cfgA.refreshToken, 'with the new sign-in kept');
+    // a library joined before 1.4.124 learns its account, and Settings names it
+    await A.evaluate(async()=>{ delete window.__dbg.getRoot().settings.sharedLibrary.account; await window.__dbg.saveState(); });
+    await openShared(A);
+    ok(await waitFor(A, ()=> window.__dbg.getRoot().settings.sharedLibrary.account === 'center@example.org', 8000), 'a Drive library without its account learns it');
+    ok(await waitFor(A, ()=> /Stored in the Google Drive of center@example\.org/.test(document.getElementById('shJoined').textContent), 4000), 'Settings says whose Drive it is: ' + await A.evaluate(()=> document.getElementById('shJoined').textContent));
+    await A.evaluate(()=> document.getElementById('settingsClose')?.click());
     // ---- C: Switch libraries → New library → Join a shared library → Google Drive…
     const C = await device(b, 'C'); await settle(C);
     await C.evaluate(()=> window.__lib.newDialog()); await sleep(400);
