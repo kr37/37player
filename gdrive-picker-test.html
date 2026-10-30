@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Google Drive sharing test · 37 Player</title>
+<!--
+  Can several Google accounts share one 37 Player library, each signing in as
+  themselves? (NOTES.md: "one Drive library across several Google accounts
+  (Google's Picker)".) 37 Player asks only for drive.file: it sees what it made
+  and what a person picks in Google's picker. What a picked FOLDER grants is
+  the poorly documented part, and this page finds out:
+    - does picking a folder let 37 Player see files in it that others put there?
+    - can it read them, and write into subfolders another account made?
+    - does the grant last when the hour's access token is renewed?
+    - whose storage do new files use (a shared drive's, or the uploader's)?
+  Signs in through token.php, like 37 Player (so it must be served beside it,
+  on an address in token.php's ALLOWED_ORIGINS). Needs, from the same Google
+  Cloud project: an API key (Picker API enabled) and the project number.
+  Nothing leaves this page except to Google and token.php.
+-->
+<style>
+  :root{ --bg:#181A22; --panel:#20232C; --line:#343947; --text:#EDE9E0; --dim:#9A9689; --amber:#D9A441; --ok:#7FA98B; --bad:#D97A63; }
+  @media (prefers-color-scheme: light){ :root{ --bg:#F6F3EC; --panel:#FFFFFF; --line:#DFD8C3; --text:#2A2620; --dim:#6E6858; --amber:#94591A; --ok:#3D6B4F; --bad:#8F3A26; } }
+  body{ margin:0; background:var(--bg); color:var(--text); font:15px/1.5 -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main{ max-width:780px; margin:0 auto; padding:24px 16px 48px; }
+  h1{ font-family:Georgia, serif; font-weight:normal; font-size:28px; margin:0 0 6px; }
+  h2{ font-size:16px; margin:0 0 8px; }
+  p.dim, .dim{ color:var(--dim); }
+  p.dim{ margin-top:0; }
+  ol{ margin:6px 0 0; padding-left:22px; }
+  .card{ background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:16px; margin:16px 0; }
+  label.f{ display:block; font-size:13px; color:var(--dim); margin:10px 0 4px; }
+  input[type=text], input[type=email]{ width:100%; box-sizing:border-box; padding:8px 10px; border-radius:7px; border:1px solid var(--line); background:var(--bg); color:var(--text); font-size:15px; }
+  button{ font:inherit; padding:8px 14px; border-radius:999px; border:1px solid var(--line); background:transparent; color:var(--text); cursor:pointer; }
+  button.primary{ background:var(--amber); border-color:var(--amber); color:#1d1a16; font-weight:600; }
+  button:disabled{ opacity:.5; cursor:default; }
+  .row{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top:12px; }
+  table{ width:100%; border-collapse:collapse; font-size:14px; }
+  td{ padding:6px 4px; border-bottom:1px solid var(--line); vertical-align:top; }
+  td.s{ width:28px; font-weight:700; }
+  .ok{ color:var(--ok); } .bad{ color:var(--bad); } .run{ color:var(--amber); } .skip{ color:var(--dim); }
+  code{ font-size:13px; }
+  pre{ white-space:pre-wrap; font-size:12.5px; background:var(--bg); padding:10px; border-radius:7px; border:1px solid var(--line); }
+</style>
+</head>
+<body>
+<main>
+  <h1>Google Drive sharing test</h1>
+  <p class="dim">Can people at a Center each sign in to 37 Player as themselves and share one library in a shared drive? This finds out what Google lets 37 Player see after someone picks a folder in Google's picker.</p>
+
+  <div class="card">
+    <h2>How to run it</h2>
+    <ol>
+      <li>In Google Drive, make a folder for the test, ideally inside a <strong>shared drive</strong> that two of your accounts can both use (a folder in My Drive shared with the other account works too). Put any small file into it through Drive's own website, so there's something 37 Player didn't make.</li>
+      <li>Here, sign in as the first account, choose that folder, and run the test, leaving what it makes.</li>
+      <li>In a private window or another browser profile, do the same as the second account. Its run should find the first account's files, read them, and add to them.</li>
+      <li>Copy each report and send them on.</li>
+    </ol>
+  </div>
+
+  <div class="card">
+    <h2>1 · From the Google Cloud project</h2>
+    <label class="f" for="key">API key (with the Google Picker API enabled)</label>
+    <input type="text" id="key" autocomplete="off" placeholder="AIza…">
+    <label class="f" for="app">Project number (the App ID)</label>
+    <input type="text" id="app" autocomplete="off" placeholder="123456789012">
+    <p class="dim" style="margin:8px 0 0;">Both are on the project's dashboard and its Credentials page. They're kept in this browser only.</p>
+  </div>
+
+  <div class="card">
+    <h2>2 · Sign in</h2>
+    <label class="f" for="hint">Account to offer first (optional)</label>
+    <input type="email" id="hint" autocomplete="off" placeholder="sound@example.org">
+    <div class="row"><button class="primary" id="signin">Sign in to Google</button><span id="who" class="dim"></span></div>
+  </div>
+
+  <div class="card">
+    <h2>3 · Choose the folder</h2>
+    <div class="row" style="margin-top:0;"><button class="primary" id="pick" disabled>Choose a folder…</button><span id="picked" class="dim"></span></div>
+  </div>
+
+  <div class="card">
+    <h2>4 · Run</h2>
+    <label style="display:flex; gap:8px; align-items:center;"><input type="checkbox" id="leave" checked> Leave what this test makes, so a second account can find it</label>
+    <div class="row"><button class="primary" id="go" disabled>Run the test</button><button id="copy" disabled>Copy the report</button></div>
+    <table id="steps" style="margin-top:12px;"></table>
+  </div>
+  <pre id="report" hidden></pre>
+</main>
+<script>
+(function(){
+  const here = location.href.split(/[?#]/)[0];
+  const TOKEN_URL = window.__p37TokenUrl || new URL("token.php", here).href;
+  const GOOGLE = window.__p37DriveApi || "https://www.googleapis.com"; // tests point this at a fake Google
+  const API = GOOGLE + "/drive/v3", UPLOAD = GOOGLE + "/upload/drive/v3";
+  const FOLDER = "application/vnd.google-apps.folder";
+  const MARK = "p37pickertest"; // appProperties key on what this test makes
+  const $ = id=> document.getElementById(id);
+  const keep = (id, k)=>{ try{ $(id).value = localStorage.getItem(k) || ""; }catch(e){} $(id).addEventListener("change", ()=>{ try{ localStorage.setItem(k, $(id).value.trim()); }catch(e){} }); };
+  keep("key", "p37pickerKey"); keep("app", "p37pickerApp"); keep("hint", "p37pickerHint");
+
+  // ---- Signing in: token.php, as 37 Player does (a redirect there and back)
+  let auth = null; // {access, refresh, until, email}
+  try{ auth = JSON.parse(sessionStorage.getItem("p37pickerAuth") || "null"); }catch(e){}
+  let folder = null; // {id, name}
+  try{ folder = JSON.parse(sessionStorage.getItem("p37pickerFolder") || "null"); }catch(e){}
+  const m = location.hash.match(/^#(p37auth|p37auth_error)=(.*)$/);
+  if(m){
+    history.replaceState(null, "", here);
+    let nonce = null; try{ nonce = sessionStorage.getItem("p37pickerNonce"); }catch(e){}
+    if(m[1] === "p37auth_error") $("who").textContent = "Sign-in failed: " + decodeURIComponent(m[2]);
+    else{
+      let r = null; try{ r = JSON.parse(decodeURIComponent(m[2])); }catch(e){}
+      if(r && r.nonce === nonce && r.access_token){
+        auth = {access: r.access_token, refresh: r.refresh_token || "", until: Date.now() + (r.expires_in || 3600) * 1000, email: ""};
+        folder = null; try{ sessionStorage.removeItem("p37pickerFolder"); }catch(e){} // a picked folder belongs to the account that picked it
+        saveAuth();
+      } else $("who").textContent = "Sign-in came back without a match; try again.";
+    }
+  }
+  function saveAuth(){ try{ sessionStorage.setItem("p37pickerAuth", JSON.stringify(auth)); }catch(e){} }
+  $("signin").addEventListener("click", ()=>{
+    const a = new Uint8Array(18); crypto.getRandomValues(a);
+    const nonce = [...a].map(x=> "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"[x & 63]).join("");
+    try{ sessionStorage.setItem("p37pickerNonce", nonce); }catch(e){}
+    const hint = $("hint").value.trim();
+    location.href = TOKEN_URL + "?op=start&return=" + encodeURIComponent(here) + "&nonce=" + nonce + (hint ? "&hint=" + encodeURIComponent(hint) : "");
+  });
+  async function renew(){
+    if(!auth.refresh) throw new Error("no refresh token");
+    const r = await fetch(TOKEN_URL, {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({refresh_token: auth.refresh}), cache: "no-store"});
+    const j = await r.json().catch(()=> ({}));
+    if(!r.ok || !j.access_token) throw new Error("token.php " + r.status + " " + (j.error || ""));
+    auth.access = j.access_token; auth.until = Date.now() + (j.expires_in || 3600) * 1000; saveAuth();
+  }
+  async function token(){ if(Date.now() > auth.until - 60000) await renew(); return auth.access; }
+
+  // ---- Drive calls
+  async function drive(path, init){
+    init = Object.assign({}, init || {});
+    init.headers = Object.assign({}, init.headers || {}, {Authorization: "Bearer " + await token()});
+    return fetch(/^https?:/.test(path) ? path : API + path, init);
+  }
+  async function dj(path, init){
+    const r = await drive(path, init);
+    if(!r.ok){ let why = ""; try{ why = ((await r.json()).error || {}).message || ""; }catch(e){} throw new Error(r.status + (why ? " " + why : "")); }
+    return r.status === 204 ? {} : r.json();
+  }
+  const qs = o=> "?" + new URLSearchParams(Object.assign({supportsAllDrives: "true"}, o));
+  async function list(parent){
+    const out = []; let pageToken = "";
+    do{
+      const j = await dj("/files" + qs(Object.assign({q: "'" + parent + "' in parents and trashed=false", includeItemsFromAllDrives: "true", pageSize: "200",
+        fields: "nextPageToken,files(id,name,mimeType,size,appProperties,owners(emailAddress),driveId,createdTime)"}, pageToken ? {pageToken} : {})));
+      out.push(...(j.files || [])); pageToken = j.nextPageToken || "";
+    }while(pageToken && out.length < 1000);
+    return out;
+  }
+  async function makeFolder(name, parent, appProperties){
+    return dj("/files" + qs({fields: "id,name"}), {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({name, mimeType: FOLDER, parents: [parent], appProperties})});
+  }
+  async function upload(name, parent, text, appProperties){
+    const b = "p37" + Math.random().toString(36).slice(2);
+    const body = new Blob(["--" + b + "\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n" + JSON.stringify({name, parents: [parent], appProperties}) +
+      "\r\n--" + b + "\r\nContent-Type: text/plain\r\n\r\n" + text + "\r\n--" + b + "--"]);
+    return dj(UPLOAD + "/files" + qs({uploadType: "multipart", fields: "id,name,size,owners(emailAddress),driveId"}), {method: "POST", headers: {"Content-Type": "multipart/related; boundary=" + b}, body});
+  }
+  async function readStart(id){
+    const r = await drive("/files/" + encodeURIComponent(id) + qs({alt: "media"}), {headers: {Range: "bytes=0-199"}});
+    if(!r.ok && r.status !== 206) throw new Error(String(r.status));
+    return (await r.text()).slice(0, 200);
+  }
+  const whose = f=> f.driveId ? "the shared drive (its storage, not the uploader's)" : (f.owners && f.owners[0] ? f.owners[0].emailAddress + " (their storage)" : "unknown");
+
+  if(auth){
+    $("pick").disabled = false;
+    dj("/about?fields=user(emailAddress),storageQuota").then(j=>{
+      auth.email = j.user.emailAddress; saveAuth();
+      const q = j.storageQuota || {};
+      $("who").textContent = "Signed in as " + auth.email + (q.limit ? " · " + (Math.round((q.limit - q.usage) / 1073741824 * 10) / 10) + " GB free" : "");
+      if(!$("hint").value) $("hint").value = auth.email;
+    }).catch(err=>{ $("who").textContent = "Signed in, but Drive said: " + err.message; });
+  }
+  const showPicked = ()=>{ $("picked").textContent = folder ? "“" + folder.name + "”" : ""; $("go").disabled = !(auth && folder); };
+  showPicked();
+
+  // ---- Google's picker
+  function loadPicker(){
+    return new Promise((res, rej)=>{
+      const go = ()=> window.gapi.load("picker", {callback: res, onerror: ()=> rej(new Error("gapi.load failed"))});
+      if(window.gapi) return go();
+      const s = document.createElement("script"); s.src = "https://apis.google.com/js/api.js"; s.onload = go; s.onerror = ()=> rej(new Error("couldn't load apis.google.com/js/api.js")); document.head.appendChild(s);
+    });
+  }
+  $("pick").addEventListener("click", async ()=>{
+    const key = $("key").value.trim(), app = $("app").value.trim();
+    if(!key){ $("key").focus(); return; } if(!app){ $("app").focus(); return; }
+    try{
+      await loadPicker();
+      const P = google.picker;
+      const drives = new P.DocsView(P.ViewId.FOLDERS).setEnableDrives(true).setIncludeFolders(true).setSelectFolderEnabled(true).setMimeTypes(FOLDER);
+      const all = new P.DocsView(P.ViewId.FOLDERS).setIncludeFolders(true).setSelectFolderEnabled(true).setMimeTypes(FOLDER);
+      new P.PickerBuilder().addView(drives).addView(all)
+        .enableFeature(P.Feature.SUPPORT_DRIVES)
+        .setOAuthToken(await token()).setDeveloperKey(key).setAppId(app).setOrigin(location.origin)
+        .setTitle("Choose the library folder")
+        .setCallback(d=>{
+          if(d[P.Response.ACTION] !== P.Action.PICKED) return;
+          const doc = d[P.Response.DOCUMENTS][0];
+          folder = {id: doc[P.Document.ID], name: doc[P.Document.NAME]};
+          try{ sessionStorage.setItem("p37pickerFolder", JSON.stringify(folder)); }catch(e){}
+          showPicked();
+        }).build().setVisible(true);
+    }catch(err){ $("picked").textContent = "The picker didn't open: " + err.message; }
+  });
+
+  // ---- The test
+  const rows = [];
+  function step(name){
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td class="s run">…</td><td><strong></strong><div class="dim"></div></td>`;
+    tr.querySelector("strong").textContent = name;
+    $("steps").appendChild(tr);
+    const r = {name, ok: null, note: ""}; rows.push(r);
+    const set = (sym, cls, ok, note)=>{ r.ok = ok; r.note = note || ""; tr.querySelector(".s").textContent = sym; tr.querySelector(".s").className = "s " + cls; tr.querySelector(".dim").textContent = r.note; };
+    return {done: (ok, note)=> set(ok ? "✓" : "✗", ok ? "ok" : "bad", ok, note), skip: note=> set("–", "skip", null, note)};
+  }
+  const answers = {};
+  $("go").addEventListener("click", async (e)=>{
+    e.target.disabled = true; $("steps").innerHTML = ""; rows.length = 0; for(const k in answers) delete answers[k];
+    const me = auth.email || "?";
+    const s0 = step("Who this is");
+    try{ const j = await dj("/about?fields=user(emailAddress)"); auth.email = j.user.emailAddress; saveAuth(); s0.done(true, auth.email); }
+    catch(err){ s0.done(false, err.message); return finish(); }
+    const s1 = step("See the chosen folder");
+    let top;
+    try{
+      top = await dj("/files/" + encodeURIComponent(folder.id) + qs({fields: "id,name,driveId,owners(emailAddress),capabilities(canAddChildren,canListChildren,canTrashChildren)"}));
+      let where = top.driveId ? "in a shared drive" : "in " + ((top.owners && top.owners[0] && top.owners[0].emailAddress) || "someone") + "'s My Drive";
+      if(top.driveId) try{ const d = await dj("/drives/" + encodeURIComponent(top.driveId) + "?fields=name"); where = "in the shared drive “" + d.name + "”"; }catch(err){}
+      const c = top.capabilities || {};
+      s1.done(true, "“" + top.name + "” " + where + " · can add to it: " + !!c.canAddChildren + " · can list it: " + !!c.canListChildren);
+      answers.folder = "yes, " + where;
+    }catch(err){ s1.done(false, err.message); answers.folder = "no (" + err.message + ")"; return finish(); }
+    const s2 = step("List what's in it");
+    let kids = [];
+    try{ kids = await list(folder.id); s2.done(true, kids.length + " item(s): " + kids.slice(0, 12).map(f=> f.name).join(", ") + (kids.length > 12 ? ", …" : "")); }
+    catch(err){ s2.done(false, err.message); }
+    const foreign = kids.filter(f=> f.mimeType !== FOLDER && !(f.appProperties && f.appProperties[MARK]));
+    const runs = kids.filter(f=> f.mimeType === FOLDER && f.appProperties && f.appProperties[MARK] === "run");
+    const s3 = step("Read a file 37 Player didn't make (one put there through Drive's website)");
+    if(!foreign.length){ s3.skip("none listed. If you put one there, picking the folder doesn't show its contents to the app; otherwise add one and run again."); answers.others = kids.length ? "not seen (none listed)" : "not tested"; }
+    else try{ const txt = await readStart(foreign[0].id); s3.done(true, "“" + foreign[0].name + "”: " + JSON.stringify(txt.slice(0, 60))); answers.others = "yes: listed " + foreign.length + ", read one"; }
+    catch(err){ s3.done(false, "“" + foreign[0].name + "” is listed but couldn't be read: " + err.message); answers.others = "listed, not readable"; }
+    const s4 = step("Earlier runs of this test (from this or another account)");
+    const otherRuns = runs.filter(f=> f.appProperties.by && f.appProperties.by.toLowerCase() !== me.toLowerCase());
+    s4.done(true, runs.length ? runs.map(f=> "“" + f.name + "” by " + (f.appProperties.by || "?")).join("; ") : "none yet");
+    for(const run of otherRuns.slice(0, 3)){
+      const s5 = step("Inside " + run.appProperties.by + "'s run: list, read, and add a file");
+      try{
+        const inside = await list(run.id);
+        const note = inside.find(f=> f.name === "note.txt");
+        const txt = note ? await readStart(note.id) : "";
+        const mine = await upload("from " + me + ".txt", run.id, "Added by " + me + " at " + new Date().toISOString(), {[MARK]: "file"});
+        s5.done(!!note, inside.length + " file(s); note.txt " + (note ? "read (" + JSON.stringify(txt.slice(0, 40)) + ")" : "not found") + "; added “" + mine.name + "”, kept by " + whose(mine));
+        answers.crossWrite = note ? "yes (read " + run.appProperties.by + "'s file, and wrote into their folder)" : "partly: could write, but didn't see their note.txt";
+      }catch(err){ s5.done(false, err.message); answers.crossWrite = "no (" + err.message + ")"; }
+    }
+    if(!otherRuns.length) answers.crossWrite = "not tested yet (run again as a second account)";
+    const s6 = step("Make this run's folder and file (as 37 Player makes a library's)");
+    let myRun = null;
+    try{
+      myRun = await makeFolder("37 Player picker test – " + me + " – " + new Date().toISOString().slice(0, 16).replace("T", " "), folder.id, {[MARK]: "run", by: me});
+      const f = await upload("note.txt", myRun.id, "Made by " + me + " at " + new Date().toISOString(), {[MARK]: "file"});
+      const back = await readStart(f.id);
+      s6.done(back.startsWith("Made by"), "folder and note.txt made and read back · note.txt is kept by " + whose(f));
+      answers.storage = whose(f);
+    }catch(err){ s6.done(false, err.message); }
+    const s7 = step("Still allowed with a new access token (as after an hour)");
+    try{ await renew(); const again = await list(folder.id); s7.done(true, "renewed through token.php; the folder still lists " + again.length + " item(s)"); answers.renew = "yes"; }
+    catch(err){ s7.done(false, err.message); answers.renew = "no (" + err.message + ")"; }
+    const s8 = step($("leave").checked ? "Leave what this test made" : "Move this test's folders to the bin");
+    if($("leave").checked) s8.skip("left in place for a second account to find");
+    else{
+      let n = 0, failed = [];
+      for(const f of runs.concat(myRun ? [myRun] : [])){
+        try{ await dj("/files/" + encodeURIComponent(f.id) + qs({fields: "id"}), {method: "PATCH", headers: {"Content-Type": "application/json"}, body: JSON.stringify({trashed: true})}); n++; }
+        catch(err){ failed.push(f.name + ": " + err.message); }
+      }
+      s8.done(!failed.length, n + " folder(s) in the bin" + (failed.length ? " · not allowed: " + failed.join("; ") : ""));
+    }
+    finish();
+    function finish(){
+      e.target.disabled = false;
+      const sum = [
+        "Folder seen after picking: " + (answers.folder || "?"),
+        "Files others put there: " + (answers.others || "?"),
+        "Writing into another account's folder: " + (answers.crossWrite || "?"),
+        "After a new access token: " + (answers.renew || "?"),
+        "New files' storage: " + (answers.storage || "?"),
+      ];
+      const rep = ["Google Drive sharing test from " + location.host + ", " + new Date().toLocaleString(), "Account: " + (auth.email || "?"), navigator.userAgent, ""]
+        .concat(sum, [""], rows.map(r=> (r.ok ? "✓ " : r.ok === false ? "✗ " : "– ") + r.name + (r.note ? " — " + r.note : ""))).join("\n");
+      const pre = $("report"); pre.textContent = rep; pre.hidden = false;
+      $("copy").disabled = false;
+      $("copy").onclick = ()=> navigator.clipboard.writeText(rep).catch(()=>{});
+    }
+  });
+})();
+</script>
+</body>
+</html>

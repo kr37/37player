@@ -12,7 +12,8 @@
  * Signing in is a redirect, not a popup (popups are unreliable in an iPad
  * Home Screen app):
  *   GET  ?op=status                     {"configured": true|false}
- *   GET  ?op=start&return=URL&nonce=N   → Google's sign-in page
+ *   GET  ?op=start&return=URL&nonce=N[&hint=EMAIL]   → Google's sign-in page
+ *        (hint: the account a library already uses, offered first)
  *   GET  ?code=…&state=…  or ?error=…&state=…   (Google sends the person here) →
  *        back to URL#p37auth={"nonce","refresh_token","access_token","expires_in"}
  *        or URL#p37auth_error=…
@@ -99,6 +100,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && $op === 'start') {
     $return = $_GET['return'] ?? '';
     $nonce = $_GET['nonce'] ?? '';
     if (!allowed_return($return, $allowed) || !preg_match('/^[A-Za-z0-9_-]{8,64}$/', $nonce)) out(400, ['error' => 'bad_request']);
+    // Signing in again to a library: offer the account it uses first, so a
+    // person with several accounts doesn't pick another by mistake.
+    $hint = $_GET['hint'] ?? '';
+    $hint = (is_string($hint) && strlen($hint) <= 254 && filter_var($hint, FILTER_VALIDATE_EMAIL)) ? $hint : '';
     $state = rtrim(strtr(base64_encode(json_encode(['r' => $return, 'n' => $nonce])), '+/', '-_'), '=');
     header('Location: ' . GOOGLE_AUTH_ENDPOINT . '?' . http_build_query([
         'client_id' => GOOGLE_CLIENT_ID,
@@ -109,7 +114,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && $op === 'start') {
         'prompt' => 'consent',        // …every time, not only the first
         'include_granted_scopes' => 'true',
         'state' => $state,
-    ]), true, 302);
+    ] + ($hint !== '' ? ['login_hint' => $hint] : [])), true, 302);
     exit;
 }
 
