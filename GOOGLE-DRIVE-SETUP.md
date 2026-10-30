@@ -125,8 +125,9 @@ things from the same Google Cloud project:
 
 1. **APIs & Services → Library:** enable the **Google Picker API**.
 2. **APIs & Services → Credentials → Create credentials → API key.** Restrict
-   it: *Application restrictions* → **Websites**, adding
-   `https://37player.com/*` and `https://test.37player.com/*`; *API
+   it: *Application restrictions* → **Websites**, adding both
+   `37player.com/*` and `*.37player.com/*` (the second alone leaves out the
+   bare address); *API
    restrictions* → **Google Picker API** only. An API key isn't a secret
    (it goes into the page), which is why it's restricted.
 3. The **project number** (on the project's dashboard, "Project info"): the
