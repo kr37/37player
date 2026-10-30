@@ -91,6 +91,13 @@ async function copy(p, whatRe, toName){
   await A2.evaluate(()=> window.__undo.undo()); await sleep(600);
   two = await R(A2);
   ok(names(two.tree).join('|') === 'Archive|Archive/Acoustic|Archive/Acoustic (My library)', 'Undo takes the copy back in one step: ' + names(two.tree).join('|'));
+  // a copy that died part-way (page closed): Two takes its files back when it next opens
+  await B.evaluate((lib)=> window.__copyLib.fakeDeadCopy(lib, 'deadtrack'), idTwo);
+  ok(await B.evaluate((lib)=> window.__copyLib.audioIn(lib, 'deadtrack'), idTwo), 'a dead copy\'s file is in Two, with its note');
+  await A2.reload({waitUntil: 'networkidle0'}); await sleep(1500);
+  ok(!(await B.evaluate((lib)=> window.__copyLib.audioIn(lib, 'deadtrack'), idTwo)), 'opening Two takes the dead copy\'s file out');
+  ok(!(await B.evaluate((lib)=> window.__copyLib.partialMark(lib), idTwo)), 'and its note');
+  ok(await B.evaluate((lib)=> window.__copyLib.audioIn(lib, window.__dbg.getRoot().library[0].id), idTwo), 'the copied track\'s audio stays');
   console.log('alerts:', alerts.length ? alerts.join(' || ') : 'none');
   await b.close();
   console.log(fails ? fails + ' FAILED' : 'ALL OK');
