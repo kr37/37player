@@ -113,41 +113,12 @@ sudo chmod 640 /etc/37player/google-config.php
   account. 37 Player remembers which account a library is in (1.4.124):
   signing in again offers that account first, and a sign-in as another
   account is refused with a message saying which one the library needs.
-  Sharing one library between several people's own accounts needs Google's
-  folder picker; not built yet (see 6).
+  Several people's own accounts can't share one library this way (see 6).
 
-## 6. Several people's own accounts: the test page
+## 6. Several people's own accounts: tried, doesn't work
 
-Whether that can work depends on what Google grants when someone picks a
-folder in its picker, which isn't clearly documented.
-`gdrive-picker-test.html` (beside `token.php`) finds out. It needs two
-things from the same Google Cloud project:
-
-1. **APIs & Services → Library:** enable the **Google Picker API**.
-2. **APIs & Services → Credentials → Create credentials → API key.** Restrict
-   it: *Application restrictions* → **Websites**, adding both
-   `37player.com/*` and `*.37player.com/*` (the second alone leaves out the
-   bare address); *API
-   restrictions* → **Google Picker API** only. An API key isn't a secret
-   (it goes into the page), which is why it's restricted.
-3. The **project number** (on the project's dashboard, "Project info"): the
-   picker's App ID, which ties what's picked to 37 Player's sign-in.
-
-No new review: the page still asks only for `drive.file`.
-
-Then:
-
-1. In Drive, make a folder for the test, ideally in a **shared drive** two of
-   your accounts can use, and put any small file into it through Drive's
-   website.
-2. Open `https://test.37player.com/gdrive-picker-test.html`, enter the key
-   and project number, sign in as the first account, **Choose a folder…**,
-   and **Run the test**, leaving what it makes.
-3. In a private window, the same as the second account.
-4. Copy both reports.
-
-The summary at the top of each report answers: is the folder seen after
-picking, are files others put there seen and readable, can one account
-write into folders another made, does access last past a new access token,
-and whose storage new files use (in a shared drive, the shared drive's).
-
+Tested 30 October 2026 with a test page (since removed) and Google's folder
+picker: with `drive.file`, each account sees only what 37 Player made while
+signed in as that account, plus a folder it picked, never what others put
+in it. So a Drive library is one account on every device. NOTES.md has the
+details. The Picker API and its API key aren't needed.
