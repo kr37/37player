@@ -243,13 +243,14 @@ const openShared = async p=>{ await p.evaluate(()=>{ window.__dbg.setMode('editi
     ok(after < before, 'files deleted for good: ' + before + ' → ' + after);
     await C.evaluate(()=> window.__dbg3.sync()); await sleep(800);
     ok(await names(C) === namesBefore && await C.evaluate(()=> window.__dbg3.status().state) !== 'error', 'the library as it is now is untouched, and syncing carries on: ' + await names(C));
-    // Nothing kept (1.4.142): a library made today; versions since are offered even though they're new
+    // 1 hour (1.4.143): a library made today; versions over an hour old are offered
+    g.ageAll(2 * 3600000);
     await C.evaluate(async()=>{ const r = window.__dbg.getRoot(); r.tree[0].name = r.tree[0].name + '!'; await window.__dbg.saveState(); await window.__dbg3.sync(); }); await sleep(800);
     await openShared(C); await sleep(1200);
     await C.evaluate(()=> document.querySelector('#shDriveSpace button').click()); await sleep(300);
-    await C.evaluate(()=> document.querySelector('input[name=tidyDays][value="0"]').click());
+    await C.evaluate(()=> document.querySelector('input[name=tidyDays]:first-of-type').click());
     for(let i = 0; i < 40; i++){ await sleep(250); tidyMsg = await C.evaluate(()=> document.getElementById('tidyMsg')?.textContent || ''); if(/Frees|Nothing to/.test(tidyMsg) && !/Looking/.test(tidyMsg)) break; }
-    ok(/Frees .*: [1-9]\d* earlier versions/.test(tidyMsg), '"Nothing" kept: today\'s earlier versions are offered too (' + tidyMsg + ')');
+    ok(/Frees .*: [1-9]\d* earlier versions/.test(tidyMsg), '1 hour: earlier versions from today are offered too (' + tidyMsg + ')');
     await C.evaluate(()=> document.querySelector('.modal [data-close]')?.click());
   } finally {
     console.log(fails ? fails + ' FAILED' : 'ALL OK');
