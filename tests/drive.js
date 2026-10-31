@@ -243,15 +243,20 @@ const openShared = async p=>{ await p.evaluate(()=>{ window.__dbg.setMode('editi
     ok(after < before, 'files deleted for good: ' + before + ' → ' + after);
     await C.evaluate(()=> window.__dbg3.sync()); await sleep(800);
     ok(await names(C) === namesBefore && await C.evaluate(()=> window.__dbg3.status().state) !== 'error', 'the library as it is now is untouched, and syncing carries on: ' + await names(C));
-    // 1 hour (1.4.143): a library made today; versions over an hour old are offered
-    g.ageAll(2 * 3600000);
+    // Current version only (1.4.146): versions made just now are offered too
     await C.evaluate(async()=>{ const r = window.__dbg.getRoot(); r.tree[0].name = r.tree[0].name + '!'; await window.__dbg.saveState(); await window.__dbg3.sync(); }); await sleep(800);
     await openShared(C); await sleep(1200);
     await C.evaluate(()=> document.querySelector('#shDriveSpace button').click()); await sleep(300);
     await C.evaluate(()=> document.querySelector('input[name=tidyDays]:first-of-type').click());
     for(let i = 0; i < 40; i++){ await sleep(250); tidyMsg = await C.evaluate(()=> document.getElementById('tidyMsg')?.textContent || ''); if(/Frees|Nothing to/.test(tidyMsg) && !/Looking/.test(tidyMsg)) break; }
-    ok(/Frees .*: [1-9]\d* earlier versions/.test(tidyMsg), '1 hour: earlier versions from today are offered too (' + tidyMsg + ')');
-    await C.evaluate(()=> document.querySelector('.modal [data-close]')?.click());
+    ok(/Frees .*: [1-9]\d* earlier versions/.test(tidyMsg), 'Current version only: versions made just now are offered (' + tidyMsg + ')');
+    await C.evaluate(()=> document.getElementById('tidyGo').click());
+    await sleep(300); for(let i = 0; i < 60; i++){ await sleep(250); if(!(await C.evaluate(()=> [...document.querySelectorAll('#globalOperationBar')].some(b=> b.offsetParent && /Deleting/.test(b.textContent))))) break; }
+    await sleep(500); const keptNames = await names(C); await C.evaluate(()=> window.__dbg3.sync()); await sleep(800);
+    ok(await C.evaluate(()=> window.__dbg3.status().state) !== 'error' && (await names(C)) === keptNames, 'after Current version only, the library is untouched and syncing carries on: ' + await names(C));
+    const left = [...g.files.values()].filter(f=> /^\d{6}\.json/.test(f.name)).length;
+    ok(left === 1, 'only the current version is left: ' + left);
+    await C.evaluate(()=> document.querySelectorAll('.modal [data-close], .modal .btn.primary').forEach(b=> b.click()));
   } finally {
     console.log(fails ? fails + ' FAILED' : 'ALL OK');
     await b.close(); g.close(); php.kill();
