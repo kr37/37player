@@ -203,6 +203,19 @@ const openShared = async p=>{ await p.evaluate(()=>{ window.__dbg.setMode('editi
     await sleep(1000); await waitIdle(C);
     ok(await C.evaluate(()=> (window.__dbg.getRoot().settings.sharedLibrary || {}).kind) === 'gdrive' && /From iPad/.test(await names(C)), 'and joins it: ' + await names(C));
     ok(await C.evaluate(()=> window.__lib.list().list.find(l=> l.id === window.__lib.id()).name) === 'IKRC', 'taking its name');
+    // ---- Google Drive full (1.4.140): said so, not "this device is full"; Settings shows how full
+    g.full = true;
+    await C.evaluate(async()=>{ const r = window.__dbg.getRoot(); r.tree[0].name = r.tree[0].name + ' (full)'; await window.__dbg.saveState(); await window.__dbg3.sync(); });
+    await sleep(800);
+    const fullMsg = await C.evaluate(()=> window.__dbg3.status().message || '');
+    ok(/Google Drive of center@example\.org is full/.test(fullMsg) && !/This device is full/.test(fullMsg), 'a full Google Drive is called that, naming the account: ' + fullMsg);
+    await openShared(C); await sleep(800);
+    const space = await C.evaluate(()=> document.getElementById('shDriveSpace')?.innerText || '');
+    ok(/Google Drive: .* of .* used \(100%\)/.test(space) && /Free up space/.test(space), 'Settings → Shared library says how full the Drive is, with Free up space: ' + space);
+    await C.evaluate(()=> document.getElementById('settingsClose')?.click());
+    g.full = false;
+    await C.evaluate(()=> window.__dbg3.sync()); await sleep(800);
+    ok(!/full/.test(await C.evaluate(()=> window.__dbg3.status().message || '')), 'with room again, Sync now carries on: ' + await C.evaluate(()=> window.__dbg3.status().state));
   } finally {
     console.log(fails ? fails + ' FAILED' : 'ALL OK');
     await b.close(); g.close(); php.kill();
