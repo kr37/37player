@@ -25,7 +25,7 @@ const clickText = (p, sel, src) => p.evaluate((sel, src)=>{ const re=new RegExp(
     ok(await p.evaluate(()=> document.getElementById('helpFeedback')?.textContent) === 'Send feedback…', 'Help has Send feedback…');
     await p.evaluate(()=> document.getElementById('helpFeedback').click()); await sleep(300);
     const form = await p.evaluate(()=> document.querySelector('.modal')?.innerText || '');
-    ok(/Gen Rinzin/.test(form) && /playback log \(\d+ lines\)/.test(form), 'the form says who it goes to and lists the playback log: ' + form.split('\n').slice(0, 3).join(' / '));
+    ok(/the author of 37 Player/.test(form) && !/Gen Rinzin/.test(form) && /playback log \(\d+ lines\)/.test(form), 'the form says who it goes to and lists the playback log: ' + form.split('\n').slice(0, 3).join(' / '));
     await p.evaluate(()=> document.getElementById('fbSend').click()); await sleep(200);
     ok(/Write something first/.test(await p.evaluate(()=> document.getElementById('fbMsg').textContent)), 'an empty message isn\'t sent');
     await p.evaluate(()=>{ document.getElementById('fbMessage').value = 'The iPad stopped at a stop\nand then nothing'; document.getElementById('fbReply').value = 'someone@example.org'; document.getElementById('fbSend').click(); });
