@@ -175,5 +175,18 @@ const addPl = (p, name)=> p.evaluate(async(name)=>{ const r = window.__dbg.getRo
   await clickText(B, '.modal button', '^Bring everything$'); await sleep(2500); await waitIdle(B);
   await A.evaluate(()=> window.__dbg3.sync()); await waitIdle(A);
   ok(await names(B) === await names(A), 'B has everything again: ' + await names(B));
+  // ---- a check that never answers (iPad, 1.4.143): Close is there from the start
+  await waitIdle(B);
+  let hold = true; const held = [];
+  await B.setRequestInterception(false); await B.setRequestInterception(true);
+  B.removeAllListeners('request');
+  B.on('request', r=>{ if(hold && /op=state/.test(r.url()) && !/version=/.test(r.url())){ held.push(r); return; } r.url().startsWith('http://localhost') || r.url().startsWith('http://127.0.0.1') ? r.continue() : r.abort(); });
+  await B.evaluate(()=> document.getElementById('btnSharedReview').click()); await sleep(1500);
+  text = await B.evaluate(()=> document.getElementById('reviewPage')?.innerText || '');
+  ok(/Checking/.test(text) && await B.evaluate(()=> !!document.querySelector('#rvFoot button')), 'while checking, the page has a Close button: ' + JSON.stringify(text));
+  await B.evaluate(()=> document.querySelector('#rvFoot button').click()); await sleep(300);
+  ok(await B.evaluate(()=> !document.getElementById('reviewPage') && !document.getElementById('pageScrim')), 'Close takes it away, scrim and all');
+  hold = false; held.forEach(r=> r.continue()); await sleep(1500);
+  ok(await B.evaluate(()=> !document.getElementById('reviewPage')), 'the late answer doesn\'t bring it back');
   console.log(fails ? fails + ' FAILED' : 'ALL OK'); await b.close();
 })();
