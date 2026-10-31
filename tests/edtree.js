@@ -14,7 +14,7 @@ const clickText = (p, sel, src) => p.evaluate((sel, src)=>{ const re=new RegExp(
   for(const x of ['^English$','^No, just start$']){ await clickText(p,'.modal button',x); await sleep(300); }
   let id = null; for(let i = 0; i < 40 && !id; i++){ await sleep(250); id = await p.evaluate(()=> (window.__dbg.getRoot().library[0] || {}).id || null); }
   // Archive / Acoustic, Archive / Sub / Inner, and an empty playlist "Target" at the top
-  await p.evaluate(async()=>{ const r = window.__dbg.getRoot(); const a = r.tree[0]; a.children.push({id: 'subF', kind: 'folder', name: 'Sub', order: 1, children: [{id: 'innerP', kind: 'playlist', name: 'Inner', order: 0, items: []}]}); r.tree.push({id: 'targetP', kind: 'playlist', name: 'Target', order: 1, items: []}); await window.__dbg.saveState(); });
+  await p.evaluate(async()=>{ const r = window.__dbg.getRoot(); const a = r.tree[0]; a.children.push({id: 'subF', kind: 'folder', name: 'Sub', order: 1, children: [{id: 'innerP', kind: 'playlist', name: 'Inner', order: 0, items: []}]}); r.tree.push({id: 'targetP', kind: 'playlist', name: 'Target', order: 1, items: []}); r.library.push({id: 'other1', name: 'Other one', album: 'Acoustic', artist: 'Other', duration: 60, peaks: []}); await window.__dbg.saveState(); });
   // Playing: open Archive and Sub
   await p.reload({waitUntil: 'networkidle0'}); await sleep(800);
   for(const n of ['Sub']){ await clickText(p, '#rail .folder-head', n + '$'); await sleep(250); }
@@ -29,8 +29,10 @@ const clickText = (p, sel, src) => p.evaluate((sel, src)=>{ const re=new RegExp(
   for(const n of ['Archive']){ await clickText(p, '#editorColA .folder-head', n); await sleep(250); }
   ok(await p.evaluate(()=> document.querySelectorAll('#editorColA .tree-line').length) >= 1, 'Edit Playlists column A has the line too');
   await clickText(p, '.editor-tab', '^Albums$'); await sleep(300);
+  const albums = await p.evaluate(()=> [...document.querySelectorAll('#editorColCList .playlist-row')].map(r=> r.querySelector('.pname').firstChild.textContent + '|' + (r.querySelector('.album-artist-line')?.textContent || '')));
+  ok(JSON.stringify(albums) === JSON.stringify(['Acoustic|Other', 'Acoustic|SLC']), 'one album name by two artists is two albums, each with its artist under it: ' + JSON.stringify(albums));
   const dropped = await p.evaluate(()=>{
-    const row = [...document.querySelectorAll('#editorColCList .playlist-row')].find(r=> /Acoustic/.test(r.textContent));
+    const row = [...document.querySelectorAll('#editorColCList .playlist-row')].find(r=> /Acoustic/.test(r.textContent) && /SLC/.test(r.textContent));
     if(!row) return 'no album row';
     const dt = new DataTransfer();
     row.dispatchEvent(new DragEvent('dragstart', {bubbles: true, dataTransfer: dt}));
