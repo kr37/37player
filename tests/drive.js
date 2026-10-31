@@ -66,6 +66,19 @@ const openShared = async p=>{ await p.evaluate(()=>{ window.__dbg.setMode('editi
     ok(/Signed in as center@example\.org/.test(m), 'the chooser names the account signed in');
     await A.screenshot({path: 'shots/drive-chooser-empty.png'});
     ok(await A.evaluate(()=> document.getElementById('drLib').value === 'new' && document.getElementById('drNewBox').style.display !== 'none' && document.getElementById('drGo').textContent === 'Next'), 'nothing there yet: "Make a new library" chosen, its name field showing, one button');
+    // Making one and backing out at the last step: its empty folders go to the trash (1.4.134)
+    await A.evaluate(()=>{ document.getElementById('drName').value = 'Chicken'; document.getElementById('drDevice').value = 'Laptop'; document.getElementById('drGo').click(); });
+    let backedOut = false;
+    for(let k=0; k<40 && !backedOut; k++){ if(await A.evaluate(()=> [...document.querySelectorAll('.modal button')].some(b=> /^Do it now$/.test(b.textContent.trim())))){ backedOut = await clickText(A, '.modal button', '^Cancel$'); } else await sleep(250); }
+    await sleep(1500);
+    const chicken = [...g.files.values()].find(f=> f.name === '37 Player \u2013 Chicken');
+    ok(backedOut && chicken && chicken.trashed, 'a new Drive library whose joining was cancelled goes to the trash: ' + JSON.stringify(chicken && {trashed: chicken.trashed}));
+    ok(!(await A.evaluate(()=> window.__dbg.getRoot().settings.sharedLibrary)), 'and this device isn\'t joined');
+    await openShared(A);
+    await A.evaluate(()=> document.getElementById('shJoinOrCreate').click()); await sleep(300);
+    await A.evaluate(()=>{ document.querySelector('input[name=sjWhere][value=gdrive]').click(); document.getElementById('sjNext').click(); }); await sleep(300);
+    await signIn(A, ()=> document.getElementById('sjGo').click());
+    ok(/no 37 Player libraries/.test(await modal(A)), 'the chooser doesn\'t list it');
     await A.evaluate(()=>{ document.getElementById('drName').value = 'IKRC'; document.getElementById('drDevice').value = 'Laptop'; document.getElementById('drGo').click(); });
     for(let k=0; k<40; k++){ if(await clickText(A, '.modal button', '^Do it now$')) break; await sleep(250); }
     await sleep(1000); console.log('A:', JSON.stringify(await waitIdle(A)));
