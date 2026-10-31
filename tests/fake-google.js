@@ -101,6 +101,8 @@ function start(port){
   });
   srv.account = 'center@example.org'; srv.forceAccount = null; srv.lastAuth = null;
   srv.files = files; srv.calls = []; srv.uploads = [];
+  // Everything made so far, made `ms` earlier (the tidy-up's cutoffs, drive.js).
+  srv.ageAll = (ms)=>{ for(const f of files.values()) f.createdTime = new Date(Date.parse(f.createdTime) - ms).toISOString(); };
   srv.expireAccess = ()=> access.clear();
   srv.revokeRefresh = ()=>{ refresh.clear(); access.clear(); };
   srv.listen(port, '127.0.0.1');

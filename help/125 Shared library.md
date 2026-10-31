@@ -24,6 +24,8 @@ A shared library can also live in a folder of your Google Drive. Choose **Google
 - **Everything else works the same:** what's on each device, reviewing changes, receiving updates only, and leaving.
 - **If Google asks you to sign in again** (the sign-in was removed in your Google account, say, or the device went unused for months), the button at the top says **Sign in to Google**. It takes you to Settings → Shared library and **Sign in to Google again**.
 - **Leave the folder alone in Drive:** don't move or rename what's inside it. Moving the folder itself, or renaming it, is fine.
+- **How full it is:** Settings → Shared library shows how much of the Google Drive is used. If the Drive fills up, 37 Player says so ("The Google Drive of … is full") and tries again every half hour, or at **Sync now**.
+- **Free up space…**, beside it, deletes for good what the library no longer uses: its earlier versions, and audio and pictures that were replaced or belonged to deleted tracks. Choose how far back **History** should still reach (1, 7 or 30 days); it says how much that frees before anything is deleted. The library as it is now is never touched, and files sent within that time are kept, in case another device hasn't finished saving.
 - **Changed your mind?** If you make a new library on Google Drive and back out before anything is saved in it, its empty folders go to your Drive's trash.
 
 ### Day to day

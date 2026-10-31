@@ -216,6 +216,33 @@ const openShared = async p=>{ await p.evaluate(()=>{ window.__dbg.setMode('editi
     g.full = false;
     await C.evaluate(()=> window.__dbg3.sync()); await sleep(800);
     ok(!/full/.test(await C.evaluate(()=> window.__dbg3.status().message || '')), 'with room again, Sync now carries on: ' + await C.evaluate(()=> window.__dbg3.status().state));
+    // ---- Free up space (1.4.141): earlier versions and files no kept version uses, made before the cutoff
+    // C's library: a track's audio replaced, so its old file is used only by older versions.
+    const before = [...g.files.values()].filter(f=> !f.trashed).length;
+    g.ageAll(10 * 86400000); // all of it ten days old
+    await C.evaluate(async()=>{ const r = window.__dbg.getRoot(); r.tree[0].name = r.tree[0].name + ' (tidy)'; await window.__dbg.saveState(); await window.__dbg3.sync(); });
+    await sleep(800);
+    await openShared(C); await sleep(1200);
+    ok(await C.evaluate(()=> !!document.querySelector('#shDriveSpace button')), 'Settings → Shared library has Free up space…');
+    await C.evaluate(()=> document.querySelector('#shDriveSpace button').click());
+    let tidyMsg = '';
+    for(let i = 0; i < 40; i++){ await sleep(250); tidyMsg = await C.evaluate(()=> document.getElementById('tidyMsg')?.textContent || ''); if(/Frees|Nothing/.test(tidyMsg)) break; }
+    const m7 = /Frees .*: (\d+) earlier versions, (\d+) files/.exec(tidyMsg);
+    ok(m7 && +m7[1] > 0, 'keeping 7 days: the versions older than that are offered (' + tidyMsg + ')');
+    await C.evaluate(()=>{ document.querySelector('input[name=tidyDays][value="30"]').click(); }); 
+    for(let i = 0; i < 40; i++){ await sleep(250); tidyMsg = await C.evaluate(()=> document.getElementById('tidyMsg')?.textContent || ''); if(/Frees|Nothing/.test(tidyMsg) && !/Looking/.test(tidyMsg)) break; }
+    ok(/Nothing to free/.test(tidyMsg), 'keeping 30 days: nothing (' + tidyMsg + ')');
+    await C.evaluate(()=>{ document.querySelector('input[name=tidyDays][value="1"]').click(); });
+    for(let i = 0; i < 40; i++){ await sleep(250); tidyMsg = await C.evaluate(()=> document.getElementById('tidyMsg')?.textContent || ''); if(/Frees|Nothing/.test(tidyMsg) && !/Looking/.test(tidyMsg)) break; }
+    const namesBefore = await names(C);
+    await C.evaluate(()=> document.getElementById('tidyGo').click());
+    for(let i = 0; i < 40; i++){ await sleep(250); if(!(await C.evaluate(()=> [...document.querySelectorAll('#globalOperationBar')].some(b=> b.offsetParent && /Deleting/.test(b.textContent))))) break; }
+    await sleep(500);
+    const states = [...g.files.values()].filter(f=> f.name.match(/^\d{6}\.json/) && g.files.has(f.id));
+    const after = [...g.files.values()].length;
+    ok(after < before, 'files deleted for good: ' + before + ' → ' + after);
+    await C.evaluate(()=> window.__dbg3.sync()); await sleep(800);
+    ok(await names(C) === namesBefore && await C.evaluate(()=> window.__dbg3.status().state) !== 'error', 'the library as it is now is untouched, and syncing carries on: ' + await names(C));
   } finally {
     console.log(fails ? fails + ' FAILED' : 'ALL OK');
     await b.close(); g.close(); php.kill();
