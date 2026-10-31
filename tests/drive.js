@@ -83,6 +83,9 @@ const openShared = async p=>{ await p.evaluate(()=>{ window.__dbg.setMode('editi
     for(let k=0; k<40; k++){ if(await clickText(A, '.modal button', '^Do it now$')) break; await sleep(250); }
     await sleep(1000); console.log('A:', JSON.stringify(await waitIdle(A)));
     const cfgA = await A.evaluate(()=> window.__dbg.getRoot().settings.sharedLibrary);
+    await A.evaluate(()=> window.__logs.send(true));
+    const logsDir = [...g.files.values()].find(f=> f.name === 'logs' && f.mimeType === 'application/vnd.google-apps.folder');
+    ok(logsDir && [...g.files.values()].some(f=> f.parents.includes(logsDir.id) && /^Laptop-[0-9a-f]{6}-sync\.txt$/.test(f.name)), 'this device\'s logs go into a "logs" folder of the Drive library (1.4.137)');
     ok(cfgA && cfgA.kind === 'gdrive' && cfgA.folderId && cfgA.refreshToken, 'A is in a Drive library, with a lasting sign-in kept here');
     ok(cfgA.account === 'center@example.org', 'and remembers which Google account it is: ' + cfgA.account);
     ok(!/#p37auth/.test(await A.evaluate(()=> location.href)), 'the tokens are gone from the address');

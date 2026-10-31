@@ -117,3 +117,5 @@ window.__copyLib = {ie: openImportExportDialog, open: openCopyToLibraryDialog, a
 window.__copyLib.fakeDeadCopy = async (libId, id)=>{ const d = await openDbNamed(libraryDbName(libId)); try{ await dbOnce(d, "audio", "readwrite", os=> os.put({id, blob: new Blob(["x"])})); await dbOnce(d, "state", "readwrite", os=> os.put({key: COPY_PARTIAL_KEY, value: {ids: [id], at: Date.now()}})); } finally { d.close(); } };
 window.__copyLib.partialMark = async (libId)=>{ const d = await openDbNamed(libraryDbName(libId)); try{ return !!(await dbOnce(d, "state", "readonly", os=> os.get(COPY_PARTIAL_KEY))); } finally { d.close(); } };
 window.__splitter.mark = (t)=> splitAddMark(t); window.__splitter.playPiece = (k)=> splitPlayPiece(k);
+// devices' logs in the shared library (sharedlogs.js)
+window.__logs = {send: (force)=> sharedSendLogs(force), others: sharedOtherLogs, stem: logFileStem, feedback: openFeedbackDialog};

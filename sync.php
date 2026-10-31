@@ -1,7 +1,7 @@
 <?php
 /*
  * 37 Player — shared library sync server.
- * Version 1.4.084 (the 37 Player version this file was last changed for;
+ * Version 1.4.137 (the 37 Player version this file was last changed for;
  * keep it the same as SYNC_VERSION below).
  *
  * One file, plain PHP (7.4+), no database. It keeps each shared library in
@@ -16,6 +16,7 @@
  *     audio/<id>.<rev>     audio files, never overwritten
  *     artwork/<id>.<rev>   artwork files, never overwritten
  *     peaks/<id>.<rev>     waveform data for each audio file (small JSON)
+ *     logs/<device>-<kind>.txt  each device's latest playback and sync log
  *
  * Every request carries the library's join code in an "X-Library" header
  * (URL-encoded): the library's name, then its passphrase — "ikrc Death comes
@@ -38,6 +39,9 @@
  *   GET  op=history               recent versions: number, time, size, and
  *                                 who saved each and what it changed ("by",
  *                                 "what"), when the device said so
+ *   GET  op=logs                  devices' logs kept here: [{name, size, time}]
+ *   GET  op=log&name=X            one of them (text)
+ *   PUT  op=log&name=X            a device's log, replacing its last copy (1 MB at most)
  *
  * Command line (as the web server's user, e.g. sudo -u www-data php sync.php …):
  *   php sync.php version                            which version this file is
@@ -58,12 +62,13 @@ if (!defined('DATA_DIR')) define('DATA_DIR', getenv('SYNC37_DATA_DIR') ?: '/var/
 if (!defined('KEEP_DAYS')) define('KEEP_DAYS', 30);       // every version from the last 30 days is kept
 if (!defined('KEEP_VERSIONS')) define('KEEP_VERSIONS', 300); // and at least the last 300, however old
 if (!defined('MAX_DOC_BYTES')) define('MAX_DOC_BYTES', 50 * 1024 * 1024);
+if (!defined('MAX_LOG_BYTES')) define('MAX_LOG_BYTES', 1024 * 1024);
 
 const KINDS = ['audio', 'artwork', 'peaks'];
 // The 37 Player version this file was last changed for (it doesn't change
 // with every release of the app, only when this file does). Shown in the
 // app's Settings → Shared library, and by `php sync.php version`.
-const SYNC_VERSION = '1.4.084';
+const SYNC_VERSION = '1.4.137';
 
 if (PHP_SAPI === 'cli') { exit(cli($argv)); }
 
@@ -206,6 +211,36 @@ if ($op === 'history' && $method === 'GET') {
     }
     usort($rows, fn($a, $b) => $b['version'] - $a['version']);
     json_out(array_slice($rows, 0, 500));
+}
+
+// Devices' logs (1.4.137): each device keeps a short copy of its playback
+// and sync logs here, so one device's log can be read on another (Send
+// feedback lists them). Named by the device: "<device>-<kind>.txt".
+if ($op === 'logs' && $method === 'GET') {
+    $out = [];
+    foreach (scandir("$dir/logs") ?: [] as $n) {
+        if ($n[0] === '.' || !preg_match('/\.txt$/', $n)) continue;
+        $out[] = ['name' => $n, 'size' => filesize("$dir/logs/$n"), 'time' => filemtime("$dir/logs/$n")];
+    }
+    json_out($out);
+}
+if ($op === 'log') {
+    $name = $_GET['name'] ?? '';
+    if (!is_string($name) || !preg_match('/^[A-Za-z0-9._-]{1,100}\.txt$/', $name)) fail(400, 'Bad log name');
+    $f = "$dir/logs/$name";
+    if ($method === 'PUT') {
+        $body = file_get_contents('php://input', false, null, 0, MAX_LOG_BYTES + 1);
+        if ($body === false || strlen($body) > MAX_LOG_BYTES) fail(413, 'Log too big');
+        if (!is_dir("$dir/logs")) @mkdir("$dir/logs", 0770, true);
+        $tmp = "$f." . bin2hex(random_bytes(4));
+        file_put_contents($tmp, $body);
+        rename($tmp, $f);
+        json_out(['stored' => true]);
+    }
+    if (!is_file($f)) fail(404, 'No such log');
+    header('Content-Type: text/plain; charset=utf-8');
+    readfile($f);
+    exit;
 }
 
 fail(400, 'Unknown request');
@@ -357,6 +392,9 @@ function cleanup_library($dir, $days) {
         if ($n[0] === '.') continue;
         $f = "$dir/$k/$n";
         if (!isset($used[$k][$n]) && filemtime($f) < $cutoff) { unlink($f); $removed++; }
+    }
+    foreach (scandir("$dir/logs") ?: [] as $n) { // a device's log not sent for 90 days
+        if ($n[0] !== '.' && filemtime("$dir/logs/$n") < time() - 90 * 86400) unlink("$dir/logs/$n");
     }
     echo basename($dir) . ': kept ' . count($kept) . ' versions, removed ' . $removed . " unused files\n";
 }
