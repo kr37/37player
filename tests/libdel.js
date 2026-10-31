@@ -56,7 +56,7 @@ async function reloading(p, fn){ const nav = p.waitForNavigation({waitUntil:'net
   const list = (folder)=> p.evaluate(async (folder)=>{ const dir = await (await navigator.storage.getDirectory()).getDirectoryHandle(folder); const out = []; for await (const [n] of dir.entries()) out.push(n); return out.sort().join(','); }, folder);
   const openDelete = async ()=>{
     await p.evaluate(()=>{ window.__dbg.setMode('editing'); document.getElementById('btnSettings').click(); }); await sleep(400);
-    await p.evaluate(()=> [...document.querySelectorAll('#settingsNav .settings-nav-item')].find(e=> /Switch libraries/.test(e.textContent)).click()); await sleep(400);
+    await p.evaluate(()=> { [...document.querySelectorAll('#settingsNav .settings-nav-item')].find(e=> e.textContent.trim() === 'Library').click(); const d = document.getElementById('libsMore'); if(d) d.open = true; }); await sleep(400);
     await p.evaluate(()=> document.querySelector('.library-row:not(.current) [data-act=delete]').click()); await sleep(600);
   };
   await openDelete();

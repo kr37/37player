@@ -3,6 +3,14 @@
 // track's own volume always shown in bold, and Library's albums with what
 // By album does to them.
 //   node playloud.js        (needs only the http server of serve.sh)
+// The starter track is what these tests play with: put in place for this
+// test only (other tests, share.js for one, expect a library without it).
+const fs = require('fs'), path = require('path');
+const STARTER = path.join(__dirname, 'www', 'libraries', 'starter.mp3');
+fs.mkdirSync(path.dirname(STARTER), {recursive: true});
+const hadStarter = fs.existsSync(STARTER);
+if(!hadStarter) fs.copyFileSync(path.join(__dirname, 'fixtures', 'starter.mp3'), STARTER);
+process.on('exit', ()=>{ if(!hadStarter) try{ fs.unlinkSync(STARTER); }catch(e){} });
 const puppeteer = require('puppeteer-core'); const sleep = ms=>new Promise(r=>setTimeout(r,ms));
 const APP = 'http://localhost:8861/37-player.html';
 let fails = 0; const ok=(c,m)=>{ console.log((c?'ok   ':'FAIL ')+m); if(!c) fails++; };
