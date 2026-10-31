@@ -140,6 +140,8 @@ const libCount = p=> p.evaluate(()=> window.__dbg.getRoot().library.length);
   await importOne(p); await sleep(800);
   m = await modal(p);
   ok(/Heads up!/.test(m) && !/Home Screen/.test(m) && /back up by hand/.test(m), 'iPad Home Screen app: no Home Screen step, just joining or backing up');
+  ok(/Good job installing 37 Player/.test(m) && /iPads and iPhones/.test(m) && !/Do these first/.test(m) && /Join/.test(m), 'and it says well done, why a shared library is the easy way, and no "Do these first"');
+  await p.screenshot({path: 'shots/welcome-headsup-ipad-home.png'});
   await p.close();
 
   // ---- Android Chrome, with an install prompt

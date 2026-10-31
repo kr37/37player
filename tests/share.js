@@ -80,10 +80,10 @@ async function open(b, name){
   ok(await B.evaluate(()=> !!document.getElementById('shStatus')), 'and it opens Settings → Shared library');
   ok(await B.evaluate(()=> !!document.querySelector(".sh-status-row #shSyncNow")), 'Sync now sits beside Last checked');
   const nav = await B.evaluate(()=> [...document.querySelectorAll('#settingsNav .settings-nav-item')].map(e=> e.textContent).join(' | '));
-  ok(nav === 'Library info | Shared library | Switch libraries | Playback | Library cleanup | File format | Backups | PIN | All settings | About', 'Settings in the new order: ' + nav);
-  await B.evaluate(()=> [...document.querySelectorAll('#settingsNav .settings-nav-item')].find(e=> e.textContent === 'Library info').click()); await sleep(600);
-  const info = await B.evaluate(()=> ({lib: document.getElementById('infoLibrary')?.textContent, sh: document.getElementById('infoShared')?.textContent}));
-  ok(info.lib && /“Test”, on 127\.0\.0\.1:8870/.test(info.sh || ''), 'Library info names the library and where it\'s shared: ' + JSON.stringify(info));
+  ok(nav === 'Library | Shared library | Playback | Library cleanup | File format | Backups | PIN | All settings | About', 'Settings in the new order: ' + nav);
+  await B.evaluate(()=> [...document.querySelectorAll('#settingsNav .settings-nav-item')].find(e=> e.textContent === 'Library').click()); await sleep(600);
+  const info = await B.evaluate(()=> ({lib: document.getElementById('infoThis')?.textContent, sh: document.getElementById('infoSync')?.textContent}));
+  ok(/This library: “.+”/.test(info.lib || '') && /“Test” on 127\.0\.0\.1:8870/.test(info.sh || ''), 'Settings → Library names the library and where it syncs: ' + JSON.stringify(info));
   await B.evaluate(()=> document.getElementById('settingsClose').click()); await sleep(300);
   // an edit on B: no backup reminder while it's on its way
   await B.evaluate(async()=>{ const r = window.__dbg.getRoot(); r.tree[0].name = 'Morning prayers'; await window.__dbg.saveState(); });

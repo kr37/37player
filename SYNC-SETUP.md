@@ -160,3 +160,42 @@ It writes `ffmpeg/` beside `37-player.html` (about 32 MB, not in git), with an
 it), the `.wasm` type and compression. If the vhost doesn't allow `.htaccess`
 files, put the same lines in it, inside a `<Directory>` for that `ffmpeg/`
 folder. Do this on both sites (player and playertest).
+
+## Feedback (feedback.php)
+
+Settings → About and Help have **Send feedback…**. The message, with the
+logs the person leaves ticked, is posted to `feedback.php` beside
+`37-player.html`. It mails it to `rinzin@kr37.net` only (the person's own
+address, if given, goes in Reply-To), keeps a copy in
+`/var/lib/37player/feedback/<date>-<id>/`, and, once a token is set up,
+files it in a private GitHub repository.
+
+1. **Mail.** `feedback.php` uses PHP's `mail()`, which hands the message to
+   Postfix's `sendmail`. Check it gets out:
+
+   ```
+   echo "test" | mail -s "37-Player: test" rinzin@kr37.net   # or: sendmail rinzin@kr37.net
+   sudo tail /var/log/mail.log
+   ```
+
+   It's sent from `feedback@37player.com`. Without SPF (and ideally DKIM)
+   for 37player.com, it may land in spam: add `v=spf1 ip4:<droplet IP> ~all`
+   as a TXT record at Namecheap, or set `FEEDBACK_FROM` in
+   `sync-config.php` to an address the droplet may already send for.
+
+2. **GitHub (optional).** Make a private repository `kr37/37player-reports`,
+   then a fine-grained token (GitHub → Settings → Developer settings →
+   Fine-grained tokens) with access to **only that repository**, permission
+   **Contents: Read and write**. Put it on the droplet, outside the web root:
+
+   ```
+   sudo sh -c 'cat > /var/lib/37player/feedback-github-token'   # paste the token, Enter, Ctrl-D
+   sudo chown www-data:www-data /var/lib/37player/feedback-github-token
+   sudo chmod 600 /var/lib/37player/feedback-github-token
+   ```
+
+   Each message then also appears as `reports/<date>-<id>/` in that
+   repository. A folder with `NOT-MAILED` or `NOT-FILED` in it on the
+   droplet says which didn't work.
+
+Limits: 6 messages an hour and 20 a day from one address; 3 MB a message.

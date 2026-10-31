@@ -48,7 +48,9 @@ function start(port){
     const tok = (req.headers.authorization || '').replace(/^Bearer /, '');
     if(!access.has(tok)) return send(res, 401, {error: {code: 401, message: 'Invalid Credentials'}});
     srv.calls.push(req.method + ' ' + p);
-    if(p === '/drive/v3/about' && req.method === 'GET') return send(res, 200, {user: {emailAddress: who.get(tok) || srv.account}});
+    if(p === '/drive/v3/about' && req.method === 'GET') return send(res, 200, {user: {emailAddress: who.get(tok) || srv.account}, storageQuota: {limit: String(srv.limit || 15e9), usage: String(srv.full ? (srv.limit || 15e9) : 5e9)}});
+    // A full Drive (srv.full): anything that would add or grow a file is refused, as Google does.
+    if(srv.full && (req.method === 'POST' || req.method === 'PUT' || (req.method === 'PATCH' && /^\/upload\//.test(p)))) return send(res, 403, {error: {code: 403, message: "The user's Drive storage quota has been exceeded.", errors: [{reason: 'storageQuotaExceeded', domain: 'usageLimits'}]}});
     if(p === '/drive/v3/files' && req.method === 'GET'){
       let list = [...files.values()].filter(f=> matches(f, q.q));
       if(/name desc/.test(q.orderBy || '')) list.sort((a, b)=> a.name < b.name ? 1 : a.name > b.name ? -1 : 0);
@@ -99,6 +101,8 @@ function start(port){
   });
   srv.account = 'center@example.org'; srv.forceAccount = null; srv.lastAuth = null;
   srv.files = files; srv.calls = []; srv.uploads = [];
+  // Everything made so far, made `ms` earlier (the tidy-up's cutoffs, drive.js).
+  srv.ageAll = (ms)=>{ for(const f of files.values()) f.createdTime = new Date(Date.parse(f.createdTime) - ms).toISOString(); };
   srv.expireAccess = ()=> access.clear();
   srv.revokeRefresh = ()=>{ refresh.clear(); access.clear(); };
   srv.listen(port, '127.0.0.1');

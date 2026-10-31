@@ -4,7 +4,7 @@ A shared library keeps the same tracks and playlists on several devices: the roo
 
 ### Joining
 
-Start from the welcome when 37 Player first opens (**Yes, join a shared library**), from Settings → **Shared library** (**Join or create a shared library…**), or from Switch libraries → **New library**. All three ask the same two things. First, where the shared library is kept: **I have a join code** (on 37player.com or another server) or **Google Drive**. Then only what that needs. For a join code, that's the code from whoever runs your shared library and a name for this device (for example "Temple iPad"); then choose **Next**. Every step before anything happens says **Next**; the last one, which says how much will travel, says **Do it now**. A new library on a server is made by whoever runs the server, so from 37 Player you can only join one there.
+Start from the welcome when 37 Player first opens (**Yes, join a shared library**), from Settings → **Shared library** (**Join or create a shared library…**), or from Settings → **Library** → **All libraries** → **New library**. All three ask the same two things. First, where the shared library is kept: **I have a join code** (on 37player.com or another server) or **Google Drive**. Then only what that needs. For a join code, that's the code from whoever runs your shared library and a name for this device (for example "Temple iPad"); then choose **Next**. Every step before anything happens says **Next**; the last one, which says how much will travel, says **Do it now**. A new library on a server is made by whoever runs the server, so from 37 Player you can only join one there.
 
 To bring only some of the shared library to this device, choose **Only what I choose** at the step after the code. Nothing moves before then: that step says how much would travel either way, with the numbers for this device and the shared library, and you choose there. Partial sync can also be turned on or off later. See 'Partial sync' below.
 
@@ -24,6 +24,9 @@ A shared library can also live in a folder of your Google Drive. Choose **Google
 - **Everything else works the same:** what's on each device, reviewing changes, receiving updates only, and leaving.
 - **If Google asks you to sign in again** (the sign-in was removed in your Google account, say, or the device went unused for months), the button at the top says **Sign in to Google**. It takes you to Settings → Shared library and **Sign in to Google again**.
 - **Leave the folder alone in Drive:** don't move or rename what's inside it. Moving the folder itself, or renaming it, is fine.
+- **How full it is:** Settings → Shared library shows how much of the Google Drive is used. If the Drive fills up, 37 Player says so ("The Google Drive of … is full") and tries again every half hour, or at **Sync now**.
+- **Free up space…**, beside it, deletes for good what the library no longer uses: its earlier versions, and audio and pictures that were replaced or belonged to deleted tracks. Choose how far back **History** should still reach (1, 7 or 30 days); it says how much that frees before anything is deleted. The library as it is now is never touched, and files sent within that time are kept, in case another device hasn't finished saving.
+- **Changed your mind?** If you make a new library on Google Drive and back out before anything is saved in it, its empty folders go to your Drive's trash.
 
 ### Day to day
 
@@ -121,5 +124,7 @@ For a player nobody edits on, such as a meditation room's laptop, turn on **Rece
 ### If something goes wrong
 
 - **Sync log:** Settings → Shared library → **Sync log** lists what syncing did recently: each file sent or received, what it saved, and any errors, with a line every 10 minutes while 37 Player is open. It's kept on this device even if 37 Player closes or crashes, so a gap in those lines shows when it stopped. **Copy all** puts the whole log on the clipboard, and **Share…** sends it as a text file (on a computer without sharing, **Save as a file** saves it): both start with this device's version, browser and storage, so whoever helps you can tell where it came from. That's easier and safer than selecting lines by hand, which can leave an older copy on the clipboard.
+- **Each device's logs are kept in the shared library too,** sent after syncing, at most every half hour (and not in the first two minutes after opening), so a problem on one device (the iPad, say) can be looked into from another. **Send feedback…** (in Help, and in Settings → About) lists them.
+- **Send feedback…** sends a message to the author of 37 Player, with this device's logs and, from a shared library, the other devices' recent ones, each with a box to leave it out. An email address is optional, for a reply.
 - **Going round in circles:** if this device saves to the shared library 30 times in 2 minutes, syncing stops by itself and says so. **Sync now** starts it again.
 - **Opening without syncing:** add `?nosync` to the end of 37 Player's address (for example `https://37player.com/37-player.html?nosync`). Sharing stays off for that session, and Settings lets you leave the shared library.

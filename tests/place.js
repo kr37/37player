@@ -22,21 +22,21 @@ const where = p=> p.evaluate(()=> ({mode: document.querySelector('.mode-tab.acti
   const early = await p.evaluate(()=> [window.__earlyClass, window.__earlyBg]);
   ok(/theme-light/.test(early[0]) && early[1] === 'rgb(246, 243, 236)', 'light theme is on the page before the app starts (' + early.join(' / ') + ')');
 
-  // Settings → Switch libraries, then a refresh
+  // Settings → Library (all libraries open), then a refresh
   await p.evaluate(()=>{ window.__dbg.setMode('editing'); document.getElementById('btnSettings').click(); }); await sleep(400);
-  await p.evaluate(()=> [...document.querySelectorAll('#settingsNav .settings-nav-item')].find(e=> /Switch libraries/.test(e.textContent)).click()); await sleep(300);
+  await p.evaluate(()=> { [...document.querySelectorAll('#settingsNav .settings-nav-item')].find(e=> e.textContent.trim() === 'Library').click(); const d = document.getElementById('libsMore'); if(d) d.open = true; }); await sleep(300);
   await reloading(p, ()=> location.reload());
   let w = await where(p);
-  ok(w.settings === 'Switch libraries', 'refresh: back in Settings → Switch libraries (' + JSON.stringify(w) + ')');
+  ok(w.settings === 'Library', 'refresh: back in Settings → Library (' + JSON.stringify(w) + ')');
 
   // ... and after switching to another library from there
   await reloading(p, ()=> window.__lib.create('Second'));
   await settle(p);
   await p.evaluate(()=>{ window.__dbg.setMode('editing'); document.getElementById('btnSettings').click(); }); await sleep(400);
-  await p.evaluate(()=> [...document.querySelectorAll('#settingsNav .settings-nav-item')].find(e=> /Switch libraries/.test(e.textContent)).click()); await sleep(300);
+  await p.evaluate(()=> { [...document.querySelectorAll('#settingsNav .settings-nav-item')].find(e=> e.textContent.trim() === 'Library').click(); const d = document.getElementById('libsMore'); if(d) d.open = true; }); await sleep(300);
   await reloading(p, ()=> [...document.querySelectorAll('.library-row:not(.current) [data-act=open]')][0].click());
   w = await where(p);
-  ok(w.settings === 'Switch libraries', 'library switch: back in Settings → Switch libraries (' + JSON.stringify(w) + ')');
+  ok(w.settings === 'Library', 'library switch: back in Settings → Library (' + JSON.stringify(w) + ')');
   ok(/theme-light/.test(await p.evaluate(()=> window.__earlyClass)), 'and no dark flash on the switch either');
 
   // Help, from Playing

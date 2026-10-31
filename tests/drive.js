@@ -66,10 +66,26 @@ const openShared = async p=>{ await p.evaluate(()=>{ window.__dbg.setMode('editi
     ok(/Signed in as center@example\.org/.test(m), 'the chooser names the account signed in');
     await A.screenshot({path: 'shots/drive-chooser-empty.png'});
     ok(await A.evaluate(()=> document.getElementById('drLib').value === 'new' && document.getElementById('drNewBox').style.display !== 'none' && document.getElementById('drGo').textContent === 'Next'), 'nothing there yet: "Make a new library" chosen, its name field showing, one button');
+    // Making one and backing out at the last step: its empty folders go to the trash (1.4.134)
+    await A.evaluate(()=>{ document.getElementById('drName').value = 'Chicken'; document.getElementById('drDevice').value = 'Laptop'; document.getElementById('drGo').click(); });
+    let backedOut = false;
+    for(let k=0; k<40 && !backedOut; k++){ if(await A.evaluate(()=> [...document.querySelectorAll('.modal button')].some(b=> /^Do it now$/.test(b.textContent.trim())))){ backedOut = await clickText(A, '.modal button', '^Cancel$'); } else await sleep(250); }
+    await sleep(1500);
+    const chicken = [...g.files.values()].find(f=> f.name === '37 Player \u2013 Chicken');
+    ok(backedOut && chicken && chicken.trashed, 'a new Drive library whose joining was cancelled goes to the trash: ' + JSON.stringify(chicken && {trashed: chicken.trashed}));
+    ok(!(await A.evaluate(()=> window.__dbg.getRoot().settings.sharedLibrary)), 'and this device isn\'t joined');
+    await openShared(A);
+    await A.evaluate(()=> document.getElementById('shJoinOrCreate').click()); await sleep(300);
+    await A.evaluate(()=>{ document.querySelector('input[name=sjWhere][value=gdrive]').click(); document.getElementById('sjNext').click(); }); await sleep(300);
+    await signIn(A, ()=> document.getElementById('sjGo').click());
+    ok(/no 37 Player libraries/.test(await modal(A)), 'the chooser doesn\'t list it');
     await A.evaluate(()=>{ document.getElementById('drName').value = 'IKRC'; document.getElementById('drDevice').value = 'Laptop'; document.getElementById('drGo').click(); });
     for(let k=0; k<40; k++){ if(await clickText(A, '.modal button', '^Do it now$')) break; await sleep(250); }
     await sleep(1000); console.log('A:', JSON.stringify(await waitIdle(A)));
     const cfgA = await A.evaluate(()=> window.__dbg.getRoot().settings.sharedLibrary);
+    await A.evaluate(()=> window.__logs.send(true));
+    const logsDir = [...g.files.values()].find(f=> f.name === 'logs' && f.mimeType === 'application/vnd.google-apps.folder');
+    ok(logsDir && [...g.files.values()].some(f=> f.parents.includes(logsDir.id) && /^Laptop-[0-9a-f]{6}-sync\.txt$/.test(f.name)), 'this device\'s logs go into a "logs" folder of the Drive library (1.4.137)');
     ok(cfgA && cfgA.kind === 'gdrive' && cfgA.folderId && cfgA.refreshToken, 'A is in a Drive library, with a lasting sign-in kept here');
     ok(cfgA.account === 'center@example.org', 'and remembers which Google account it is: ' + cfgA.account);
     ok(!/#p37auth/.test(await A.evaluate(()=> location.href)), 'the tokens are gone from the address');
@@ -187,6 +203,46 @@ const openShared = async p=>{ await p.evaluate(()=>{ window.__dbg.setMode('editi
     await sleep(1000); await waitIdle(C);
     ok(await C.evaluate(()=> (window.__dbg.getRoot().settings.sharedLibrary || {}).kind) === 'gdrive' && /From iPad/.test(await names(C)), 'and joins it: ' + await names(C));
     ok(await C.evaluate(()=> window.__lib.list().list.find(l=> l.id === window.__lib.id()).name) === 'IKRC', 'taking its name');
+    // ---- Google Drive full (1.4.140): said so, not "this device is full"; Settings shows how full
+    g.full = true;
+    await C.evaluate(async()=>{ const r = window.__dbg.getRoot(); r.tree[0].name = r.tree[0].name + ' (full)'; await window.__dbg.saveState(); await window.__dbg3.sync(); });
+    await sleep(800);
+    const fullMsg = await C.evaluate(()=> window.__dbg3.status().message || '');
+    ok(/Google Drive of center@example\.org is full/.test(fullMsg) && !/This device is full/.test(fullMsg), 'a full Google Drive is called that, naming the account: ' + fullMsg);
+    await openShared(C); await sleep(800);
+    const space = await C.evaluate(()=> document.getElementById('shDriveSpace')?.innerText || '');
+    ok(/Google Drive: .* of .* used \(100%\)/.test(space) && /Free up space/.test(space), 'Settings → Shared library says how full the Drive is, with Free up space: ' + space);
+    await C.evaluate(()=> document.getElementById('settingsClose')?.click());
+    g.full = false;
+    await C.evaluate(()=> window.__dbg3.sync()); await sleep(800);
+    ok(!/full/.test(await C.evaluate(()=> window.__dbg3.status().message || '')), 'with room again, Sync now carries on: ' + await C.evaluate(()=> window.__dbg3.status().state));
+    // ---- Free up space (1.4.141): earlier versions and files no kept version uses, made before the cutoff
+    // C's library: a track's audio replaced, so its old file is used only by older versions.
+    const before = [...g.files.values()].filter(f=> !f.trashed).length;
+    g.ageAll(10 * 86400000); // all of it ten days old
+    await C.evaluate(async()=>{ const r = window.__dbg.getRoot(); r.tree[0].name = r.tree[0].name + ' (tidy)'; await window.__dbg.saveState(); await window.__dbg3.sync(); });
+    await sleep(800);
+    await openShared(C); await sleep(1200);
+    ok(await C.evaluate(()=> !!document.querySelector('#shDriveSpace button')), 'Settings → Shared library has Free up space…');
+    await C.evaluate(()=> document.querySelector('#shDriveSpace button').click());
+    let tidyMsg = '';
+    for(let i = 0; i < 40; i++){ await sleep(250); tidyMsg = await C.evaluate(()=> document.getElementById('tidyMsg')?.textContent || ''); if(/Frees|Nothing/.test(tidyMsg)) break; }
+    const m7 = /Frees .*: (\d+) earlier versions, (\d+) files/.exec(tidyMsg);
+    ok(m7 && +m7[1] > 0, 'keeping 7 days: the versions older than that are offered (' + tidyMsg + ')');
+    await C.evaluate(()=>{ document.querySelector('input[name=tidyDays][value="30"]').click(); }); 
+    for(let i = 0; i < 40; i++){ await sleep(250); tidyMsg = await C.evaluate(()=> document.getElementById('tidyMsg')?.textContent || ''); if(/Frees|Nothing/.test(tidyMsg) && !/Looking/.test(tidyMsg)) break; }
+    ok(/Nothing to free/.test(tidyMsg), 'keeping 30 days: nothing (' + tidyMsg + ')');
+    await C.evaluate(()=>{ document.querySelector('input[name=tidyDays][value="1"]').click(); });
+    for(let i = 0; i < 40; i++){ await sleep(250); tidyMsg = await C.evaluate(()=> document.getElementById('tidyMsg')?.textContent || ''); if(/Frees|Nothing/.test(tidyMsg) && !/Looking/.test(tidyMsg)) break; }
+    const namesBefore = await names(C);
+    await C.evaluate(()=> document.getElementById('tidyGo').click());
+    for(let i = 0; i < 40; i++){ await sleep(250); if(!(await C.evaluate(()=> [...document.querySelectorAll('#globalOperationBar')].some(b=> b.offsetParent && /Deleting/.test(b.textContent))))) break; }
+    await sleep(500);
+    const states = [...g.files.values()].filter(f=> f.name.match(/^\d{6}\.json/) && g.files.has(f.id));
+    const after = [...g.files.values()].length;
+    ok(after < before, 'files deleted for good: ' + before + ' → ' + after);
+    await C.evaluate(()=> window.__dbg3.sync()); await sleep(800);
+    ok(await names(C) === namesBefore && await C.evaluate(()=> window.__dbg3.status().state) !== 'error', 'the library as it is now is untouched, and syncing carries on: ' + await names(C));
   } finally {
     console.log(fails ? fails + ' FAILED' : 'ALL OK');
     await b.close(); g.close(); php.kill();

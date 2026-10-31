@@ -11,7 +11,7 @@ Your library lives in one browser, at one address, so decide where 37 Player wil
 - **One browser.** Chrome, Edge, Firefox and Safari each keep their own library. So do two installations of the same browser: on Linux, for example, a Flatpak Chrome and a Chrome installed from a .deb package are two separate browsers.
 - **One address.** The website (37player.com) and a 37-player.html file opened from your disk are separate libraries, with separate backups.
 
-Settings → **Library info** shows where the library you're looking at lives. To move a library somewhere else later, see 'Multiple instances'.
+Settings → **Library** shows where the library you're looking at lives: the browser it runs in, the shared library it syncs with, and where it's backed up. To move a library somewhere else later, see 'Multiple instances'.
 
 ### Which browser
 
