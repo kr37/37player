@@ -282,8 +282,8 @@ The full plan and history are in the project doc `shared-library-sync.md`. In sh
   - **Say what's happening while it waits.** Two waits exist. (1) Up to 8 s for a server that doesn't answer: the browser shows only its loading spinner, and the worker can't show anything because the page isn't there yet. The alternative is to open the saved copy at once and fetch the new one in the background, so an update shows on the next load; then there's no wait at all. (2) Up to a minute with a new version that doesn't start, a blank or half-drawn page. The watchdog script at the top could show a small notice after about 10 s without "up": "37 Player is taking longer than usual to start. If it doesn't, the last version that worked here will open."
 - **Left from 24 Oct 2026** (logs, backups, splitting, History, Undo):
   - **Feedback:** done in 1.4.136 (above); Postfix it is.
-  - **Logs in the shared library:** each device keeps a short copy of its logs there; the feedback form lists them with checkboxes.
-  - **Keeper warning:** every device says so when no device has backed up the shared library for ~7 days. And the droplet's own backup to the T470 (`pull_droplet_backup.sh`) still isn't running.
+  - **Logs in the shared library:** done in 1.4.137 (above).
+  - **Keeper warning:** every device says so when no device has backed up the shared library for ~7 days. (The droplet's own backup to the T470: running since 29 Oct 2026.)
   - **New icon:** done (1.4.117–1.4.122): Gen's waveform-and-playhead design, as a vector, with the PNGs, Apple icon and .ico.
   - **History's wording:** "Restore" for rows that take something out (above).
   - **Buttons:** wherever two buttons act as a switch, use radios or a selected state that isn't colour alone (Gen: the selected one is hard to read and to tell apart).
