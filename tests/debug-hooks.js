@@ -122,3 +122,6 @@ window.__splitter.mark = (t)=> splitAddMark(t); window.__splitter.playPiece = (k
 window.__logs = {send: (force)=> sharedSendLogs(force), others: sharedOtherLogs, stem: logFileStem, feedback: openFeedbackDialog};
 // the backup folder keeping files whose audio isn't here (bkkeep.js)
 window.__bk = {run: ()=> runFolderBackupHere(), fullScan: ()=>{ backupFullScanNeeded = true; }, info: ()=> backupInfo, del: (ids)=> deleteLibraryTracks(ids)};
+// the files store itself (filestore.js): a store in OPFS folder `name`, whatever this device uses
+window.__fs = {make: (name)=> new FolderLibraryStore(async (create)=>{ const top = await navigator.storage.getDirectory(); return folderChild(top, name, create); }, "37player-files-test~" + name, {}),
+  keyOf: fileKeyOf, unkey: keyOfFile};

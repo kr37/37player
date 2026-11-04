@@ -31,6 +31,8 @@ By hand: `./serve.sh` in one terminal (servers on ports 8861 and 8870), then
 `node miss.js "$(./new-library.sh)"` in another. `e2e.js` takes two codes:
 `node e2e.js "$(./new-library.sh)" "$(./new-library.sh)"`.
 
+**On the files store:** `STORE=opfs python3 make-debug-copy.py` builds a test copy whose libraries are files (OPFS) instead of IndexedDB, so the same tests check that storage. Tests that open IndexedDB themselves (conv, e2e, full, libs, notloaded, …) can't run that way.
+
 ## How it fits together
 
 - `debug-hooks.js` — the app's functions the tests reach (`window.__dbg`,
@@ -73,6 +75,7 @@ By hand: `./serve.sh` in one terminal (servers on ports 8861 and 8870), then
 | pieces | Receiving in pieces (256 KB here): byte for byte, carried on after being cut off, a file that comes out the wrong size not kept and not retried until Sync now |
 | libdel | New library → Start empty skips the sharing question; deleting a library deletes its backup folder only if asked, only 37 Player's files, only while it's that library's |
 | bkkeep | The backup folder keeps a track's files while the track is in the library, even when this browser has lost its audio; only a track leaving the library frees its file |
+| filestore | The files store (1.4.152): records and files round-trip; a replaced or deleted file stays readable until its grace is over; unused files tidied; the library record written only at the expected revision, a damaged one reported; odd keys round-trip |
 | place | Reloads keep the theme (no dark flash) and the place: Settings section, Help topic, tab; a PIN is still asked |
 | phonecols | Phone: dragging the line between columns with a finger, portrait and landscape, kept after a reload |
 | play | Pressing play on a track still downloading: one download, no restarts, never starts by itself |
