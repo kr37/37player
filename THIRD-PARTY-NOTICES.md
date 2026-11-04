@@ -1,35 +1,19 @@
 # Third-party notices
 
-## Lucide / Feather icon designs
+## Lucide / Feather icon style
 
-The small playback-status icons added to `37-player.html` for the chat-branch
-readability experiment use simple inline SVG shapes based on the open-source
-Lucide/Feather icon style. The equalizer and clock paths are adapted for
-37 Player; the stop square is a simple geometric shape. No external icon
-font, script, or network request is needed.
+A few of 37 Player's small icons (the bars for what's playing now, the clock
+for a silence) are inline SVG drawn in the style of the Lucide and Feather
+icon sets, adapted for 37 Player. The stop square and the play triangle are
+plain shapes. Nothing is loaded from either project.
 
-Lucide: https://lucide.dev/
-Feather: https://feathericons.com/
+- Feather (https://feathericons.com/): MIT License,
+  Copyright (c) 2013-2023 Cole Bemis.
+- Lucide (https://lucide.dev/): ISC License,
+  Copyright (c) for portions of Lucide are held by Cole Bemis 2013-2023 as
+  part of Feather (MIT); all other copyright (c) for Lucide are held by
+  Lucide Contributors 2026.
 
-Both projects make their icon designs available under the MIT License.
-
-Copyright (c) 2013-2023 Cole Bemis and contributors (Feather)
-Copyright (c) Lucide Contributors (Lucide)
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in
-all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-THE SOFTWARE.
+Both licences allow use, copying, modification and distribution, provided the
+copyright notice and permission notice are kept. They are provided "as is",
+without warranty of any kind.
