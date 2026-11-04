@@ -125,3 +125,5 @@ window.__bk = {run: ()=> runFolderBackupHere(), fullScan: ()=>{ backupFullScanNe
 // the files store itself (filestore.js): a store in OPFS folder `name`, whatever this device uses
 window.__fs = {make: (name)=> new FolderLibraryStore(async (create)=>{ const top = await navigator.storage.getDirectory(); return folderChild(top, name, create); }, "37player-files-test~" + name, {}),
   keyOf: fileKeyOf, unkey: keyOfFile};
+// libraries kept in a folder (folderlib.js)
+window.__fl = {move: moveLibraryToFolder, name: ()=> libraryFolderName(LIBRARY_ID), forget: ()=> folderHandleDelete(LIBRARY_ID), kind: ()=> libStore.constructor.name};
