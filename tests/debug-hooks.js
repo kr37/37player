@@ -114,9 +114,9 @@ window.__idbPut = (store, rec)=> idbPut(store, rec);
 window.__pieces.conv = (b)=> analyzeWithConverter(b); window.__pieces.getConverter = ()=> downloadConverter();
 // copying between libraries (copylib.js)
 window.__copyLib = {ie: openImportExportDialog, open: openCopyToLibraryDialog, apply: applyIncomingCopies,
-  audioIn: async (libId, id)=>{ const d = await openDbNamed(libraryDbName(libId)); try{ return !!(await dbOnce(d, "audio", "readonly", os=> os.get(id))); } finally { d.close(); } }};
-window.__copyLib.fakeDeadCopy = async (libId, id)=>{ const d = await openDbNamed(libraryDbName(libId)); try{ await dbOnce(d, "audio", "readwrite", os=> os.put({id, blob: new Blob(["x"])})); await dbOnce(d, "state", "readwrite", os=> os.put({key: COPY_PARTIAL_KEY, value: {ids: [id], at: Date.now()}})); } finally { d.close(); } };
-window.__copyLib.partialMark = async (libId)=>{ const d = await openDbNamed(libraryDbName(libId)); try{ return !!(await dbOnce(d, "state", "readonly", os=> os.get(COPY_PARTIAL_KEY))); } finally { d.close(); } };
+  audioIn: async (libId, id)=>{ const d = storageOpen(libId); try{ return !!(await d.get("audio", id)); } finally { d.close(); } }};
+window.__copyLib.fakeDeadCopy = async (libId, id)=>{ const d = storageOpen(libId); try{ await d.put("audio", {id, blob: new Blob(["x"])}); await d.put("state", {key: COPY_PARTIAL_KEY, value: {ids: [id], at: Date.now()}}); } finally { d.close(); } };
+window.__copyLib.partialMark = async (libId)=>{ const d = storageOpen(libId); try{ return !!(await d.get("state", COPY_PARTIAL_KEY)); } finally { d.close(); } };
 window.__splitter.mark = (t)=> splitAddMark(t); window.__splitter.playPiece = (k)=> splitPlayPiece(k);
 // devices' logs in the shared library (sharedlogs.js)
 window.__logs = {send: (force)=> sharedSendLogs(force), others: sharedOtherLogs, stem: logFileStem, feedback: openFeedbackDialog};
