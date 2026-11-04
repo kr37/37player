@@ -72,6 +72,7 @@ By hand: `./serve.sh` in one terminal (servers on ports 8861 and 8870), then
 | dlcrash | A download that closes the page: noted first, named at the next start, not received again by itself, received at Sync now |
 | pieces | Receiving in pieces (256 KB here): byte for byte, carried on after being cut off, a file that comes out the wrong size not kept and not retried until Sync now |
 | libdel | New library → Start empty skips the sharing question; deleting a library deletes its backup folder only if asked, only 37 Player's files, only while it's that library's |
+| bkkeep | The backup folder keeps a track's files while the track is in the library, even when this browser has lost its audio; only a track leaving the library frees its file |
 | place | Reloads keep the theme (no dark flash) and the place: Settings section, Help topic, tab; a PIN is still asked |
 | phonecols | Phone: dragging the line between columns with a finger, portrait and landscape, kept after a reload |
 | play | Pressing play on a track still downloading: one download, no restarts, never starts by itself |

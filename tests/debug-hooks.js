@@ -120,3 +120,5 @@ window.__copyLib.partialMark = async (libId)=>{ const d = await openDbNamed(libr
 window.__splitter.mark = (t)=> splitAddMark(t); window.__splitter.playPiece = (k)=> splitPlayPiece(k);
 // devices' logs in the shared library (sharedlogs.js)
 window.__logs = {send: (force)=> sharedSendLogs(force), others: sharedOtherLogs, stem: logFileStem, feedback: openFeedbackDialog};
+// the backup folder keeping files whose audio isn't here (bkkeep.js)
+window.__bk = {run: ()=> runFolderBackupHere(), fullScan: ()=>{ backupFullScanNeeded = true; }, info: ()=> backupInfo, del: (ids)=> deleteLibraryTracks(ids)};
