@@ -7,9 +7,9 @@ Tauri 2 running `37-player.html` (1.4.153, unchanged) in WebView2.
 
 | | HP | Surface |
 |---|---|---|
-| Model | HP EliteBook 820 G3 | (to come) |
-| Windows | 10 Pro, build 19045 | |
-| WebView2 | 156.0.4314.58 (Chromium 156.0.8078.80) | |
+| Model | HP EliteBook 820 G3 | Surface |
+| Windows | 10 Pro, build 19045 | 10 Pro 22H2, build 19045.6466 |
+| WebView2 | 156.0.4314.58 (Chromium 156.0.8078.80) | 156.0.4314.58 (from the registry; the runtime isn't listed under Apps there) |
 | Build tested | `tauri dev` (debug); the release build started once to check it | installed release build |
 
 The release build (`npm run tauri build`: `37 Player_0.1.0_x64-setup.exe`
@@ -20,7 +20,9 @@ and help.json; a missing file comes back as index.html there too.
 ## Checklist
 
 Tested by Gen on the HP, 4 Nov 2026, with the console recorded over the
-DevTools protocol throughout.
+DevTools protocol throughout; then 2, 3, 8 and 13 on the Surface with the
+installed release build (`setup.exe`, unsigned: SmartScreen's "Run anyway"),
+5 Nov 2026.
 
 | # | Test | HP | Notes |
 |---|---|---|---|
@@ -37,7 +39,7 @@ DevTools protocol throughout.
 | 11 | Shared library (droplet) | pass | Joined, synced, played a track that came by sync. Google Drive: blocked as expected (`token.php` refuses the webview's origin: CORS). It failed cleanly, with a message, but the wrong one: it said the server wasn't available or set up, when it's the desktop app that has no Drive sign-in yet. |
 | 12 | Closing the window while playing | **fail** | The window closes at once and the music stops, with no question, even while audio was being sent to the shared library. A browser asks (`beforeunload`); Tauri's close doesn't. |
 | 13 | Restart | pass | All three libraries, the playlists and the place (track and position, its +3 dB) were back; the shared library's sending carried on. |
-| 14 | The Surface | to come | |
+| 14 | The Surface (2, 3, 8, 13 with the installed build) | pass | All four passed. |
 
 ## What differed from a browser
 
@@ -107,9 +109,11 @@ Distinct errors and warnings over the whole session (count, message):
 
 ## Verdict
 
-**Go with conditions** (pending the Surface). Audio in WebView2 behaved
-like Chrome in every playback test, including minimised, covered, sleep and
-the media keys. Conditions for the real app:
+**Go with conditions.** Audio in WebView2 behaved like Chrome in every
+playback test, on both machines and in both the dev and the installed build,
+including minimised, covered, sleep and the media keys. The only failure
+(closing without asking) is the shell's, not the webview's. Conditions for
+the real app:
 
 1. Closing the window asks first when something is playing or being sent
    (catch `CloseRequested` in Rust and ask the page).
