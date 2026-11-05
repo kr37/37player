@@ -1,7 +1,8 @@
-# Builds the desktop app (Tauri) for the Mac, for testing: one .dmg that runs
-# on Intel and Apple Silicon Macs, published as a pre-release that anyone can
-# download without signing in. Unsigned: open it with right-click → Open.
-name: Desktop app for the Mac (test build)
+# Builds the desktop app (Tauri) for testing: a .dmg for the Mac (Intel and
+# Apple Silicon) and Windows installers (.exe and .msi), published together
+# as a pre-release anyone can download without signing in. Unsigned: on a
+# Mac open it with right-click → Open; on Windows SmartScreen's "Run anyway".
+name: Desktop app (test builds)
 on:
   workflow_dispatch:
   push:
@@ -10,7 +11,7 @@ on:
 permissions:
   contents: write
 jobs:
-  build:
+  mac:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
@@ -23,12 +24,37 @@ jobs:
         run: |
           npm ci
           npx tauri build --target universal-apple-darwin --bundles dmg
+          cp src-tauri/target/universal-apple-darwin/release/bundle/dmg/*.dmg ../37-Player-mac-test.dmg
+      - uses: actions/upload-artifact@v4
+        with: { name: mac, path: 37-Player-mac-test.dmg }
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build
+        working-directory: desktop
+        shell: bash
+        run: |
+          npm ci
+          npx tauri build
+          cp src-tauri/target/release/bundle/nsis/*.exe ../37-Player-windows-test-setup.exe
+          cp src-tauri/target/release/bundle/msi/*.msi ../37-Player-windows-test.msi
+      - uses: actions/upload-artifact@v4
+        with: { name: windows, path: "37-Player-windows-test*" }
+  publish:
+    needs: [mac, windows]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with: { merge-multiple: true }
       - name: Publish as a pre-release
         env: { GH_TOKEN: "${{ github.token }}" }
         run: |
-          dmg=$(ls desktop/src-tauri/target/universal-apple-darwin/release/bundle/dmg/*.dmg | head -1)
-          cp "$dmg" "37-Player-mac-test.dmg"
-          tag="mac-test-${{ github.run_number }}"
-          gh release create "$tag" "37-Player-mac-test.dmg" --prerelease --target "${{ github.sha }}" \
-            --title "37 Player for Mac, test build ${{ github.run_number }}" \
-            --notes "Unsigned test build of the desktop app (Tauri) from branch tauri-spike, for desktop/SPIKE.md. Open with right-click → Open."
+          tag="desktop-test-${{ github.run_number }}"
+          gh release create "$tag" 37-Player-mac-test.dmg 37-Player-windows-test-setup.exe 37-Player-windows-test.msi \
+            --repo "${{ github.repository }}" --prerelease --target "${{ github.sha }}" \
+            --title "37 Player desktop, test build ${{ github.run_number }}" \
+            --notes "Unsigned test builds of the desktop app (Tauri) from branch tauri-spike (desktop/SPIKE.md). Mac: right-click → Open. Windows: SmartScreen → More info → Run anyway."
