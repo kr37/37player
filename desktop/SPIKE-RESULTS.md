@@ -151,8 +151,9 @@ installed from the .dmg and opened without trouble.
 Console (build 2): the viewport's `interactive-widget` and the embedded manifest's
 relative `start_url`/`scope` are reported by WebKit; harmless.
 
-Still to test on the Mac: media keys and Now Playing; restart (library, playlists,
-place); the converter; a fresh first run on build 8 or later.
+Later on 5 Nov: **restart** (library, playlists, place) and a **fresh first run** both passed.
+
+Still to test on the Mac: media keys and Now Playing; the converter.
 
 **Verdict for the Mac so far: go.** Every playback problem found was 37 Player's own
 and is fixed; WKWebView on Monterey played everything, including with the display asleep.
