@@ -91,3 +91,26 @@ checklist with pass / fail / notes, every console error worth knowing, any
 workaround used, and a short verdict: go, go with conditions, or no-go.
 Add a two-line summary to NOTES.md under the v2.0 item. Commit as Gen (see
 CLAUDE.md) to `tauri-spike`; push; don't merge.
+
+## The Mac (SKBC's Mac mini, macOS 12 Monterey)
+
+The Mac app is built on GitHub (`.github/workflows/desktop-mac.yml`, on every
+push to `tauri-spike`) and published as a pre-release, **37 Player for Mac,
+test build N**, under the repo's Releases: download `37-Player-mac-test.dmg`,
+open it, drag 37 Player to Applications.
+
+- **First open:** it's unsigned, so right-click (or Control-click) the app →
+  **Open** → Open. If macOS says it's "damaged", in Terminal:
+  `xattr -cr "/Applications/37 Player.app"`, then open it again.
+- **Console:** right-click in the app → **Inspect Element** opens Web
+  Inspector (Console tab). Note errors worth knowing.
+- **Which WebKit:** in Inspector's console, `navigator.userAgent`; and About
+  This Mac → the Mac's model and macOS version.
+
+The same checklist, most important first if time is short: 2 (a whole
+session), 8 (minimised and covered, and with the screen locked or the
+display asleep), 3, 4, 5, 6, 10, 11 (droplet library), 13, then the rest.
+On the Mac also: **Dock and Cmd-Q** (quitting while playing: what happens?),
+and **does the folder picker exist** (`'showDirectoryPicker' in window`;
+expected: no, in WebKit). Results go in `desktop/SPIKE-RESULTS.md` beside
+the Windows ones.
