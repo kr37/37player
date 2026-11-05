@@ -15,6 +15,21 @@ use tauri::{Emitter, Manager, RunEvent, WindowEvent};
 
 struct Quitting(AtomicBool);
 
+// What this shell can do for the page (see the page's DESKTOP_BRIDGE_NEEDED).
+// Raise it when the page may start relying on something new here:
+// 1 = closing asks first (p37-close-requested, p37_quit).
+const BRIDGE: u32 = 1;
+
+#[derive(serde::Serialize)]
+struct ShellInfo { version: String, bridge: u32 }
+
+// The shell's version is the page's version as of the shell's own last
+// change (tauri.conf.json "version"), like sync.php's.
+#[tauri::command]
+fn p37_shell_info(app: tauri::AppHandle) -> ShellInfo {
+    ShellInfo { version: app.package_info().version.to_string(), bridge: BRIDGE }
+}
+
 #[tauri::command]
 fn p37_quit(app: tauri::AppHandle) {
     app.state::<Quitting>().0.store(true, Ordering::SeqCst);
@@ -79,7 +94,7 @@ pub fn run() {
     }
     builder
         .manage(Quitting(AtomicBool::new(false)))
-        .invoke_handler(tauri::generate_handler![p37_quit])
+        .invoke_handler(tauri::generate_handler![p37_quit, p37_shell_info])
         .on_window_event(|window, event| {
             if let WindowEvent::CloseRequested { api, .. } = event {
                 if !window.app_handle().state::<Quitting>().0.load(Ordering::SeqCst) {

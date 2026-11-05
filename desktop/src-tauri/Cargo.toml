@@ -1,6 +1,6 @@
 [package]
 name = "player37-desktop"
-version = "0.1.0"
+version = "1.4.160"
 description = "37 Player desktop (Tauri spike)"
 authors = ["Kelsang Rinzin"]
 edition = "2024"
