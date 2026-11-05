@@ -164,6 +164,8 @@ and the core has 4,478 local groups of that type. ffmpeg.wasm 0.12.10 is built w
 
 Checked with wabt: apart from SIMD, everything the converter uses (bulk memory, sign extension, atomics) is in Safari-15-era WebKit, so SIMD is the only obstacle. `@ffmpeg/core-st` 0.11.1 validates without SIMD but is an older ffmpeg with a different API. A no-SIMD build of 0.12.10 (`make build-st` with `-O3` and libwebp's SIMD off) would keep the same API. The choices: that build, picked when `WebAssembly.validate` says there's no SIMD (it would also help iPads and Macs whose Safari is older than 16.4); a native ffmpeg in the desktop app; another device converting; or a clear message.
 
+Chosen (Gen, 5 Nov 2026): the build without SIMD for every device (1.4.166; NOTES.md, the converter). The desktop app bundles it from the release (`copy-app.mjs` reads the tag and sums from `scripts/get_ffmpeg.sh`), and an app that kept the SIMD build fetches the bundled one again when it won't compile. To retest on the Mac mini with the next desktop build.
+
 **Verdict for the Mac so far: go.** Every playback problem found was 37 Player's own
 and is fixed; WKWebView on Monterey played everything, including with the display asleep.
 On Monterey the converter needs a build without SIMD (or a native ffmpeg).
