@@ -15,7 +15,7 @@ window.__rv = {rows: syncReviewRows, classify: (r,m)=>syncClassifyPartial(r,m,ne
 window.__aa = {analyze: analyzeAudio};
 // files this browser can't play (conv.js)
 window.__conv = {importFiles, recheck: recheckStoredAudio, cantPlay: trackCantPlay, describe: describeFormatProblem,
-  convert: (ids)=>convertTracks(ids), state: ()=>({queue: convertQueue.slice(), running: convertRunning, worker: !!converterWorker, bar: activeOperation && activeOperation.text}), stored: ()=>converterStored().then(r=>!!r), libPreview: (id)=>playLibraryPreview(id), overlay: (id)=>openPlaylistOverlay(id),
+  convert: (ids)=>convertTracks(ids), state: ()=>({queue: convertQueue.slice(), running: convertRunning, worker: !!converterWorker, bar: activeOperation && activeOperation.text}), stored: ()=>converterStored().then(r=>!!r), libPreview: (id)=>playLibraryPreview(id), overlay: (id)=>openPlaylistOverlay(id), put: (js, wasm, version)=> mainStatePut({key: "converter", version, js, wasm, size: js.size + wasm.size, at: Date.now()}).then(()=>{ converterRecCache = undefined; converterRefetched = false; }), version: ()=> converterStored().then(r=> r && r.version), stop: ()=> converterStop(),
   musicEntries: (ids, convert)=>buildMusicEntries(new Set(ids), null, {convert: !!convert}), dropOriginal: (id)=>dropKeptOriginal(findLibraryTrack(id)), policy: ()=>formatPolicy(), matches: (id)=>trackMatchesPolicy(findLibraryTrack(id)), queueRecord: ()=>idbGet("state", "convertQueue").then(r=> r && r.value || null)};
 // No quiet converter download 20 s after opening, unless a test asks for it.
 window.__noAutoConverter = true;
@@ -133,3 +133,5 @@ window.__int = {clear: (what)=> idbClearAll(what)};
 window.__drop = {take: (dt)=> takeDrop(dt)};
 // the desktop app's bridge (desktop.js)
 window.__driveStart = (el)=> driveStartFrom(el, {what: "connect"}); window.__inDesktop = ()=> IN_DESKTOP_APP;
+// deleting a track that's playing (delplaying.js)
+window.__delAsk = (ids)=> confirmDeleteTracksFromLibrary(ids, ()=> deleteLibraryTracks(ids));
