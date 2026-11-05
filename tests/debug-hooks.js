@@ -133,3 +133,5 @@ window.__int = {clear: (what)=> idbClearAll(what)};
 window.__drop = {take: (dt)=> takeDrop(dt)};
 // the desktop app's bridge (desktop.js)
 window.__driveStart = (el)=> driveStartFrom(el, {what: "connect"}); window.__inDesktop = ()=> IN_DESKTOP_APP;
+// deleting a track that's playing (delplaying.js)
+window.__delAsk = (ids)=> confirmDeleteTracksFromLibrary(ids, ()=> deleteLibraryTracks(ids));
