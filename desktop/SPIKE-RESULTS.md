@@ -160,15 +160,10 @@ about 4 seconds back (37 Player's usual rewind); the **splitter** works.
 WebAssembly.Module doesn't parse at byte 3: can't get Function local's type in group 0,
 in function at index 10)". The webview can't load ffmpeg-core.wasm at all, whatever the
 file. Reading the wasm: function 10's first locals are `v128` (0x7b), WebAssembly SIMD,
-and the core has 4,478 local groups of that type. ffmpeg.wasm 0.12.10 is built with
-SIMD; WebKit has it from Safari 16.4 (March 2023). On Monterey the webview is the
-system WebKit, which Safari updates bring along (Monterey goes up to Safari 17.6), so
-an up-to-date Monterey should convert. To check: the Mac mini's Safari version (Safari >
-About Safari); if it's older than 16.4, update Safari and try again. If that's not
-possible, the choices are a converter build without SIMD for old WebKit (slower, and a
-second 30 MB file to keep), letting another device convert, or a clear message instead
-of the raw error.
+and the core has 4,478 local groups of that type. ffmpeg.wasm 0.12.10 is built with SIMD (`-msimd128` in its Makefile's `PROD_CFLAGS`); Safari has it from 16.4. The Mac mini's Safari is 17.6, and build 10 (1.4.161) still fails: on older macOS a Safari update keeps its newer WebKit for Safari alone (`/Library/Apple/System/Library/StagedFrameworks/Safari`), and other apps' webviews get the WebKit Monterey shipped with. Updating Safari can't help the desktop app, and the Mac mini can't go past Monterey.
+
+Checked with wabt: apart from SIMD, everything the converter uses (bulk memory, sign extension, atomics) is in Safari-15-era WebKit, so SIMD is the only obstacle. `@ffmpeg/core-st` 0.11.1 validates without SIMD but is an older ffmpeg with a different API. A no-SIMD build of 0.12.10 (`make build-st` with `-O3` and libwebp's SIMD off) would keep the same API. The choices: that build, picked when `WebAssembly.validate` says there's no SIMD (it would also help iPads and Macs whose Safari is older than 16.4); a native ffmpeg in the desktop app; another device converting; or a clear message.
 
 **Verdict for the Mac so far: go.** Every playback problem found was 37 Player's own
 and is fixed; WKWebView on Monterey played everything, including with the display asleep.
-The converter depends on the Mac's WebKit being 16.4 or later.
+On Monterey the converter needs a build without SIMD (or a native ffmpeg).
