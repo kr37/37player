@@ -19,6 +19,16 @@ If something is playing, switching asks first, because it stops playback. Each l
 
 Two windows can have two different libraries open at the same time. A new window opens the library chosen most recently.
 
+### Keeping a library in a folder (Chrome and Edge on a computer)
+
+Normally a library lives inside the browser, where the browser can erase it (see 'Reliability'), so most people also keep a backup folder: two copies of everything, three counting the music you imported from. In Chrome or Edge on a computer, a library can live in an ordinary folder instead: Settings → **Library** → **Kept in** → **Keep it in a folder…**
+
+- **You choose where,** for example in Music. 37 Player makes a folder named after the library there and copies the whole library into it. That needs as much free space as the library takes, for a while.
+- **Then it runs from the folder.** The browser's copy is no longer used, and 37 Player offers to remove it to free the space.
+- **The folder is the library,** not a backup of it, so automatic backups stop and the button at the top says **In a folder**. Back the folder up as you back up the rest of the computer, or export a .37p now and then. Please don't change, add or remove files in it yourself; for now the files have ID numbers for names.
+- **Permission:** an installed 37 Player keeps permission to the folder. In a browser tab, Chrome may ask again after a restart: choose **Open it**.
+- **Moving the folder:** move the whole folder, then open 37 Player and choose **Find the folder…**. It knows its own folder again by the file "37 Player library.json" inside it.
+
 ### Copying between libraries
 
 To copy tracks or playlists from the open library into another one on this device, use 'Import / Export' → **Copy to another library** (it's there once you have more than one library). Choose what to copy, as for Export (the selected tracks, a playlist, a folder, an album, all playlists or the whole library), then the library to copy into. That list starts at **Choose a library…** every time, so nothing goes to the wrong one out of habit.
@@ -43,8 +53,10 @@ Only the open library syncs. A shared library that isn't open catches up as soon
 
 Settings → **Library** → **All libraries** → **Delete…** removes a library's tracks, playlists and settings from this device. If it keeps a backup folder (Chrome or Edge on a computer), the dialog offers to delete that backup too: only the files 37 Player put there, and only while the folder still holds that library's backup. Backup files the browser saved (Firefox, Safari, phones) can't be reached, so delete them yourself if you no longer want them; their names include the library's name, such as lib-native-backup-full-skbc-2026-10-22-1530.37p (.zip before version 1.4.092; backups made before version 1.4.051 don't include the name). The shared library it may be joined to isn't touched either: other devices keep it, and this device can join it again later. To keep a copy first, open the library and make a backup or a Portable export.
 
+A library kept in a folder is only forgotten by this device: the folder and everything in it stay on the computer, to delete yourself if you don't need it.
+
 The open library can't be deleted: switch to another one first.
 
 ### Space
 
-All libraries share the browser's storage on this device. A recording in two libraries is stored twice.
+All libraries share the browser's storage on this device, except those kept in a folder, which take space on the disk like any other files. A recording in two libraries is stored twice.

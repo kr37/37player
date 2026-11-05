@@ -12,6 +12,10 @@ if mark not in src: sys.exit('Start of the app not found: has init() been rename
 src = src.replace(mark, hooks + '\n' + mark, 1)
 f = 'function sharedTransfersOutstanding(){'
 if f in src: src = src.replace(f, f + '\n  if(window.__fakeOut != null) return window.__fakeOut;', 1)
+# STORE=opfs: the test copy keeps its libraries as files (FolderLibraryStore)
+# instead of IndexedDB, so the same tests check the other storage.
+if os.environ.get('STORE'):
+    src = src.replace('<head>', '<head><script>window.__p37Store = %r;</script>' % os.environ['STORE'], 1)
 os.makedirs(os.path.join(here, 'www'), exist_ok=True)
 open(os.path.join(here, 'www', '37-player.html'), 'w', encoding='utf-8').write(src)
 # old.html: the same, claiming to be an old version (for twowin.js)

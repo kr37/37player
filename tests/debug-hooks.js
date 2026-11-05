@@ -15,7 +15,7 @@ window.__rv = {rows: syncReviewRows, classify: (r,m)=>syncClassifyPartial(r,m,ne
 window.__aa = {analyze: analyzeAudio};
 // files this browser can't play (conv.js)
 window.__conv = {importFiles, recheck: recheckStoredAudio, cantPlay: trackCantPlay, describe: describeFormatProblem,
-  convert: (ids)=>convertTracks(ids), state: ()=>({queue: convertQueue.slice(), running: convertRunning, worker: !!converterWorker, bar: activeOperation && activeOperation.text}), stored: ()=>converterStored().then(r=>!!r), libPreview: (id)=>playLibraryPreview(id), overlay: (id)=>openPlaylistOverlay(id),
+  convert: (ids)=>convertTracks(ids), state: ()=>({queue: convertQueue.slice(), running: convertRunning, worker: !!converterWorker, bar: activeOperation && activeOperation.text}), stored: ()=>converterStored().then(r=>!!r), libPreview: (id)=>playLibraryPreview(id), overlay: (id)=>openPlaylistOverlay(id), put: (js, wasm, version)=> mainStatePut({key: "converter", version, js, wasm, size: js.size + wasm.size, at: Date.now()}).then(()=>{ converterRecCache = undefined; converterRefetched = false; }), version: ()=> converterStored().then(r=> r && r.version), stop: ()=> converterStop(),
   musicEntries: (ids, convert)=>buildMusicEntries(new Set(ids), null, {convert: !!convert}), dropOriginal: (id)=>dropKeptOriginal(findLibraryTrack(id)), policy: ()=>formatPolicy(), matches: (id)=>trackMatchesPolicy(findLibraryTrack(id)), queueRecord: ()=>idbGet("state", "convertQueue").then(r=> r && r.value || null)};
 // No quiet converter download 20 s after opening, unless a test asks for it.
 window.__noAutoConverter = true;
@@ -114,11 +114,24 @@ window.__idbPut = (store, rec)=> idbPut(store, rec);
 window.__pieces.conv = (b)=> analyzeWithConverter(b); window.__pieces.getConverter = ()=> downloadConverter();
 // copying between libraries (copylib.js)
 window.__copyLib = {ie: openImportExportDialog, open: openCopyToLibraryDialog, apply: applyIncomingCopies,
-  audioIn: async (libId, id)=>{ const d = await openDbNamed(libraryDbName(libId)); try{ return !!(await dbOnce(d, "audio", "readonly", os=> os.get(id))); } finally { d.close(); } }};
-window.__copyLib.fakeDeadCopy = async (libId, id)=>{ const d = await openDbNamed(libraryDbName(libId)); try{ await dbOnce(d, "audio", "readwrite", os=> os.put({id, blob: new Blob(["x"])})); await dbOnce(d, "state", "readwrite", os=> os.put({key: COPY_PARTIAL_KEY, value: {ids: [id], at: Date.now()}})); } finally { d.close(); } };
-window.__copyLib.partialMark = async (libId)=>{ const d = await openDbNamed(libraryDbName(libId)); try{ return !!(await dbOnce(d, "state", "readonly", os=> os.get(COPY_PARTIAL_KEY))); } finally { d.close(); } };
+  audioIn: async (libId, id)=>{ const d = storageOpen(libId); try{ return !!(await d.get("audio", id)); } finally { d.close(); } }};
+window.__copyLib.fakeDeadCopy = async (libId, id)=>{ const d = storageOpen(libId); try{ await d.put("audio", {id, blob: new Blob(["x"])}); await d.put("state", {key: COPY_PARTIAL_KEY, value: {ids: [id], at: Date.now()}}); } finally { d.close(); } };
+window.__copyLib.partialMark = async (libId)=>{ const d = storageOpen(libId); try{ return !!(await d.get("state", COPY_PARTIAL_KEY)); } finally { d.close(); } };
 window.__splitter.mark = (t)=> splitAddMark(t); window.__splitter.playPiece = (k)=> splitPlayPiece(k);
 // devices' logs in the shared library (sharedlogs.js)
 window.__logs = {send: (force)=> sharedSendLogs(force), others: sharedOtherLogs, stem: logFileStem, feedback: openFeedbackDialog};
 // the backup folder keeping files whose audio isn't here (bkkeep.js)
 window.__bk = {run: ()=> runFolderBackupHere(), fullScan: ()=>{ backupFullScanNeeded = true; }, info: ()=> backupInfo, del: (ids)=> deleteLibraryTracks(ids)};
+// the files store itself (filestore.js): a store in OPFS folder `name`, whatever this device uses
+window.__fs = {make: (name)=> new FolderLibraryStore(async (create)=>{ const top = await navigator.storage.getDirectory(); return folderChild(top, name, create); }, "37player-files-test~" + name, {}),
+  keyOf: fileKeyOf, unkey: keyOfFile};
+// libraries kept in a folder (folderlib.js)
+window.__fl = {move: moveLibraryToFolder, name: ()=> libraryFolderName(LIBRARY_ID), forget: ()=> folderHandleDelete(LIBRARY_ID), kind: ()=> libStore.constructor.name};
+// a restore or re-join cut off (interrupted.js)
+window.__int = {clear: (what)=> idbClearAll(what)};
+// dropped folders (dropfolder.js)
+window.__drop = {take: (dt)=> takeDrop(dt)};
+// the desktop app's bridge (desktop.js)
+window.__driveStart = (el)=> driveStartFrom(el, {what: "connect"}); window.__inDesktop = ()=> IN_DESKTOP_APP;
+// deleting a track that's playing (delplaying.js)
+window.__delAsk = (ids)=> confirmDeleteTracksFromLibrary(ids, ()=> deleteLibraryTracks(ids));

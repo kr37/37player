@@ -31,6 +31,8 @@ By hand: `./serve.sh` in one terminal (servers on ports 8861 and 8870), then
 `node miss.js "$(./new-library.sh)"` in another. `e2e.js` takes two codes:
 `node e2e.js "$(./new-library.sh)" "$(./new-library.sh)"`.
 
+**On the files store:** `STORE=opfs python3 make-debug-copy.py` builds a test copy whose libraries are files (OPFS) instead of IndexedDB, so the same tests check that storage. Tests that open IndexedDB themselves (conv, e2e, full, libs, notloaded, …) can't run that way.
+
 ## How it fits together
 
 - `debug-hooks.js` — the app's functions the tests reach (`window.__dbg`,
@@ -63,19 +65,26 @@ By hand: `./serve.sh` in one terminal (servers on ports 8861 and 8870), then
 | swfallback | The service worker opens the last version that started properly when the server answers 404 or 500, doesn't answer, is down, sends a cut-off file, or a version that doesn't start (the watchdog), says so, and takes a working version afterwards |
 | switchsend | Switching library while audio is still being sent: 37 Player asks, in words, instead of the browser's "Leave this page?" |
 | splitter | The splitter (1.4.086): three cuts in WAV, MP3, M4A and FLAC with a piece left out, the format each comes out in (and a WAV the settings would convert), clicks landing where they're heard (the MP3 gapless offset), loudness and volume kept, own waveforms, the keyboard, column B's entry becoming the pieces and one Undo taking it back, phone width |
+| dropfolder | A folder dropped from the file manager (1.4.155): every file, sub-folders too, in path order; on the Library tab the import review, on a playlist straight in |
 | folderpl | Folder import making a playlist of each folder: names, nesting, track-number order, re-importing, unticked |
 | plmiss | Playlists whose audio isn't all there: import all, only complete ones, or none |
 | stopimport | Stopping a folder import part-way: complete / all / no playlists, and Carry on |
 | quota | Storage filling up during a folder import: stops at once, says why, never hangs |
 | full | A full device: a failed save shows in the top bar (and once as a dialog), is retried and clears once there's room, nothing lost; a failed audio write keeps the track's revision; receiving stops at a file it can't store, says so, and resumes at Sync now |
 | notloaded | Storage that comes back empty on a device that had a library: "Your library didn't load", can't be dismissed, nothing written, Try again / Start empty; a library just made isn't warned about; storage that never answers is said after 8 seconds |
+| interrupted | A restore or re-join cut off after clearing (1.4.154): no "didn't load", the library opens empty with a notice, the marker goes; the library record missing with its other records there isn't taken for lost storage |
 | dlcrash | A download that closes the page: noted first, named at the next start, not received again by itself, received at Sync now |
 | pieces | Receiving in pieces (256 KB here): byte for byte, carried on after being cut off, a file that comes out the wrong size not kept and not retried until Sync now |
 | libdel | New library → Start empty skips the sharing question; deleting a library deletes its backup folder only if asked, only 37 Player's files, only while it's that library's |
 | bkkeep | The backup folder keeps a track's files while the track is in the library, even when this browser has lost its audio; only a track leaving the library frees its file |
+| filestore | The files store (1.4.152): records and files round-trip; a replaced or deleted file stays readable until its grace is over; unused files tidied; the library record written only at the expected revision, a damaged one reported; odd keys round-trip |
+| folderlib | Libraries kept in a folder the person chose (1.4.153): offered in Library info, the move, running from the folder, removing the browser's copy, edits kept, "In a folder", permission asked again, a lost folder found again (and a wrong one refused) |
+| desktop | The desktop app's bridge (1.4.156), with a stand-in shell: closing with nothing going on quits; while playing it asks (Keep it open / Close anyway); Google Drive says it isn't available in the desktop app yet; nothing of it in a browser |
+| delplaying | Deleting a track that's playing (1.4.162): the confirmation says so; Cancel keeps it playing; Delete stops it and deletes; another track's delete says nothing and playing carries on |
 | place | Reloads keep the theme (no dark flash) and the place: Settings section, Help topic, tab; a PIN is still asked |
 | phonecols | Phone: dragging the line between columns with a finger, portrait and landscape, kept after a reload |
 | play | Pressing play on a track still downloading: one download, no restarts, never starts by itself |
+| silclock | A silence ends on time with no animation frames or timeupdates (a covered window on a Mac), 1.4.158 |
 | bridge3 | Screen off: silent loop through track → silence → track, lock-screen buttons |
 | stoplock | Stops keep the lock screen ready; ▶ there continues |
 | ph | Pausing off screen keeps the lock screen ready; ▶ resumes |
