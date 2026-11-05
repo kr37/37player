@@ -129,3 +129,5 @@ window.__fs = {make: (name)=> new FolderLibraryStore(async (create)=>{ const top
 window.__fl = {move: moveLibraryToFolder, name: ()=> libraryFolderName(LIBRARY_ID), forget: ()=> folderHandleDelete(LIBRARY_ID), kind: ()=> libStore.constructor.name};
 // a restore or re-join cut off (interrupted.js)
 window.__int = {clear: (what)=> idbClearAll(what)};
+// dropped folders (dropfolder.js)
+window.__drop = {take: (dt)=> takeDrop(dt)};

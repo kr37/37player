@@ -65,6 +65,7 @@ By hand: `./serve.sh` in one terminal (servers on ports 8861 and 8870), then
 | swfallback | The service worker opens the last version that started properly when the server answers 404 or 500, doesn't answer, is down, sends a cut-off file, or a version that doesn't start (the watchdog), says so, and takes a working version afterwards |
 | switchsend | Switching library while audio is still being sent: 37 Player asks, in words, instead of the browser's "Leave this page?" |
 | splitter | The splitter (1.4.086): three cuts in WAV, MP3, M4A and FLAC with a piece left out, the format each comes out in (and a WAV the settings would convert), clicks landing where they're heard (the MP3 gapless offset), loudness and volume kept, own waveforms, the keyboard, column B's entry becoming the pieces and one Undo taking it back, phone width |
+| dropfolder | A folder dropped from the file manager (1.4.155): every file, sub-folders too, in path order; on the Library tab the import review, on a playlist straight in |
 | folderpl | Folder import making a playlist of each folder: names, nesting, track-number order, re-importing, unticked |
 | plmiss | Playlists whose audio isn't all there: import all, only complete ones, or none |
 | stopimport | Stopping a folder import part-way: complete / all / no playlists, and Carry on |
