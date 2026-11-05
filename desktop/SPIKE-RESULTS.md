@@ -153,7 +153,22 @@ relative `start_url`/`scope` are reported by WebKit; harmless.
 
 Later on 5 Nov: **restart** (library, playlists, place) and a **fresh first run** both passed.
 
-Still to test on the Mac: media keys and Now Playing; the converter.
+Later still (build 6, 1.4.160): **media keys and Now Playing** pass; **reopening** resumes
+about 4 seconds back (37 Player's usual rewind); the **splitter** works.
+
+**Converter: fails.** Converting a .wma stops with "Aborted(CompileError:
+WebAssembly.Module doesn't parse at byte 3: can't get Function local's type in group 0,
+in function at index 10)". The webview can't load ffmpeg-core.wasm at all, whatever the
+file. Reading the wasm: function 10's first locals are `v128` (0x7b), WebAssembly SIMD,
+and the core has 4,478 local groups of that type. ffmpeg.wasm 0.12.10 is built with
+SIMD; WebKit has it from Safari 16.4 (March 2023). On Monterey the webview is the
+system WebKit, which Safari updates bring along (Monterey goes up to Safari 17.6), so
+an up-to-date Monterey should convert. To check: the Mac mini's Safari version (Safari >
+About Safari); if it's older than 16.4, update Safari and try again. If that's not
+possible, the choices are a converter build without SIMD for old WebKit (slower, and a
+second 30 MB file to keep), letting another device convert, or a clear message instead
+of the raw error.
 
 **Verdict for the Mac so far: go.** Every playback problem found was 37 Player's own
 and is fixed; WKWebView on Monterey played everything, including with the display asleep.
+The converter depends on the Mac's WebKit being 16.4 or later.
