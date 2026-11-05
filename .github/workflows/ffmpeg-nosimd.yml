@@ -1,0 +1,68 @@
+# Builds 37 Player's converter, ffmpeg.wasm, without WebAssembly SIMD, so it
+# also loads in webviews that predate SIMD (the desktop app on macOS 12
+# Monterey uses Monterey's own WebKit, from before Safari 16.4; old iPads too).
+# Same source as the @ffmpeg/core 0.12.10 that scripts/get_ffmpeg.sh fetches
+# (ffmpeg.wasm commit 71aa99d), with -msimd128 taken out of PROD_CFLAGS and
+# libwebp's SIMD off; nothing else changed. Publishes ffmpeg-core.js and
+# ffmpeg-core.wasm as a pre-release. Runs when this file changes on its branch.
+name: ffmpeg.wasm without SIMD
+on:
+  push:
+    branches: [ffmpeg-nosimd]
+    paths: [.github/workflows/ffmpeg-nosimd.yml]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 340
+    env:
+      FFMPEG_WASM_COMMIT: 71aa99d
+      TAG: ffmpeg-core-0.12.10-nosimd
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: ffmpegwasm/ffmpeg.wasm
+          fetch-depth: 0
+          path: ffw
+      - name: Take SIMD out
+        working-directory: ffw
+        run: |
+          git checkout "$FFMPEG_WASM_COMMIT"
+          sed -i 's/^PROD_CFLAGS := -O3 -msimd128$/PROD_CFLAGS := -O3/' Makefile
+          sed -i 's/-DWEBP_ENABLE_SIMD=ON/-DWEBP_ENABLE_SIMD=OFF/' build/libwebp.sh
+          grep -n '^PROD_CFLAGS' Makefile
+          grep -n 'WEBP_ENABLE_SIMD' build/libwebp.sh
+          ! grep -rn -- '-msimd128' Makefile Dockerfile build/
+          git diff
+      - uses: docker/setup-buildx-action@v3
+      - name: Build (single-threaded, as @ffmpeg/core)
+        working-directory: ffw
+        run: make prd
+      - name: Check it has no SIMD
+        run: |
+          ls -l ffw/packages/core/dist/umd/
+          mkdir check && cd check && npm init -y >/dev/null && npm i -s wabt@1.0.36
+          cat > check.js <<'JS'
+          const fs = require('fs');
+          require('wabt')().then(w=>{
+            const f = {mutable_globals:true, sat_float_to_int:true, sign_extension:true, multi_value:true, bulk_memory:true, reference_types:true, threads:true, simd:false};
+            const m = w.readWasm(fs.readFileSync(process.argv[2]), Object.assign({readDebugNames:false}, f));
+            m.validate(); console.log('valid without SIMD');
+          });
+          JS
+          node check.js ../ffw/packages/core/dist/umd/ffmpeg-core.wasm
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          d=ffw/packages/core/dist/umd
+          cp ffw/packages/core/LICENSE LICENSE 2>/dev/null || true
+          (cd "$d" && sha256sum ffmpeg-core.js ffmpeg-core.wasm) > SHA256SUMS
+          cat SHA256SUMS
+          gh release delete "$TAG" -R "$GITHUB_REPOSITORY" -y --cleanup-tag 2>/dev/null || true
+          gh release create "$TAG" -R "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --prerelease \
+            --title "Converter without SIMD: ffmpeg.wasm core 0.12.10" \
+            --notes "ffmpeg.wasm (@ffmpeg/core 0.12.10, commit $FFMPEG_WASM_COMMIT) built without WebAssembly SIMD, for webviews that predate it (the desktop app on macOS 12). Built by .github/workflows/ffmpeg-nosimd.yml." \
+            "$d/ffmpeg-core.js" "$d/ffmpeg-core.wasm" SHA256SUMS $( [ -f LICENSE ] && echo LICENSE )
