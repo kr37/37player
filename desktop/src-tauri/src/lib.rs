@@ -7,6 +7,9 @@
 //    is held back and the page is told ("p37-close-requested"); the page
 //    asks if something would stop, then calls p37_quit (see the page's
 //    "The desktop app" section).
+//  - On a Mac, the app menu's Quit (Cmd-Q) is our own item, so it asks the
+//    page the same way (a test build's Cmd-Q quit without asking); Edit
+//    gives the page copy and paste, Window minimise and close.
 use std::sync::atomic::{AtomicBool, Ordering};
 use tauri::{Emitter, Manager, RunEvent, WindowEvent};
 
@@ -37,6 +40,42 @@ pub fn run() {
                 let _ = w.set_focus();
             }
         }));
+    }
+    #[cfg(target_os = "macos")]
+    {
+        use tauri::menu::{Menu, MenuItem, PredefinedMenuItem, Submenu};
+        builder = builder
+            .menu(|app| {
+                let quit = MenuItem::with_id(app, "p37-quit", "Quit 37 Player", true, Some("CmdOrCtrl+Q"))?;
+                let app_menu = Submenu::with_items(app, "37 Player", true, &[
+                    &PredefinedMenuItem::about(app, None, None)?,
+                    &PredefinedMenuItem::separator(app)?,
+                    &PredefinedMenuItem::hide(app, None)?,
+                    &PredefinedMenuItem::hide_others(app, None)?,
+                    &PredefinedMenuItem::show_all(app, None)?,
+                    &PredefinedMenuItem::separator(app)?,
+                    &quit,
+                ])?;
+                let edit = Submenu::with_items(app, "Edit", true, &[
+                    &PredefinedMenuItem::undo(app, None)?,
+                    &PredefinedMenuItem::redo(app, None)?,
+                    &PredefinedMenuItem::separator(app)?,
+                    &PredefinedMenuItem::cut(app, None)?,
+                    &PredefinedMenuItem::copy(app, None)?,
+                    &PredefinedMenuItem::paste(app, None)?,
+                    &PredefinedMenuItem::select_all(app, None)?,
+                ])?;
+                let window = Submenu::with_items(app, "Window", true, &[
+                    &PredefinedMenuItem::minimize(app, None)?,
+                    &PredefinedMenuItem::close_window(app, None)?,
+                ])?;
+                Menu::with_items(app, &[&app_menu, &edit, &window])
+            })
+            .on_menu_event(|app, event| {
+                if event.id().as_ref() == "p37-quit" {
+                    ask_page(app);
+                }
+            });
     }
     builder
         .manage(Quitting(AtomicBool::new(false)))
