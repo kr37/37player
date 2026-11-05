@@ -131,3 +131,5 @@ window.__fl = {move: moveLibraryToFolder, name: ()=> libraryFolderName(LIBRARY_I
 window.__int = {clear: (what)=> idbClearAll(what)};
 // dropped folders (dropfolder.js)
 window.__drop = {take: (dt)=> takeDrop(dt)};
+// the desktop app's bridge (desktop.js)
+window.__driveStart = (el)=> driveStartFrom(el, {what: "connect"}); window.__inDesktop = ()=> IN_DESKTOP_APP;

@@ -79,6 +79,7 @@ By hand: `./serve.sh` in one terminal (servers on ports 8861 and 8870), then
 | bkkeep | The backup folder keeps a track's files while the track is in the library, even when this browser has lost its audio; only a track leaving the library frees its file |
 | filestore | The files store (1.4.152): records and files round-trip; a replaced or deleted file stays readable until its grace is over; unused files tidied; the library record written only at the expected revision, a damaged one reported; odd keys round-trip |
 | folderlib | Libraries kept in a folder the person chose (1.4.153): offered in Library info, the move, running from the folder, removing the browser's copy, edits kept, "In a folder", permission asked again, a lost folder found again (and a wrong one refused) |
+| desktop | The desktop app's bridge (1.4.156), with a stand-in shell: closing with nothing going on quits; while playing it asks (Keep it open / Close anyway); Google Drive says it isn't available in the desktop app yet; nothing of it in a browser |
 | place | Reloads keep the theme (no dark flash) and the place: Settings section, Help topic, tab; a PIN is still asked |
 | phonecols | Phone: dragging the line between columns with a finger, portrait and landscape, kept after a reload |
 | play | Pressing play on a track still downloading: one download, no restarts, never starts by itself |
