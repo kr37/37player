@@ -54,7 +54,9 @@ jobs:
         env: { GH_TOKEN: "${{ github.token }}" }
         run: |
           tag="desktop-test-${{ github.run_number }}"
+          # GitHub's list cuts titles short, so the number comes first.
+          v=$(curl -s "https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/37-player.html" | head -c 4000 | grep -o 'app-version" content="[^"]*' | head -1 | sed 's/.*content="//')
           gh release create "$tag" 37-Player-mac-test.dmg 37-Player-windows-test-setup.exe 37-Player-windows-test.msi \
             --repo "${{ github.repository }}" --prerelease --target "${{ github.sha }}" \
-            --title "37 Player desktop, test build ${{ github.run_number }}" \
+            --title "Test ${{ github.run_number }}: 37 Player $v, desktop" \
             --notes "Unsigned test builds of the desktop app (Tauri) from branch tauri-spike (desktop/SPIKE.md). Mac: right-click → Open. Windows: SmartScreen → More info → Run anyway."
