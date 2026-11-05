@@ -127,3 +127,32 @@ the real app:
    debugging option) was open failed with WebView2 error 0x8007139F, and the
    open one's webview closed at the same moment. With identical options a
    second launch would open a second window on the same library.
+
+## The Mac (SKBC's Mac mini, macOS 12 Monterey), 5 Nov 2026
+
+Tested by Gen with the GitHub-built test builds (`.github/workflows/desktop-mac.yml`):
+first the Mac-only build 2 (1.4.153), then desktop test build 6 (1.4.160). Unsigned:
+installed from the .dmg and opened without trouble.
+
+| Test | Result | Notes |
+|---|---|---|
+| Install, sync, play | pass | Synced from the droplet library, pulled tracks, played. |
+| Seeking in the 1.3 GB WAV | pass | |
+| Minimised | pass | Tracks move on; silences end on time. |
+| Covered, hidden (Cmd-H) | **fail, fixed** | A 60-second silence took 60–69 s covered and 69 s hidden (Gen's stopwatch: 71 s from 10 s before a track's end to the next track, 71–80 covered, 80 hidden). The silence's clock was only looked at on animation frames and timeupdate, which a covered window on a Mac gets rarely. Fixed in 1.4.158 (`runSilenceClock`): after it, timing "now perfect" (build 6). |
+| Screen locked, display asleep | pass | 71 s, as in the foreground (build 6). |
+| Cmd-Q while playing | **fail, fixed** | Build 2 quit without asking (it predates the question). Build 6, with its own Quit menu item: the dialog works well. |
+| Check for updates | pass | Says a newer desktop version is a new download (1.4.159). |
+| Library info | **fixed** | Said "?'s storage (IndexedDB) for localhost" and "this browser's own storage"; 1.4.161 says the desktop app's own storage. |
+| Starter track, converter | **fixed** | The Mac app's address is `tauri://localhost`, so they were fetched from 37player.com, which refuses that origin (CORS); 1.4.157 takes them from beside the app. |
+| A fresh start | note | Deleting the app keeps its data (`~/Library/WebKit/com.player37.spike`, `~/Library/Caches/com.player37.spike`); delete those for a first run. |
+| Folder picker | absent | As expected in WebKit: no "Keep it in a folder" on the Mac until the Rust files backend. |
+
+Console (build 2): the viewport's `interactive-widget` and the embedded manifest's
+relative `start_url`/`scope` are reported by WebKit; harmless.
+
+Still to test on the Mac: media keys and Now Playing; restart (library, playlists,
+place); the converter; a fresh first run on build 8 or later.
+
+**Verdict for the Mac so far: go.** Every playback problem found was 37 Player's own
+and is fixed; WKWebView on Monterey played everything, including with the display asleep.
