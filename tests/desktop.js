@@ -24,6 +24,9 @@ const modalText = p=> p.evaluate(()=> document.querySelector('.modal-backdrop.sh
   await p.evaluate(()=>{ window.__dbg.setMode('editing'); window.__dbg4.settings(); window.__dbg4.section('about'); }); await sleep(500);
   const about = await p.evaluate(()=> document.getElementById('aboutRunning').textContent);
   ok(/desktop app \(version 1\.4\.159\)/.test(about), 'About names the desktop app\'s own version (' + about + ')');
+  await p.evaluate(()=> window.__dbg4.section('info')); await sleep(800);
+  const where = await p.evaluate(()=> [document.getElementById('infoRunning').textContent, document.getElementById('infoKept').textContent]);
+  ok(/desktop app's own storage \(IndexedDB\)/.test(where[0]) && /desktop app's own storage/.test(where[1]) && !/\?|localhost|browser/.test(where.join(' ')), 'Library info says the desktop app\'s own storage, not a browser (' + where.join(' | ') + ')');
   await p.evaluate(()=> document.getElementById('settingsClose')?.click()); await sleep(300);
   // A shell with a lower bridge number than the page needs: it says so.
   await p.evaluate(()=> localStorage.setItem('__bridge', '0'));
