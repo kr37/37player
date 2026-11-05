@@ -17,10 +17,21 @@ const modalText = p=> p.evaluate(()=> document.querySelector('.modal-backdrop.sh
   await p.evaluateOnNewDocument(()=>{
     window.__TAURI_INTERNALS__ = {};
     window.__quits = 0; window.__listeners = {};
-    window.__TAURI__ = {event: {listen: async (name, fn)=>{ window.__listeners[name] = fn; return ()=>{}; }}, core: {invoke: async (cmd)=>{ if(cmd === 'p37_quit') window.__quits++; }}};
+    window.__TAURI__ = {event: {listen: async (name, fn)=>{ window.__listeners[name] = fn; return ()=>{}; }}, core: {invoke: async (cmd)=>{ if(cmd === 'p37_quit') window.__quits++; if(cmd === 'p37_shell_info') return {version: '1.4.159', bridge: Number(localStorage.getItem('__bridge') || 1)}; }}};
   });
   await p.goto('http://localhost:8861/37-player.html', {waitUntil:'networkidle0'}); await sleep(800); await settle(p);
   ok(await p.evaluate(()=> typeof window.__listeners['p37-close-requested'] === 'function'), 'in the desktop app, it listens for the shell\'s close');
+  await p.evaluate(()=>{ window.__dbg.setMode('editing'); window.__dbg4.settings(); window.__dbg4.section('about'); }); await sleep(500);
+  const about = await p.evaluate(()=> document.getElementById('aboutRunning').textContent);
+  ok(/desktop app \(version 1\.4\.159\)/.test(about), 'About names the desktop app\'s own version (' + about + ')');
+  await p.evaluate(()=> document.getElementById('settingsClose')?.click()); await sleep(300);
+  // A shell with a lower bridge number than the page needs: it says so.
+  await p.evaluate(()=> localStorage.setItem('__bridge', '0'));
+  await p.reload({waitUntil:'networkidle0'}); await sleep(1500);
+  const old = await p.evaluate(()=> document.querySelector('.modal-backdrop.show .modal')?.innerText || '');
+  ok(/newer desktop app/.test(old), 'a shell offering less than the page needs: "Please download the newer desktop app"');
+  await clickText(p, '.modal button', '^OK$'); await p.evaluate(()=> localStorage.removeItem('__bridge')); await p.reload({waitUntil:'networkidle0'}); await sleep(1200);
+  ok(!/newer desktop app/.test(await p.evaluate(()=> document.querySelector('.modal-backdrop.show .modal')?.innerText || '')), 'and not when it offers enough');
   await p.evaluate(()=> window.__listeners['p37-close-requested']()); await sleep(800);
   ok((await p.evaluate(()=> window.__quits)) === 1 && !/Close 37 Player/.test(await modalText(p)), 'nothing going on: it quits at once');
   // Something playing.
