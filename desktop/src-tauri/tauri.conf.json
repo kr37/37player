@@ -1,0 +1,35 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "37 Player",
+  "version": "0.1.0",
+  "identifier": "com.player37.spike",
+  "build": {
+    "frontendDist": "../dist",
+    "beforeDevCommand": "node copy-app.mjs",
+    "beforeBuildCommand": "node copy-app.mjs"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "37 Player",
+        "width": 1300,
+        "height": 900,
+        "dragDropEnabled": false
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["msi", "nsis"],
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ]
+  }
+}

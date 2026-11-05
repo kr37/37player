@@ -2,3 +2,8 @@
 !/libraries/starter.mp3
 /ffmpeg/
 *.mp4
+
+# The desktop app (Tauri): build output and dependencies
+/desktop/src-tauri/target/
+/desktop/node_modules/
+/desktop/dist/
