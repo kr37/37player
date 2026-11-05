@@ -18,6 +18,16 @@ Read the sections that bear on your task before changing code.
   variables (NOTES.md, "Colours and controls"); don't invent a new button
   style for a new screen.
 
+## The droplet is off limits
+
+The droplet (37player.com, kr37.net) is the production server: it serves
+the website and the Centers' shared libraries. **Never connect to it** (SSH,
+sshfs, scp, rsync, its web root), even to pass a file along. Gen deploys.
+- Test builds of the desktop app come from GitHub Actions, as pre-releases
+  on the repo's Releases page.
+- Something to paste on another machine goes in a file in the repo (or a
+  gist), not on the website.
+
 ## Branches and commits
 
 - `main` is what Gen has approved; `dev` is where work lands for him to try
