@@ -36,6 +36,8 @@ The copy the browser keeps also protects you from the website itself. Whenever w
 
 On 37player.com, **Automatic restore** (Settings → Backups) adds a safety net for the first three: when 37 Player opens empty, it offers to bring each library back from its shared library or says where its backups were. See 'Backing up'.
 
+A library **kept in a folder** (Chrome and Edge on a computer; see 'Libraries') is out of the browser's reach altogether: none of the above erases it.
+
 For everything on that list, the real protection is a **backup**. In Chrome, Edge, and other browsers built on the same engine, backups to a folder happen automatically (in Brave, first turn on "File System Access API" at brave://flags). In Firefox and Safari, and on phones and tablets, backups are manual. See 'Backing up'.
 
 ### If the computer freezes or loses power
@@ -48,6 +50,12 @@ If neither can be read, 37 Player says so when it starts, and changes nothing un
 - **Rebuild the tracks from the audio still stored here.** The audio is stored separately and usually survives; each track gets its name, artist, album and artwork from the file itself. Playlists can't be rebuilt this way, so backups to your backup folder pause until you've restored from it (or chosen to replace it).
 
 Don't clear the browser's data in this situation — that would erase the audio that's still there.
+
+### If storage comes back empty
+
+Now and then a browser that's short of space hands 37 Player empty storage instead of the library, without saying so. When that happens to a library that had tracks, 37 Player says **Your library didn't load**, and writes nothing until you choose: **Try again** once there's room, which usually brings everything back, or start empty. Don't import, join or restore in the meantime.
+
+A restore that's cut off part-way (a full disk, a crash, closing the window) is different: the library had been emptied to make way for the backup. 37 Player then opens it empty and says **A restore didn't finish**: restore the backup again. The same goes for getting a shared library again.
 
 ### Try it: run with no internet
 

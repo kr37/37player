@@ -10,6 +10,10 @@ In Chrome or Edge on a computer (Windows, Mac, Linux, or Chromebook), 37 Player 
 - **A synced folder** (Dropbox, Google Drive, Syncthing, or similar) also gives you a copy off this computer.
 - **The button at the top** shows how things stand, on every tab: **✓ Backed up** when all is well, **Backing up…** while it catches up.
 
+### A library kept in a folder
+
+A library kept in a folder (Chrome or Edge on a computer; see 'Libraries') isn't in the browser at all, so nothing the browser does can erase it, and it needs no backup folder: the folder is the library. The button at the top says **In a folder**. Back that folder up as you back up the rest of the computer, or make a manual backup (.37p) now and then.
+
 ### Manual backups (other browsers, phones, and tablets)
 
 Firefox, Safari, and browsers on phones and tablets can't write to a folder, so backups there are manual — at your own risk. When the library has changes that haven't been backed up, a **Back up library** button appears at the top, red straight away. Clicking it downloads a backup file, ending in **.37p** (a zip inside; before version 1.4.092 backups ended in .zip, and still restore). Keep it somewhere safe; installed as an app on a computer, double-clicking a .37p file opens 37 Player and offers to restore it. The first one is a full backup of everything. After that you can choose between backing up just the changes since the full backup — usually tiny and quick — or a new full backup; 37 Player shows the size of each, and recommends a new full backup once the changes grow past half its size, or the full backup is more than two weeks old. A changes backup is no use without the full backup it builds on, and 37 Player can't see your files: if you've deleted that full backup, or aren't sure you still have it, choose **New full backup**. When a changes backup would be the usual choice, 37 Player asks first whether you still have that full backup (at most once a week), naming its file.

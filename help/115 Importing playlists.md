@@ -43,6 +43,10 @@ A folder with no playlist files in it can still come in as playlists. The review
 
 Tracks are in track-number order, then by file name ("2" before "10"); a track with no number comes after the numbered ones. Since these playlists use every file, this and **Import only tracks that are in playlists** can't both be on.
 
+### Dragging folders in
+
+You can drag folders from the file manager as well as choosing them. Dropped on the 'Library' tab, a folder goes through the same import as **Choose a folder…**, playlists and all. Dropped on a playlist, the recordings inside it (sub-folders included, in name order) go straight into that playlist.
+
 ### Stopping an import part-way
 
 **Stop** during an import doesn't throw anything away: the audio already in stays in. A short dialog says how far it got and how many playlists have all their tracks so far, and offers to make **the complete playlists**, **all of them** (tracks not imported yet become Stops, and the playlist is flagged), or **none** — or to **carry on importing** from where it stopped. Importing the same folder again later brings in the rest: what's already in is recognized, and a playlist made the first time is offered for **Replace**.
