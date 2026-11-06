@@ -160,9 +160,19 @@ stays theirs, and the library only points into it.
 - Its recordings play by address and are read in pieces like the library's own.
 - A shared library still gets a copy of the audio when it syncs (another
   device can't reach this computer's folder).
-- **Question for Gen:** writing changed tags into the file (1.4.x "tags that
-  stay with the files") changes a file that's yours, not the library's. Do it
-  in place-used folders too, or only for files the library owns?
+- **Edits to a track used in place** (Gen's three ways, 5 Nov 2026: a) copy
+  the recording into the library and point there, b) keep the edited details
+  in the library's records only, c) write them into the file, which may
+  belong to Music.app's library; Gen leaned to a), and also floated setup
+  options: no edits at all, ask each time, or a lasting choice).
+  **Suggested (waiting for Gen): b) as the rule, no prompts, plus one switch
+  per folder, "Also write my changes into these files" (c), off by default.**
+  a) quietly turns Use in place back into copying, one edit at a time (the
+  disk fills unpredictably); under b) nothing inside 37 Player loses the
+  edit, and everything that leaves it (exports, .37p, the shared library's
+  copy) gets the edited tags written into its own copy, so only the original
+  file stays as it was, which is what Music.app would want. "No edits at all"
+  can come later if someone asks.
 - Use in place and Move come after the backend and readable names work (they
   need the roots and the addresses, nothing more).
 
@@ -207,5 +217,5 @@ stays theirs, and the library only points into it.
 
 ## Still open
 
-- Tags written into files in folders used in place, or only into the
-  library's own files?
+- Edits to tracks used in place: b) plus a per-folder switch for c), as
+  suggested above?
