@@ -15,7 +15,7 @@ window.__rv = {rows: syncReviewRows, classify: (r,m)=>syncClassifyPartial(r,m,ne
 window.__aa = {analyze: analyzeAudio};
 // files this browser can't play (conv.js)
 window.__conv = {importFiles, recheck: recheckStoredAudio, cantPlay: trackCantPlay, describe: describeFormatProblem,
-  convert: (ids)=>convertTracks(ids), state: ()=>({queue: convertQueue.slice(), running: convertRunning, worker: !!converterWorker, bar: activeOperation && activeOperation.text}), stored: ()=>converterStored().then(r=>!!r), libPreview: (id)=>playLibraryPreview(id), overlay: (id)=>openPlaylistOverlay(id), put: (js, wasm, version)=> mainStatePut({key: "converter", version, js, wasm, size: js.size + wasm.size, at: Date.now()}).then(()=>{ converterRecCache = undefined; converterRefetched = false; }), version: ()=> converterStored().then(r=> r && r.version), stop: ()=> converterStop(),
+  convert: (ids)=>convertTracks(ids), state: ()=>({queue: convertQueue.slice(), running: convertRunning, worker: !!converterWorker, bar: activeOperation && activeOperation.text}), stored: ()=>converterStored().then(r=>!!r), libPreview: (id)=>playLibraryPreview(id), overlay: (id)=>openPlaylistOverlay(id), put: (js, wasm, version)=> mainStatePut({key: "converter", version, js, wasm, size: js.size + wasm.size, at: Date.now()}).then(()=>{ converterRecCache = undefined; converterRefetched = false; }), version: ()=> converterStored().then(r=> r && r.version), stop: ()=> converterStop(), garbleProbes: (n)=>{ const real = window.__realConverterAsk || (window.__realConverterAsk = converterAsk); let left = n; converterAsk = (msg)=>{ if(left > 0 && msg && msg.file && !msg.outName){ left--; msg = Object.assign({}, msg, {file: new File([new Uint8Array(msg.file.size).fill(0x5a)], msg.file.name)}); } return real(msg); }; },
   musicEntries: (ids, convert)=>buildMusicEntries(new Set(ids), null, {convert: !!convert}), dropOriginal: (id)=>dropKeptOriginal(findLibraryTrack(id)), policy: ()=>formatPolicy(), matches: (id)=>trackMatchesPolicy(findLibraryTrack(id)), queueRecord: ()=>idbGet("state", "convertQueue").then(r=> r && r.value || null)};
 // No quiet converter download 20 s after opening, unless a test asks for it.
 window.__noAutoConverter = true;
@@ -76,7 +76,7 @@ window.__moved = {to: ()=> MOVED_TO, newAddress: newAddressFor, open: openMovedD
 window.__wk = {rewrite: rewriteFileTagsIfPossible, stored: async (id)=>{ const r = await idbGet("audio", id); return r ? {size: r.blob.size, read: (await r.blob.arrayBuffer()).byteLength, type: r.blob.type} : null; }, tags: async (id)=>{ const r = await idbGet("audio", id); return parseAudioTags(r.blob); }};
 // damaged stored files (damaged.js)
 window.__dmg = {ids: ()=> [...damagedAudio.ids], get: async (id)=> (await idbGet("audio", id)).blob, salvage: salvageOldFile, skipped: ()=> zipSkipped.slice(),
-  zip: (entries)=> buildZipBlob(entries),
+  zip: (entries)=> buildZipBlob(entries), put: (id, blob)=> idbPut("audio", {id, blob, rev: uid()}), check: ()=> checkStoredFiles(), countCopies: ()=>{ window.__wkCopies = 0; const real = webkitOwnBytes; webkitOwnBytes = async (b)=>{ window.__wkCopies++; return real(b); }; },
   // This browser stores files properly, so "damaged" is pretended: a stored
   // WAV whose second RIFF header starts at byte 12 (the Safari pattern).
   pretend: ()=>{ storedAudioDamaged = async (id)=>{ const r = await idbGet("audio", id); if(!r || !r.blob) return false; const h = new Uint8Array(await r.blob.slice(0, 16).arrayBuffer()); return String.fromCharCode(...h.subarray(12, 16)) === "RIFF"; }; }};
@@ -123,7 +123,7 @@ window.__logs = {send: (force)=> sharedSendLogs(force), others: sharedOtherLogs,
 // the backup folder keeping files whose audio isn't here (bkkeep.js)
 window.__bk = {run: ()=> runFolderBackupHere(), fullScan: ()=>{ backupFullScanNeeded = true; }, info: ()=> backupInfo, del: (ids)=> deleteLibraryTracks(ids)};
 // the files store itself (filestore.js): a store in OPFS folder `name`, whatever this device uses
-window.__fs = {make: (name)=> new FolderLibraryStore(async (create)=>{ const top = await navigator.storage.getDirectory(); return folderChild(top, name, create); }, "37player-files-test~" + name, {}),
+window.__fs = {make: (name)=> new FolderLibraryStore(async (create)=>{ const top = await navigator.storage.getDirectory(); return folderChild(top, name, create); }, "37player-files-test~" + name, {}), makeNamed: (name, paths, canMove)=> new FolderLibraryStore(async (create)=>{ const top = await navigator.storage.getDirectory(); return folderChild(top, name, create); }, "37player-files-test~" + name, {recordingPath: (id)=> paths[id] || null, canMove: (id)=> !canMove || canMove(id)}), pathFor: (t)=> recordingPathFor(t), makeNamedDesktop: (name, paths, canMove)=> new FolderLibraryStore(async ()=> desktopRootDir(name), "37player-files-test~d~" + name, {recordingPath: (id)=> paths[id] || null, canMove: (id)=> !canMove || canMove(id)}), makeDesktop: (name)=> new FolderLibraryStore(async ()=> desktopRootDir(name), "37player-files-test~d~" + name, {}),
   keyOf: fileKeyOf, unkey: keyOfFile};
 // libraries kept in a folder (folderlib.js)
 window.__fl = {move: moveLibraryToFolder, name: ()=> libraryFolderName(LIBRARY_ID), forget: ()=> folderHandleDelete(LIBRARY_ID), kind: ()=> libStore.constructor.name};
@@ -135,3 +135,5 @@ window.__drop = {take: (dt)=> takeDrop(dt)};
 window.__driveStart = (el)=> driveStartFrom(el, {what: "connect"}); window.__inDesktop = ()=> IN_DESKTOP_APP;
 // deleting a track that's playing (delplaying.js)
 window.__delAsk = (ids)=> confirmDeleteTracksFromLibrary(ids, ()=> deleteLibraryTracks(ids));
+window.__edPrev = (id)=>{ loadEditorPreview(id); document.getElementById('edPreviewPlay').click(); };
+window.__edPrevPaused = ()=> document.getElementById('edPreviewAudio').paused;

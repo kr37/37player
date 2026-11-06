@@ -134,3 +134,22 @@ device, and press "Copy results" at the end.
 http.server 8862)`, then `node convert-page.js [more files]`; `FMT=aac`
 (or `flac`, `small`) picks the format. Speeds from it say little about a real
 device.
+
+## In WebKit and Firefox
+
+The tests are written for Puppeteer and Chrome. `engines/adapter.js` is a
+Puppeteer-shaped wrapper over Playwright (as much as the tests use), and
+`engines/hook.js` swaps it in for `puppeteer-core` when `ENGINE` is set, so
+the same files run in WebKit (Safari's engine: iPads, Safari, the Mac desktop
+app) and Firefox:
+
+    npm i --no-save playwright && npx playwright install --with-deps webkit firefox
+    ./run-engines.sh webkit              (every test)
+    ./run-engines.sh firefox e2e conv    (just these)
+
+`./run-engines.sh chromium` runs them through the adapter in Chrome, to check
+the adapter itself. On GitHub, `.github/workflows/tests-engines.yml` runs both
+engines on each pull request to main, and when asked; free there (public
+repository). Not every test can pass in every engine: some exercise Chrome-only
+things (folder access, CDP); the list of those is kept in NOTES.md, Testing.
+

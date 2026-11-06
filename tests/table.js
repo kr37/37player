@@ -126,9 +126,9 @@ const bytes = s=>{ const m = /([\d.,]+)\s*(B|KB|MB|GB)/.exec(s); if(!m) return 0
   const ed = await p.evaluate(()=>({btn: !!document.getElementById('editConvertNow'), note: document.getElementById('editCantPlayNote')?.textContent || ''}));
   ok(ed.btn && /Windows Media Audio/.test(ed.note), 'and in its details (✎): why, and Convert it now: ' + ed.note);
   await p.evaluate(()=> document.querySelectorAll('.modal [data-close]').forEach(b=>b.click())); await sleep(300);
-  // The player: one row above the waveform at a computer's width
-  const rows = await p.evaluate(()=>{ const r = document.querySelector('.lib-preview-row'); const kids = [...r.children].map(k=>{ const b = k.getBoundingClientRect(); return Math.round(b.top + b.height / 2); }); return {tops: kids, wave: !!document.querySelector('#libPreviewPanel > canvas#libWaveform')}; });
-  ok(rows.wave && Math.max(...rows.tops) - Math.min(...rows.tops) <= 4, 'the player is one row above its waveform: ' + JSON.stringify(rows.tops));
+  // The player: one line at the bottom of the page at a computer's width (1.4.168)
+  const rows = await p.evaluate(()=>{ const bar = document.getElementById('libPlayerBar'); const kids = [...bar.children].map(k=>{ const b = k.getBoundingClientRect(); return Math.round(b.top + b.height / 2); }); const bb = bar.getBoundingClientRect(), sb = document.getElementById('libraryScreen').getBoundingClientRect(); return {tops: kids, wave: !!bar.querySelector('canvas#libWaveform'), atBottom: Math.abs(bb.bottom - sb.bottom) <= 2, name: bar.querySelector('.lib-preview-title').textContent}; });
+  ok(rows.wave && rows.atBottom && Math.max(...rows.tops) - Math.min(...rows.tops) <= 4, 'the player is one line at the bottom, waveform included: ' + JSON.stringify(rows));
   await p.screenshot({path: 'shots/table-1300-selected.png'});
   // Kept after a reload
   await p.reload({waitUntil:'networkidle0'}); await sleep(1200); await settle(p);

@@ -56,8 +56,14 @@ const waitModal = async (p, re, ms)=>{ for(let i=0; i<(ms||15000)/200; i++){ con
   await p.evaluate(()=> document.getElementById('infoKeepFolder').click());
   const ask = await waitModal(p, /Keep this library in a folder/);
   ok(/Automatic backups stop/.test(ask), 'the dialog explains (where, how much, backups)');
-  const nav = p.waitForNavigation({waitUntil: 'networkidle0', timeout: 60000});
+  ok(/empty folder for this library/.test(ask), 'it says an empty folder made for the library can be chosen');
   await clickText(p, '.modal button', '^Choose where');
+  // "picked" is empty (1.4.180, Gen): use it as it is, or make the library's folder inside it.
+  const which = await waitModal(p, /Use this folder/);
+  const btns = await p.evaluate(()=> [...document.querySelectorAll('#askButtons button')].map(b=> b.textContent.trim() + (b.classList.contains('primary') ? '*' : '')));
+  ok(/is empty/.test(which) && btns[0] === 'Use “picked”*' && /^Make “.+” inside$/.test(btns[1]), 'an empty folder: use it, or make the library\'s folder inside (' + btns.join(' | ') + ')');
+  const nav = p.waitForNavigation({waitUntil: 'networkidle0', timeout: 60000});
+  await clickText(p, '.modal button', '^Make “');
   await nav; await sleep(1000);
   const after = await p.evaluate(()=>{ const r = window.__dbg.getRoot(); return {ids: r.library.map(t=> t.id).sort(), tree: JSON.stringify(r.tree), kind: window.__fl.kind(), folder: window.__fl.name()}; });
   ok(after.kind === 'FolderLibraryStore' && !!after.folder, 'after the reload it runs from the folder (' + after.kind + ', "' + after.folder + '")');
@@ -65,11 +71,14 @@ const waitModal = async (p, re, ms)=>{ for(let i=0; i<(ms||15000)/200; i++){ con
   const files = await p.evaluate(async (folder)=>{
     const d = await (await (await navigator.storage.getDirectory()).getDirectoryHandle('picked')).getDirectoryHandle(folder);
     const top = []; for await (const [n] of d.entries()) top.push(n);
-    const audio = []; for await (const [n] of (await d.getDirectoryHandle('audio')).entries()) audio.push(n);
-    return {top: top.sort(), audio: audio.sort()};
+    // Readable names (1.4.174): recordings as Artist/Album/Title, the rest in "37 Player's own files"
+    const music = []; const walk = async (dir, pre)=>{ for await (const [n, h] of dir.entries()){ if(n === "37 Player's own files") continue; if(h.kind === 'directory') await walk(h, pre + n + '/'); else if(pre) music.push(pre + n); } };
+    await walk(d, '');
+    const own = []; for await (const [n] of (await d.getDirectoryHandle("37 Player's own files")).entries()) own.push(n);
+    return {top: top.sort(), audio: music.sort(), own: own.sort()};
   }, after.folder);
-  ok(files.top.includes('37 Player library.json') && files.top.includes('README.txt') && files.top.includes('state'), 'the folder has its marker, a README and the library (' + files.top.join(', ') + ')');
-  ok(files.audio.filter(n=> /\.mp3$/.test(n)).length === 2, 'and both recordings (' + files.audio.join(', ') + ')');
+  ok(files.top.includes('37 Player library.json') && files.top.includes('README.txt') && files.top.includes("37 Player's own files") && files.own.includes('state') && files.own.includes('audio'), 'the folder has its marker, a README and the library (' + files.top.join(', ') + ' | own: ' + files.own.join(', ') + ')');
+  ok(files.audio.filter(n=> /^music\/[^/]+\/[^/]+\/[^/]+\.mp3$/.test(n)).length === 2, 'and both recordings, under music/ with readable names (' + files.audio.join(', ') + ')');
   const plays = await p.evaluate(async (id)=>{ const u = await window.__audioUrl(id); const b = await (await fetch(u)).blob(); return b.size; }, after.ids[0]);
   ok(plays > 1000, 'a track\'s audio comes from the folder (' + plays + ' bytes)');
   // The browser's copy.
@@ -83,6 +92,19 @@ const waitModal = async (p, re, ms)=>{ for(let i=0; i<(ms||15000)/200; i++){ con
   await p.evaluate(async()=>{ const f = ns=>{ for(const n of ns){ if(n.kind==='playlist') return n; if(n.children){ const x=f(n.children); if(x) return x; } } }; f(window.__dbg.getRoot().tree).name = 'Renamed in a folder'; await window.__dbg.saveState(); });
   await p.reload({waitUntil: 'networkidle0'}); await sleep(1200);
   ok((await p.evaluate(()=> JSON.stringify(window.__dbg.getRoot().tree))).includes('Renamed in a folder'), 'an edit is kept after a reload');
+  // A track's details change: its recording's name follows (1.4.174), and back on Undo
+  const ls = (folder)=> p.evaluate(async (folder)=>{ const d = await (await (await navigator.storage.getDirectory()).getDirectoryHandle('picked')).getDirectoryHandle(folder); const out = []; const walk = async (dir, pre)=>{ for await (const [n, h] of dir.entries()){ if(n === "37 Player's own files") continue; if(h.kind === 'directory') await walk(h, pre + n + '/'); else if(pre) out.push(pre + n); } }; await walk(d, ''); return out.sort(); }, folder);
+  await p.evaluate(async()=>{ const tr = window.__dbg.getRoot().library.find(t=> /tone/i.test(t.filename || t.name)); tr.artist = 'Test Artist'; tr.album = 'Test Album'; tr.trackNo = 7; tr.name = 'Renamed tone'; await window.__dbg.saveState(); });
+  await sleep(4500);
+  const renamed = await ls(after.folder);
+  ok(renamed.includes('music/Test Artist/Test Album/07 Renamed tone.mp3') && !renamed.some(n=> n.startsWith('music/Unknown Artist/')), 'editing a track\'s details renames its recording (' + renamed.join(', ') + ')');
+  const plays2 = await p.evaluate(async ()=>{ const tr = window.__dbg.getRoot().library.find(t=> t.name === 'Renamed tone'); const u = await window.__audioUrl(tr.id); return (await (await fetch(u)).blob()).size; });
+  ok(plays2 > 100000, 'and it still plays from there (' + plays2 + ' bytes)');
+  // playlists/: an .m3u8 for each playlist, pointing into ../music/ (1.4.179), and today's README
+  const pl = await p.evaluate(async (folder)=>{ const d = await (await (await navigator.storage.getDirectory()).getDirectoryHandle('picked')).getDirectoryHandle(folder); const out = {}; const walk = async (dir, pre)=>{ for await (const [n, h] of dir.entries()){ if(h.kind === 'directory') await walk(h, pre + n + '/'); else out[pre + n] = await (await h.getFile()).text(); } }; await walk(await d.getDirectoryHandle('playlists'), 'playlists/'); out.README = await (await (await d.getFileHandle('README.txt')).getFile()).text(); return out; }, after.folder);
+  const m3u = Object.entries(pl).filter(([k])=> k.endsWith('.m3u8'));
+  ok(m3u.length >= 1 && m3u.some(([, v])=> /^#EXTM3U/.test(v) && /\.\.\/(\.\.\/)*music\/Test Artist\/Test Album\/07 Renamed tone\.mp3/.test(v)), 'playlists/ has the playlists as .m3u8, pointing into music/ (' + m3u.map(([k])=> k).join(', ') + ')');
+  ok(/"music"/.test(pl.README) && /"playlists"/.test(pl.README), 'and the README says what\'s where');
 
   // Permission to ask for again.
   await p.evaluate(()=> localStorage.setItem('__permPrompt', '1'));
