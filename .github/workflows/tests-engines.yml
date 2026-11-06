@@ -15,6 +15,10 @@ on:
         description: "Tests to run (empty: all)"
         required: false
         default: ""
+# A newer push to the same pull request replaces a run still going.
+concurrency:
+  group: engines-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 jobs:
   tests:
     strategy:
