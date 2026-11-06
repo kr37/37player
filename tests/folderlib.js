@@ -72,7 +72,7 @@ const waitModal = async (p, re, ms)=>{ for(let i=0; i<(ms||15000)/200; i++){ con
     return {top: top.sort(), audio: music.sort(), own: own.sort()};
   }, after.folder);
   ok(files.top.includes('37 Player library.json') && files.top.includes('README.txt') && files.top.includes("37 Player's own files") && files.own.includes('state') && files.own.includes('audio'), 'the folder has its marker, a README and the library (' + files.top.join(', ') + ' | own: ' + files.own.join(', ') + ')');
-  ok(files.audio.filter(n=> /^[^/]+\/[^/]+\/[^/]+\.mp3$/.test(n)).length === 2, 'and both recordings, under readable names (' + files.audio.join(', ') + ')');
+  ok(files.audio.filter(n=> /^music\/[^/]+\/[^/]+\/[^/]+\.mp3$/.test(n)).length === 2, 'and both recordings, under music/ with readable names (' + files.audio.join(', ') + ')');
   const plays = await p.evaluate(async (id)=>{ const u = await window.__audioUrl(id); const b = await (await fetch(u)).blob(); return b.size; }, after.ids[0]);
   ok(plays > 1000, 'a track\'s audio comes from the folder (' + plays + ' bytes)');
   // The browser's copy.
@@ -91,9 +91,14 @@ const waitModal = async (p, re, ms)=>{ for(let i=0; i<(ms||15000)/200; i++){ con
   await p.evaluate(async()=>{ const tr = window.__dbg.getRoot().library.find(t=> /tone/i.test(t.filename || t.name)); tr.artist = 'Test Artist'; tr.album = 'Test Album'; tr.trackNo = 7; tr.name = 'Renamed tone'; await window.__dbg.saveState(); });
   await sleep(4500);
   const renamed = await ls(after.folder);
-  ok(renamed.includes('Test Artist/Test Album/07 Renamed tone.mp3') && !renamed.some(n=> n.startsWith('Unknown Artist/')), 'editing a track\'s details renames its recording (' + renamed.join(', ') + ')');
+  ok(renamed.includes('music/Test Artist/Test Album/07 Renamed tone.mp3') && !renamed.some(n=> n.startsWith('music/Unknown Artist/')), 'editing a track\'s details renames its recording (' + renamed.join(', ') + ')');
   const plays2 = await p.evaluate(async ()=>{ const tr = window.__dbg.getRoot().library.find(t=> t.name === 'Renamed tone'); const u = await window.__audioUrl(tr.id); return (await (await fetch(u)).blob()).size; });
   ok(plays2 > 100000, 'and it still plays from there (' + plays2 + ' bytes)');
+  // playlists/: an .m3u8 for each playlist, pointing into ../music/ (1.4.179), and today's README
+  const pl = await p.evaluate(async (folder)=>{ const d = await (await (await navigator.storage.getDirectory()).getDirectoryHandle('picked')).getDirectoryHandle(folder); const out = {}; const walk = async (dir, pre)=>{ for await (const [n, h] of dir.entries()){ if(h.kind === 'directory') await walk(h, pre + n + '/'); else out[pre + n] = await (await h.getFile()).text(); } }; await walk(await d.getDirectoryHandle('playlists'), 'playlists/'); out.README = await (await (await d.getFileHandle('README.txt')).getFile()).text(); return out; }, after.folder);
+  const m3u = Object.entries(pl).filter(([k])=> k.endsWith('.m3u8'));
+  ok(m3u.length >= 1 && m3u.some(([, v])=> /^#EXTM3U/.test(v) && /\.\.\/(\.\.\/)*music\/Test Artist\/Test Album\/07 Renamed tone\.mp3/.test(v)), 'playlists/ has the playlists as .m3u8, pointing into music/ (' + m3u.map(([k])=> k).join(', ') + ')');
+  ok(/"music"/.test(pl.README) && /"playlists"/.test(pl.README), 'and the README says what\'s where');
 
   // Permission to ask for again.
   await p.evaluate(()=> localStorage.setItem('__permPrompt', '1'));
