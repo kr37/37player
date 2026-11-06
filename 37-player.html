@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="1.4.182">
+<meta name="app-version" content="1.4.187">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -160,6 +160,11 @@
     transform: scale(var(--ui-scale));
     transform-origin: top left;
   }
+  /* The desktop app on an older Mac (Monterey's WebKit, 6 Nov 2026): 100vh
+     and 100dvh came out 28px (the title bar) taller than the window shows,
+     so the bottom of every screen, the Library's player too, was cut off.
+     There, the window's real height is set by script (--app-h). */
+  html.fit-height #app{ height: calc((var(--app-h) - var(--opbar-h, 0px)) / var(--ui-scale)); }
 
   header.topbar{
     display:flex; align-items:center; gap:12px;
@@ -3464,6 +3469,12 @@ const STRINGS = {
     "partialDeleteNoteTracks": "This device holds only what you choose. Remove from this device: only this device loses these tracks; the shared library keeps them. Delete everywhere: they're deleted from the shared library and every device.",
     "partialRemoveHere": "Remove from this device",
     "partialDeleteAll": "Delete everywhere",
+    "partialKeptElsewhere": "Kept in the shared library: {n} of the tracks you deleted everywhere, because its playlists still use them ({playlists}). They're off this device.",
+    "partialElsewhereTitle": "Also in playlists that aren't on this device",
+    "partialElsewhereBody": "{n} of these tracks are in playlists in the shared library that this device doesn't hold:",
+    "partialElsewhereNote": "From those playlists too: they're taken out of those playlists and deleted everywhere, as a device holding everything would do. Keep them for those playlists: the shared library keeps them there; they leave this device only.",
+    "partialElsewherePurge": "Delete everywhere, from those playlists too",
+    "partialElsewhereKeep": "Keep them for those playlists",
     "partialOffTitle": "Bring everything here?",
     "partialOffBody": "This device will then receive the whole shared library: {n} more tracks, about {size}.",
     "partialOffBtn": "Bring everything",
@@ -4380,6 +4391,13 @@ const STRINGS = {
     "restoreContinueOlderBtn": "Restore the backup from {date}",
     "restoreExactBtn": "Restore exactly as backed up, removing anything else from the library",
     "mergeIntoCurrentBtn": "Merge into current library (keeps everything already there)",
+    "mergeChangedTitle": "{n} tracks here are different in the file",
+    "mergeChangedTitleOne": "A track here is different in the file",
+    "mergeChangedBody": "These tracks are already in this library, and the file has other details for them, or another copy of the recording:",
+    "mergeInTheFile": "in the file: {details}",
+    "mergeChangedMore": "…and {n} more",
+    "mergeKeepMine": "Keep this library's (recommended)",
+    "mergeTakeFile": "Take the file's",
     "settingsSecPin": "PIN",
     "settingsSecInfo": "Library info",
     "fbBtn": "Send feedback…",
@@ -5231,6 +5249,12 @@ const STRINGS = {
     "partialDeleteNoteTracks": "Este dispositivo tiene solo lo que eliges. Quitar de este dispositivo: solo este dispositivo pierde estas pistas; la biblioteca compartida las conserva. Eliminar en todas partes: se eliminan de la biblioteca compartida y de todos los dispositivos.",
     "partialRemoveHere": "Quitar de este dispositivo",
     "partialDeleteAll": "Eliminar en todas partes",
+    "partialKeptElsewhere": "Se conservan en la biblioteca compartida {n} de las pistas que eliminó en todas partes, porque sus listas aún las usan ({playlists}). Ya no están en este dispositivo.",
+    "partialElsewhereTitle": "También en listas que no están en este dispositivo",
+    "partialElsewhereBody": "{n} de estas pistas están en listas de la biblioteca compartida que este dispositivo no tiene:",
+    "partialElsewhereNote": "También de esas listas: se quitan de esas listas y se eliminan en todas partes, como haría un dispositivo que lo tiene todo. Conservarlas para esas listas: la biblioteca compartida las mantiene allí; solo salen de este dispositivo.",
+    "partialElsewherePurge": "Eliminar en todas partes, también de esas listas",
+    "partialElsewhereKeep": "Conservarlas para esas listas",
     "partialOffTitle": "¿Traer todo aquí?",
     "partialOffBody": "Este dispositivo recibirá entonces toda la biblioteca compartida: {n} pistas más, unos {size}.",
     "partialOffBtn": "Traer todo",
@@ -6147,6 +6171,13 @@ const STRINGS = {
     "restoreContinueOlderBtn": "Restaurar la copia del {date}",
     "restoreExactBtn": "Restaurar exactamente como se copió, quitando todo lo demás de la biblioteca",
     "mergeIntoCurrentBtn": "Combinar con la biblioteca actual (conserva todo lo que ya hay)",
+    "mergeChangedTitle": "{n} pistas de aquí son distintas en el archivo",
+    "mergeChangedTitleOne": "Una pista de aquí es distinta en el archivo",
+    "mergeChangedBody": "Estas pistas ya están en esta biblioteca, y el archivo trae otros datos para ellas, u otra copia de la grabación:",
+    "mergeInTheFile": "en el archivo: {details}",
+    "mergeChangedMore": "…y {n} más",
+    "mergeKeepMine": "Conservar las de esta biblioteca (recomendado)",
+    "mergeTakeFile": "Tomar las del archivo",
     "settingsSecPin": "PIN",
     "settingsSecInfo": "Información de la biblioteca",
     "fbBtn": "Enviar comentarios…",
@@ -6998,6 +7029,12 @@ const STRINGS = {
     "partialDeleteNoteTracks": "Cet appareil ne contient que ce que vous choisissez. Retirer de cet appareil : seul cet appareil perd ces pistes ; la bibliothèque partagée les garde. Supprimer partout : elles sont supprimées de la bibliothèque partagée et de tous les appareils.",
     "partialRemoveHere": "Retirer de cet appareil",
     "partialDeleteAll": "Supprimer partout",
+    "partialKeptElsewhere": "Conservées dans la bibliothèque partagée : {n} des pistes supprimées partout, car ses playlists les utilisent encore ({playlists}). Elles ne sont plus sur cet appareil.",
+    "partialElsewhereTitle": "Aussi dans des playlists absentes de cet appareil",
+    "partialElsewhereBody": "{n} de ces pistes sont dans des playlists de la bibliothèque partagée que cet appareil n'a pas :",
+    "partialElsewhereNote": "De ces playlists aussi : elles en sont retirées et supprimées partout, comme le ferait un appareil qui a tout. Les garder pour ces playlists : la bibliothèque partagée les y conserve ; elles quittent seulement cet appareil.",
+    "partialElsewherePurge": "Supprimer partout, de ces playlists aussi",
+    "partialElsewhereKeep": "Les garder pour ces playlists",
     "partialOffTitle": "Tout apporter ici ?",
     "partialOffBody": "Cet appareil recevra alors toute la bibliothèque partagée : {n} pistes de plus, environ {size}.",
     "partialOffBtn": "Tout apporter",
@@ -7914,6 +7951,13 @@ const STRINGS = {
     "restoreContinueOlderBtn": "Restaurer la sauvegarde du {date}",
     "restoreExactBtn": "Restaurer exactement comme sauvegardé, en retirant tout le reste de la bibliothèque",
     "mergeIntoCurrentBtn": "Fusionner avec la bibliothèque actuelle (garde tout ce qui s'y trouve)",
+    "mergeChangedTitle": "{n} pistes d'ici sont différentes dans le fichier",
+    "mergeChangedTitleOne": "Une piste d'ici est différente dans le fichier",
+    "mergeChangedBody": "Ces pistes sont déjà dans cette bibliothèque, et le fichier a d'autres informations pour elles, ou une autre copie de l'enregistrement :",
+    "mergeInTheFile": "dans le fichier : {details}",
+    "mergeChangedMore": "…et {n} de plus",
+    "mergeKeepMine": "Garder celles de cette bibliothèque (recommandé)",
+    "mergeTakeFile": "Prendre celles du fichier",
     "settingsSecPin": "Code PIN",
     "settingsSecInfo": "Infos bibliothèque",
     "fbBtn": "Envoyer un commentaire…",
@@ -8765,6 +8809,12 @@ const STRINGS = {
     "partialDeleteNoteTracks": "Este dispositivo guarda só o que você escolhe. Remover deste dispositivo: só este dispositivo perde estas faixas; a biblioteca compartilhada as mantém. Excluir em todos: são excluídas da biblioteca compartilhada e de todos os dispositivos.",
     "partialRemoveHere": "Tirar deste dispositivo",
     "partialDeleteAll": "Excluir em todos",
+    "partialKeptElsewhere": "Mantidas na biblioteca compartilhada: {n} das faixas que você apagou em todo lugar, porque as playlists dela ainda as usam ({playlists}). Elas saíram deste dispositivo.",
+    "partialElsewhereTitle": "Também em playlists que não estão neste dispositivo",
+    "partialElsewhereBody": "{n} destas faixas estão em playlists da biblioteca compartilhada que este dispositivo não tem:",
+    "partialElsewhereNote": "Dessas playlists também: são tiradas dessas playlists e apagadas em todo lugar, como faria um dispositivo que tem tudo. Mantê-las para essas playlists: a biblioteca compartilhada as mantém lá; elas saem só deste dispositivo.",
+    "partialElsewherePurge": "Apagar em todo lugar, dessas playlists também",
+    "partialElsewhereKeep": "Mantê-las para essas playlists",
     "partialOffTitle": "Trazer tudo para cá?",
     "partialOffBody": "Este dispositivo vai receber a biblioteca compartilhada inteira: mais {n} faixas, cerca de {size}.",
     "partialOffBtn": "Trazer tudo",
@@ -9681,6 +9731,13 @@ const STRINGS = {
     "restoreContinueOlderBtn": "Restaurar o backup de {date}",
     "restoreExactBtn": "Restaurar exatamente como no backup, removendo todo o resto da biblioteca",
     "mergeIntoCurrentBtn": "Mesclar com a biblioteca atual (mantém tudo o que já existe)",
+    "mergeChangedTitle": "{n} faixas daqui estão diferentes no arquivo",
+    "mergeChangedTitleOne": "Uma faixa daqui está diferente no arquivo",
+    "mergeChangedBody": "Estas faixas já estão nesta biblioteca, e o arquivo traz outros dados para elas, ou outra cópia da gravação:",
+    "mergeInTheFile": "no arquivo: {details}",
+    "mergeChangedMore": "…e mais {n}",
+    "mergeKeepMine": "Manter as desta biblioteca (recomendado)",
+    "mergeTakeFile": "Usar as do arquivo",
     "settingsSecPin": "PIN",
     "settingsSecInfo": "Informações da biblioteca",
     "fbBtn": "Enviar comentários…",
@@ -10532,6 +10589,12 @@ const STRINGS = {
     "partialDeleteNoteTracks": "Dieses Gerät enthält nur, was du auswählst. Von diesem Gerät entfernen: Nur dieses Gerät verliert diese Titel; die gemeinsame Bibliothek behält sie. Überall löschen: Sie werden aus der gemeinsamen Bibliothek und von allen Geräten gelöscht.",
     "partialRemoveHere": "Von diesem Gerät entfernen",
     "partialDeleteAll": "Überall löschen",
+    "partialKeptElsewhere": "In der gemeinsamen Bibliothek behalten: {n} der überall gelöschten Titel, weil ihre Playlists sie noch verwenden ({playlists}). Auf diesem Gerät sind sie entfernt.",
+    "partialElsewhereTitle": "Auch in Playlists, die nicht auf diesem Gerät sind",
+    "partialElsewhereBody": "{n} dieser Titel sind in Playlists der gemeinsamen Bibliothek, die dieses Gerät nicht hat:",
+    "partialElsewhereNote": "Auch aus diesen Playlists: Sie werden aus diesen Playlists genommen und überall gelöscht, wie es ein Gerät mit allem täte. Für diese Playlists behalten: Die gemeinsame Bibliothek behält sie dort; sie verlassen nur dieses Gerät.",
+    "partialElsewherePurge": "Überall löschen, auch aus diesen Playlists",
+    "partialElsewhereKeep": "Für diese Playlists behalten",
     "partialOffTitle": "Alles hierher holen?",
     "partialOffBody": "Dieses Gerät erhält dann die ganze gemeinsame Bibliothek: {n} weitere Titel, etwa {size}.",
     "partialOffBtn": "Alles holen",
@@ -11448,6 +11511,13 @@ const STRINGS = {
     "restoreContinueOlderBtn": "Sicherung vom {date} wiederherstellen",
     "restoreExactBtn": "Genau wie gesichert wiederherstellen und alles andere aus der Bibliothek entfernen",
     "mergeIntoCurrentBtn": "Mit der aktuellen Bibliothek zusammenführen (behält alles Vorhandene)",
+    "mergeChangedTitle": "{n} Titel von hier sind in der Datei anders",
+    "mergeChangedTitleOne": "Ein Titel von hier ist in der Datei anders",
+    "mergeChangedBody": "Diese Titel sind schon in dieser Bibliothek, und die Datei hat andere Angaben für sie oder eine andere Kopie der Aufnahme:",
+    "mergeInTheFile": "in der Datei: {details}",
+    "mergeChangedMore": "…und {n} weitere",
+    "mergeKeepMine": "Die dieser Bibliothek behalten (empfohlen)",
+    "mergeTakeFile": "Die der Datei übernehmen",
     "settingsSecPin": "PIN",
     "settingsSecInfo": "Bibliotheks-Info",
     "fbBtn": "Feedback senden…",
@@ -12299,6 +12369,12 @@ const STRINGS = {
     "partialDeleteNoteTracks": "这台设备只保存你选择的内容。从此设备移除：只有这台设备失去这些曲目；共享曲库仍保留它们。在所有地方删除：从共享曲库和所有设备中删除。",
     "partialRemoveHere": "从此设备移除",
     "partialDeleteAll": "处处删除",
+    "partialKeptElsewhere": "共享曲库保留了你“到处删除”的 {n} 首曲目，因为其中的播放列表仍在使用它们（{playlists}）。它们已从这台设备移除。",
+    "partialElsewhereTitle": "也在这台设备没有的播放列表中",
+    "partialElsewhereBody": "其中 {n} 首曲目在共享曲库里这台设备没有的播放列表中：",
+    "partialElsewhereNote": "也从这些播放列表删除：它们会被移出这些播放列表并到处删除，就像拥有全部内容的设备那样。为这些播放列表保留：共享曲库在那里保留它们；它们只离开这台设备。",
+    "partialElsewherePurge": "到处删除，也从这些播放列表删除",
+    "partialElsewhereKeep": "为这些播放列表保留",
     "partialOffTitle": "把所有内容都带到这里？",
     "partialOffBody": "此设备将接收整个共享资料库：另外 {n} 首曲目，约 {size}。",
     "partialOffBtn": "全部带来",
@@ -13215,6 +13291,13 @@ const STRINGS = {
     "restoreContinueOlderBtn": "恢复 {date} 的备份",
     "restoreExactBtn": "完全按备份恢复，并从曲库中移除其他所有内容",
     "mergeIntoCurrentBtn": "合并到当前曲库（保留现有全部内容）",
+    "mergeChangedTitle": "这里有 {n} 首曲目在文件中不同",
+    "mergeChangedTitleOne": "这里有一首曲目在文件中不同",
+    "mergeChangedBody": "这些曲目已在这个曲库中，而文件里有它们的其他资料，或录音的另一份副本：",
+    "mergeInTheFile": "文件中：{details}",
+    "mergeChangedMore": "……还有 {n} 首",
+    "mergeKeepMine": "保留这个曲库的（推荐）",
+    "mergeTakeFile": "采用文件中的",
     "settingsSecPin": "PIN 码",
     "settingsSecInfo": "曲库信息",
     "fbBtn": "发送反馈…",
@@ -14066,6 +14149,12 @@ const STRINGS = {
     "partialDeleteNoteTracks": "Thiết bị này chỉ giữ những gì bạn chọn. Gỡ khỏi thiết bị này: chỉ thiết bị này mất các bài này; thư viện chung vẫn giữ. Xóa ở mọi nơi: chúng bị xóa khỏi thư viện chung và mọi thiết bị.",
     "partialRemoveHere": "Bỏ khỏi thiết bị này",
     "partialDeleteAll": "Xóa ở mọi nơi",
+    "partialKeptElsewhere": "Thư viện chung vẫn giữ {n} bài bạn đã xóa ở mọi nơi, vì các danh sách phát ở đó vẫn dùng chúng ({playlists}). Chúng đã rời khỏi thiết bị này.",
+    "partialElsewhereTitle": "Cũng có trong các danh sách phát không có trên thiết bị này",
+    "partialElsewhereBody": "{n} bài trong số này nằm trong các danh sách phát của thư viện chung mà thiết bị này không có:",
+    "partialElsewhereNote": "Xóa cả khỏi các danh sách đó: chúng được bỏ khỏi các danh sách đó và xóa ở mọi nơi, như một thiết bị có tất cả sẽ làm. Giữ lại cho các danh sách đó: thư viện chung giữ chúng ở đó; chúng chỉ rời khỏi thiết bị này.",
+    "partialElsewherePurge": "Xóa ở mọi nơi, cả khỏi các danh sách đó",
+    "partialElsewhereKeep": "Giữ lại cho các danh sách đó",
     "partialOffTitle": "Mang mọi thứ về đây?",
     "partialOffBody": "Thiết bị này sẽ nhận toàn bộ thư viện dùng chung: thêm {n} bản, khoảng {size}.",
     "partialOffBtn": "Mang tất cả",
@@ -14982,6 +15071,13 @@ const STRINGS = {
     "restoreContinueOlderBtn": "Khôi phục bản sao lưu ngày {date}",
     "restoreExactBtn": "Khôi phục đúng như bản sao lưu, xóa mọi thứ khác khỏi thư viện",
     "mergeIntoCurrentBtn": "Gộp vào thư viện hiện tại (giữ mọi thứ đang có)",
+    "mergeChangedTitle": "{n} bài ở đây khác trong tệp",
+    "mergeChangedTitleOne": "Một bài ở đây khác trong tệp",
+    "mergeChangedBody": "Những bài này đã có trong thư viện này, và tệp có thông tin khác cho chúng, hoặc một bản khác của bản ghi:",
+    "mergeInTheFile": "trong tệp: {details}",
+    "mergeChangedMore": "…và {n} bài nữa",
+    "mergeKeepMine": "Giữ của thư viện này (khuyên dùng)",
+    "mergeTakeFile": "Lấy của tệp",
     "settingsSecPin": "Mã PIN",
     "settingsSecInfo": "Thông tin thư viện",
     "fbBtn": "Gửi góp ý…",
@@ -15833,6 +15929,12 @@ const STRINGS = {
     "partialDeleteNoteTracks": "Αυτή η συσκευή κρατά μόνο ό,τι επιλέγετε. Αφαίρεση από αυτή τη συσκευή: μόνο αυτή η συσκευή χάνει αυτά τα κομμάτια· η κοινή βιβλιοθήκη τα κρατά. Διαγραφή παντού: διαγράφονται από την κοινή βιβλιοθήκη και από κάθε συσκευή.",
     "partialRemoveHere": "Αφαίρεση από αυτή τη συσκευή",
     "partialDeleteAll": "Διαγραφή παντού",
+    "partialKeptElsewhere": "Κρατήθηκαν στην κοινή βιβλιοθήκη {n} από τα κομμάτια που διαγράψατε παντού, γιατί οι λίστες της τα χρησιμοποιούν ακόμη ({playlists}). Αφαιρέθηκαν από αυτή τη συσκευή.",
+    "partialElsewhereTitle": "Και σε λίστες που δεν είναι σε αυτή τη συσκευή",
+    "partialElsewhereBody": "{n} από αυτά τα κομμάτια είναι σε λίστες της κοινής βιβλιοθήκης που αυτή η συσκευή δεν έχει:",
+    "partialElsewhereNote": "Και από αυτές τις λίστες: αφαιρούνται από αυτές και διαγράφονται παντού, όπως θα έκανε μια συσκευή που τα έχει όλα. Να μείνουν για αυτές τις λίστες: η κοινή βιβλιοθήκη τα κρατά εκεί· φεύγουν μόνο από αυτή τη συσκευή.",
+    "partialElsewherePurge": "Διαγραφή παντού, και από αυτές τις λίστες",
+    "partialElsewhereKeep": "Να μείνουν για αυτές τις λίστες",
     "partialOffTitle": "Να έρθουν όλα εδώ;",
     "partialOffBody": "Αυτή η συσκευή θα λάβει τότε ολόκληρη την κοινή βιβλιοθήκη: {n} ακόμη κομμάτια, περίπου {size}.",
     "partialOffBtn": "Να έρθουν όλα",
@@ -16749,6 +16851,13 @@ const STRINGS = {
     "restoreContinueOlderBtn": "Επαναφορά του αντιγράφου της {date}",
     "restoreExactBtn": "Επαναφορά ακριβώς όπως στο αντίγραφο, αφαιρώντας οτιδήποτε άλλο από τη βιβλιοθήκη",
     "mergeIntoCurrentBtn": "Συγχώνευση με την τρέχουσα βιβλιοθήκη (κρατά ό,τι υπάρχει ήδη)",
+    "mergeChangedTitle": "{n} κομμάτια από εδώ διαφέρουν στο αρχείο",
+    "mergeChangedTitleOne": "Ένα κομμάτι από εδώ διαφέρει στο αρχείο",
+    "mergeChangedBody": "Αυτά τα κομμάτια υπάρχουν ήδη σε αυτή τη βιβλιοθήκη, και το αρχείο έχει άλλα στοιχεία για αυτά ή άλλο αντίγραφο της ηχογράφησης:",
+    "mergeInTheFile": "στο αρχείο: {details}",
+    "mergeChangedMore": "…και {n} ακόμη",
+    "mergeKeepMine": "Κράτησε αυτά της βιβλιοθήκης (προτείνεται)",
+    "mergeTakeFile": "Πάρε αυτά του αρχείου",
     "settingsSecPin": "PIN",
     "settingsSecInfo": "Πληροφορίες βιβλιοθήκης",
     "fbBtn": "Αποστολή σχολίων…",
@@ -17600,6 +17709,12 @@ const STRINGS = {
     "partialDeleteNoteTracks": "Questo dispositivo tiene solo ciò che scegli. Rimuovi da questo dispositivo: solo questo dispositivo perde questi brani; la libreria condivisa li conserva. Elimina ovunque: vengono eliminati dalla libreria condivisa e da tutti i dispositivi.",
     "partialRemoveHere": "Rimuovi da questo dispositivo",
     "partialDeleteAll": "Elimina ovunque",
+    "partialKeptElsewhere": "Conservati nella libreria condivisa: {n} dei brani eliminati ovunque, perché le sue playlist li usano ancora ({playlists}). Non sono più su questo dispositivo.",
+    "partialElsewhereTitle": "Anche in playlist che non sono su questo dispositivo",
+    "partialElsewhereBody": "{n} di questi brani sono in playlist della libreria condivisa che questo dispositivo non ha:",
+    "partialElsewhereNote": "Anche da quelle playlist: vengono tolti da quelle playlist ed eliminati ovunque, come farebbe un dispositivo che ha tutto. Tenerli per quelle playlist: la libreria condivisa li conserva lì; lasciano solo questo dispositivo.",
+    "partialElsewherePurge": "Elimina ovunque, anche da quelle playlist",
+    "partialElsewhereKeep": "Tienili per quelle playlist",
     "partialOffTitle": "Portare tutto qui?",
     "partialOffBody": "Questo dispositivo riceverà allora l’intera libreria condivisa: {n} brani in più, circa {size}.",
     "partialOffBtn": "Porta tutto",
@@ -18516,6 +18631,13 @@ const STRINGS = {
     "restoreContinueOlderBtn": "Ripristina il backup del {date}",
     "restoreExactBtn": "Ripristina esattamente come nel backup, rimuovendo tutto il resto dalla libreria",
     "mergeIntoCurrentBtn": "Unisci alla libreria attuale (mantiene tutto ciò che c'è già)",
+    "mergeChangedTitle": "{n} brani di qui sono diversi nel file",
+    "mergeChangedTitleOne": "Un brano di qui è diverso nel file",
+    "mergeChangedBody": "Questi brani sono già in questa libreria, e il file ha altri dati per loro, o un'altra copia della registrazione:",
+    "mergeInTheFile": "nel file: {details}",
+    "mergeChangedMore": "…e altri {n}",
+    "mergeKeepMine": "Tieni quelli di questa libreria (consigliato)",
+    "mergeTakeFile": "Prendi quelli del file",
     "settingsSecPin": "PIN",
     "settingsSecInfo": "Info libreria",
     "fbBtn": "Invia un commento…",
@@ -24091,6 +24213,17 @@ async function storedAudioDamaged(id){
 // The start of a .zip where a recording should be: WebKit's other mistake
 // (see webkitOwnBytes). No audio format begins "PK\x03\x04". Not
 // repairable here: the recording itself was never stored; import it again.
+// Either pattern, from a file's first bytes: cheap enough for every engine,
+// before sending or exporting (6 Nov 2026: 19 "recordings" that were each a
+// whole .zip went from the Mac to the shared library, where their size and
+// data agree, so only this can tell).
+// (Not an MP3 with two ID3 tags in a row: Safari's MP3 pattern, but some
+// good files are like that too: dbl.js. Only the unambiguous ones here.)
+async function audioLooksWrong(blob){
+  if(await looksLikeZipStart(blob)) return true;
+  try{ const u8 = new Uint8Array(await blob.slice(0, 24).arrayBuffer()), str = (a, n)=> String.fromCharCode(...u8.subarray(a, a + n));
+    return u8.length >= 24 && str(0, 4) === "RIFF" && str(12, 4) === "RIFF" && str(20, 4) === "WAVE"; }catch(err){ return false; }
+}
 async function looksLikeZipStart(blob){
   try{ const u8 = new Uint8Array(await blob.slice(0, 4).arrayBuffer()); return u8.length === 4 && u8[0] === 0x50 && u8[1] === 0x4b && u8[2] === 3 && u8[3] === 4; }
   catch(err){ return false; }
@@ -24175,6 +24308,7 @@ async function putRewrittenAudio(id, newBlob, oldBlob){
   }
   return whole;
 }
+const BIG_REWRITE_BYTES = window.__bigRewriteBytes || 256 * 1048576;
 async function rewriteFileTagsIfPossible(libraryId){
   try{
     const track = findLibraryTrack(libraryId);
@@ -24182,6 +24316,18 @@ async function rewriteFileTagsIfPossible(libraryId){
     const rec = await idbGet("audio", libraryId);
     if(!rec) return false;
     const blob = rec.blob;
+    // A very big recording in WebKit's browser storage keeps the details
+    // inside it as they were (1.4.187, Gen): rewriting means reading it all
+    // into memory (putRewrittenAudio), and on the Mac mini a 1.3 GB WAV
+    // restarted the page, then had to go to the shared library again in
+    // full. The library's details (and a folder's file names) still follow;
+    // exports write the current ones in; other players reading the file
+    // itself see its old ones. (In a folder, rewriting in place, piece by
+    // piece, can come later.)
+    if(IS_WEBKIT && blob.size > BIG_REWRITE_BYTES && typeof IdbLibraryStore !== "undefined" && libStore instanceof IdbLibraryStore){
+      if(!track.filename && blob.name) track.filename = blob.name;
+      return false;
+    }
     // The rewrite below replaces this blob with a plain Blob, which has no
     // .name — capture the original filename now, while it's still a File,
     // or it'd be lost for good on a track that's never had its tooltip
@@ -31010,14 +31156,14 @@ function askTidyAfterTrackDelete(trackIds){
 }
 // Takes the chosen playlists out of the tree, then (emptyFolders) any folder
 // that held one and is empty now, up to the top.
-function tidyTreeAfterTrackDelete(nodes, removeIds, emptyFolders){
+function tidyTreeAfterTrackDelete(nodes, removeIds, emptyFolders, removed){
   let lost = false;
   for(let i = nodes.length - 1; i >= 0; i--){
     const n = nodes[i];
-    if(n.kind === "playlist" && removeIds.has(n.id)){ nodes.splice(i, 1); lost = true; continue; }
+    if(n.kind === "playlist" && removeIds.has(n.id)){ nodes.splice(i, 1); lost = true; if(removed) removed.push(n.id); continue; }
     if(n.kind === "folder"){
-      const childLost = tidyTreeAfterTrackDelete(n.children || (n.children = []), removeIds, emptyFolders);
-      if(childLost && emptyFolders && !n.children.length){ nodes.splice(i, 1); lost = true; }
+      const childLost = tidyTreeAfterTrackDelete(n.children || (n.children = []), removeIds, emptyFolders, removed);
+      if(childLost && emptyFolders && !n.children.length){ nodes.splice(i, 1); lost = true; if(removed) removed.push(n.id); }
     }
   }
   return lost;
@@ -31031,7 +31177,15 @@ async function deleteLibraryTracks(trackIds, opts){
   }); }
   stripUses(root.tree);
   const tidy = pendingTrackDeleteTidy; pendingTrackDeleteTidy = null;
-  if(tidy && tidy.removeIds.size) tidyTreeAfterTrackDelete(root.tree, tidy.removeIds, tidy.emptyFolders);
+  const tidied = [];
+  if(tidy && tidy.removeIds.size) tidyTreeAfterTrackDelete(root.tree, tidy.removeIds, tidy.emptyFolders, tidied);
+  // Tracks deleted everywhere (Partial sync): the playlists and folders the
+  // tidy-up takes with them go everywhere too. Left behind in the shared
+  // library, a playlist still holding them kept them there, and this device
+  // took them back (Gen, 6 Nov 2026).
+  const pcfg = typeof sharedConfig === "function" ? sharedConfig() : null;
+  if(tidied.length && pcfg && pcfg.partial && (pcfg.deleteEverywhere || []).some(id=> idSet.has(id)))
+    pcfg.deleteEverywhere = [...new Set([...pcfg.deleteEverywhere, ...tidied])];
   root.library = root.library.filter(t=>!idSet.has(t.id));
   // Their audio is kept a day, so Undo can bring it back (undoTrashPut).
   for(const id of trackIds) await undoTrashPut(id);
@@ -34125,6 +34279,20 @@ function openPlaylistDetails(playlist){
     renderEditorScreen();
   });
 }
+// The shared library's playlists that this device doesn't hold and that use
+// any of these tracks: {playlists: ["Folder / Name", …], tracks: [ids]}, or
+// null when the shared library can't be reached just now.
+async function sharedPlaylistsElsewhereUsing(cfg, trackIds){
+  try{
+    const remote = await rvWithin(sharedGetState(cfg));
+    const here = new Set(); (function w(a){ (a || []).forEach(n=>{ here.add(n.id); if(n.children) w(n.children); }); })(root.tree);
+    const want = new Set(trackIds), used = new Set(), playlists = [];
+    (function w(a, path){ (a || []).forEach(n=>{ const p2 = path.concat(n.name || "");
+      if(n.kind === "playlist" && !here.has(n.id)){ const hit = (n.items || []).filter(it=> it.kind === "track" && want.has(it.refId)); if(hit.length){ playlists.push(p2.join(" / ")); hit.forEach(it=> used.add(it.refId)); } }
+      if(n.children) w(n.children, p2); }); })(remote.doc.tree, []);
+    return {playlists, tracks: [...used]};
+  }catch(err){ sharedLog("couldn't see the shared library's playlists before deleting everywhere: " + errText(err)); return null; }
+}
 // With Partial sync on, deleting a folder, playlist or track asks which is
 // meant: gone from this device only (the shared library keeps it, and it can
 // be brought back from Review changes), or deleted everywhere.
@@ -34182,9 +34350,25 @@ function confirmDelete(title, body, onOk, sync){
         if(gone.length) await deleteLibraryTracks(gone);
       }
     });
-    document.getElementById("delAll").addEventListener("click", ()=>{
+    document.getElementById("delAll").addEventListener("click", async ()=>{
       closeModal();
+      // Playlists in the shared library that this device doesn't hold may
+      // use these tracks too: it asks, as a device with everything would
+      // show them (1.4.186, Gen). Not reachable: they're kept for them.
+      let purge = [];
+      if(trackIds.length){
+        const elsewhere = await sharedPlaylistsElsewhereUsing(cfg, trackIds);
+        if(elsewhere && elsewhere.playlists.length){
+          const list = elsewhere.playlists.slice(0, 12).map(x=> `<li>${escapeHtmlText(x)}</li>`).join("") + (elsewhere.playlists.length > 12 ? `<li>…</li>` : "");
+          const c = await askChoice(t("partialElsewhereTitle"),
+            `<p>${escapeHtmlText(t("partialElsewhereBody", {n: elsewhere.tracks.length}))}</p><ul class="delete-list">${list}</ul><p class="settings-note">${escapeHtmlText(t("partialElsewhereNote"))}</p>`,
+            [{label: t("partialElsewherePurge"), value: "purge", kind: "danger"}, {label: t("partialElsewhereKeep"), value: "keep"}, {label: t("dlgCancel"), value: null}]);
+          if(!c) return;
+          if(c === "purge") purge = elsewhere.tracks;
+        }
+      }
       cfg.deleteEverywhere = [...new Set([...(cfg.deleteEverywhere || []), ...nodeIds, ...trackIds])];
+      if(purge.length) cfg.purgeFromPlaylists = [...new Set([...(cfg.purgeFromPlaylists || []), ...purge])];
       onOk();
     });
     return;
@@ -35633,7 +35817,11 @@ function closeHelpPage(){ const el = document.getElementById("helpPage"); if(el)
    from a file has no feedback.php beside it). What this device sent is
    listed under the form (localStorage FEEDBACK_SENT_KEY, the last 20). */
 const FEEDBACK_SENT_KEY = "37player.feedbackSent";
-function feedbackAvailable(){ return location.protocol === "http:" || location.protocol === "https:"; }
+// The desktop app's page isn't at a web address (tauri://localhost on the
+// Mac), so it sends to 37player.com, which lets the app's addresses in
+// (feedback.php, 1.4.187).
+function feedbackAvailable(){ return (typeof IN_DESKTOP_APP !== "undefined" && IN_DESKTOP_APP) || location.protocol === "http:" || location.protocol === "https:"; }
+function feedbackUrl(){ return (typeof IN_DESKTOP_APP !== "undefined" && IN_DESKTOP_APP) ? (window.__p37FeedbackUrl || "https://37player.com/feedback.php?op=send") : new URL("feedback.php?op=send", location.href).href; }
 function feedbackSentList(){ try{ const v = JSON.parse(localStorage.getItem(FEEDBACK_SENT_KEY) || "[]"); return Array.isArray(v) ? v : []; }catch(err){ return []; } }
 let feedbackDraft = {message: "", reply: ""};
 function openFeedbackDialog(){
@@ -35683,7 +35871,7 @@ function openFeedbackDialog(){
     }
     let err = null, res = null;
     try{
-      const r = await fetch(new URL("feedback.php?op=send", location.href).href, {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(payload), cache: "no-store"});
+      const r = await fetch(feedbackUrl(), {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(payload), cache: "no-store"});
       res = await r.json().catch(()=> null);
       if(r.status === 429) err = "too_many";
       else if(!r.ok || !res || !res.ok) err = (res && res.error) || ("HTTP " + r.status);
@@ -38386,8 +38574,12 @@ function offerNativeImportNow(meta, audioMap, artworkMap, onDone, opts){
     </div>
   `);
   let audioKept = 0;
+  // Tracks already here whose details or recording differ in the file, kept
+  // as they are here when the person says so (1.4.187, Gen: merging an older
+  // .37p put a renamed track's old name back).
+  let mergeKeep = new Set();
   async function writeAudio(id){
-    if(!audioMap[id]) return;
+    if(!audioMap[id] || mergeKeep.has(id)) return;
     if(await storedAudioMatches(id, audioMap[id])){ audioKept++; return; }
     await idbPut("audio", {id, blob:audioMap[id]});
   }
@@ -38417,6 +38609,27 @@ function offerNativeImportNow(meta, audioMap, artworkMap, onDone, opts){
   }
   document.getElementById("mergeGo").addEventListener("click", async ()=>{
     closeModal();
+    if(!recovering){
+      const changed = [];
+      for(const t of (meta.library || [])){
+        const ex = findLibraryTrack(t.id);
+        if(!ex) continue;
+        const details = ["name", "artist", "album", "trackNo"].some(k=> String(ex[k] == null ? "" : ex[k]) !== String(t[k] == null ? "" : t[k]));
+        const audio = !!audioMap[t.id] && !!ex.fileSize && audioMap[t.id].size !== ex.fileSize;
+        if(details || audio) changed.push({ex, t});
+      }
+      if(changed.length){
+        const line = ({ex, t: f})=>{
+          const here = [ex.artist, ex.album, ex.name].filter(Boolean).join(" · "), there = [f.artist, f.album, f.name].filter(Boolean).join(" · ");
+          return `<li>${escapeHtmlText(here)}${there !== here ? `<br><span class="settings-note">${escapeHtmlText(t("mergeInTheFile", {details: there}))}</span>` : ""}</li>`;
+        };
+        const list = changed.slice(0, 12).map(line).join("") + (changed.length > 12 ? `<li>${escapeHtmlText(t("mergeChangedMore", {n: changed.length - 12}))}</li>` : "");
+        const c = await askChoice(t(changed.length === 1 ? "mergeChangedTitleOne" : "mergeChangedTitle", {n: changed.length}), `<p>${escapeHtmlText(t("mergeChangedBody"))}</p><ul class="delete-list">${list}</ul>`,
+          [{label: t("mergeKeepMine"), value: "keep", kind: "primary"}, {label: t("mergeTakeFile"), value: "take"}, {label: t("cancel"), value: null}]);
+        if(!c) return;
+        if(c === "keep") changed.forEach(x=> mergeKeep.add(x.t.id));
+      }
+    }
     if(opts.beforeRestore) await opts.beforeRestore();
     if(recovering){
       if(libraryUnreadable){ libraryUnreadable = null; forceLibraryWrite = true; }
@@ -38424,9 +38637,9 @@ function offerNativeImportNow(meta, audioMap, artworkMap, onDone, opts){
     }
     // Audio first, then the tracks and playlists that use it.
     await copyAudioWithProgress();
-    await applyImportedArtwork([], artworkMap);
+    await applyImportedArtwork([], Object.fromEntries(Object.entries(artworkMap).filter(([id])=> !mergeKeep.has(id))));
     closeModal();
-    mergeLibrary(meta.library);
+    mergeLibrary((meta.library || []).filter(x=> !mergeKeep.has(x.id)));
     recordLastImport((meta.library||[]).map(x=> x.id));
     (meta.tree||[]).forEach(node=> upsertNodeInto(root.tree, node));
     await applyImportedArtwork(meta.library, {});
@@ -38770,7 +38983,7 @@ async function buildMusicEntries(usedIds, onProgress, opts){
     let blob = rec.blob, ext;
     // A damaged stored file would come out as a consistent-looking but broken
     // one once new tags are written around it: left out instead, and named.
-    if(damagedAudio.ids.has(id) || (IS_WEBKIT && (await blobReadableBytes(rec.blob)) !== rec.blob.size)){
+    if(damagedAudio.ids.has(id) || await audioLooksWrong(rec.blob) || (IS_WEBKIT && (await blobReadableBytes(rec.blob)) !== rec.blob.size)){
       damagedAudioNote(id); zipSkippedEarly.push(track.name || track.filename || id); continue;
     }
     // "Convert to the preferred format": the file (or its kept original) as
@@ -39725,11 +39938,17 @@ function renderDamagedSection(){
     const sub = [tr.album, tr.artist, tr.filename].filter(Boolean).join(" · ");
     if(sub){ const s2 = document.createElement("div"); s2.className = "zero-used settings-note"; s2.textContent = sub; info.appendChild(s2); }
     const fix = document.createElement("button"); fix.className = "btn ghost"; fix.textContent = t("damagedRepairBtn");
+    // Repair puts back the old file Safari left inside a re-tagged one;
+    // anything else (a .zip in its place, data cut short) can't be, so it
+    // says so at once instead of offering it (1.4.186, Gen).
+    const cantRepair = ()=>{ fix.remove(); const s3 = document.createElement("div"); s3.className = "zero-used settings-note"; s3.textContent = t("damagedCantRepair", {btn: t("replaceFileBtn")}); info.appendChild(s3); };
+    fix.hidden = true;
+    idbGet("audio", id).then(async rec=>{ if(rec && rec.blob && await looksDoubled(rec.blob)) fix.hidden = false; else cantRepair(); }).catch(cantRepair);
     fix.addEventListener("click", async ()=>{
       fix.disabled = true;
       const okd = await repairDamagedAudio(id);
       if(okd){ fix.textContent = t("damagedRepaired"); refreshCurrentView(); }
-      else { fix.remove(); const s3 = document.createElement("div"); s3.className = "zero-used settings-note"; s3.textContent = t("damagedCantRepair", {btn: t("replaceFileBtn")}); info.appendChild(s3); }
+      else cantRepair();
     });
     r.appendChild(info); r.appendChild(fix);
     list.appendChild(r);
@@ -40533,6 +40752,16 @@ function syncMergePartial(base, local, remote, opts){
   opts = opts || {};
   base = base || syncEmptyDoc(); remote = remote || syncEmptyDoc();
   const del = opts.deleteEverywhere || new Set();
+  // Deleted everywhere, "from those playlists too": taken out of the shared
+  // library's playlists first (those this device doesn't hold; its own it
+  // has already changed), so nothing keeps them.
+  const purge = opts.purge || new Set();
+  if(purge.size){
+    const mine = new Set(); (function w(a){ (a || []).forEach(n=>{ mine.add(n.id); if(n.children) w(n.children); }); })(local.tree);
+    remote = JSON.parse(JSON.stringify(remote));
+    // (Not those deleted everywhere themselves: changed there, they'd be kept.)
+    (function w(a){ (a || []).forEach(n=>{ if(n.items && !mine.has(n.id) && !del.has(n.id)) n.items = n.items.filter(it=> !(it.kind === "track" && purge.has(it.refId))); if(n.children) w(n.children); }); })(remote.tree);
+  }
   const tmap = doc=> new Map((doc.tracks || []).map(t=> [t.id, syncTrackFields(t)]));
   const bt = tmap(base), lt = tmap(local), rt = tmap(remote);
   const bn = syncFlattenTree(base.tree), ln = syncFlattenTree(local.tree), rn = syncFlattenTree(remote.tree);
@@ -40583,7 +40812,11 @@ function syncMergePartial(base, local, remote, opts){
     }
   });
   const keepT = new Map();
-  mt.forEach((f, id)=>{ if(!removed.has(id) && (lt.has(id) || bt.has(id))) keepT.set(id, f); });
+  // A track deleted everywhere that the shared library keeps, because a
+  // playlist there still uses it, stays off this device (6 Nov 2026, Gen:
+  // the Mac took its deleted tracks back and downloaded them again), unless
+  // one of this device's own playlists uses it (below).
+  mt.forEach((f, id)=>{ if(!removed.has(id) && !del.has(id) && (lt.has(id) || bt.has(id))) keepT.set(id, f); });
   keepN.forEach(rec=> (rec.items || []).forEach(it=>{ if(it.kind === "track" && mt.has(it.refId)) keepT.set(it.refId, mt.get(it.refId)); }));
   const part = syncBuildDoc(keepT, keepN);
   return {doc, local: part, base: part, conflicts};
@@ -41877,7 +42110,7 @@ async function sharedSyncOnce(opts){
       if(cfg.receiveOnly || opts.useShared){
         merged = remote.doc;
       } else if(cfg.partial){
-        const r = syncMergePartial(base ? base.doc : null, local, remote.doc, {deviceName: cfg.deviceName || t("sharedThisDevice"), newId: uid, deleteEverywhere: new Set(cfg.deleteEverywhere || [])});
+        const r = syncMergePartial(base ? base.doc : null, local, remote.doc, {deviceName: cfg.deviceName || t("sharedThisDevice"), newId: uid, deleteEverywhere: new Set(cfg.deleteEverywhere || []), purge: new Set(cfg.purgeFromPlaylists || [])});
         merged = r.doc; conflicts = r.conflicts; mine = r.local; agreed = r.base;
       } else {
         const r = syncMerge(base ? base.doc : null, local, remote.doc, {deviceName: cfg.deviceName || t("sharedThisDevice"), newId: uid});
@@ -41921,8 +42154,19 @@ async function sharedSyncOnce(opts){
       // "Delete everywhere" done: forget those IDs.
       if(cfg.deleteEverywhere && cfg.deleteEverywhere.length){
         const still = new Set(); (function w(a){ (a || []).forEach(n=>{ still.add(n.id); if(n.children) w(n.children); }); })(merged.tree); merged.tracks.forEach(tr=> still.add(tr.id));
-        cfg.deleteEverywhere = cfg.deleteEverywhere.filter(id=> still.has(id));
+        // Tracks the shared library kept because its playlists still use
+        // them: they stay off this device; say which playlists (1.4.185).
+        const inHere = new Set(); (function w(a){ (a || []).forEach(n=>{ inHere.add(n.id); if(n.children) w(n.children); }); })(forHere.tree); forHere.tracks.forEach(tr=> inHere.add(tr.id));
+        // (Still here: not deleted yet, a question still open; nothing to say.)
+        const keptIds = new Set(cfg.deleteEverywhere.filter(id=> !inHere.has(id) && merged.tracks.some(tr=> tr.id === id)));
+        if(keptIds.size){
+          const users = []; (function w(a, path){ (a || []).forEach(n=>{ const p2 = path.concat(n.name || ""); if(n.kind === "playlist" && (n.items || []).some(it=> it.kind === "track" && keptIds.has(it.refId))) users.push(p2.join(" / ")); if(n.children) w(n.children, p2); }); })(merged.tree, []);
+          const msg = t("partialKeptElsewhere", {n: keptIds.size, playlists: users.slice(0, 3).join(", ") + (users.length > 3 ? ", …" : "")});
+          sharedLog(msg); setTimeout(()=> showToast(msg), 500);
+        }
+        cfg.deleteEverywhere = cfg.deleteEverywhere.filter(id=> still.has(id) && inHere.has(id) && !keptIds.has(id));
         if(!cfg.deleteEverywhere.length) delete cfg.deleteEverywhere;
+        if(cfg.purgeFromPlaylists){ cfg.purgeFromPlaylists = cfg.purgeFromPlaylists.filter(id=> still.has(id)); if(!cfg.purgeFromPlaylists.length) delete cfg.purgeFromPlaylists; }
         saveState();
       }
       if(cfg.partial) sharedUpdatePartialNew(agreed || merged, forHere, merged);
@@ -42050,7 +42294,7 @@ async function sharedUploadFiles(cfg, doc){
       body = rec.blob;
       // Never send a damaged file to everyone (Safari is where they've come
       // from, so it's checked there; reading it through costs little memory).
-      if(IS_WEBKIT && j.kind === "audio" && (await blobReadableBytes(body)) !== body.size){
+      if(j.kind === "audio" && (await audioLooksWrong(body) || (IS_WEBKIT && (await blobReadableBytes(body)) !== body.size))){
         damagedAudioNote(j.id);
         const dt = findLibraryTrack(j.id);
         sharedLog("not sending “" + ((dt && dt.name) || j.id) + "”: its stored data is damaged (Settings → Library cleanup → Damaged files)");
@@ -42060,6 +42304,18 @@ async function sharedUploadFiles(cfg, doc){
     }
     const tr = j.kind === "peaks" ? null : findLibraryTrack(j.id);
     if(tr) sharedLog("sending " + (j.kind === "artwork" ? "artwork of " : "") + "“" + (tr.name || j.id) + "” (#" + j.id.slice(0, 4) + ", " + (body.size / 1e6).toFixed(1) + " MB)");
+    if(j.kind === "audio" && body.size >= SHARED_PIECE_UP_MIN && sharedPiecesUpOk(cfg)){
+      let lastLog = 0;
+      const how = await sharedSendInPieces(cfg, j, body, (have, total)=>{ if(have - lastLog >= 256 * 1048576){ lastLog = have; sharedLog("sent " + fmtBytes(have) + " of " + fmtBytes(total) + " of “" + ((tr && tr.name) || j.id) + "”"); } });
+      if(how === "too-big"){
+        sharedTooBig.add(j.name); sharedTooBigNames.add((tr && tr.name) || j.id);
+        sharedLog("the server refused a piece of “" + ((tr && tr.name) || j.id) + "”; not sending it again until “Sync now”");
+        sharedSetStatus({}); done++; return;
+      }
+      done++; sharedSetStatus({transfer: {kind: "up", done, total: fileJobs}});
+      if(!sharedConfig()) stop = true;
+      return;
+    }
     const r = await sharedFetch(cfg, Object.assign({op: "file", kind: j.kind, name: j.name}, j.replace ? {replace: "1"} : {}), {method: "PUT", body});
     if(r.status === 413 && j.kind !== "peaks"){
       sharedTooBig.add(j.name);
@@ -42089,6 +42345,39 @@ async function sharedUploadFiles(cfg, doc){
 // (the laptop went to sleep) is picked up by the next sync.
 let sharedUploading = false;
 const SHARED_UPLOADS_AT_ONCE = 3;
+// Big recordings go up in pieces (1.4.187): Safari on the Mac mini couldn't
+// send 1.35 GB in one request ("Load failed", again and again, and the page
+// restarted). Each piece is appended on the server (sync.php put_piece),
+// which says how much it has, so a break carries on where it stopped.
+// Google Drive has its own way of sending big files.
+const SHARED_PIECE_UP_MIN = window.__pieceUpMin || 48 * 1048576, SHARED_PIECE_UP_SIZE = window.__pieceUpBytes || 16 * 1048576;
+function sharedPiecesUpOk(cfg){ return cfg.kind !== "gdrive" && !!sharedServerVersion && sharedServerVersion !== "old" && compareVersions(sharedServerVersion, "1.4.187") >= 0; }
+async function sharedSendInPieces(cfg, j, body, onProgress){
+  let at = 0, fails = 0;
+  for(;;){
+    let r = null;
+    try{
+      const piece = body.slice(at, Math.min(body.size, at + SHARED_PIECE_UP_SIZE));
+      r = await sharedFetch(cfg, {op: "file", kind: j.kind, name: j.name, at: String(at), total: String(body.size)}, {method: "PUT", body: piece});
+    }catch(err){
+      if(err && err.rejected) throw err;
+      if(++fails > 5) throw err;
+      await new Promise(res=> setTimeout(res, 2000 * fails));
+      continue;
+    }
+    if(r.status === 413) return "too-big";
+    const x = (r.ok || r.status === 409) ? await r.json().catch(()=> ({})) : {};
+    if(x.stored || x.exists) return "stored";
+    if(typeof x.have === "number" && x.have >= 0 && x.have < body.size){
+      if(r.ok){ fails = 0; if(onProgress) onProgress(x.have, body.size); }
+      else if(++fails > 5) throw new Error("upload: the server and this device disagree about how much has arrived");
+      at = x.have;
+      continue;
+    }
+    if(++fails > 5) throw new Error("upload piece " + r.status);
+    await new Promise(res=> setTimeout(res, 2000 * fails));
+  }
+}
 function sharedUploadInBackground(cfg){
   if(sharedUploading){ sharedUploadAgain = true; return; }
   return sharedFilesLock("up", ()=> sharedUploadInBackgroundHere(cfg));
@@ -44999,6 +45288,13 @@ const IN_DESKTOP_APP = !!window.__TAURI_INTERNALS__;
    this (no p37_shell_info) counts as bridge 0. */
 // Also in the <meta name="desktop-bridge"> at the top, where the shell reads
 // it before using a downloaded page (desktop/PAGE-UPDATES.md).
+// The page's height from the window's real height, not 100vh (see
+// html.fit-height in the styles).
+if(IN_DESKTOP_APP){
+  const fitHeight = ()=> document.documentElement.style.setProperty("--app-h", window.innerHeight + "px");
+  fitHeight(); document.documentElement.classList.add("fit-height");
+  window.addEventListener("resize", fitHeight);
+}
 const DESKTOP_BRIDGE_NEEDED = +((document.querySelector('meta[name="desktop-bridge"]') || {}).content || 1);
 let desktopShell = null; // {version, bridge}
 async function desktopShellCheck(){

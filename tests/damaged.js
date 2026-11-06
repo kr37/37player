@@ -65,5 +65,15 @@ const clickText = (p, sel, src) => p.evaluate((sel, src)=>{ const re=new RegExp(
   ok(after.tags && after.tags.artist === 'New Kadampa Tradition' && after.tags.album === 'Quick Path parts', 'with the library\'s current details written in');
   const plays = await p.evaluate(async(id)=>{ const blob = await window.__dmg.get(id); try{ const b2 = await new AudioContext().decodeAudioData(await blob.arrayBuffer()); return b2.duration; }catch(e){ return 'error ' + e.message; } }, id);
   ok(Math.abs(plays - 1) < 0.05, 'and it decodes: ' + plays + ' s');
+  // A whole .zip stored in place of the recording (WebKit's other mistake,
+  // 6 Nov 2026): size and data agree, but it's found by its first bytes,
+  // and Repair isn't offered for it (1.4.186).
+  await p.evaluate(async(id)=>{ const z = new Uint8Array(5000); z.set([0x50, 0x4b, 3, 4]); await window.__dmg.put(id, new Blob([z], {type: 'audio/x-ms-wma'})); window.__dbg.getRoot().library.find(x=> x.id === id).fileSize = 5000; }, id);
+  await p.evaluate(()=>{ window.__dbg4.settings(); }); await sleep(400);
+  await clickText(p, '#settingsNav .settings-nav-item', '^Library cleanup$'); await sleep(500);
+  await clickText(p, '#damagedNote button', '^Check stored files$'); await sleep(1500);
+  const zipNote = await p.evaluate(()=> document.getElementById('damagedList').innerText);
+  const repairShown = await p.evaluate(()=> [...document.querySelectorAll('#damagedList button')].some(b=> !b.hidden && /Repair/.test(b.textContent)));
+  ok(/Self generation 1/.test(zipNote) && /Can't be repaired here/.test(zipNote) && !repairShown, 'a .zip where the recording should be: found, and "can\'t be repaired" at once, no Repair (' + zipNote.replace(/\s+/g, ' ').slice(0, 100) + ')');
   console.log(fails ? fails + ' FAILED' : 'ALL OK'); await b.close();
 })();

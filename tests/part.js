@@ -100,6 +100,32 @@ const waitIdle = async (p)=>{ for(let k=0;k<400;k++){ const s = await p.evaluate
   ok(!(await names(B)).includes('One') && !/Liberating|loud/.test((await names(B)).split('|')[1]), 'One and its tracks left this device');
   await syncNow(B); await syncNow(A);
   ok(/One\[2\]/.test(await names(A)) && /Liberating/.test(await names(A)), 'shared library kept One and the track: '+await names(A));
+  // Delete everywhere a track that a playlist this device doesn't hold uses (1.4.186):
+  // a second dialog lists it, and "from those playlists too" takes it out there as well.
+  // B imports a track of its own (in no playlist), which reaches A.
+  const st64 = fs.readFileSync(path.join(__dirname, 'fixtures', 'starter.mp3')).toString('base64');
+  await B.evaluate((b64)=>{ const f = new File([Uint8Array.from(atob(b64), c=>c.charCodeAt(0))], 'Bonly.mp3', {type:'audio/mpeg'}); Object.defineProperty(f,'webkitRelativePath',{value: 'Set/Bonly.mp3'}); window.__dbg.bulkImportFolder([f]); }, st64);
+  for(let i=0; i<60; i++){ await sleep(250); if(await B.$('#folderImportGo')) break; }
+  await B.click('#folderImportGo').catch(()=>{});
+  for(let i=0; i<80; i++){ await sleep(250); if(await B.evaluate(()=> window.__dbg.getRoot().library.length >= 1 && !document.getElementById('bulkImportStatus'))) break; }
+  await sleep(1000); await B.evaluate(()=> document.querySelectorAll('.modal [data-close]').forEach(x=> x.click())); await sleep(300);
+  const tid = await B.evaluate(()=> window.__dbg.getRoot().library[0] && window.__dbg.getRoot().library[0].id);
+  const tname = await B.evaluate(()=> window.__dbg.getRoot().library[0].name);
+  await syncNow(B); await syncNow(A);
+  ok(await A.evaluate((tid)=> window.__dbg.getRoot().library.some(t=> t.id===tid), tid), 'B\'s own track reaches A');
+  await A.evaluate(async(tid)=>{ const r=window.__dbg.getRoot(); r.tree.push({id:'elsew',kind:'playlist',name:'Elsewhere',order:20,items:[{id:'elsew1',kind:'track',refId:tid,order:0}]}); await window.__dbg.saveState(); }, tid);
+  await syncNow(A); await syncNow(B);
+  ok(!(await names(B)).includes('Elsewhere'), 'A\'s new playlist "Elsewhere" isn\'t on B (partial)');
+  await B.evaluate((tid)=> window.__delAsk([tid]), tid); await sleep(600);
+  await B.evaluate(()=>{ [...document.querySelectorAll('.modal button')].find(b=>b.textContent.trim()==='Delete everywhere').click(); }); await sleep(2500);
+  const second = await B.evaluate(()=> document.querySelector('.modal-backdrop.show .modal')?.innerText || '');
+  ok(/Also in playlists that aren't on this device/.test(second) && /Elsewhere/.test(second), 'a second dialog names the shared library\'s playlist using it (' + second.replace(/\n+/g, ' | ').slice(0, 90) + ')');
+  await clickText(B, '.modal button', '^Delete everywhere, from those playlists too$'); await sleep(600);
+  await B.evaluate(()=> document.getElementById('tidyGo')?.click()); await sleep(1000); // its own playlist ("Set", from the import): the tidy question (1.4.177)
+  await syncNow(B); await syncNow(A); await syncNow(B);
+  const aAfter = await A.evaluate((tid)=>{ const r=window.__dbg.getRoot(); const el=[]; (function w(a){ a.forEach(n=>{ if(n.id==='elsew') el.push(n.items.length); if(n.children) w(n.children); }); })(r.tree); return {gone: !r.library.some(t=> t.id===tid), elsewhere: el[0]}; }, tid);
+  ok(aAfter.gone && aAfter.elsewhere === 0, '"from those playlists too": out of Elsewhere and deleted everywhere (' + JSON.stringify(aAfter) + ', ' + tname + ')');
+  ok(!(await B.evaluate((tid)=> window.__dbg.getRoot().library.some(t=> t.id===tid), tid)), 'and it doesn\'t come back to B');
   console.log(fails ? fails+' FAILED' : 'ALL OK');
   await b.close();
 })();

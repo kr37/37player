@@ -29,6 +29,13 @@ const modalText = p=> p.evaluate(()=> document.querySelector('.modal-backdrop.sh
   });
   await p.goto('http://localhost:8861/37-player.html', {waitUntil:'networkidle0'}); await sleep(800); await settle(p);
   ok(await p.evaluate(()=> typeof window.__listeners['p37-close-requested'] === 'function'), 'in the desktop app, it listens for the shell\'s close');
+  // The page's height is the window's (1.4.184: Monterey's webview made 100vh 28px too tall).
+  const fit = async ()=> p.evaluate(()=> ({cls: document.documentElement.classList.contains('fit-height'), app: Math.round(document.getElementById('app').getBoundingClientRect().height), win: window.innerHeight}));
+  let f = await fit();
+  ok(f.cls && f.app === f.win, 'the page is exactly as tall as the window (' + JSON.stringify(f) + ')');
+  await p.setViewport({width: 1300, height: 700}); for(let i = 0; i < 20 && (f = await fit()).app !== 700; i++) await sleep(150);
+  ok(f.app === 700, 'and follows it when the window changes (' + f.app + ')');
+  await p.setViewport({width: 1300, height: 900}); await sleep(300);
   await p.evaluate(()=>{ window.__dbg.setMode('editing'); window.__dbg4.settings(); window.__dbg4.section('about'); }); await sleep(500);
   const about = await p.evaluate(()=> document.getElementById('aboutRunning').textContent);
   ok(/desktop app \(version 1\.4\.159\)/.test(about), 'About names the desktop app\'s own version (' + about + ')');
@@ -43,6 +50,10 @@ const modalText = p=> p.evaluate(()=> document.querySelector('.modal-backdrop.sh
   ok(/newer desktop app/.test(old), 'a shell offering less than the page needs: "Please download the newer desktop app"');
   await clickText(p, '.modal button', '^OK$'); await p.evaluate(()=> localStorage.removeItem('__bridge')); await p.reload({waitUntil:'networkidle0'}); await sleep(1200);
   ok(!/newer desktop app/.test(await p.evaluate(()=> document.querySelector('.modal-backdrop.show .modal')?.innerText || '')), 'and not when it offers enough');
+  // Feedback in the desktop app (1.4.187): offered, and sent to 37player.com.
+  await p.evaluate(()=> document.getElementById('btnHelp').click()); await sleep(400);
+  ok(await p.evaluate(()=> !!document.getElementById('helpFeedback')), 'Help has Send feedback… in the desktop app');
+  await p.evaluate(()=> document.querySelectorAll('#helpPage [data-close], #helpClose').forEach(x=> x.click())); await sleep(200);
   // Page updates (1.4.182): a shell that has them.
   const calls = ()=> p.evaluate(()=> JSON.parse(sessionStorage.getItem('__calls') || '[]'));
   ok(!(await calls()).some(c=> /^p37_page/.test(c)), 'a shell without page updates: no page-update calls');
