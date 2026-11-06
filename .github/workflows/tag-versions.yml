@@ -5,11 +5,15 @@
 # Each run tags every version in main's history that isn't tagged yet (the
 # last commit with that version), so the first run tags the past ones too
 # (from 1.1.088; earlier commits have no version tag in the page).
+# GitHub refuses this job a tag at a commit whose workflow files differ from
+# main's (no "workflows" permission), so such a version is tagged at its next
+# older commit, if that one's don't; a few (1.4.179) can't be tagged.
 name: Tag versions
 on:
   push:
     branches: [main]
     paths: ["37-player.html"]
+  workflow_dispatch:
 permissions:
   contents: write
 jobs:
@@ -27,9 +31,18 @@ jobs:
             v=$(git show "$c:37-player.html" 2>/dev/null | head -c 3000 | grep -m1 -o 'name="app-version" content="[^"]*"' | sed 's/.*content="//;s/"$//')
             [[ "$v" =~ ^[0-9]+(\.[0-9]+)+$ ]] || continue
             [ -n "${seen[$v]}" ] && continue
+            # GitHub won't let this job's token make a tag at a commit whose
+            # workflow files differ from main's: such a version gets its next
+            # older commit, if that one's are the same (or it has none).
+            differs=0
+            for f in $(git ls-tree --name-only "$c" .github/workflows/); do git diff --quiet "$c" HEAD -- "$f" || differs=1; done
+            [ $differs = 0 ] || continue
             seen[$v]=1
             git rev-parse -q --verify "refs/tags/v$v" >/dev/null && continue
             git tag "v$v" "$c" && new+=("refs/tags/v$v")
           done
           echo "${#new[@]} new tags"
-          for ((i=0; i<${#new[@]}; i+=50)); do git push -q origin "${new[@]:i:50}"; done
+          failed=0
+          for ((i=0; i<${#new[@]}; i+=50)); do git push -q origin "${new[@]:i:50}" || failed=1; done
+          [ $failed = 0 ] || echo "::warning::Some tags couldn't be made (see above)."
+          true
