@@ -30,8 +30,11 @@ jobs:
           (cd src-tauri && cargo test)
           npx tauri build --target universal-apple-darwin --bundles dmg
           cp src-tauri/target/universal-apple-darwin/release/bundle/dmg/*.dmg ../37-Player-mac-test.dmg
+          # The debug symbols, kept apart (the app itself is stripped), so a
+          # Mac crash report's addresses can be turned into lines (atos).
+          (cd src-tauri/target && zip -qr ../../../37-Player-mac-test-symbols.zip */release/*.dSYM) || echo "no dSYMs"
       - uses: actions/upload-artifact@v4
-        with: { name: mac, path: 37-Player-mac-test.dmg }
+        with: { name: mac, path: "37-Player-mac-test*" }
   windows:
     runs-on: windows-latest
     env: { P37_PAGE_CHANNEL: test }
@@ -64,7 +67,8 @@ jobs:
           tag="desktop-test-${{ github.run_number }}"
           # GitHub's list cuts titles short, so the number comes first.
           v=$(curl -s "https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/37-player.html" | head -c 4000 | grep -o 'app-version" content="[^"]*' | head -1 | sed 's/.*content="//')
-          gh release create "$tag" 37-Player-mac-test.dmg 37-Player-windows-test-setup.exe 37-Player-windows-test.msi \
+          syms=$(ls 37-Player-mac-test-symbols.zip 2>/dev/null || true)
+          gh release create "$tag" 37-Player-mac-test.dmg 37-Player-windows-test-setup.exe 37-Player-windows-test.msi $syms \
             --repo "${{ github.repository }}" --prerelease --target "${{ github.sha }}" \
             --title "Test ${{ github.run_number }}: 37 Player $v, desktop" \
             --notes "Unsigned test builds of the desktop app (Tauri) from branch tauri-spike (desktop/SPIKE.md). Mac: right-click → Open. Windows: SmartScreen → More info → Run anyway."

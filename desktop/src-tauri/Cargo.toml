@@ -24,6 +24,10 @@ base64 = "0.22"
 ureq = "3"
 
 [profile.release]
+# Symbols in a separate .dSYM on the Mac (attached to each test build), so a
+# crash report can be read; the app itself is still stripped.
+debug = "line-tables-only"
+split-debuginfo = "packed"
 codegen-units = 1
 lto = true
 opt-level = 3
