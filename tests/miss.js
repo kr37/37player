@@ -62,6 +62,9 @@ const waitIdle = async (p)=>{ for(let k=0;k<400;k++){ const s = await p.evaluate
   console.log('B status (waiting):', await B.evaluate(()=>{ const d=document.createElement('div'); document.body.appendChild(d); window.__dbg3.render(d); const t=d.querySelector('#shStatus').textContent; d.remove(); return t; }));
   ok(view.banner && /can't play yet/.test(view.banner) && /Laptop/.test(view.banner), 'Playing shows the banner');
   ok(view.row && /waiting for Laptop/.test(view.row), 'the row says who it waits for');
+  // Waiting for this very device (1.4.189): it says what to do instead.
+  const own = await B.evaluate(()=>{ const me = window.__dbg.getRoot().settings.sharedLibrary.deviceName; return {me, note: window.__share.note({waiting: true, from: me})}; });
+  ok(/no longer has it/.test(own.note) && !/waiting for/.test(own.note), 'waiting for itself (' + own.me + '): "it was to send this copy, but no longer has it"');
   await B.screenshot({path:'shots/miss-b.png'});
   // A's upload gets through
   blockPut = false;

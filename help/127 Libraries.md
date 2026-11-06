@@ -30,6 +30,14 @@ Normally a library lives inside the browser, where the browser can erase it (see
 - **Permission:** an installed 37 Player keeps permission to the folder. In a browser tab, Chrome may ask again after a restart: choose **Open it**.
 - **Moving the folder:** move the whole folder, then open 37 Player and choose **Find the folder…**. It knows its own folder again by the file "37 Player library.json" inside it.
 
+### Merging a backup or export into a library
+
+Importing a .37p (a backup or a library export) into a library that already has things offers **Merge** or **Replace**. Merging adds what's new. If some of the file's tracks are already here with other details (a different name, artist, album or number) or another copy of the recording, 37 Player lists them first and asks: **Keep this library's** (the usual choice: an older file shouldn't undo newer changes) or **Take the file's**.
+
+### Very big recordings
+
+On a Mac, iPad or iPhone (Safari's engine), changing the details of a recording over 256 MB changes them in the library, and in a folder library the file's name, but not the details stored inside the file itself. Rewriting a file that big there means reading all of it into memory, and in a shared library sending all of it again. Exports always carry the current details. Other programs that open the stored file directly see the details it had when it was imported.
+
 ### Copying between libraries
 
 To copy tracks or playlists from the open library into another one on this device, use 'Import / Export' → **Copy to another library** (it's there once you have more than one library). Choose what to copy, as for Export (the selected tracks, a playlist, a folder, an album, all playlists or the whole library), then the library to copy into. That list starts at **Choose a library…** every time, so nothing goes to the wrong one out of habit.

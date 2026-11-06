@@ -18,7 +18,7 @@ Only a few things use the internet:
 
 - the very first visit, to load the app;
 - a shared library, to sync;
-- updates. 37 Player always opens at once from the copy it keeps, and looks for a newer version on the website meanwhile. When one has arrived, **Update now** appears under the version number at the top (on a phone, an **Update to …** button); click it to switch now, or leave it and the new version opens the next time 37 Player starts. The library stays as it is, but playback stops, so don't update mid-session. Clicking the version number also checks straight away. (On a computer, Ctrl+Shift+R, or Cmd+Shift+R on a Mac, always loads the newest version from the website.)
+- updates. 37 Player always opens at once from the copy it keeps, and looks for a newer version on the website meanwhile. When one has arrived, **Update now** appears under the version number at the top (on a phone, an **Update to …** button); click it to switch now, or leave it and the new version opens the next time 37 Player starts. The library stays as it is, but playback stops, so don't update mid-session. Clicking the version number also checks straight away. (On a computer, Ctrl+Shift+R, or Cmd+Shift+R on a Mac, always loads the newest version from the website.) The desktop app updates the same way: it fetches a newer 37 Player by itself, checks that it really comes from its author, and offers **Update now**; a version that doesn't start properly is put aside, and the one before it opens.
 
 A copy opened from a file (such as the 37-player.html in your backup folder) doesn't need the internet even the first time — only for updates.
 
@@ -50,6 +50,10 @@ If neither can be read, 37 Player says so when it starts, and changes nothing un
 - **Rebuild the tracks from the audio still stored here.** The audio is stored separately and usually survives; each track gets its name, artist, album and artwork from the file itself. Playlists can't be rebuilt this way, so backups to your backup folder pause until you've restored from it (or chosen to replace it).
 
 Don't clear the browser's data in this situation — that would erase the audio that's still there.
+
+### Damaged files
+
+A stored recording can be damaged without anything showing, until it won't play: Safari has stored some files wrongly in the past (a recording re-tagged on a Mac, or a whole .zip kept in place of each recording taken from it). Settings → **Library cleanup** → **Damaged files** → **Check stored files** reads each one through and lists any that are damaged. Where Safari's mistake left the original inside, **Repair** puts it back; otherwise it says so straight away: replace the track's audio with a good copy (**Replace audio file**), or delete it and import it again. A damaged file is never sent to a shared library or put into an export.
 
 ### If storage comes back empty
 

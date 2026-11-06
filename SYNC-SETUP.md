@@ -131,6 +131,13 @@ journalctl --user -u 37player-backup               # what it said
 
 ## Big files (over 1 GB)
 
+From 37 Player and sync.php 1.4.187, recordings of 48 MB or more are sent in
+16 MB pieces (`PUT op=file&…&at=N&total=T`, appended to `<name>.part` until
+whole; `cleanup` removes parts left over 30 days). Safari, iPads and the Mac
+app could not send a gigabyte in one request, and a dropped connection now
+carries on from where it stopped. Pieces stay well under Apache's limit, so
+the setting below matters only for older copies of 37 Player.
+
 Apache 2.4.54 and later refuse uploads over 1 GiB unless told otherwise, and
 37 Player then shows "Too big for the server's upload limit". To lift the
 limit for sync.php only, add this to the site's Apache config (inside its
@@ -199,3 +206,8 @@ files it in a private GitHub repository.
    droplet says which didn't work.
 
 Limits: 6 messages an hour and 20 a day from one address; 3 MB a message.
+
+The desktop app's page isn't at a web address (`tauri://localhost` on the
+Mac, `https://tauri.localhost` on Windows), so it sends to
+`https://37player.com/feedback.php`, which (from 1.4.187) lets those two
+origins in, with CORS headers. Any other site is still refused.

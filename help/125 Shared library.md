@@ -56,12 +56,27 @@ Restoring a backup on a device that's in a shared library offers **Get the curre
 - **The same detail of a track changed on both** (the same track renamed differently, say): the version that reached the shared library first wins.
 - **Deleted on one device but edited on another:** the edited one is kept. A track still used in a playlist is never deleted.
 
+### Two copies of one recording
+
+A track's recording can differ between this device and the shared library: when a device joins with tracks it already has, when it rejoins after leaving, or when something went wrong in between (a copy that was never sent, say). With no common history to go by, 37 Player looks at both copies, without downloading either, and decides like this:
+
+1. **The same recording on both:** nothing moves. This device simply takes the shared library's record of it.
+2. **The shared library's copy never reached the server:** this device's copy is kept, and sent.
+3. **The server's copy is damaged:** this device's copy is kept, and sent.
+4. **Both are good, and different:** the newer one wins. Each copy carries the time it was made, from the clock of the device that made it. If the shared library's is newer, this device's older copy is kept for a day in Undo's store on this device.
+5. **This device's copy is missing or damaged:** the shared library's is used.
+
+Each decision is written in the sync log, naming the track. And if the shared library is ever waiting for this very device to send a copy it no longer has, this device uses its own copy of that track instead, and sends that.
+
 ### Tracks that haven't arrived yet
 
 A track whose audio isn't on this device yet shows its name in **bold**, with the reason under it:
 
 - **"On its way from the shared library"** means the shared library has the audio, and it's downloading. On Playing, **Get them now** above the list fetches a playlist's missing tracks straight away, even while something plays.
 - **"Waiting for Office laptop to send it"** means the device that added the track hasn't sent its audio yet, perhaps because it was closed too soon. It arrives once that device is open and online again.
+- **"It was to send this copy, but no longer has it"** means this device itself was the one to send it, and that copy is gone. Use **Replace audio file** with a good copy, or delete the track.
+
+Big recordings are sent in pieces of 16 MB (from version 1.4.187, with a server that's been updated too). If the connection drops part-way, sending carries on from where it stopped instead of starting again, and Safari, iPads and the Mac app can send files of a gigabyte or more.
 
 Playing also says above the list how many of the playlist's tracks can't play yet, so check before a session starts.
 
@@ -109,6 +124,8 @@ Under **On this device** in Settings → Shared library:
 - **Only what I choose:** this device holds what's ticked in What's on this device. What it holds stays in step both ways, including new tracks added to its playlists elsewhere. Good for a small iPad, a laptop for one retreat, or helping with a few of a Center's playlists from home.
   - **New playlists from other devices** wait for you, marked **New** in What's on this device; the button at the top says how many, for example **2 new in the shared library**, and opens it. Looking is enough to clear the count: they stay marked **New** while you look, and you don't have to bring them. Turn on **New playlists from other devices come here by themselves** to have them arrive on their own (what you've unticked stays off).
   - **Deleting asks which you mean.** Deleting a folder, playlist or track offers **Remove from this device** (the shared library keeps it, and What's on this device can bring it back) or **Delete everywhere** (it's deleted from the shared library and every device). Anything that disappears from this device some other way, such as through Library cleanup, counts as removed from this device. Only **Delete everywhere** deletes from the shared library.
+  - **Tracks used by playlists that aren't on this device:** after **Delete everywhere**, 37 Player looks in the shared library. If other playlists there use those tracks, it lists them and asks: **Delete everywhere, from those playlists too** (as a device holding everything would), or **Keep them for those playlists** (they leave this device only). If the shared library can't be reached at that moment, they're kept for those playlists, and the sync log says so.
+  - **Playlists the tidy-up removes** along with tracks deleted everywhere (an emptied playlist, say) are deleted everywhere too.
   - **Choosing Everything again** brings the whole shared library here. 37 Player says how much that is first.
 
 When joining, choose **Only what I choose** at the step that says how much will travel. Everything already on the device joins the shared library, and What's on this device opens so you can tick what else to bring.
