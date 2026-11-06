@@ -25,7 +25,8 @@ Normally a library lives inside the browser, where the browser can erase it (see
 
 - **You choose where,** for example in Music. 37 Player makes a folder named after the library there and copies the whole library into it. That needs as much free space as the library takes, for a while.
 - **Then it runs from the folder.** The browser's copy is no longer used, and 37 Player offers to remove it to free the space.
-- **The folder is the library,** not a backup of it, so automatic backups stop and the button at the top says **In a folder**. Back the folder up as you back up the rest of the computer, or export a .37p now and then. Please don't change, add or remove files in it yourself; for now the files have ID numbers for names.
+- **The folder is the library,** not a backup of it, so automatic backups stop and the button at the top says **In a folder**. Back the folder up as you back up the rest of the computer, or export a .37p now and then. Please don't rename, move, add or remove files in it yourself.
+- **Readable names:** the recordings are in a folder for each artist, then each album, named after their details, such as "Tharpa/Prayers for Meditation/01 Liberating Prayer.mp3". You can play them or copy them elsewhere with any other program. Edit a track's details in 37 Player and its file is renamed to match (Undo puts the name back). Playlists, artwork and settings are in the folder "37 Player's own files". A folder library made before version 1.4.174 has its recordings moved into the readable names by itself, the first time it's opened.
 - **Permission:** an installed 37 Player keeps permission to the folder. In a browser tab, Chrome may ask again after a restart: choose **Open it**.
 - **Moving the folder:** move the whole folder, then open 37 Player and choose **Find the folder…**. It knows its own folder again by the file "37 Player library.json" inside it.
 
