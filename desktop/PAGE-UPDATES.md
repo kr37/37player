@@ -53,6 +53,14 @@ next start, as the web version does.
    `tauri://localhost` on the Mac, `https://tauri.localhost` on Windows. That
    matters because the browser storage, and so the library until bridge 2,
    belongs to that address; another address would open an empty library.
+   (What would change it: serving a downloaded page some other way, from its
+   file or from the web, rather than as the app's own page. This design
+   doesn't.) After bridge 2 the libraries are folders, but the browser
+   storage still holds the list of libraries, which one opens, the language,
+   theme and other settings; **Gen, 6 Nov 2026: be as persistent as
+   possible**, so these move into the shell's own file too
+   (FILES-DESIGN.md, "The device's own settings"), and then the address
+   hardly matters.
 
 4. **When.** The page asks the shell to check (`p37_page_check`) once a day,
    a minute after starting, and when the person presses Check for updates. A
@@ -110,9 +118,12 @@ Yes; a sketch, nothing decided:
 - Printing from a windowed app needs a little care on Windows (attaching to
   the terminal it was started from); on the Mac it's run as
   `"/Applications/37 Player.app/Contents/MacOS/37 Player" --list-libraries`.
+  Or (Gen) a small window with the list instead, with a Copy button: no
+  terminal needed at all. Perhaps both: printed when started from a
+  terminal, a window otherwise.
 
 ## Questions for Gen
 
-- Source: GitHub's `page-latest` (suggested) or 37player.com?
+- Source: GitHub's `page-latest` (suggested) or 37player.com? **Gen, 6 Nov 2026: GitHub.**
 - Should desktop test builds follow `dev` (a test channel)? **Gen, 6 Nov 2026: yes.**
-- From the next start only, or offer **Restart now** too?
+- From the next start only, or offer **Restart now** too? **Gen, 6 Nov 2026: offer Restart now.**
