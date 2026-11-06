@@ -18,5 +18,6 @@ TESTS=${@:-e2e convresume checkwave m4apieces morepieces convpieces fold rev par
 for t in $TESTS; do
   printf "%-10s " "$t"
   timeout 600 node $t.js "$(./new-library.sh)" "$(./new-library.sh)" > "shots/$t.out" 2>&1
-  grep -E "ALL OK|FAILED" "shots/$t.out" | tail -1 || echo "no result (see tests/shots/$t.out)"
+  r=$(grep -E "ALL OK|FAILED" "shots/$t.out" | tail -1)
+  echo "${r:-no result (see tests/shots/$t.out)}"
 done
