@@ -12,6 +12,9 @@
 //    gives the page copy and paste, Window minimise and close.
 //  - The window fits the screen: it opens at 1300×900 at most, but no bigger
 //    than the screen's free area (fit_window).
+//  - Files (files.rs, for bridge 2): the folders the page's library store
+//    may reach, the commands it uses there, and p37lib:// to play from them.
+mod files;
 use std::sync::atomic::{AtomicBool, Ordering};
 use tauri::{Emitter, Manager, RunEvent, WindowEvent};
 
@@ -20,6 +23,8 @@ struct Quitting(AtomicBool);
 // What this shell can do for the page (see the page's DESKTOP_BRIDGE_NEEDED).
 // Raise it when the page may start relying on something new here:
 // 1 = closing asks first (p37-close-requested, p37_quit).
+// (The fs_* commands and p37lib:// are here from shell 1.4.175, but the page
+// doesn't use them yet; 2 once it does.)
 const BRIDGE: u32 = 1;
 
 #[derive(serde::Serialize)]
@@ -129,13 +134,22 @@ pub fn run() {
     }
     builder
         .manage(Quitting(AtomicBool::new(false)))
+        .plugin(tauri_plugin_dialog::init())
+        .register_asynchronous_uri_scheme_protocol("p37lib", |ctx, req, responder| {
+            let app = ctx.app_handle().clone();
+            std::thread::spawn(move || responder.respond(files::serve(&app, &req)));
+        })
         .setup(|app| {
+            let roots_file = app.path().app_data_dir().map(|d| d.join("roots.json")).unwrap_or_else(|_| std::path::PathBuf::from("roots.json"));
+            app.manage(files::Roots::load(roots_file));
             #[cfg(desktop)]
             if let Some(w) = app.get_webview_window("main") { fit_to_screen(&w); }
             let _ = app;
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![p37_quit, p37_shell_info])
+        .invoke_handler(tauri::generate_handler![p37_quit, p37_shell_info,
+            files::fs_roots, files::fs_root_default, files::fs_root_choose, files::fs_root_forget,
+            files::fs_list, files::fs_stat, files::fs_read, files::fs_write, files::fs_copy, files::fs_rename, files::fs_remove, files::fs_mkdir])
         .on_window_event(|window, event| {
             if let WindowEvent::CloseRequested { api, .. } = event {
                 if !window.app_handle().state::<Quitting>().0.load(Ordering::SeqCst) {
