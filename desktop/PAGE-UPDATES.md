@@ -27,6 +27,10 @@ next start, as the web version does.
      (his laptop), or a hacked server could sign its own page.
    A test channel could follow `dev` the same way (`page-test`), for the
    desktop test builds, so they get dev's page without a rebuild.
+   Either way people never see GitHub for this: the shell fetches the file
+   from a fixed address in the background. Downloading the app itself is a
+   separate matter: a page on 37player.com can link straight to the
+   installer files, wherever they're kept.
 
 2. **What the shell checks** before keeping a page (Rust, `pages.rs`):
    - the signature, with a public key built into the shell (ed25519; the
@@ -61,7 +65,11 @@ next start, as the web version does.
    (`p37_page_ok`, once the library has loaded). If a downloaded page starts
    twice without saying so, the shell goes back to the one before it (then the
    bundled one) and stops using that version. So a bad page can't leave the
-   app unusable.
+   app unusable. The bundled page is never replaced (Gen likes this: the page
+   the shell shipped with is always there to fall back to). One care: a
+   newer page may have saved the library in a form an older page doesn't
+   know, so a fallback page must at least open such a library safely, or say
+   it needs the newer version, rather than damage it.
 
 6. **The shell itself.** Updates to the Rust shell (rare) could use Tauri's
    updater later, which wants signed builds; that fits with the Apple account
@@ -87,8 +95,24 @@ next start, as the web version does.
 - On a real Mac and Windows: a test channel page newer than the bundled one,
   used from the next start; then a deliberately broken one, rolled back.
 
+## Command-line options (Gen, 6 Nov 2026: can the shell take them?)
+
+Yes; a sketch, nothing decided:
+- `--bundled-page`: start with the page the shell shipped with, whatever
+  has been downloaded since (for when a page update goes wrong in a way the
+  automatic fallback doesn't catch). Holding Shift while it starts could do
+  the same for people who don't use a terminal.
+- `--list-libraries`: print each library's name and folder, then quit. The
+  shell can do this itself once libraries are folders it knows (bridge 2,
+  `roots.json` and each folder's `37 Player library.json`).
+- `--library <name or folder>`: open that library. With one instance only,
+  a second start passes its options to the window already open.
+- Printing from a windowed app needs a little care on Windows (attaching to
+  the terminal it was started from); on the Mac it's run as
+  `"/Applications/37 Player.app/Contents/MacOS/37 Player" --list-libraries`.
+
 ## Questions for Gen
 
 - Source: GitHub's `page-latest` (suggested) or 37player.com?
-- Should desktop test builds follow `dev` (a test channel)?
+- Should desktop test builds follow `dev` (a test channel)? **Gen, 6 Nov 2026: yes.**
 - From the next start only, or offer **Restart now** too?
