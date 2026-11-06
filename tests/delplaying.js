@@ -23,7 +23,7 @@ const modalText = p=> p.evaluate(()=> document.querySelector('.modal-backdrop.sh
   await p.click('#folderImportGo').catch(()=>{});
   for(let i=0; i<120; i++){ await sleep(250); if(await p.evaluate(()=> window.__dbg.getRoot().library.length === 2 && !document.getElementById('bulkImportStatus'))) break; }
   await sleep(1200); await p.evaluate(()=> document.querySelectorAll('.modal [data-close]').forEach(x=> x.click())); await sleep(300);
-  // Edit Playlists' player at the bottom (1.4.170: Gen found it unwarned on the Mac mini).
+  // Edit Playlists' player at the bottom (1.4.170).
   const edId = await p.evaluate(()=> window.__dbg.getRoot().library[1].id);
   await p.evaluate((id)=> window.__edPrev(id), edId);
   for(let i=0; i<40; i++){ await sleep(250); if(await p.evaluate(()=> !window.__edPrevPaused())) break; }
