@@ -19,6 +19,7 @@ const settle = async p=>{ for(const x of ['^English$','^Start a library on this 
 const PRETEND = ()=>{
   try{
     if(localStorage.getItem('__persisted') === '1' && navigator.storage) navigator.storage.persisted = ()=> Promise.resolve(true);
+    if(localStorage.getItem('__webkit') === '1') window.__p37WebKit = true;
     if(localStorage.getItem('__stuck') === '1'){ const o = IDBFactory.prototype.open; IDBFactory.prototype.open = function(n, v){ if(String(n).indexOf('temple-sound-library') === 0) return {}; return o.call(this, n, v); }; }
   }catch(e){}
 };
@@ -87,10 +88,18 @@ const rootRecord = p=> p.evaluate(()=> new Promise(res=>{ const q = indexedDB.op
   // --- 2. Persistent storage around a database just created (the list gone too)
   p = await context(b);
   await p.goto(URL, {waitUntil:'networkidle0'}); await sleep(800); await settle(p);
+  // In Chrome that's what a fresh incognito window looks like (it borrows the
+  // normal profile's persistence): no warning (1.4.181).
   await p.evaluate(()=>{ localStorage.clear(); localStorage.setItem('__persisted', '1'); });
   await loseDatabase(p);
   await p.goto(URL, {waitUntil:'networkidle0'}); await sleep(1500);
-  ok(/didn't load/.test(await dialog(p)), 'storage still persistent, the database new, the list gone: "didn\'t load"');
+  ok(!/didn't load/.test(await dialog(p)), 'Chrome: storage persistent, the database new, the list gone (a fresh incognito window): no warning');
+  await settle(p);
+  // In WebKit (Safari, the iPad) it's a lost library.
+  await p.evaluate(()=>{ localStorage.clear(); localStorage.setItem('__persisted', '1'); localStorage.setItem('__webkit', '1'); });
+  await loseDatabase(p);
+  await p.goto(URL, {waitUntil:'networkidle0'}); await sleep(1500);
+  ok(/didn't load/.test(await dialog(p)), 'WebKit: storage still persistent, the database new, the list gone: "didn\'t load"');
   // A library made a moment ago (New library) is new, persistent or not
   await loseDatabase(p);
   await p.evaluate(()=> sessionStorage.setItem('37player.newEmpty', 'main'));
