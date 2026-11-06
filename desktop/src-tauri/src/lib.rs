@@ -14,7 +14,11 @@
 //    than the screen's free area (fit_window).
 //  - Files (files.rs, for bridge 2): the folders the page's library store
 //    may reach, the commands it uses there, and p37lib:// to play from them.
+//  - The page updates itself (pages.rs, desktop/PAGE-UPDATES.md): newer
+//    signed pages from GitHub, used from the next start or at Update now.
 mod files;
+mod pages;
+use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use tauri::{Emitter, Manager, RunEvent, WindowEvent};
 
@@ -28,13 +32,71 @@ struct Quitting(AtomicBool);
 const BRIDGE: u32 = 1;
 
 #[derive(serde::Serialize)]
-struct ShellInfo { version: String, bridge: u32 }
+struct ShellInfo { version: String, bridge: u32, pages: bool }
 
 // The shell's version is the page's version as of the shell's own last
 // change (tauri.conf.json "version"), like sync.php's.
 #[tauri::command]
 fn p37_shell_info(app: tauri::AppHandle) -> ShellInfo {
-    ShellInfo { version: app.package_info().version.to_string(), bridge: BRIDGE }
+    ShellInfo { version: app.package_info().version.to_string(), bridge: BRIDGE, pages: app.state::<Arc<pages::Pages>>().enabled() }
+}
+
+// Page updates: where they come from. The public key is Gen's (`tauri signer
+// generate`; the private one is in GitHub's secrets); "none" turns them off.
+// Test builds follow dev (page-test), others main (page-latest).
+const PAGE_KEY: &str = include_str!("../page-key.pub");
+const PAGE_CHANNEL: &str = match option_env!("P37_PAGE_CHANNEL") { Some(c) => c, None => "latest" };
+
+#[tauri::command]
+fn p37_page_info(pages: tauri::State<'_, Arc<pages::Pages>>) -> pages::Info { pages.info() }
+
+#[tauri::command]
+async fn p37_page_check(pages: tauri::State<'_, Arc<pages::Pages>>) -> Result<pages::Check, String> {
+    let p = pages.inner().clone();
+    tauri::async_runtime::spawn_blocking(move || p.check(&pages::http_get)).await.map_err(|e| e.to_string())
+}
+
+// The page started (its library loaded): it's a good one.
+#[tauri::command]
+fn p37_page_ok(pages: tauri::State<'_, Arc<pages::Pages>>, version: String) {
+    if pages.running() == version { pages.confirm(); }
+}
+
+// Update now: the newest page is chosen, and the page reloads into it.
+#[tauri::command]
+fn p37_page_switch(app: tauri::AppHandle, pages: tauri::State<'_, Arc<pages::Pages>>) -> String {
+    let v = pages.choose();
+    watch_page(&app, pages.inner().clone(), v.clone());
+    v
+}
+
+// A downloaded page has a minute to say it started; if it doesn't, it's put
+// aside and the window reloads into the one before it.
+fn watch_page(app: &tauri::AppHandle, pages: Arc<pages::Pages>, version: String) {
+    if !pages.running_is_downloaded() { return; }
+    let app = app.clone();
+    std::thread::spawn(move || {
+        std::thread::sleep(std::time::Duration::from_secs(60));
+        if pages.give_up_on(&version) {
+            if let Some(w) = app.get_webview_window("main") { let _ = w.eval("location.reload()"); }
+        }
+    });
+}
+
+// Once a day (a minute after starting, then hourly to see if a day has
+// passed), quietly: a newer page is downloaded and the page told.
+fn check_pages_daily(app: &tauri::AppHandle, pages: Arc<pages::Pages>) {
+    if !pages.enabled() { return; }
+    let app = app.clone();
+    std::thread::spawn(move || loop {
+        std::thread::sleep(std::time::Duration::from_secs(60));
+        if pages.due() {
+            if let pages::Check::Ready { version } = pages.check(&pages::http_get) {
+                let _ = app.emit("p37-page-ready", version);
+            }
+        }
+        std::thread::sleep(std::time::Duration::from_secs(3600 - 60));
+    });
 }
 
 #[tauri::command]
@@ -84,6 +146,16 @@ fn ask_page(app: &tauri::AppHandle) {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    let mut context = tauri::generate_context!();
+    // The page in use: the newest good one downloaded, or the bundled one.
+    let inner = context.set_assets(Box::new(pages::NoAssets));
+    let bundled = inner.get(&"/index.html".into()).and_then(|b| pages::meta(&b, "app-version")).unwrap_or_else(|| "0.0.000".into());
+    let pages_dir = pages::data_dir(&context.config().identifier).map(|d| d.join("pages")).unwrap_or_else(|| std::path::PathBuf::from("pages"));
+    let verifier = if PAGE_KEY.trim() == "none" { pages::Verifier::none() } else { pages::Verifier::new(PAGE_KEY) };
+    let page_source = format!("https://github.com/kr37/37player/releases/download/page-{PAGE_CHANNEL}");
+    let pages = Arc::new(pages::Pages::new(pages_dir, &bundled, BRIDGE, verifier, Some(page_source), PAGE_CHANNEL));
+    let first = pages.choose();
+    context.set_assets(Box::new(pages::PageAssets { inner, pages: pages.clone() }));
     let mut builder = tauri::Builder::default();
     #[cfg(desktop)]
     {
@@ -134,20 +206,24 @@ pub fn run() {
     }
     builder
         .manage(Quitting(AtomicBool::new(false)))
+        .manage(pages.clone())
         .plugin(tauri_plugin_dialog::init())
         .register_asynchronous_uri_scheme_protocol("p37lib", |ctx, req, responder| {
             let app = ctx.app_handle().clone();
             std::thread::spawn(move || responder.respond(files::serve(&app, &req)));
         })
-        .setup(|app| {
+        .setup(move |app| {
             let roots_file = app.path().app_data_dir().map(|d| d.join("roots.json")).unwrap_or_else(|_| std::path::PathBuf::from("roots.json"));
             app.manage(files::Roots::load(roots_file));
             #[cfg(desktop)]
             if let Some(w) = app.get_webview_window("main") { fit_to_screen(&w); }
+            watch_page(app.handle(), pages.clone(), first.clone());
+            check_pages_daily(app.handle(), pages.clone());
             let _ = app;
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![p37_quit, p37_shell_info,
+            p37_page_info, p37_page_check, p37_page_ok, p37_page_switch,
             files::fs_roots, files::fs_root_default, files::fs_root_choose, files::fs_root_forget,
             files::fs_list, files::fs_stat, files::fs_read, files::fs_write, files::fs_copy, files::fs_rename, files::fs_remove, files::fs_mkdir])
         .on_window_event(|window, event| {
@@ -158,7 +234,7 @@ pub fn run() {
                 }
             }
         })
-        .build(tauri::generate_context!())
+        .build(context)
         .expect("error while building the app")
         .run(|app, event| {
             // Cmd-Q, or the system asking the app to quit: the page decides too.

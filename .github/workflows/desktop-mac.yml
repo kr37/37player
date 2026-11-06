@@ -14,6 +14,8 @@ permissions:
 jobs:
   mac:
     runs-on: macos-latest
+    # Test builds update their page from dev's (page-test; desktop/PAGE-UPDATES.md).
+    env: { P37_PAGE_CHANNEL: test }
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -32,6 +34,7 @@ jobs:
         with: { name: mac, path: 37-Player-mac-test.dmg }
   windows:
     runs-on: windows-latest
+    env: { P37_PAGE_CHANNEL: test }
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
