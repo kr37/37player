@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="1.4.183">
+<meta name="app-version" content="1.4.184">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -160,6 +160,11 @@
     transform: scale(var(--ui-scale));
     transform-origin: top left;
   }
+  /* The desktop app on an older Mac (Monterey's WebKit, 6 Nov 2026): 100vh
+     and 100dvh came out 28px (the title bar) taller than the window shows,
+     so the bottom of every screen, the Library's player too, was cut off.
+     There, the window's real height is set by script (--app-h). */
+  html.fit-height #app{ height: calc((var(--app-h) - var(--opbar-h, 0px)) / var(--ui-scale)); }
 
   header.topbar{
     display:flex; align-items:center; gap:12px;
@@ -44999,6 +45004,13 @@ const IN_DESKTOP_APP = !!window.__TAURI_INTERNALS__;
    this (no p37_shell_info) counts as bridge 0. */
 // Also in the <meta name="desktop-bridge"> at the top, where the shell reads
 // it before using a downloaded page (desktop/PAGE-UPDATES.md).
+// The page's height from the window's real height, not 100vh (see
+// html.fit-height in the styles).
+if(IN_DESKTOP_APP){
+  const fitHeight = ()=> document.documentElement.style.setProperty("--app-h", window.innerHeight + "px");
+  fitHeight(); document.documentElement.classList.add("fit-height");
+  window.addEventListener("resize", fitHeight);
+}
 const DESKTOP_BRIDGE_NEEDED = +((document.querySelector('meta[name="desktop-bridge"]') || {}).content || 1);
 let desktopShell = null; // {version, bridge}
 async function desktopShellCheck(){
