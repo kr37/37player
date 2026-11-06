@@ -575,6 +575,12 @@ mod tests {
     }
 
     #[test]
+    fn gens_key_is_read() {
+        let k = include_str!("../page-key.pub");
+        assert!(k.trim() == "none" || Verifier::new(k).has_key(), "page-key.pub is neither \"none\" nor a key tauri signer made");
+    }
+
+    #[test]
     fn the_data_folder_is_tauris() {
         if cfg!(target_os = "linux") {
             let d = data_dir("com.player37.app").unwrap();
