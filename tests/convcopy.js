@@ -35,6 +35,7 @@ const waitFor = async(p, fn, ms)=>{ for(let t=0; t<ms; t+=250){ if(await p.evalu
   ok(await waitFor(p, ()=> /couldn.t be converted/i.test(document.querySelector('.modal')?.innerText || ''), 180000), 'garbage both ways: it says it couldn\'t be converted');
   const t2 = await p.evaluate(()=> document.querySelector('.modal')?.innerText || '');
   ok(/Invalid data found/.test(t2), 'with ffmpeg\'s reason: ' + (t2.match(/four[^\n]*/) || [''])[0]);
+  ok(/\[read here [0-9a-f]{16}, by the converter 5a5a5a5a5a5a5a5a, \d+ bytes\]/.test(t2), 'and the first bytes as the page and the converter read them');
   ok(await p.evaluate(()=> window.__conv.copyFirst()) === false, 'and copies aren\'t switched on by a copy that didn\'t help');
   console.log(fails ? fails + ' FAILED' : 'ALL OK'); await b.close();
 })();
