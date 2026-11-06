@@ -1,4 +1,47 @@
-# The desktop app's page updates itself (design, not built)
+# The desktop app's page updates itself
+
+**Built (6 Nov 2026):** the shell's side in `desktop/src-tauri/src/pages.rs`
+(on `tauri-spike`, with `cargo test`s), the page's in 1.4.182 (`desktopPageUp`,
+tests/desktop.js), the signing job in `.github/workflows/page-release.yml`.
+**Waiting for the key pair** (below): until the public key is in
+`desktop/src-tauri/page-key.pub` (now "none") and the private one in the
+secrets, nothing is published and nothing downloaded is used.
+
+How it came out, where it differs from the design below:
+- **Update now, not Restart now:** the window reloads into the new page, as
+  on the website; the app keeps running. The same "Update now" under the
+  version, and the same offer from Check for updates, as the website's.
+- **A page that doesn't start** is caught within a minute, not only after
+  two starts: if it hasn't said so (`p37_page_ok`) a minute after it was
+  chosen, it's put aside and the window reloads into the one before it, as
+  the website's service worker does. Two starts without word also does it.
+- **The shell downloads** (Rust, `ureq`), not the page, so a page whose
+  update check is broken can still be replaced.
+- **page.json** (version, bridge) is fetched first, then the files only if
+  they're newer; files are written beside, then renamed into place.
+- The **converter** (ffmpeg) still comes with the shell: a page that needs a
+  different converter version needs a new build (rare; the converter has
+  changed once).
+
+## The key pair (Gen, once)
+
+On the T470 (needs Node):
+
+    npx @tauri-apps/cli@2 signer generate -w ~/.tauri/37player-pages.key
+
+It asks for a password (choose one and keep it with the key). It writes
+`37player-pages.key` (private) and `37player-pages.key.pub` (public). Then on
+GitHub, kr37/37player → Settings → Secrets and variables → Actions → New
+repository secret, twice:
+- `TAURI_SIGNING_PRIVATE_KEY`: the whole contents of `37player-pages.key`;
+- `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`: the password.
+
+Send Claude the contents of `37player-pages.key.pub` (public, safe to share);
+it goes into `page-key.pub`. Keep the private key file backed up: losing it
+means a new key pair and a new desktop build for everyone. The same key can
+sign shell updates later (Tauri's updater uses this kind of key).
+
+## The design
 
 For Gen to look over. 6 Nov 2026. The aim is to make development go smoothly:
 GitHub builds a new desktop app only when the Rust shell changes, and every
