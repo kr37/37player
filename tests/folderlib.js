@@ -56,8 +56,14 @@ const waitModal = async (p, re, ms)=>{ for(let i=0; i<(ms||15000)/200; i++){ con
   await p.evaluate(()=> document.getElementById('infoKeepFolder').click());
   const ask = await waitModal(p, /Keep this library in a folder/);
   ok(/Automatic backups stop/.test(ask), 'the dialog explains (where, how much, backups)');
-  const nav = p.waitForNavigation({waitUntil: 'networkidle0', timeout: 60000});
+  ok(/empty folder for this library/.test(ask), 'it says an empty folder made for the library can be chosen');
   await clickText(p, '.modal button', '^Choose where');
+  // "picked" is empty (1.4.180, Gen): use it as it is, or make the library's folder inside it.
+  const which = await waitModal(p, /Use this folder/);
+  const btns = await p.evaluate(()=> [...document.querySelectorAll('#askButtons button')].map(b=> b.textContent.trim() + (b.classList.contains('primary') ? '*' : '')));
+  ok(/is empty/.test(which) && btns[0] === 'Use “picked”*' && /^Make “.+” inside$/.test(btns[1]), 'an empty folder: use it, or make the library\'s folder inside (' + btns.join(' | ') + ')');
+  const nav = p.waitForNavigation({waitUntil: 'networkidle0', timeout: 60000});
+  await clickText(p, '.modal button', '^Make “');
   await nav; await sleep(1000);
   const after = await p.evaluate(()=>{ const r = window.__dbg.getRoot(); return {ids: r.library.map(t=> t.id).sort(), tree: JSON.stringify(r.tree), kind: window.__fl.kind(), folder: window.__fl.name()}; });
   ok(after.kind === 'FolderLibraryStore' && !!after.folder, 'after the reload it runs from the folder (' + after.kind + ', "' + after.folder + '")');
