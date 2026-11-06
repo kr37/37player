@@ -261,6 +261,7 @@ The full plan and history are in the project doc `shared-library-sync.md`. In sh
   - two-device sync scenarios run against `php -S` with a scratch data folder;
   - the merge engine has standalone tests.
 - **Simulating the screen off:** override `document.hidden` and send `visibilitychange`. This tests the logic only. Real phone behavior has to be checked on a phone, with the playback log.
+- **In WebKit and Firefox too** (6 Nov 2026, after WebKit's .zip fault went unseen by Chrome-only tests): `tests/engines/` runs the same Puppeteer test files through Playwright (`ENGINE=webkit|firefox`, `tests/run-engines.sh`), and `.github/workflows/tests-engines.yml` runs both on every pull request to main and when asked. Free on GitHub's standard Linux machines (public repository). Tests that can only pass in Chrome are listed here once the first runs show which.
 
 ## Open / later
 
