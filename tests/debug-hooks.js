@@ -139,3 +139,5 @@ window.__edPrev = (id)=>{ loadEditorPreview(id); document.getElementById('edPrev
 window.__edPrevPaused = ()=> document.getElementById('edPreviewAudio').paused;
 window.__lvl = ()=> ({ctx: levelCtx, routed: levelGains.has(audioEl)}); // levelwatch.js
 window.__share.note = (m)=> sharedMissingNote(m); // miss.js
+window.__dbg3.trashKeys = ()=> undoTrashKeys(); // reconcile.js
+window.__dbg3.downloadPass = ()=> sharedDownloadPending(sharedConfig()); // reconcile.js
