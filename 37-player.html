@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="1.4.187">
+<meta name="app-version" content="1.4.188">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -30751,10 +30751,24 @@ function ensureLevelCtx(){
     if(levelCtx.state === "suspended") levelCtx.resume().catch(()=>{});
     levelCtx.addEventListener("statechange", ()=>{
       playLog("Web Audio " + levelCtx.state + (document.hidden ? ", not on screen" : ""));
-      if(levelCtx.state === "suspended" && [audioEl, ...levelPreviewEls()].some(el=> el && levelGains.has(el) && !el.paused)) levelCtx.resume().catch(()=>{});
+      if(levelCtx.state !== "running" && levelCtx.state !== "closed" && levelRoutedPlaying()) levelCtx.resume().catch(()=>{});
     });
   }catch(err){ console.warn("No audio context for turning tracks up:", err); levelCtx = null; }
 }
+// A track playing through Web Audio (turned up) is heard only while the
+// audio context runs. On the Mac mini (6 Nov 2026, 1.4.186) importing a
+// 1.2 GB WAV left it silent: the time went on, nothing came out, until the
+// next track's play started it again. WebKit can also put a context in
+// "interrupted", which the handler above didn't answer. So while such a
+// track plays, the context is checked every second and started again.
+function levelRoutedPlaying(){ return [audioEl, ...levelPreviewEls()].some(el=> el && levelGains.has(el) && !el.paused); }
+let levelWatchSaid = false;
+setInterval(()=>{
+  if(!levelCtx || levelCtx.state === "running" || levelCtx.state === "closed"){ levelWatchSaid = false; return; }
+  if(!levelRoutedPlaying()) return;
+  if(!levelWatchSaid){ levelWatchSaid = true; playLog("Web Audio was " + levelCtx.state + " while a track played: started again"); }
+  levelCtx.resume().catch(()=>{});
+}, 1000);
 document.addEventListener("pointerdown", ensureLevelCtx, true);
 document.addEventListener("keydown", ensureLevelCtx, true);
 function levelPreviewEls(){ return ["libPreviewAudio", "edPreviewAudio", "dupAudio"].map(id=> document.getElementById(id)).filter(Boolean); }

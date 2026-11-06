@@ -137,3 +137,4 @@ window.__driveStart = (el)=> driveStartFrom(el, {what: "connect"}); window.__inD
 window.__delAsk = (ids)=> confirmDeleteTracksFromLibrary(ids, ()=> deleteLibraryTracks(ids));
 window.__edPrev = (id)=>{ loadEditorPreview(id); document.getElementById('edPreviewPlay').click(); };
 window.__edPrevPaused = ()=> document.getElementById('edPreviewAudio').paused;
+window.__lvl = ()=> ({ctx: levelCtx, routed: levelGains.has(audioEl)}); // levelwatch.js
