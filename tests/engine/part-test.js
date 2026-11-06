@@ -74,4 +74,12 @@ ok(d5['n:g']==='drop' && d5['n:q1']==='send', 'removed here: drop by default, se
   const r2=E.syncMergePartial(clone(me),{format:1,tracks:[],tree:[PL('pA','Mine',0,['u1'])]},clone(sh),{deleteEverywhere:new Set(['u1','u2'])});
   ok(names(r2.local)==='Mine(u1) | u1', 'unless a playlist on this device still uses it ('+names(r2.local)+')');
 }
+// "From those playlists too": taken out of the shared library's playlists, then deleted (1.4.186).
+{
+  const sh={format:1,tracks:[T('u1','One'),T('u2','Two'),T('u3','Three')],tree:[PL('pA','Mine',0,['u1','u2']),PL('pB','Elsewhere',1,['u1','u3'])]};
+  const me={format:1,tracks:[T('u1','One'),T('u2','Two')],tree:[PL('pA','Mine',0,['u1','u2'])]};
+  const r=E.syncMergePartial(clone(me),{format:1,tracks:[],tree:[]},clone(sh),{deleteEverywhere:new Set(['u1','u2','pA']),purge:new Set(['u1'])});
+  ok(names(r.doc)==='Elsewhere(u3) | u3', 'from those playlists too: out of Elsewhere, and deleted ('+names(r.doc)+')');
+  ok(names(r.local)===' | ', 'and off this device');
+}
 console.log(fails? fails+' FAILED':'ALL OK');
