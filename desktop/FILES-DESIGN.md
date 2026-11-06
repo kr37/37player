@@ -206,7 +206,7 @@ stays theirs, and the library only points into it.
 
 ## Testing
 
-- The page side runs in the existing suite: a fake of the five Rust commands,
+- The page side runs in the existing suite: a fake of the Rust commands,
   written in JavaScript over the browser's private file system, stands in for
   Rust, so every test that runs on the files store (`STORE=opfs`) runs on the
   desktop's handles too.
@@ -220,7 +220,14 @@ stays theirs, and the library only points into it.
 1. The Mac experiment above (a day's work at most, with a test build).
 2. Rust's commands (with roots) and the address, with their tests; the
    handles in the page; readable names in the store; the suite run through the
-   fake.
+   fake. **Done 6 Nov 2026** (shell 1.4.175, page 1.4.174–175): `files.rs`
+   with `fs_roots`, `fs_root_default`, `fs_root_choose`, `fs_root_forget`,
+   `fs_list`, `fs_stat`, `fs_read`, `fs_write`, `fs_copy`, `fs_rename`,
+   `fs_remove`, `fs_mkdir` and `p37lib://`, 12 `cargo test` tests (run before
+   each desktop build); `DesktopDirHandle` / `DesktopFileHandle` in the page;
+   readable names in the store for Chrome/Edge folder libraries too; so far the
+   fake runs readnames.js's scenario, not yet the whole `STORE=opfs` set. Not
+   switched on: the page doesn't use them, and the bridge stays 1.
 3. Playing by address; the stand-in for big files; the places needing real
    blobs, one by one.
 4. Where libraries live, the list file, moving libraries in by themselves;

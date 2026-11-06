@@ -65,11 +65,14 @@ const waitModal = async (p, re, ms)=>{ for(let i=0; i<(ms||15000)/200; i++){ con
   const files = await p.evaluate(async (folder)=>{
     const d = await (await (await navigator.storage.getDirectory()).getDirectoryHandle('picked')).getDirectoryHandle(folder);
     const top = []; for await (const [n] of d.entries()) top.push(n);
-    const audio = []; for await (const [n] of (await d.getDirectoryHandle('audio')).entries()) audio.push(n);
-    return {top: top.sort(), audio: audio.sort()};
+    // Readable names (1.4.174): recordings as Artist/Album/Title, the rest in "37 Player's own files"
+    const music = []; const walk = async (dir, pre)=>{ for await (const [n, h] of dir.entries()){ if(n === "37 Player's own files") continue; if(h.kind === 'directory') await walk(h, pre + n + '/'); else if(pre) music.push(pre + n); } };
+    await walk(d, '');
+    const own = []; for await (const [n] of (await d.getDirectoryHandle("37 Player's own files")).entries()) own.push(n);
+    return {top: top.sort(), audio: music.sort(), own: own.sort()};
   }, after.folder);
-  ok(files.top.includes('37 Player library.json') && files.top.includes('README.txt') && files.top.includes('state'), 'the folder has its marker, a README and the library (' + files.top.join(', ') + ')');
-  ok(files.audio.filter(n=> /\.mp3$/.test(n)).length === 2, 'and both recordings (' + files.audio.join(', ') + ')');
+  ok(files.top.includes('37 Player library.json') && files.top.includes('README.txt') && files.top.includes("37 Player's own files") && files.own.includes('state') && files.own.includes('audio'), 'the folder has its marker, a README and the library (' + files.top.join(', ') + ' | own: ' + files.own.join(', ') + ')');
+  ok(files.audio.filter(n=> /^[^/]+\/[^/]+\/[^/]+\.mp3$/.test(n)).length === 2, 'and both recordings, under readable names (' + files.audio.join(', ') + ')');
   const plays = await p.evaluate(async (id)=>{ const u = await window.__audioUrl(id); const b = await (await fetch(u)).blob(); return b.size; }, after.ids[0]);
   ok(plays > 1000, 'a track\'s audio comes from the folder (' + plays + ' bytes)');
   // The browser's copy.
@@ -83,6 +86,14 @@ const waitModal = async (p, re, ms)=>{ for(let i=0; i<(ms||15000)/200; i++){ con
   await p.evaluate(async()=>{ const f = ns=>{ for(const n of ns){ if(n.kind==='playlist') return n; if(n.children){ const x=f(n.children); if(x) return x; } } }; f(window.__dbg.getRoot().tree).name = 'Renamed in a folder'; await window.__dbg.saveState(); });
   await p.reload({waitUntil: 'networkidle0'}); await sleep(1200);
   ok((await p.evaluate(()=> JSON.stringify(window.__dbg.getRoot().tree))).includes('Renamed in a folder'), 'an edit is kept after a reload');
+  // A track's details change: its recording's name follows (1.4.174), and back on Undo
+  const ls = (folder)=> p.evaluate(async (folder)=>{ const d = await (await (await navigator.storage.getDirectory()).getDirectoryHandle('picked')).getDirectoryHandle(folder); const out = []; const walk = async (dir, pre)=>{ for await (const [n, h] of dir.entries()){ if(n === "37 Player's own files") continue; if(h.kind === 'directory') await walk(h, pre + n + '/'); else if(pre) out.push(pre + n); } }; await walk(d, ''); return out.sort(); }, folder);
+  await p.evaluate(async()=>{ const tr = window.__dbg.getRoot().library.find(t=> /tone/i.test(t.filename || t.name)); tr.artist = 'Test Artist'; tr.album = 'Test Album'; tr.trackNo = 7; tr.name = 'Renamed tone'; await window.__dbg.saveState(); });
+  await sleep(4500);
+  const renamed = await ls(after.folder);
+  ok(renamed.includes('Test Artist/Test Album/07 Renamed tone.mp3') && !renamed.some(n=> n.startsWith('Unknown Artist/')), 'editing a track\'s details renames its recording (' + renamed.join(', ') + ')');
+  const plays2 = await p.evaluate(async ()=>{ const tr = window.__dbg.getRoot().library.find(t=> t.name === 'Renamed tone'); const u = await window.__audioUrl(tr.id); return (await (await fetch(u)).blob()).size; });
+  ok(plays2 > 100000, 'and it still plays from there (' + plays2 + ' bytes)');
 
   // Permission to ask for again.
   await p.evaluate(()=> localStorage.setItem('__permPrompt', '1'));
