@@ -135,3 +135,5 @@ window.__drop = {take: (dt)=> takeDrop(dt)};
 window.__driveStart = (el)=> driveStartFrom(el, {what: "connect"}); window.__inDesktop = ()=> IN_DESKTOP_APP;
 // deleting a track that's playing (delplaying.js)
 window.__delAsk = (ids)=> confirmDeleteTracksFromLibrary(ids, ()=> deleteLibraryTracks(ids));
+window.__edPrev = (id)=>{ loadEditorPreview(id); document.getElementById('edPreviewPlay').click(); };
+window.__edPrevPaused = ()=> document.getElementById('edPreviewAudio').paused;
