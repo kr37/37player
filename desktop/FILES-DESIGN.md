@@ -233,7 +233,8 @@ webview's storage is lost, nothing is: the libraries are found again from
 for folders with a `37 Player library.json`. Each library's own settings
 already live in its folder.
 
-- The app's identifier (now `com.player37.spike`) names that data folder, and
+- The app's identifier (now `com.player37.spike`; to be `com.player37.app`,
+  Gen, 6 Nov 2026) names that data folder, and
   the webview's storage, so the real one is set before friends' beta tests
   and then never changed.
 
