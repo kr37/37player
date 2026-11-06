@@ -126,9 +126,14 @@ A proposal for the layout:
 ```
 Music/37 Player Libraries/Rinzin's library/
   37 Player library.json
-  <Artist>/<Album>/<NN> <Title>.mp3
+  README.txt
+  music/<Artist>/<Album>/<NN> <Title>.mp3
+  playlists/<folders>/<Playlist>.m3u8   (a courtesy for other players; kept up to date, never read back)
   37 Player's own files/   (playlists and details, artwork, the waiting room; not for editing)
 ```
+
+(Gen, 6 Nov 2026, built in 1.4.179: recordings under `music/` and a visible
+`playlists/`, so the top of the folder reads like a table of contents.)
 
 The names are made the way the portable export already makes them
 (`music/artist/album/…`), so a library folder looks like an export.
