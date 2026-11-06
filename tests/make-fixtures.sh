@@ -1,6 +1,7 @@
 #!/bin/bash
 # Makes the test audio with ffmpeg (nothing copyrighted is kept in the repo).
 set -e
+mkdir -p "$(dirname "$0")/www" # not kept in git (a fresh checkout, GitHub)
 cd "$(dirname "$0")/www"
 inv="pan=stereo|c0=c0|c1=-1*c0"   # "invert stereo", like the Life of Buddha files
 ffmpeg -loglevel error -y -f lavfi -i "sine=f=220:d=600,volume='0.2+0.15*sin(2*PI*t/120)':eval=frame" -af "$inv" -c:a libmp3lame -b:a 96k ten.mp3

@@ -30,6 +30,8 @@ const modalText = p=> p.evaluate(()=> document.querySelector('.modal-backdrop.sh
   ok(await p.evaluate(()=> !window.__edPrevPaused()), 'Edit Playlists\' player is playing a track');
   await p.evaluate((id)=> window.__delAsk([id]), edId); await sleep(500);
   ok(/is playing right now/.test(await modalText(p)), 'deleting it warns that it\'s playing');
+  await (await p.$('.modal')).screenshot({path: 'shots/delplaying-warning.png'});
+  ok(await p.evaluate(()=>{ const e = document.querySelector('.modal .delete-playing'); return !!e && !!e.querySelector('svg.playing-eq') && getComputedStyle(e).borderLeftWidth === '4px'; }), 'the warning is a strip with the playing bars');
   await clickText(p, '.modal button', '^Cancel$'); await sleep(300);
   await p.evaluate(()=> document.getElementById('edPreviewAudio').pause()); await sleep(200);
   // Play the first track of a playlist holding both.
@@ -40,7 +42,7 @@ const modalText = p=> p.evaluate(()=> document.querySelector('.modal-backdrop.sh
   await p.evaluate((id)=> window.__delAsk([id]), ids.c); await sleep(500);
   let m = await modalText(p);
   ok(!/playing right now/.test(m), 'deleting a track that isn\'t playing: no warning');
-  await clickText(p, '.modal button', '^Delete$'); await sleep(800);
+  await clickText(p, '.modal button', '^Delete$'); await sleep(400); await p.evaluate(()=> document.getElementById('tidyGo')?.click()); // the playlists question (1.4.177) await sleep(800);
   ok(await p.evaluate(()=> !window.__aud().paused), 'and what\'s playing carries on');
   // Deleting the playing track: warned, then stopped and deleted.
   await p.evaluate((id)=> window.__delAsk([id]), ids.a); await sleep(500);
@@ -49,7 +51,7 @@ const modalText = p=> p.evaluate(()=> document.querySelector('.modal-backdrop.sh
   await clickText(p, '.modal button', '^Cancel$'); await sleep(400);
   ok(await p.evaluate(()=> !window.__aud().paused) && await p.evaluate((id)=> !!window.__dbg.getRoot().library.find(t=> t.id === id), ids.a), 'Cancel: still playing, still there');
   await p.evaluate((id)=> window.__delAsk([id]), ids.a); await sleep(500);
-  await clickText(p, '.modal button', '^Delete$'); await sleep(1000);
+  await clickText(p, '.modal button', '^Delete$'); await sleep(400); await p.evaluate(()=> document.getElementById('tidyGo')?.click()); // the playlists question (1.4.177) await sleep(1000);
   ok(await p.evaluate(()=> window.__aud().paused), 'Delete: playing stops');
   ok(await p.evaluate((id)=> !window.__dbg.getRoot().library.find(t=> t.id === id), ids.a), 'and the track is gone');
   console.log(fails ? fails + ' FAILED' : 'ALL OK'); await b.close();

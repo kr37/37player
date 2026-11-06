@@ -126,9 +126,14 @@ A proposal for the layout:
 ```
 Music/37 Player Libraries/Rinzin's library/
   37 Player library.json
-  <Artist>/<Album>/<NN> <Title>.mp3
+  README.txt
+  music/<Artist>/<Album>/<NN> <Title>.mp3
+  playlists/<folders>/<Playlist>.m3u8   (a courtesy for other players; kept up to date, never read back)
   37 Player's own files/   (playlists and details, artwork, the waiting room; not for editing)
 ```
+
+(Gen, 6 Nov 2026, built in 1.4.179: recordings under `music/` and a visible
+`playlists/`, so the top of the folder reads like a table of contents.)
 
 The names are made the way the portable export already makes them
 (`music/artist/album/…`), so a library folder looks like an export.
@@ -201,8 +206,37 @@ stays theirs, and the library only points into it.
   warning. When the drive isn't connected, its tracks show as "on a drive
   that isn't connected" (not missing, not damaged, nothing offered to delete)
   and come back when it is.
+- **playlists/ with tracks used in place** (Gen, 6 Nov 2026): the .m3u8
+  points to the file where it is, with as many `../` as it takes
+  (`../../../Music/iTunes/…`), so the playlist still works if the whole
+  drive's tree moves together. Where no relative path exists (on Windows, a
+  track on another drive letter), the line is the full path (`E:\Talks\…`),
+  which every player reads too. A track on a drive that isn't connected keeps
+  its line; the other player shows it as missing, as it would its own.
 - Use in place and Move come after the backend and readable names work (they
   need the roots and the addresses, nothing more).
+
+## The device's own settings (Gen, 6 Nov 2026: as persistent as possible)
+
+With libraries in folders, the webview's storage still holds a little: the
+list of libraries and where each is, which one opens, the language, theme and
+other settings of this device. That storage can go: WebView2 is Chromium and
+can evict storage that isn't marked persistent when the disk is nearly full;
+WebKit has its own limits; cleaning tools (CCleaner, CleanMyMac) and some
+uninstalls delete it; nothing in 37 Player offers to. So in the desktop app
+the shell keeps these in its own file, `device.json` in the app's data folder
+(beside `roots.json`; on Windows the hidden AppData folder every program
+uses, on the Mac `~/Library/Application Support/<identifier>/`), read and
+written through the shell, with the webview's storage only a copy. If the
+webview's storage is lost, nothing is: the libraries are found again from
+`device.json`, and failing that by looking in `Music/37 Player Libraries/`
+for folders with a `37 Player library.json`. Each library's own settings
+already live in its folder.
+
+- The app's identifier (now `com.player37.spike`; to be `com.player37.app`,
+  Gen, 6 Nov 2026) names that data folder, and
+  the webview's storage, so the real one is set before friends' beta tests
+  and then never changed.
 
 ## Testing
 

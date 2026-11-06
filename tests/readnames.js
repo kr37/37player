@@ -114,9 +114,9 @@ let fails = 0; const ok=(c,m)=>{ console.log((c?'ok   ':'FAIL ')+m); if(!c) fail
   for(const [mi, r] of results.entries()){
   const M = mi ? '[desktop] ' : '';
   if(mi) console.log('shell commands used:', r.shell.join(', '));
-  ok(r.pathFor[0] === 'Geshe Kelsang/Heart Jewel/03 Liberating Prayer', M + 'a recording\'s path: ' + r.pathFor[0]);
-  ok(r.pathFor[1] === 'Unknown Artist/Unknown Album/A-B- c- -d- -e- -f-', M + 'what folders refuse becomes "-", trailing dots go: ' + r.pathFor[1]);
-  ok(/^CON_\//.test(r.pathFor[2]) && r.pathFor[2].split('/')[1].length === 80 && r.pathFor[2].endsWith('/Untitled'), M + 'Windows device names, long names, empty names: ' + r.pathFor[2]);
+  ok(r.pathFor[0] === 'music/Geshe Kelsang/Heart Jewel/03 Liberating Prayer', M + 'a recording\'s path: ' + r.pathFor[0]);
+  ok(r.pathFor[1] === 'music/Unknown Artist/Unknown Album/A-B- c- -d- -e- -f-', M + 'what folders refuse becomes "-", trailing dots go: ' + r.pathFor[1]);
+  ok(/^music\/CON_\//.test(r.pathFor[2]) && r.pathFor[2].split('/')[2].length === 80 && r.pathFor[2].endsWith('/Untitled'), M + 'Windows device names, long names, empty names: ' + r.pathFor[2]);
   ok(r.t1.includes('Tharpa/Prayers/01 Liberating Prayer.mp3') && r.t1.includes('Tharpa/Prayers/01 Liberating Prayer (2).mp3') && r.t1.some(x=> x.startsWith("37 Player's own files/audio/")) && r.t1.some(x=> x.startsWith("37 Player's own files/state/")) && !r.t1.some(x=> /^(audio|state)\//.test(x)), M + 'readable names, a clash gets " (2)", own files apart');
   ok(r.read1[0] === 'aaa' && r.read1[1] === 'bbb', M + 'and they read back');
   ok(r.moved2 === 1 && r.t2.includes('Tharpa/Prayers/01 Liberating Prayer (2026).mp3') && !r.t2.includes('Tharpa/Prayers/01 Liberating Prayer.mp3') && r.read2 === 'aaa', M + 'a change of details moves the recording');
