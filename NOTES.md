@@ -203,7 +203,7 @@ The full plan and history are in the project doc `shared-library-sync.md`. In sh
 
 ## Browser quirks and workarounds
 
-**Ways to run it, and what they really are** (6 Nov 2026, Gen worried quirks get lost). Seven ways, but three engines, two places for the library, and a shell or not. Quirks belong to the engine or the storage, so code tests for what a browser *can do* (`window.showDirectoryPicker`, `WEBKIT_ENGINE`, `IN_DESKTOP_APP`), never for a device's name, and each quirk is written below under its engine.
+**Ways to run it, and what they really are** (6 Nov 2026, Gen worried quirks get lost). Eight ways (with Android), but three engines, two places for the library, and a shell or not. Quirks belong to the engine or the storage, so code tests for what a browser *can do* (`window.showDirectoryPicker`, `WEBKIT_ENGINE`, `IN_DESKTOP_APP`), never for a device's name, and each quirk is written below under its engine.
 
 | Way | Engine | The library is in | Notes |
 |---|---|---|---|
@@ -214,6 +214,7 @@ The full plan and history are in the project doc `shared-library-sync.md`. In sh
 | Desktop app, Mac | WebKit (the system's: Monterey's has no SIMD) | browser storage; a folder from bridge 2 | first-class |
 | Desktop app, Windows | Chromium (WebView2) | browser storage; a folder from bridge 2 | first-class |
 | Linux | Chromium (Chrome's installed app) | as Chrome | the desktop app on Linux would be WebKitGTK (playback through GStreamer plugins); not built |
+| Android tablets and phones | Chromium (Chrome) | browser storage | no folders on Android; touch, as the iPad |
 
 **WebKit, everywhere it runs** (Safari, iPads, the Mac desktop app; WebKitGTK too):
 - IndexedDB stores a blob that is a slice of another, or made from slices, as the start of the whole original: re-tagged files (1.4.016, `putRewrittenAudio`), and tracks of an imported .zip (1.4.173, `webkitOwnBytes`). Anything stored there gets bytes of its own first.
