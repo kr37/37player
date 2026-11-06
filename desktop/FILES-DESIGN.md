@@ -173,6 +173,34 @@ stays theirs, and the library only points into it.
   copy) gets the edited tags written into its own copy, so only the original
   file stays as it was, which is what Music.app would want. "No edits at all"
   can come later if someone asks.
+- **Gen, 5 Nov 2026: b) it is, explained at the start of the import.** While
+  a folder is used in place, its files **will not be touched**: edits live only
+  in 37 Player's library (its records, `meta.json` and so on). Anyone who wants
+  their edits in ordinary files to use elsewhere can export from 37 Player, or
+  turn the folder into Copy (or Move) to the library. The per-folder switch to
+  write into the files isn't part of this; it can come later if asked for.
+- **The mode belongs to each import, not to the library.** One library can
+  hold a folder used in place (say, Music.app's), recordings copied in from a
+  USB stick, and others moved in. Each track's record says where its recording
+  is: the library's own folder, or a path inside a root used in place. A
+  folder used in place can later be turned into Copy or Move (its recordings
+  copied or moved into the library's folder, and from then on the library's
+  own); the reverse isn't offered.
+- **Anything 37 Player makes is the library's own,** in the library's folder:
+  a split's pieces, a conversion (the original stays where it is, in place),
+  a recording from a shared library. Splitting a track used in place leaves
+  its original untouched; the pieces go in `Music/37 Player Libraries/<library>/`.
+- **Anything not imported as a folder used in place is copied.** Files dropped
+  on 37 Player, picked one by one, or arriving in a shared library: their
+  origin isn't a folder the person handed over (a Downloads folder gets
+  emptied), so the library takes its own copy. A file that later appears in a
+  folder used in place (a new album copied into Music.app's folder) isn't seen
+  until that folder is looked through again ("Look for new files", later).
+- **Removable drives** (a USB stick, an external disk; Rust can tell): the
+  import defaults to Copy and says why. Use in place is still allowed, with a
+  warning. When the drive isn't connected, its tracks show as "on a drive
+  that isn't connected" (not missing, not damaged, nothing offered to delete)
+  and come back when it is.
 - Use in place and Move come after the backend and readable names work (they
   need the roots and the addresses, nothing more).
 
@@ -217,5 +245,4 @@ stays theirs, and the library only points into it.
 
 ## Still open
 
-- Edits to tracks used in place: b) plus a per-folder switch for c), as
-  suggested above?
+- Nothing at the moment. (Edits to tracks used in place: decided, b).)
