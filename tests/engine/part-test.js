@@ -63,4 +63,15 @@ const rows5=E.syncReviewRows(ap3.base, l5, bigShared); E.syncClassifyPartial(row
 const d5={}; rows5.rows.forEach(x=>d5[x.key]=E.syncDefaultChoice(x));
 console.log('removed rows:', rows5.rows.filter(x=>x.removedHere).map(x=>x.key+'='+d5[x.key]).join(' '));
 ok(d5['n:g']==='drop' && d5['n:q1']==='send', 'removed here: drop by default, send when deleted everywhere');
+// Tracks deleted everywhere that a playlist elsewhere in the shared library still uses (6 Nov 2026):
+// the shared library keeps them for it, and this device doesn't take them back.
+{
+  const sh={format:1,tracks:[T('u1','One'),T('u2','Two')],tree:[PL('pA','Mine',0,['u1','u2']),PL('pB','Elsewhere',1,['u1'])]};
+  const me={format:1,tracks:[T('u1','One'),T('u2','Two')],tree:[PL('pA','Mine',0,['u1','u2'])]};
+  const r=E.syncMergePartial(clone(me),{format:1,tracks:[],tree:[]},clone(sh),{deleteEverywhere:new Set(['u1','u2','pA'])});
+  ok(names(r.doc)==='Elsewhere(u1) | u1', 'deleted everywhere, still used elsewhere: the shared library keeps it for that playlist ('+names(r.doc)+')');
+  ok(names(r.local)===' | ' && names(r.base)===' | ', 'and this device doesn\'t take it back ('+names(r.local)+')');
+  const r2=E.syncMergePartial(clone(me),{format:1,tracks:[],tree:[PL('pA','Mine',0,['u1'])]},clone(sh),{deleteEverywhere:new Set(['u1','u2'])});
+  ok(names(r2.local)==='Mine(u1) | u1', 'unless a playlist on this device still uses it ('+names(r2.local)+')');
+}
 console.log(fails? fails+' FAILED':'ALL OK');

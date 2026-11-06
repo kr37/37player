@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="1.4.184">
+<meta name="app-version" content="1.4.185">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -3469,6 +3469,7 @@ const STRINGS = {
     "partialDeleteNoteTracks": "This device holds only what you choose. Remove from this device: only this device loses these tracks; the shared library keeps them. Delete everywhere: they're deleted from the shared library and every device.",
     "partialRemoveHere": "Remove from this device",
     "partialDeleteAll": "Delete everywhere",
+    "partialKeptElsewhere": "Kept in the shared library: {n} of the tracks you deleted everywhere, because its playlists still use them ({playlists}). They're off this device.",
     "partialOffTitle": "Bring everything here?",
     "partialOffBody": "This device will then receive the whole shared library: {n} more tracks, about {size}.",
     "partialOffBtn": "Bring everything",
@@ -5236,6 +5237,7 @@ const STRINGS = {
     "partialDeleteNoteTracks": "Este dispositivo tiene solo lo que eliges. Quitar de este dispositivo: solo este dispositivo pierde estas pistas; la biblioteca compartida las conserva. Eliminar en todas partes: se eliminan de la biblioteca compartida y de todos los dispositivos.",
     "partialRemoveHere": "Quitar de este dispositivo",
     "partialDeleteAll": "Eliminar en todas partes",
+    "partialKeptElsewhere": "Se conservan en la biblioteca compartida {n} de las pistas que eliminó en todas partes, porque sus listas aún las usan ({playlists}). Ya no están en este dispositivo.",
     "partialOffTitle": "¿Traer todo aquí?",
     "partialOffBody": "Este dispositivo recibirá entonces toda la biblioteca compartida: {n} pistas más, unos {size}.",
     "partialOffBtn": "Traer todo",
@@ -7003,6 +7005,7 @@ const STRINGS = {
     "partialDeleteNoteTracks": "Cet appareil ne contient que ce que vous choisissez. Retirer de cet appareil : seul cet appareil perd ces pistes ; la bibliothèque partagée les garde. Supprimer partout : elles sont supprimées de la bibliothèque partagée et de tous les appareils.",
     "partialRemoveHere": "Retirer de cet appareil",
     "partialDeleteAll": "Supprimer partout",
+    "partialKeptElsewhere": "Conservées dans la bibliothèque partagée : {n} des pistes supprimées partout, car ses playlists les utilisent encore ({playlists}). Elles ne sont plus sur cet appareil.",
     "partialOffTitle": "Tout apporter ici ?",
     "partialOffBody": "Cet appareil recevra alors toute la bibliothèque partagée : {n} pistes de plus, environ {size}.",
     "partialOffBtn": "Tout apporter",
@@ -8770,6 +8773,7 @@ const STRINGS = {
     "partialDeleteNoteTracks": "Este dispositivo guarda só o que você escolhe. Remover deste dispositivo: só este dispositivo perde estas faixas; a biblioteca compartilhada as mantém. Excluir em todos: são excluídas da biblioteca compartilhada e de todos os dispositivos.",
     "partialRemoveHere": "Tirar deste dispositivo",
     "partialDeleteAll": "Excluir em todos",
+    "partialKeptElsewhere": "Mantidas na biblioteca compartilhada: {n} das faixas que você apagou em todo lugar, porque as playlists dela ainda as usam ({playlists}). Elas saíram deste dispositivo.",
     "partialOffTitle": "Trazer tudo para cá?",
     "partialOffBody": "Este dispositivo vai receber a biblioteca compartilhada inteira: mais {n} faixas, cerca de {size}.",
     "partialOffBtn": "Trazer tudo",
@@ -10537,6 +10541,7 @@ const STRINGS = {
     "partialDeleteNoteTracks": "Dieses Gerät enthält nur, was du auswählst. Von diesem Gerät entfernen: Nur dieses Gerät verliert diese Titel; die gemeinsame Bibliothek behält sie. Überall löschen: Sie werden aus der gemeinsamen Bibliothek und von allen Geräten gelöscht.",
     "partialRemoveHere": "Von diesem Gerät entfernen",
     "partialDeleteAll": "Überall löschen",
+    "partialKeptElsewhere": "In der gemeinsamen Bibliothek behalten: {n} der überall gelöschten Titel, weil ihre Playlists sie noch verwenden ({playlists}). Auf diesem Gerät sind sie entfernt.",
     "partialOffTitle": "Alles hierher holen?",
     "partialOffBody": "Dieses Gerät erhält dann die ganze gemeinsame Bibliothek: {n} weitere Titel, etwa {size}.",
     "partialOffBtn": "Alles holen",
@@ -12304,6 +12309,7 @@ const STRINGS = {
     "partialDeleteNoteTracks": "这台设备只保存你选择的内容。从此设备移除：只有这台设备失去这些曲目；共享曲库仍保留它们。在所有地方删除：从共享曲库和所有设备中删除。",
     "partialRemoveHere": "从此设备移除",
     "partialDeleteAll": "处处删除",
+    "partialKeptElsewhere": "共享曲库保留了你“到处删除”的 {n} 首曲目，因为其中的播放列表仍在使用它们（{playlists}）。它们已从这台设备移除。",
     "partialOffTitle": "把所有内容都带到这里？",
     "partialOffBody": "此设备将接收整个共享资料库：另外 {n} 首曲目，约 {size}。",
     "partialOffBtn": "全部带来",
@@ -14071,6 +14077,7 @@ const STRINGS = {
     "partialDeleteNoteTracks": "Thiết bị này chỉ giữ những gì bạn chọn. Gỡ khỏi thiết bị này: chỉ thiết bị này mất các bài này; thư viện chung vẫn giữ. Xóa ở mọi nơi: chúng bị xóa khỏi thư viện chung và mọi thiết bị.",
     "partialRemoveHere": "Bỏ khỏi thiết bị này",
     "partialDeleteAll": "Xóa ở mọi nơi",
+    "partialKeptElsewhere": "Thư viện chung vẫn giữ {n} bài bạn đã xóa ở mọi nơi, vì các danh sách phát ở đó vẫn dùng chúng ({playlists}). Chúng đã rời khỏi thiết bị này.",
     "partialOffTitle": "Mang mọi thứ về đây?",
     "partialOffBody": "Thiết bị này sẽ nhận toàn bộ thư viện dùng chung: thêm {n} bản, khoảng {size}.",
     "partialOffBtn": "Mang tất cả",
@@ -15838,6 +15845,7 @@ const STRINGS = {
     "partialDeleteNoteTracks": "Αυτή η συσκευή κρατά μόνο ό,τι επιλέγετε. Αφαίρεση από αυτή τη συσκευή: μόνο αυτή η συσκευή χάνει αυτά τα κομμάτια· η κοινή βιβλιοθήκη τα κρατά. Διαγραφή παντού: διαγράφονται από την κοινή βιβλιοθήκη και από κάθε συσκευή.",
     "partialRemoveHere": "Αφαίρεση από αυτή τη συσκευή",
     "partialDeleteAll": "Διαγραφή παντού",
+    "partialKeptElsewhere": "Κρατήθηκαν στην κοινή βιβλιοθήκη {n} από τα κομμάτια που διαγράψατε παντού, γιατί οι λίστες της τα χρησιμοποιούν ακόμη ({playlists}). Αφαιρέθηκαν από αυτή τη συσκευή.",
     "partialOffTitle": "Να έρθουν όλα εδώ;",
     "partialOffBody": "Αυτή η συσκευή θα λάβει τότε ολόκληρη την κοινή βιβλιοθήκη: {n} ακόμη κομμάτια, περίπου {size}.",
     "partialOffBtn": "Να έρθουν όλα",
@@ -17605,6 +17613,7 @@ const STRINGS = {
     "partialDeleteNoteTracks": "Questo dispositivo tiene solo ciò che scegli. Rimuovi da questo dispositivo: solo questo dispositivo perde questi brani; la libreria condivisa li conserva. Elimina ovunque: vengono eliminati dalla libreria condivisa e da tutti i dispositivi.",
     "partialRemoveHere": "Rimuovi da questo dispositivo",
     "partialDeleteAll": "Elimina ovunque",
+    "partialKeptElsewhere": "Conservati nella libreria condivisa: {n} dei brani eliminati ovunque, perché le sue playlist li usano ancora ({playlists}). Non sono più su questo dispositivo.",
     "partialOffTitle": "Portare tutto qui?",
     "partialOffBody": "Questo dispositivo riceverà allora l’intera libreria condivisa: {n} brani in più, circa {size}.",
     "partialOffBtn": "Porta tutto",
@@ -40588,7 +40597,11 @@ function syncMergePartial(base, local, remote, opts){
     }
   });
   const keepT = new Map();
-  mt.forEach((f, id)=>{ if(!removed.has(id) && (lt.has(id) || bt.has(id))) keepT.set(id, f); });
+  // A track deleted everywhere that the shared library keeps, because a
+  // playlist there still uses it, stays off this device (6 Nov 2026, Gen:
+  // the Mac took its deleted tracks back and downloaded them again), unless
+  // one of this device's own playlists uses it (below).
+  mt.forEach((f, id)=>{ if(!removed.has(id) && !del.has(id) && (lt.has(id) || bt.has(id))) keepT.set(id, f); });
   keepN.forEach(rec=> (rec.items || []).forEach(it=>{ if(it.kind === "track" && mt.has(it.refId)) keepT.set(it.refId, mt.get(it.refId)); }));
   const part = syncBuildDoc(keepT, keepN);
   return {doc, local: part, base: part, conflicts};
@@ -41926,7 +41939,16 @@ async function sharedSyncOnce(opts){
       // "Delete everywhere" done: forget those IDs.
       if(cfg.deleteEverywhere && cfg.deleteEverywhere.length){
         const still = new Set(); (function w(a){ (a || []).forEach(n=>{ still.add(n.id); if(n.children) w(n.children); }); })(merged.tree); merged.tracks.forEach(tr=> still.add(tr.id));
-        cfg.deleteEverywhere = cfg.deleteEverywhere.filter(id=> still.has(id));
+        // Tracks the shared library kept because its playlists still use
+        // them: they stay off this device; say which playlists (1.4.185).
+        const keptIds = new Set(cfg.deleteEverywhere.filter(id=> merged.tracks.some(tr=> tr.id === id)));
+        if(keptIds.size){
+          const users = []; (function w(a, path){ (a || []).forEach(n=>{ const p2 = path.concat(n.name || ""); if(n.kind === "playlist" && (n.items || []).some(it=> it.kind === "track" && keptIds.has(it.refId))) users.push(p2.join(" / ")); if(n.children) w(n.children, p2); }); })(merged.tree, []);
+          const msg = t("partialKeptElsewhere", {n: keptIds.size, playlists: users.slice(0, 3).join(", ") + (users.length > 3 ? ", …" : "")});
+          sharedLog(msg); setTimeout(()=> showToast(msg), 500);
+        }
+        const inHere = new Set(); (function w(a){ (a || []).forEach(n=>{ inHere.add(n.id); if(n.children) w(n.children); }); })(forHere.tree); forHere.tracks.forEach(tr=> inHere.add(tr.id));
+        cfg.deleteEverywhere = cfg.deleteEverywhere.filter(id=> still.has(id) && inHere.has(id) && !keptIds.has(id));
         if(!cfg.deleteEverywhere.length) delete cfg.deleteEverywhere;
         saveState();
       }
