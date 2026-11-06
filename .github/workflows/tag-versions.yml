@@ -1,0 +1,35 @@
+# Tags each version of 37 Player on main (v1.4.181, …), so every past version
+# can be downloaded from the repo's Tags page without git, to compare old and
+# new behaviour (Gen, 6 Nov 2026). A downloaded 37-player.html opened from
+# disk keeps its own browser storage, apart from the website's.
+# Each run tags every version in main's history that isn't tagged yet (the
+# last commit with that version), so the first run tags the past ones too
+# (from 1.1.088; earlier commits have no version tag in the page).
+name: Tag versions
+on:
+  push:
+    branches: [main]
+    paths: ["37-player.html"]
+permissions:
+  contents: write
+jobs:
+  tag:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - name: Tag the versions not tagged yet
+        run: |
+          git fetch -q --tags origin
+          declare -A seen
+          new=()
+          for c in $(git log --format=%H HEAD -- 37-player.html); do
+            v=$(git show "$c:37-player.html" 2>/dev/null | head -c 3000 | grep -m1 -o 'name="app-version" content="[^"]*"' | sed 's/.*content="//;s/"$//')
+            [[ "$v" =~ ^[0-9]+(\.[0-9]+)+$ ]] || continue
+            [ -n "${seen[$v]}" ] && continue
+            seen[$v]=1
+            git rev-parse -q --verify "refs/tags/v$v" >/dev/null && continue
+            git tag "v$v" "$c" && new+=("refs/tags/v$v")
+          done
+          echo "${#new[@]} new tags"
+          for ((i=0; i<${#new[@]}; i+=50)); do git push -q origin "${new[@]:i:50}"; done
