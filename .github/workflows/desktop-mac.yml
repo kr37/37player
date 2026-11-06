@@ -2,6 +2,7 @@
 # Apple Silicon) and Windows installers (.exe and .msi), published together
 # as a pre-release anyone can download without signing in. Unsigned: on a
 # Mac open it with right-click → Open; on Windows SmartScreen's "Run anyway".
+# The shell's own tests (cargo test) run first, on each.
 name: Desktop app (test builds)
 on:
   workflow_dispatch:
@@ -23,6 +24,8 @@ jobs:
         working-directory: desktop
         run: |
           npm ci
+          node copy-app.mjs
+          (cd src-tauri && cargo test)
           npx tauri build --target universal-apple-darwin --bundles dmg
           cp src-tauri/target/universal-apple-darwin/release/bundle/dmg/*.dmg ../37-Player-mac-test.dmg
       - uses: actions/upload-artifact@v4
@@ -39,6 +42,8 @@ jobs:
         shell: bash
         run: |
           npm ci
+          node copy-app.mjs
+          (cd src-tauri && cargo test)
           npx tauri build
           cp src-tauri/target/release/bundle/nsis/*.exe ../37-Player-windows-test-setup.exe
           cp src-tauri/target/release/bundle/msi/*.msi ../37-Player-windows-test.msi
