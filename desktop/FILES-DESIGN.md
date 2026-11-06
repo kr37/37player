@@ -206,6 +206,13 @@ stays theirs, and the library only points into it.
   warning. When the drive isn't connected, its tracks show as "on a drive
   that isn't connected" (not missing, not damaged, nothing offered to delete)
   and come back when it is.
+- **playlists/ with tracks used in place** (Gen, 6 Nov 2026): the .m3u8
+  points to the file where it is, with as many `../` as it takes
+  (`../../../Music/iTunes/…`), so the playlist still works if the whole
+  drive's tree moves together. Where no relative path exists (on Windows, a
+  track on another drive letter), the line is the full path (`E:\Talks\…`),
+  which every player reads too. A track on a drive that isn't connected keeps
+  its line; the other player shows it as missing, as it would its own.
 - Use in place and Move come after the backend and readable names work (they
   need the roots and the addresses, nothing more).
 
