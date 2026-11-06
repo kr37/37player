@@ -1,7 +1,7 @@
 <?php
 /*
  * 37 Player — shared library sync server.
- * Version 1.4.137 (the 37 Player version this file was last changed for;
+ * Version 1.4.187 (the 37 Player version this file was last changed for;
  * keep it the same as SYNC_VERSION below).
  *
  * One file, plain PHP (7.4+), no database. It keeps each shared library in
@@ -35,6 +35,13 @@
  *   GET  op=file&kind=K&name=X    download one (Range requests supported)
  *   PUT  op=file&kind=K&name=X    upload one (kept as-is if it already exists;
  *                                 a waveform can be replaced with &replace=1)
+ *   PUT  op=file&kind=audio&name=X&at=N&total=T
+ *                                 one piece of a big upload (1.4.187: Safari can't
+ *                                 send 1.3 GB at once): appended to X.part when the
+ *                                 part holds exactly N bytes; at T bytes it becomes
+ *                                 X. Otherwise 409 {"have": bytes so far}, so the
+ *                                 sender carries on from there (also after a
+ *                                 break). Answers {"have": …} or {"stored": true}.
  *   POST op=peaks                 {"names":[...]} → {"name": peaks, ...}
  *   GET  op=history               recent versions: number, time, size, and
  *                                 who saved each and what it changed ("by",
@@ -68,7 +75,7 @@ const KINDS = ['audio', 'artwork', 'peaks'];
 // The 37 Player version this file was last changed for (it doesn't change
 // with every release of the app, only when this file does). Shown in the
 // app's Settings → Shared library, and by `php sync.php version`.
-const SYNC_VERSION = '1.4.137';
+const SYNC_VERSION = '1.4.187';
 
 if (PHP_SAPI === 'cli') { exit(cli($argv)); }
 
@@ -143,7 +150,7 @@ if ($op === 'list' && $method === 'GET') {
     $out = [];
     foreach (KINDS as $k) {
         $names = [];
-        foreach (scandir($dir . '/' . $k) ?: [] as $n) if ($n[0] !== '.' && substr($n, -4) !== '.tmp') $names[] = $n;
+        foreach (scandir($dir . '/' . $k) ?: [] as $n) if ($n[0] !== '.' && !preg_match('/\.(tmp|part|partlock)$/', $n)) $names[] = $n;
         $out[$k] = $names;
     }
     // Waveforms that are only the flat stand-in (every value the same), so a
@@ -169,6 +176,7 @@ if ($op === 'file') {
         // device may send again once it has made a real one in place of the
         // flat stand-in it had (replace=1).
         if (is_file($f) && !($kind === 'peaks' && ($_GET['replace'] ?? '') === '1')) json_out(['stored' => false, 'exists' => true]);
+        if (isset($_GET['at'])) put_piece($f, intval($_GET['at']), intval($_GET['total'] ?? -1));
         $tmp = $f . '.' . bin2hex(random_bytes(4)) . '.tmp';
         ignore_user_abort(true); // finish the checks below even if the sender has gone
         $in = fopen('php://input', 'rb'); $out = fopen($tmp, 'wb');
@@ -277,6 +285,34 @@ function versions($dir) {
 function valid_name($n) { return is_string($n) && preg_match('/^[A-Za-z0-9_-]{1,80}\.[A-Za-z0-9_-]{1,40}$/', $n); }
 function json_out($v) { header('Content-Type: application/json'); echo json_encode($v, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); exit; }
 function fail($code, $msg) { http_response_code($code); json_out(['error' => $msg]); }
+// One piece of a big upload (see op=file above). Pieces arrive in order, one
+// at a time per file; the lock keeps two senders of the same file apart.
+function put_piece($f, $at, $total) {
+    if ($at < 0 || $total <= 0 || $at >= $total) fail(400, 'Bad piece');
+    $part = "$f.part";
+    $lock = fopen("$f.partlock", 'c');
+    flock($lock, LOCK_EX);
+    clearstatcache(true, $part);
+    $have = is_file($part) ? filesize($part) : 0;
+    if ($have > $total) { unlink($part); $have = 0; }
+    if ($have !== $at) { flock($lock, LOCK_UN); fclose($lock); http_response_code(409); json_out(['have' => $have]); }
+    ignore_user_abort(true);
+    $expected = isset($_SERVER['CONTENT_LENGTH']) ? intval($_SERVER['CONTENT_LENGTH']) : -1;
+    $tmp = $part . '.' . bin2hex(random_bytes(4)) . '.tmp';
+    $in = fopen('php://input', 'rb'); $out = fopen($tmp, 'wb');
+    stream_copy_to_stream($in, $out); fclose($in); fclose($out);
+    clearstatcache(true, $tmp);
+    $got = filesize($tmp);
+    // Only whole pieces join the part (a dropped connection leaves a short one).
+    if (!$got || ($expected >= 0 && $got !== $expected) || $at + $got > $total) { unlink($tmp); flock($lock, LOCK_UN); fclose($lock); fail(400, 'Incomplete piece'); }
+    $src = fopen($tmp, 'rb'); $dst = fopen($part, 'ab');
+    stream_copy_to_stream($src, $dst); fclose($src); fclose($dst); unlink($tmp);
+    clearstatcache(true, $part);
+    $have = filesize($part);
+    if ($have === $total) { rename($part, $f); flock($lock, LOCK_UN); fclose($lock); @unlink("$f.partlock"); json_out(['stored' => true]); }
+    flock($lock, LOCK_UN); fclose($lock);
+    json_out(['have' => $have]);
+}
 // Sends a stored .gz as-is when the browser accepts gzip (they all do).
 function send_gz($f) {
     if (stripos($_SERVER['HTTP_ACCEPT_ENCODING'] ?? '', 'gzip') !== false) {

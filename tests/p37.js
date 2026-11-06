@@ -45,6 +45,24 @@ async function open(b){
   await B.evaluate(()=> (document.getElementById('replaceGo') || document.getElementById('mergeGo')).click());
   for(let i=0; i<80; i++){ if(await B.evaluate((n)=> window.__dbg.getRoot().library.some(t=> t.name === n), track)) break; await sleep(250); }
   ok(await B.evaluate((n)=> window.__dbg.getRoot().library.some(t=> t.name === n), track), 'and restores it: “' + track + '”');
+  // Merging it back into A after a rename (1.4.187): the track already here
+  // differs in the file, so it asks, and keeps this library's by default.
+  await A.evaluate(async()=>{ window.__dbg.getRoot().library[0].name = 'Renamed after the backup'; await window.__dbg.saveState(); });
+  const mergeBack = async (choice)=>{
+    await A.evaluate(()=>{ document.getElementById('importFile').value = ''; });
+    await (await A.$('#importFile')).uploadFile(path.join(A.dl, name));
+    for(let i=0; i<40 && !(await A.$('#mergeGo')); i++){ await clickText(A, '.modal button', '^Revert to this backup$'); await sleep(200); } // "older than your library" comes first for a backup
+    await A.evaluate(()=> document.getElementById('mergeGo').click()); await sleep(800);
+    const q = await A.evaluate(()=> document.querySelector('.modal-backdrop.show .modal')?.innerText || '');
+    await clickText(A, '.modal button', choice); await sleep(2500);
+    await A.evaluate(()=> document.querySelectorAll('.modal [data-close]').forEach(x=> x.click()));
+    return {q, name: await A.evaluate(()=> window.__dbg.getRoot().library[0].name)};
+  };
+  let m = await mergeBack('^Keep this library');
+  ok(/A track here is different in the file/.test(m.q) && /Renamed after the backup/.test(m.q) && new RegExp('in the file: .*' + track.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).test(m.q), 'merging an older backup asks about the track that differs (' + m.q.replace(/\n+/g, ' | ').slice(0, 120) + ')');
+  ok(m.name === 'Renamed after the backup', '"Keep this library\'s": the new name stays (' + m.name + ')');
+  m = await mergeBack('^Take the file');
+  ok(m.name === track, '"Take the file\'s": the file\'s name comes back (' + m.name + ')');
   // Opened with 37 Player
   const C = await open(b);
   await C.evaluate((b64, n)=>{ window.__openWith([new File([Uint8Array.from(atob(b64), c=>c.charCodeAt(0))], n)]); }, bytes.toString('base64'), name);
