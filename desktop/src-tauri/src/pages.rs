@@ -19,7 +19,9 @@ use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
 use std::cmp::Ordering;
 use std::collections::HashMap;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
+#[cfg(test)]
+use std::path::Path;
 use std::sync::{Mutex, RwLock};
 
 /// The files a page is made of, as the app serves them.
@@ -350,7 +352,6 @@ impl Pages {
         }
     }
 
-    pub fn dir(&self) -> &Path { &self.dir }
 }
 
 /// The app's assets, with the page's files answered from the chosen page.
