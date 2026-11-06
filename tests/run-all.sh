@@ -17,6 +17,7 @@ sleep 1.5
 TESTS=${@:-e2e convresume checkwave m4apieces morepieces convpieces fold rev part dup ipad miss miss2 play bridge3 silclock stoplock ph pausesync awk2 pk2 crash retry2 wav long stop af big413 twowin conv conv2 conv3 conv4 conv5 conv6 convbroken convbytes zipwebkit libs welcome share choose drive moved emptyshared webkitstore damaged starter openwith exportfile allsettings table folderpl dropfolder plmiss stopimport quota full notloaded interrupted dlcrash pieces libdel bkkeep filestore readnames folderlib desktop place phonecols manualbk logs bkcheck split splitter dbl hist undo delplaying deltidy switchsend swfallback p37 restore copylib playloud edtree splreplay mp3crc feedback sharedlogs}
 for t in $TESTS; do
   printf "%-10s " "$t"
+  case " $SKIP " in *" $t "*) echo "skipped (Chrome only)"; continue;; esac
   timeout 600 node $t.js "$(./new-library.sh)" "$(./new-library.sh)" > "shots/$t.out" 2>&1
   r=$(grep -E "ALL OK|FAILED" "shots/$t.out" | tail -1)
   echo "${r:-no result (see tests/shots/$t.out)}"

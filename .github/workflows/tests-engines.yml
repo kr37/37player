@@ -50,11 +50,11 @@ jobs:
           sed 's/^/    /' engine-${{ matrix.engine }}.txt | grep -v -E '^\s*$' >> "$GITHUB_STEP_SUMMARY" || true
           # Each test that didn't pass: what it said (the artifact isn't always
           # reachable, the log is).
-          for t in $(grep -E '^[a-z0-9-]+ +' engine-${{ matrix.engine }}.txt | grep -v 'ALL OK' | awk '{print $1}'); do
+          for t in $(grep -E '^[a-z0-9-]+ +' engine-${{ matrix.engine }}.txt | grep -v -E 'ALL OK|skipped' | awk '{print $1}'); do
             echo "::group::$t"; grep -E '^(FAIL|PAGE ERROR|console)|Error|rror:|at .*\.js:[0-9]+' "shots/$t.out" | head -40; tail -5 "shots/$t.out"; echo "::endgroup::"
           done
           # Every test's line must end ALL OK (a crash leaves something else there).
-          ! grep -E '^[a-z0-9-]+ +' engine-${{ matrix.engine }}.txt | grep -v 'ALL OK'
+          ! grep -E '^[a-z0-9-]+ +' engine-${{ matrix.engine }}.txt | grep -v -E 'ALL OK|skipped'
       - name: Keep the output
         if: always()
         uses: actions/upload-artifact@v4

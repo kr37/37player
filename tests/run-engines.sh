@@ -9,5 +9,9 @@
 cd "$(dirname "$0")"
 engine="$1"; shift
 [ "$engine" = webkit ] || [ "$engine" = firefox ] || [ "$engine" = chromium ] || { echo "usage: $0 webkit|firefox|chromium [tests…]"; exit 2; }
+# Tests that only Chrome can run, each with why (also in NOTES.md, Testing):
+#   ipad, phonecols: touch gestures (touchStart/Move/End), which only
+#     Chrome's emulation gives a desktop browser.
+[ "$engine" = chromium ] || export SKIP="ipad phonecols"
 export ENGINE="$engine" NODE_OPTIONS="--require $PWD/engines/hook.js"
 exec ./run-all.sh "$@"
