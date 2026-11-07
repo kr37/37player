@@ -1,7 +1,7 @@
 <?php
 /*
  * 37 Player — shared library sync server.
- * Version 1.4.187 (the 37 Player version this file was last changed for;
+ * Version 1.4.197 (the 37 Player version this file was last changed for;
  * keep it the same as SYNC_VERSION below).
  *
  * One file, plain PHP (7.4+), no database. It keeps each shared library in
@@ -57,7 +57,12 @@
  *                                   passphrase is generated if none is given)
  *   php sync.php newcode <library> ["passphrase"]    replace its join code (old one stops working)
  *   php sync.php list                                list libraries
- *   php sync.php cleanup [days]                      prune old versions and unused files
+ *   php sync.php cleanup [library] [days] [--versions N] [--dry-run]
+ *                                   prune old versions and the files no kept
+ *                                   version uses: every library, or one; keeps
+ *                                   every version from the last [days] days
+ *                                   (30) and at least the newest N (300);
+ *                                   --dry-run only says what it would remove
  *
  * Settings: DATA_DIR below, or a sync-config.php beside this file that
  * defines it (so updating this file never loses the setting), or the
@@ -75,7 +80,7 @@ const KINDS = ['audio', 'artwork', 'peaks'];
 // The 37 Player version this file was last changed for (it doesn't change
 // with every release of the app, only when this file does). Shown in the
 // app's Settings → Shared library, and by `php sync.php version`.
-const SYNC_VERSION = '1.4.187';
+const SYNC_VERSION = '1.4.197';
 
 if (PHP_SAPI === 'cli') { exit(cli($argv)); }
 
@@ -385,11 +390,21 @@ function cli($argv) {
         return 0;
     }
     if ($cmd === 'cleanup') {
-        $days = intval($argv[2] ?? KEEP_DAYS);
+        // Each word is checked: "cleanup rinzin" once meant 0 days.
+        $days = KEEP_DAYS; $keep = KEEP_VERSIONS; $dry = false; $only = null;
+        for ($i = 2; $i < count($argv); $i++) {
+            $a = $argv[$i];
+            if ($a === '--dry-run') $dry = true;
+            elseif ($a === '--versions' && isset($argv[$i + 1]) && ctype_digit($argv[$i + 1])) $keep = max(1, intval($argv[++$i]));
+            elseif (ctype_digit($a)) $days = intval($a);
+            elseif (preg_match('/^[a-z0-9]{1,40}$/', $a) && is_file(DATA_DIR . "/$a/meta.json") && $only === null) $only = $a;
+            else { fwrite(STDERR, "Not understood: $a (a library's name, a number of days, --versions N, --dry-run)\n"); return 1; }
+        }
         foreach (scandir(DATA_DIR) ?: [] as $lib) {
             $dir = DATA_DIR . "/$lib";
-            if ($lib[0] === '.' || !is_file("$dir/meta.json")) continue;
-            cleanup_library($dir, $days);
+            if ($lib[0] === '.' || !is_file("$dir/meta.json") || ($only !== null && $lib !== $only)) continue;
+            if (!$dry && !is_writable("$dir/state")) { fwrite(STDERR, "$lib: can't change its files as " . get_current_user_name() . " (run it as the web server's user: sudo -u www-data php sync.php …)\n"); return 1; }
+            cleanup_library($dir, $days, $keep, $dry);
         }
         return 0;
     }
@@ -397,22 +412,27 @@ function cli($argv) {
               . "       php sync.php create <library> [\"Display name\"] [\"passphrase\"]\n"
               . "       php sync.php newcode <library> [\"passphrase\"]\n"
               . "       php sync.php list\n"
-              . "       php sync.php cleanup [days]\n";
+              . "       php sync.php cleanup [library] [days] [--versions N] [--dry-run]\n";
     fwrite(STDERR, $usageMsg);
     return 1;
 }
-// Keeps every version from the last $days days and the newest KEEP_VERSIONS;
-// then deletes files no kept version uses, unless they're newer than $days
-// (an upload whose version hasn't been saved yet, or one undone recently).
-function cleanup_library($dir, $days) {
+function get_current_user_name() { return function_exists('posix_getpwuid') ? (posix_getpwuid(posix_geteuid())['name'] ?? '?') : get_current_user(); }
+function human_bytes($n) { foreach (['B', 'KB', 'MB', 'GB'] as $u) { if ($n < 1024 || $u === 'GB') return round($n, $u === 'B' ? 0 : 1) . " $u"; $n /= 1024; } }
+// Keeps every version from the last $days days and the newest $keep; then
+// deletes files no kept version uses, unless they're newer than $days (an
+// upload whose version hasn't been saved yet, or one undone recently), and
+// never one less than an hour old (an upload under way, with 0 days).
+function cleanup_library($dir, $days, $keep = KEEP_VERSIONS, $dry = false) {
     $cutoff = time() - $days * 86400;
+    $fileCutoff = min($cutoff, time() - 3600);
     $vs = versions($dir);
-    $keepFrom = max(0, count($vs) - KEEP_VERSIONS);
-    $kept = [];
+    $keepFrom = max(0, count($vs) - max(1, $keep));
+    $kept = []; $gone = 0; $freed = 0;
     foreach ($vs as $i => $v) {
         $f = state_file($dir, $v);
-        if ($i >= $keepFrom || filemtime($f) >= $cutoff) $kept[] = $v;
-        else { unlink($f); if (is_file(info_file($dir, $v))) unlink(info_file($dir, $v)); }
+        if ($i >= $keepFrom || filemtime($f) >= $cutoff) { $kept[] = $v; continue; }
+        $gone++; $freed += filesize($f);
+        if (!$dry) { unlink($f); if (is_file(info_file($dir, $v))) unlink(info_file($dir, $v)); }
     }
     $used = ['audio' => [], 'artwork' => [], 'peaks' => []];
     foreach ($kept as $v) {
@@ -423,14 +443,18 @@ function cleanup_library($dir, $days) {
             if (!empty($t['hasArtwork'])) $used['artwork'][$t['id'] . '.' . ($t['artRev'] ?? '0')] = 1;
         }
     }
-    $removed = 0;
-    foreach (KINDS as $k) foreach (scandir("$dir/$k") ?: [] as $n) {
+    $removed = 0; $big = [];
+    foreach (KINDS as $k) foreach ((is_dir("$dir/$k") ? scandir("$dir/$k") : []) as $n) {
         if ($n[0] === '.') continue;
         $f = "$dir/$k/$n";
-        if (!isset($used[$k][$n]) && filemtime($f) < $cutoff) { unlink($f); $removed++; }
+        if (isset($used[$k][$n]) || filemtime($f) >= $fileCutoff) continue;
+        $size = filesize($f); $freed += $size; $removed++;
+        if ($size >= 100 * 1048576) $big[] = "  $k/$n (" . human_bytes($size) . ")";
+        if (!$dry) unlink($f);
     }
-    foreach (scandir("$dir/logs") ?: [] as $n) { // a device's log not sent for 90 days
-        if ($n[0] !== '.' && filemtime("$dir/logs/$n") < time() - 90 * 86400) unlink("$dir/logs/$n");
+    if (is_dir("$dir/logs")) foreach (scandir("$dir/logs") ?: [] as $n) { // a device's log not sent for 90 days
+        if ($n[0] !== '.' && filemtime("$dir/logs/$n") < time() - 90 * 86400 && !$dry) unlink("$dir/logs/$n");
     }
-    echo basename($dir) . ': kept ' . count($kept) . ' versions, removed ' . $removed . " unused files\n";
+    echo basename($dir) . ': kept ' . count($kept) . ' versions, ' . ($dry ? 'would remove ' : 'removed ') . "$gone older versions and $removed unused files, " . human_bytes($freed) . "\n";
+    if ($big) echo implode("\n", $big) . "\n";
 }
