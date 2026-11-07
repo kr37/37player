@@ -18,7 +18,8 @@
  *        back to URL#p37auth={"nonce","refresh_token","access_token","expires_in"}
  *        or URL#p37auth_error=…
  *   POST {"refresh_token": "..."}       → {"access_token", "expires_in"}
- * URL must be on one of ALLOWED_ORIGINS. This script's own address must be
+ * URL must be on one of ALLOWED_ORIGINS, or the desktop app's
+ * http://127.0.0.1:<port>/p37auth. This script's own address must be
  * an authorized redirect URI of the OAuth client, exactly (no query).
  *
  * Settings, in a PHP file OUTSIDE the web root (see GOOGLE-DRIVE-SETUP.md):
@@ -41,6 +42,9 @@ if (!defined('GOOGLE_AUTH_ENDPOINT')) define('GOOGLE_AUTH_ENDPOINT', getenv('P37
 const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
 
 $allowed = defined('ALLOWED_ORIGINS') ? ALLOWED_ORIGINS : ['https://37player.com'];
+// The desktop app's page (Mac and Linux, Windows), always: it refreshes its
+// access the same way.
+$allowed = array_merge($allowed, ['tauri://localhost', 'http://tauri.localhost', 'https://tauri.localhost']);
 $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
 if ($origin !== '' && in_array($origin, $allowed, true)) {
     header('Access-Control-Allow-Origin: ' . $origin);
@@ -58,8 +62,11 @@ function self_url() {
     $https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https';
     return ($https ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST'] . strtok($_SERVER['REQUEST_URI'], '?');
 }
-// Where to send the person back to: only 37 Player's own pages.
+// Where to send the person back to: only 37 Player's own pages, or the
+// desktop app's one-time address on the person's own computer (its shell
+// listens there while they sign in in their browser: oauth.rs).
 function allowed_return($url, $allowed) {
+    if (preg_match('#^http://127\.0\.0\.1:\d{2,5}/p37auth$#', $url)) return true;
     $p = parse_url($url);
     if (!$p || empty($p['scheme']) || empty($p['host'])) return false;
     $o = $p['scheme'] . '://' . $p['host'] . (isset($p['port']) ? ':' . $p['port'] : '');
