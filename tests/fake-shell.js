@@ -83,6 +83,22 @@
         r[args.id] = to; await writeRoots(r); return to;
       }
       case 'fs_root_show': { const r = await readRoots(); if(!(args.id in r)) throw new Error('no folder called ' + args.id + ' on the list'); window.__fakeShellShown = r[args.id]; return null; }
+      // files.rs places_to_restore: the library's own record names its folders.
+      case 'fs_places_restore': {
+        const r = await readRoots(), libId = args.id.replace(/^lib-/, ''), lib = r[args.id];
+        let rec = null;
+        for(const at of [lib + "/37 Player's own files/state/places.json", lib + '/state/places.json']){ const segs = parts(at), nm = segs.pop(); const d = await pathDir(segs.join('/')); if(d){ try{ rec = JSON.parse(await (await (await d.getFileHandle(nm)).getFile()).text()); break; }catch(e){} } }
+        let n = 0;
+        for(const e of (rec && rec.value) || []){ if(!String(e.root).startsWith('in-' + libId + '-') || (r[e.root] && await pathDir(r[e.root])) || !(await pathDir(e.label))) continue; r[e.root] = e.label; n++; }
+        await writeRoots(r); return n;
+      }
+      case 'fs_remove_if_empty': {
+        const r = await readRoots(); if(!(args.id in r)) throw new Error('no folder called ' + args.id + ' on the list');
+        const empty = async d=>{ for await (const [nm, h] of d.entries()){ if(h.kind === 'directory'){ if(!(await empty(h))) return false; } else if(!/^(\.ds_store|thumbs\.db|desktop\.ini|\._.*)$/i.test(nm)) return false; } return true; };
+        const d = await pathDir(r[args.id]); if(!d || !(await empty(d))) return false;
+        if(!args.dry){ const segs = parts(r[args.id]), nm = segs.pop(); await (await pathDir(segs.join('/'))).removeEntry(nm, {recursive: true}); delete r[args.id]; await writeRoots(r); }
+        return true;
+      }
       case 'fs_find_libraries': {
         const r = await readRoots(), base = r.place || DEFAULT_PLACE, d = await pathDir(base), out = [];
         if(d) for await (const [n, h] of d.entries()){

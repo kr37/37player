@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.0.003">
+<meta name="app-version" content="2.0.004">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -3187,6 +3187,18 @@ async function placeIntoLibrary(rootId, move){
     }catch(err){ failed++; console.warn("Into the library:", key, err); }
   }
   clearActiveOperation("placeCopy");
+  // Moved, the folder may be left with nothing in it: offer to remove it
+  // (Gen Rinzin, 7 Nov 2026).
+  if(!failed && move){
+    let empty = false;
+    try{ empty = await desktopInvoke("fs_remove_if_empty", {id: rootId, dry: true}); }catch(err){}
+    if(empty){
+      const label = ((await placeFolders()).find(x=> x.root === rootId) || {}).label || "";
+      const c = await askChoice(t("placeEmptyTitle"), `<p>${escapeHtmlText(t("placeEmptyBody", {path: label}))}</p>`,
+        [{label: t("placeEmptyRemoveBtn"), value: "remove", kind: "primary"}, {label: t("placeEmptyKeepBtn"), value: null}]);
+      if(c === "remove"){ try{ await desktopInvoke("fs_remove_if_empty", {id: rootId, dry: false}); }catch(err){ alert(String((err && err.message) || err)); } }
+    }
+  }
   if(!failed) await forgetPlaceRoot(rootId);
   syncPlaylistFiles().catch(()=>{});
   if(failed) alert(t("placeCopySome", {done, failed}));
@@ -3839,6 +3851,10 @@ const STRINGS = {
     "placeOfflineTitle": "On a drive that isn't connected",
     "placeOfflineBody": "“{name}” is used in place from {path}, which can't be reached now. Connect the drive (or find the folder in Settings → Library), then play it again.",
     "placeOfflineTip": "To keep this from happening, Settings → Library → Copy into the library makes these recordings the library's own.",
+    "placeEmptyTitle": "The folder is empty now",
+    "placeEmptyBody": "Everything 37 Player used in {path} is in the library now, and the folder has nothing else in it. Remove the empty folder?",
+    "placeEmptyRemoveBtn": "Remove it",
+    "placeEmptyKeepBtn": "Keep it",
     "placeDeleteNote": "Recordings used in place stay in their folder: the library only forgets them.",
     "folderLibRemovedToast": "The browser's copy was removed",
     "folderLibOpenTitle": "Open the library's folder",
@@ -5677,6 +5693,10 @@ const STRINGS = {
     "placeOfflineTitle": "En un disco que no está conectado",
     "placeOfflineBody": "«{name}» se usa en su sitio desde {path}, al que no se puede acceder ahora. Conecta el disco (o busca la carpeta en Ajustes → Biblioteca) y vuelve a reproducirla.",
     "placeOfflineTip": "Para que no vuelva a pasar, Ajustes → Biblioteca → Copiar a la biblioteca hace que estas grabaciones sean de la biblioteca.",
+    "placeEmptyTitle": "La carpeta está vacía",
+    "placeEmptyBody": "Todo lo que 37 Player usaba de {path} está ahora en la biblioteca, y la carpeta no contiene nada más. ¿Quitar la carpeta vacía?",
+    "placeEmptyRemoveBtn": "Quitarla",
+    "placeEmptyKeepBtn": "Dejarla",
     "placeDeleteNote": "Las grabaciones usadas en su sitio se quedan en su carpeta: la biblioteca solo las olvida.",
     "folderLibRemovedToast": "Se quitó la copia del navegador",
     "folderLibOpenTitle": "Abrir la carpeta de la biblioteca",
@@ -7515,6 +7535,10 @@ const STRINGS = {
     "placeOfflineTitle": "Sur un disque non branché",
     "placeOfflineBody": "« {name} » est utilisé sur place depuis {path}, qui est inaccessible pour l'instant. Branchez le disque (ou retrouvez le dossier dans Réglages → Bibliothèque), puis relancez la lecture.",
     "placeOfflineTip": "Pour que cela n'arrive plus, Paramètres → Bibliothèque → Copier dans la bibliothèque fait de ces enregistrements ceux de la bibliothèque.",
+    "placeEmptyTitle": "Le dossier est vide",
+    "placeEmptyBody": "Tout ce que 37 Player utilisait dans {path} est maintenant dans la bibliothèque, et le dossier ne contient rien d'autre. Supprimer le dossier vide ?",
+    "placeEmptyRemoveBtn": "Le supprimer",
+    "placeEmptyKeepBtn": "Le garder",
     "placeDeleteNote": "Les enregistrements utilisés sur place restent dans leur dossier : la bibliothèque les oublie seulement.",
     "folderLibRemovedToast": "La copie du navigateur a été supprimée",
     "folderLibOpenTitle": "Ouvrir le dossier de la bibliothèque",
@@ -9353,6 +9377,10 @@ const STRINGS = {
     "placeOfflineTitle": "Num disco que não está ligado",
     "placeOfflineBody": "«{name}» é usada no lugar a partir de {path}, que não está acessível agora. Ligue o disco (ou procure a pasta em Configurações → Biblioteca) e toque-a de novo.",
     "placeOfflineTip": "Para que isto não volte a acontecer, Configurações → Biblioteca → Copiar para a biblioteca torna estas gravações da biblioteca.",
+    "placeEmptyTitle": "A pasta está vazia",
+    "placeEmptyBody": "Tudo o que o 37 Player usava em {path} está agora na biblioteca, e a pasta não tem mais nada. Remover a pasta vazia?",
+    "placeEmptyRemoveBtn": "Removê-la",
+    "placeEmptyKeepBtn": "Mantê-la",
     "placeDeleteNote": "As gravações usadas no lugar ficam na sua pasta: a biblioteca apenas as esquece.",
     "folderLibRemovedToast": "A cópia do navegador foi removida",
     "folderLibOpenTitle": "Abrir a pasta da biblioteca",
@@ -11191,6 +11219,10 @@ const STRINGS = {
     "placeOfflineTitle": "Auf einem Laufwerk, das nicht angeschlossen ist",
     "placeOfflineBody": "„{name}“ wird am Ort aus {path} verwendet, das gerade nicht erreichbar ist. Schließen Sie das Laufwerk an (oder suchen Sie den Ordner unter Einstellungen → Bibliothek) und spielen Sie den Titel erneut ab.",
     "placeOfflineTip": "Damit das nicht wieder passiert: Einstellungen → Bibliothek → In die Bibliothek kopieren macht diese Aufnahmen zu denen der Bibliothek.",
+    "placeEmptyTitle": "Der Ordner ist jetzt leer",
+    "placeEmptyBody": "Alles, was 37 Player aus {path} verwendet hat, ist jetzt in der Bibliothek, und der Ordner enthält nichts anderes. Den leeren Ordner entfernen?",
+    "placeEmptyRemoveBtn": "Entfernen",
+    "placeEmptyKeepBtn": "Behalten",
     "placeDeleteNote": "Am Ort verwendete Aufnahmen bleiben in ihrem Ordner: Die Bibliothek vergisst sie nur.",
     "folderLibRemovedToast": "Die Kopie im Browser wurde entfernt",
     "folderLibOpenTitle": "Den Ordner der Bibliothek öffnen",
@@ -13029,6 +13061,10 @@ const STRINGS = {
     "placeOfflineTitle": "在未连接的磁盘上",
     "placeOfflineBody": "“{name}”原地使用自 {path}，现在无法访问。请连接磁盘（或在 设置 → 曲库 中找到该文件夹），然后再播放。",
     "placeOfflineTip": "为避免再次出现这种情况：设置 → 曲库 → 复制到曲库，可让这些录音归曲库所有。",
+    "placeEmptyTitle": "文件夹现在是空的",
+    "placeEmptyBody": "37 Player 在 {path} 中使用的一切现在都在曲库里了，文件夹里没有别的东西。要删除这个空文件夹吗？",
+    "placeEmptyRemoveBtn": "删除",
+    "placeEmptyKeepBtn": "保留",
     "placeDeleteNote": "原地使用的录音留在它们的文件夹中：曲库只是忘记它们。",
     "folderLibRemovedToast": "已删除浏览器中的副本",
     "folderLibOpenTitle": "打开曲库的文件夹",
@@ -14867,6 +14903,10 @@ const STRINGS = {
     "placeOfflineTitle": "Trên một ổ chưa kết nối",
     "placeOfflineBody": "“{name}” được dùng tại chỗ từ {path}, hiện không truy cập được. Hãy cắm ổ (hoặc tìm thư mục trong Cài đặt → Thư viện), rồi phát lại.",
     "placeOfflineTip": "Để điều này không xảy ra nữa: Cài đặt → Thư viện → Sao chép vào thư viện sẽ làm các bản ghi này thuộc về thư viện.",
+    "placeEmptyTitle": "Thư mục giờ đã trống",
+    "placeEmptyBody": "Mọi thứ 37 Player dùng trong {path} giờ đã ở trong thư viện, và thư mục không còn gì khác. Xoá thư mục trống này?",
+    "placeEmptyRemoveBtn": "Xoá",
+    "placeEmptyKeepBtn": "Giữ lại",
     "placeDeleteNote": "Bản ghi dùng tại chỗ vẫn ở trong thư mục của chúng: thư viện chỉ quên chúng đi.",
     "folderLibRemovedToast": "Đã xóa bản sao trong trình duyệt",
     "folderLibOpenTitle": "Mở thư mục của thư viện",
@@ -16705,6 +16745,10 @@ const STRINGS = {
     "placeOfflineTitle": "Σε δίσκο που δεν είναι συνδεδεμένος",
     "placeOfflineBody": "Η «{name}» χρησιμοποιείται στη θέση της από το {path}, που δεν είναι προσβάσιμο τώρα. Συνδέστε τον δίσκο (ή βρείτε τον φάκελο στις Ρυθμίσεις → Βιβλιοθήκη) και παίξτε την ξανά.",
     "placeOfflineTip": "Για να μη συμβεί ξανά: Ρυθμίσεις → Βιβλιοθήκη → Αντιγραφή στη βιβλιοθήκη κάνει αυτές τις ηχογραφήσεις δικές της.",
+    "placeEmptyTitle": "Ο φάκελος είναι πλέον άδειος",
+    "placeEmptyBody": "Ό,τι χρησιμοποιούσε το 37 Player στο {path} είναι πλέον στη βιβλιοθήκη, και ο φάκελος δεν περιέχει τίποτε άλλο. Αφαίρεση του άδειου φακέλου;",
+    "placeEmptyRemoveBtn": "Αφαίρεση",
+    "placeEmptyKeepBtn": "Διατήρηση",
     "placeDeleteNote": "Οι ηχογραφήσεις στη θέση τους μένουν στον φάκελό τους: η βιβλιοθήκη απλώς τις ξεχνά.",
     "folderLibRemovedToast": "Το αντίγραφο του προγράμματος περιήγησης αφαιρέθηκε",
     "folderLibOpenTitle": "Άνοιγμα του φακέλου της βιβλιοθήκης",
@@ -18543,6 +18587,10 @@ const STRINGS = {
     "placeOfflineTitle": "Su un disco non collegato",
     "placeOfflineBody": "«{name}» è usata sul posto da {path}, che ora non è raggiungibile. Collega il disco (o trova la cartella in Impostazioni → Libreria), poi riproducila di nuovo.",
     "placeOfflineTip": "Perché non succeda più: Impostazioni → Libreria → Copia nella libreria rende queste registrazioni della libreria.",
+    "placeEmptyTitle": "La cartella ora è vuota",
+    "placeEmptyBody": "Tutto ciò che 37 Player usava in {path} ora è nella libreria, e la cartella non contiene nient'altro. Rimuovere la cartella vuota?",
+    "placeEmptyRemoveBtn": "Rimuovila",
+    "placeEmptyKeepBtn": "Tienila",
     "placeDeleteNote": "Le registrazioni usate sul posto restano nella loro cartella: la libreria le dimentica soltanto.",
     "folderLibRemovedToast": "La copia nel browser è stata rimossa",
     "folderLibOpenTitle": "Apri la cartella della libreria",
@@ -46812,6 +46860,9 @@ if(IN_DESKTOP_APP && window.__TAURI__ && window.__TAURI__.event && window.__TAUR
   if(await desktopLibrariesAtStart()){ leavingOnPurpose = true; location.reload(); return; }
   await ensureDesktopFolder();
   await desktopFolderFollowsName();
+  // The folders this library uses in place, back on the shell's list if the
+  // app's data folder lost them (the shell reads the library's own record).
+  if(STORAGE_KIND === "desktop"){ try{ if(await desktopInvoke("fs_places_restore", {id: desktopRootOf(LIBRARY_ID)})) desktopRootsCache = null; }catch(err){} }
   showDesktopStartNote();
   await ensureLibraryFolder(); // a library kept in a folder: the folder first, with permission
   const storageWatch = setTimeout(openStorageNotResponding, 8000);
