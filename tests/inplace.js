@@ -214,6 +214,19 @@ const closeModals = (p)=> p.evaluate(()=> document.querySelectorAll('.modal [dat
   ok(await p.evaluate(()=> !window.__aud().paused && !document.querySelector('audio[data-p37stuck]')), 'and Play in Playing carries on with it (' + JSON.stringify(await p.evaluate(()=> window.__aud())) + ')');
   await p.evaluate(()=> document.querySelectorAll('audio').forEach(a=> a.pause()));
 
+  // ---- The app's data folder emptied (the shell's list of folders gone):
+  // the library's own record puts its folder used in place back.
+  await p.evaluate(async(rid)=>{ const top = await (await navigator.storage.getDirectory()).getDirectoryHandle('fake-shell'); const fh = await top.getFileHandle('roots.json'); const r = JSON.parse(await (await fh.getFile()).text()); delete r[rid]; const w = await fh.createWritable(); await w.write(JSON.stringify(r)); await w.close(); }, rid);
+  await p.reload({waitUntil: 'domcontentloaded'});
+  for(let i = 0; i < 80; i++){ await sleep(250); if(await p.evaluate(()=> !!(window.__dbg && window.__dbg.getRoot && window.__dbg.getRoot().library.length)).catch(()=> false)) break; }
+  await sleep(1500);
+  const restored = await p.evaluate(async()=>{ const D = window.__disk, tr = window.__dbg.getRoot().library.find(t=> /Starter/.test(t.filename)); const rec = await D.idbGet('audio', tr.id); return rec && rec.blob ? rec.blob.size : -1; });
+  ok(restored === startSize && (await roots(p))[rid] === 'Backup/Talks', 'the shell\'s list of folders lost, the library\'s own record puts its folder used in place back: its tracks play (' + restored + ')');
+  await p.evaluate(()=> window.__dbg.setMode('editing')); await sleep(300);
+  await p.evaluate(()=> document.getElementById('btnLibrary').click()); await sleep(300);
+  await clickText(p, '.library-pop-item', 'Manage|Libraries'); await sleep(1200);
+  await waitFor(p, ()=> /Look for new files/.test((document.getElementById('placeFolders') || {}).textContent || ''), null, 8000);
+
   // ---- Copy into the library.
   await clickText(p, '#placeFolders button', '^Copy into the library$');
   await waitFor(p, async()=> (await window.__disk.libStore().placeRefs()).size === 0, null, 30000); await sleep(800);
@@ -226,6 +239,10 @@ const closeModals = (p)=> p.evaluate(()=> document.querySelectorAll('.modal [dat
   await putFile(p, 'Users/Me/Music/Chants/Prayers/Migtsema.mp3', TONE, 4096);
   await importFolder(p, 'Users/Me/Music/Chants', 'Move into the library');
   await waitFor(p, ()=> window.__dbg.getRoot().library.length === 3, null, 30000);
+  const emptyQ = await waitModal(p, /The folder is empty now/, 30000);
+  ok(/The folder is empty now/.test(emptyQ) && /Users\/Me\/Music\/Chants/.test(emptyQ), 'moved, the folder left empty: 37 Player offers to remove it');
+  await clickText(p, '.modal button', '^Remove it$'); await sleep(1200);
+  ok(await p.evaluate(async()=>{ try{ let d = await (await navigator.storage.getDirectory()).getDirectoryHandle('fake-shell'); for(const x of ['Users', 'Me', 'Music', 'Chants']) d = await d.getDirectoryHandle(x); return false; }catch(e){ return true; } }), 'and Remove it removes it');
   await waitFor(p, async()=> (await window.__disk.libStore().placeRefs()).size === 0, null, 30000); await sleep(1500); await closeModals(p);
   const mv = await p.evaluate(async()=>{ const D = window.__disk, tr = window.__dbg.getRoot().library.find(t=> /Migtsema/.test(t.filename)); const rec = tr && await D.idbGet('audio', tr.id); return {have: !!(rec && rec.blob && rec.blob.size), inPlace: !!(rec && rec.blob && rec.blob.inPlace)}; });
   ok(mv.have && !mv.inPlace && await fileSize(p, 'Users/Me/Music/Chants/Prayers/Migtsema.mp3') === -1 && (await shellFiles(p)).some(f=> /\/music\/.*Migtsema\.mp3$/.test(f)), 'Move into the library: the recording is the library\'s own, the original deleted (' + JSON.stringify(mv) + ')');
