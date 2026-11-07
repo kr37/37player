@@ -1,0 +1,44 @@
+name: Desktop app on the home page
+# Puts one test build's installers on the release "desktop-latest", under
+# names that never change, which 37player.com's home page links to:
+#   https://github.com/kr37/37player/releases/download/desktop-latest/37-Player-mac.dmg
+#   …/37-Player-windows-setup.exe and …/37-Player-windows.msi
+# Gen Rinzin chooses which build goes there (Actions → this workflow → Run
+# workflow, with the test number; empty means the newest), so a test build
+# reaches the home page only once he's happy with it.
+on:
+  workflow_dispatch:
+    inputs:
+      test:
+        description: "Test build number (empty: the newest)"
+        required: false
+        default: ""
+permissions:
+  contents: write
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Copy the installers to desktop-latest
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          N: ${{ inputs.test }}
+        run: |
+          set -e
+          if [ -n "$N" ]; then from="desktop-test-$N"
+          else from=$(gh api "repos/$REPO/releases?per_page=50" --jq '[.[] | select(.tag_name | startswith("desktop-test-"))][0].tag_name'); fi
+          title=$(gh api "repos/$REPO/releases/tags/$from" --jq .name)
+          v=$(echo "$title" | grep -o '37 Player [0-9.]*' | sed 's/37 Player //')
+          echo "From $from: $title"
+          mkdir d && cd d
+          gh release download "$from" --repo "$REPO" -p '*.dmg' -p '*.exe' -p '*.msi'
+          mv ./*.dmg 37-Player-mac.dmg; mv ./*.exe 37-Player-windows-setup.exe; mv ./*.msi 37-Player-windows.msi
+          notes="37 Player $v for computers (from $from). Not signed yet: on a Mac, right-click the app → Open the first time; on Windows, SmartScreen → More info → Run anyway."
+          files="37-Player-mac.dmg 37-Player-windows-setup.exe 37-Player-windows.msi"
+          if gh release view desktop-latest --repo "$REPO" > /dev/null 2>&1; then
+            gh release upload desktop-latest $files --repo "$REPO" --clobber
+            gh release edit desktop-latest --repo "$REPO" --title "37 Player $v for computers" --notes "$notes"
+          else
+            gh release create desktop-latest $files --repo "$REPO" --prerelease --title "37 Player $v for computers" --notes "$notes"
+          fi
