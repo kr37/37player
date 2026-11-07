@@ -99,7 +99,7 @@ watched in Activity Monitor, answers it in a few minutes.
 - **The list of libraries and their folders:** today in localStorage and a tiny
   IndexedDB database; in the desktop app, a small file in the app's own data
   folder, kept by Rust, so it can't be lost along with the webview's storage.
-- **Moving a library in** from the webview's storage **happens by itself (Gen Rinzin)**:
+- **Moving a library in** from the webview's storage **happens by itself (Gen Rinzin; dropped 6 Nov 2026, see below)**:
   on the first start of a desktop app with bridge 2, each library in the
   webview's storage is copied into its folder, checked (every record and file
   read back), and then used from there; a notice says where it went. The
@@ -233,8 +233,8 @@ webview's storage is lost, nothing is: the libraries are found again from
 for folders with a `37 Player library.json`. Each library's own settings
 already live in its folder.
 
-- The app's identifier (now `com.player37.spike`; to be `com.player37.app`,
-  Gen Rinzin, 6 Nov 2026) names that data folder, and
+- The app's identifier (`com.player37.app` from the bridge-2 builds, 1.4.196;
+  the 1.4 test builds were `com.player37.spike`; Gen Rinzin, 6 Nov 2026) names that data folder, and
   the webview's storage, so the real one is set before friends' beta tests
   and then never changed.
 
@@ -298,7 +298,7 @@ so the shell hands the page `device.json` as it starts (an initialization
 script setting `window.__p37Device`); the page uses localStorage when it has
 it, and that when it doesn't (a wiped webview), writing it back.
 
-**Built (1.4.195):** see NOTES.md, "The desktop app's first start of 2.0".
+**Built (1.4.195–196):** see NOTES.md, "The desktop app's libraries". **Changed (Gen Rinzin, 6 Nov 2026):** no move from the webview's storage after all: only he had used the 1.4 desktop app, with test libraries, and the real identifier starts the 2.0 app with an empty webview storage. Libraries from a browser come over by the shared library or a .37p. The rest stands: the place is asked, libraries are found again by their markers, Find a library folder….
 
 **The move (step 4, Gen Rinzin):** the first start of 2.0 asks where the libraries
 should live, suggesting `Music/37 Player Libraries/` with **Choose another
@@ -334,12 +334,14 @@ fallback, then goes.
    blobs, one by one. **Done 6 Nov 2026** (page 1.4.194: DiskBlob, JoinedBlob,
    pieces of 8 MB with `p37-append`; the `STORE=desktop` set with every file
    a DiskBlob; `tests/diskblob.js`).
-4. Where libraries live, the list file, moving libraries in by themselves;
-   bridge 2. **Done 6 Nov 2026** (page 1.4.195, shell on the bridge2 branch:
+4. Where libraries live, the list file, finding them again; bridge 2.
+   **Done 6–7 Nov 2026** (page 1.4.196, shell on the bridge2 branch:
    `fs_place`, `fs_place_default`, `fs_find_libraries`,
    `fs_root_choose_library`; `BRIDGE = 2` and `window.__p37Bridge` set before
-   the page runs; `tests/desktopmove.js`, which is also the wipe test of step
-   5 run through the stand-in shell). Left for the Mac: the same by hand.
+   the page runs; identifier `com.player37.app`; `tests/desktoplibs.js`, which
+   is also the wipe test of step 5 run through the stand-in shell). Moving
+   libraries in from webview storage: built in 1.4.195, dropped in 1.4.196.
+   Left for the Mac: the wipe test by hand.
 5. The three machines.
 
 6. Use in place, then Move.
@@ -360,4 +362,6 @@ fallback, then goes.
 
 ## Still open
 
-- Nothing at the moment. (Edits to tracks used in place: decided, b).)
+- Nothing at the moment. (The identifier and the move, 7 Nov 2026: decided,
+  a): `com.player37.app` now; no move from webview storage, see below.)
+- (Edits to tracks used in place: decided, b).)
