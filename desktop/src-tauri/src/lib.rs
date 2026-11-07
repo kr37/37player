@@ -167,7 +167,12 @@ pub fn run() {
     // The page in use: the newest good one downloaded, or the bundled one.
     let inner = context.set_assets(Box::new(pages::NoAssets));
     let bundled = inner.get(&"/index.html".into()).and_then(|b| pages::meta(&b, "app-version")).unwrap_or_else(|| "0.0.000".into());
-    let pages_dir = pages::data_dir(&context.config().identifier).map(|d| d.join("pages")).unwrap_or_else(|| std::path::PathBuf::from("pages"));
+    // Each channel's pages in a folder of their own (pages/latest, pages/test):
+    // an m build installed after a d build (or the other way) runs its own
+    // channel's newest page at once (Gen Rinzin, 7 Nov 2026), while the
+    // libraries and settings stay shared. (Pages kept by builds before this,
+    // straight in pages/, are left alone and not used.)
+    let pages_dir = pages::data_dir(&context.config().identifier).map(|d| d.join("pages").join(PAGE_CHANNEL)).unwrap_or_else(|| std::path::PathBuf::from("pages").join(PAGE_CHANNEL));
     let verifier = if PAGE_KEY.trim() == "none" { pages::Verifier::none() } else { pages::Verifier::new(PAGE_KEY) };
     let page_source = format!("https://github.com/kr37/37player/releases/download/page-{PAGE_CHANNEL}");
     let pages = Arc::new(pages::Pages::new(pages_dir, &bundled, BRIDGE, verifier, Some(page_source), PAGE_CHANNEL));
