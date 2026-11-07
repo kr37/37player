@@ -141,4 +141,4 @@ window.__lvl = ()=> ({ctx: levelCtx, routed: levelGains.has(audioEl)}); // level
 window.__share.note = (m)=> sharedMissingNote(m); // miss.js
 window.__dbg3.trashKeys = ()=> undoTrashKeys(); // reconcile.js
 window.__dbg3.downloadPass = ()=> sharedDownloadPending(sharedConfig()); // reconcile.js
-window.__disk = {kind: ()=> STORAGE_KIND, idbPut, idbGet, DiskBlob, JoinedBlob, audioObjectUrl, writeFileTo, storageOpen, readLibraryList, writeLibraryList, libraryDbName, renameLibrary, id: ()=> LIBRARY_ID}; // diskblob.js, desktoplibs.js
+window.__disk = {kind: ()=> STORAGE_KIND, idbPut, idbGet, DiskBlob, JoinedBlob, audioObjectUrl, writeFileTo, storageOpen, readLibraryList, writeLibraryList, libraryDbName, renameLibrary, id: ()=> LIBRARY_ID, openImportChoice, desktopImportFolder, placeFolders, placeIntoLibrary, placeLookForNew, placePathFrom, libStore: ()=> libStore, rewriteFileTagsIfPossible, tracksWithMissingAudio, showAudioMissing, confirmDeleteTracksFromLibrary, syncPlaylistFiles, placeOffline}; // diskblob.js, desktoplibs.js, inplace.js

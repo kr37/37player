@@ -13,7 +13,7 @@
 //   node desktoplibs.js
 const puppeteer = require('puppeteer-core'); const sleep = ms=>new Promise(r=>setTimeout(r,ms));
 const fs = require('fs'), path = require('path');
-const APP = 'http://localhost:8861/37-player.html';
+const APP = process.env.APP || 'http://localhost:8861/37-player.html';
 const SHELL = fs.readFileSync(path.join(__dirname, 'fake-shell.js'), 'utf8');
 const STARTER = fs.readFileSync(path.join(__dirname, 'fixtures', 'starter.mp3')).toString('base64');
 let fails = 0; const ok=(c,m)=>{ console.log((c?'ok   ':'FAIL ')+m); if(!c) fails++; };

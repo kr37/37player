@@ -63,6 +63,8 @@
         if(pick == null) return null;
         const r = await readRoots(); r[args.id] = pick; await writeRoots(r); await pathDir(pick, true); return pick;
       }
+      // A folder used in place: where, there now, on another drive (Volumes/…).
+      case 'fs_root_info': { const r = await readRoots(); if(!(args.id in r)) throw new Error('no folder called ' + args.id + ' on the list'); return {path: r[args.id], present: !!(await pathDir(r[args.id])), other_drive: /^Volumes\//.test(r[args.id])}; }
       case 'fs_find_libraries': {
         const r = await readRoots(), base = r.place || DEFAULT_PLACE, d = await pathDir(base), out = [];
         if(d) for await (const [n, h] of d.entries()){

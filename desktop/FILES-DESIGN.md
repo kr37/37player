@@ -344,7 +344,11 @@ fallback, then goes.
    Left for the Mac: the wipe test by hand.
 5. The three machines.
 
-6. Use in place, then Move.
+6. Use in place, then Move. **Done 7 Nov 2026** (page 1.4.199, shell
+   `fs_root_info`; `tests/inplace.js`): the three modes at Import → Choose a
+   folder…, Copy and Move into the library later, Look for new files, drives
+   not connected, playlist files with `../`. Removable drives are told apart
+   by where they're mounted (`/Volumes/`, `/media/`, another drive letter).
 
 ## Gen Rinzin's answers (5 Nov 2026)
 
