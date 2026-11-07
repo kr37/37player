@@ -167,10 +167,14 @@
         </ul>
         <p style="font-size:small;">These are early versions, not signed yet. On a Mac, the first time: right-click the app → <b>Open</b>. On Windows, if SmartScreen stops it: <b>More info</b> → <b>Run anyway</b>.</p>
         <script>
+            // test.37player.com offers the build whose pages follow dev
+            // (desktop-latest-dev); 37player.com the one following main.
+            const desktopRelease = /^test\./.test(location.hostname) ? "desktop-latest-dev" : "desktop-latest";
+            document.querySelectorAll('a[href*="/releases/download/desktop-latest/"]').forEach(a=>{ a.href = a.href.replace("/desktop-latest/", "/" + desktopRelease + "/"); });
             // The version on offer, from GitHub (the downloads above always point to it).
-            fetch("https://api.github.com/repos/kr37/37player/releases/tags/desktop-latest").then(r=> r.ok ? r.json() : null).then(j=>{
+            fetch("https://api.github.com/repos/kr37/37player/releases/tags/" + desktopRelease).then(r=> r.ok ? r.json() : null).then(j=>{
                 const v = j && /37 Player ([0-9.]+)/.exec(j.name || "");
-                if(v) document.getElementById("desktopVersion").textContent = "(version " + v[1] + ")";
+                if(v) document.getElementById("desktopVersion").textContent = "(version " + v[1] + (desktopRelease === "desktop-latest-dev" ? ", following test.37player.com" : "") + ")";
             }).catch(()=>{});
         </script>
 
