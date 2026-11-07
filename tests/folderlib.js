@@ -58,7 +58,7 @@ const waitModal = async (p, re, ms)=>{ for(let i=0; i<(ms||15000)/200; i++){ con
   ok(/Automatic backups stop/.test(ask), 'the dialog explains (where, how much, backups)');
   ok(/empty folder for this library/.test(ask), 'it says an empty folder made for the library can be chosen');
   await clickText(p, '.modal button', '^Choose where');
-  // "picked" is empty (1.4.180, Gen): use it as it is, or make the library's folder inside it.
+  // "picked" is empty (1.4.180, Gen Rinzin): use it as it is, or make the library's folder inside it.
   const which = await waitModal(p, /Use this folder/);
   const btns = await p.evaluate(()=> [...document.querySelectorAll('#askButtons button')].map(b=> b.textContent.trim() + (b.classList.contains('primary') ? '*' : '')));
   ok(/is empty/.test(which) && btns[0] === 'Use “picked”*' && /^Make “.+” inside$/.test(btns[1]), 'an empty folder: use it, or make the library\'s folder inside (' + btns.join(' | ') + ')');

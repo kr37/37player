@@ -42,6 +42,16 @@ const openShared = async p=>{ await p.evaluate(()=>{ window.__dbg.setMode('editi
   const php = spawn('php', ['-S', '127.0.0.1:8871', '-t', '..'], {cwd: __dirname, env: Object.assign({}, process.env, {P37_GOOGLE_CONFIG: cfgFile, P37_GOOGLE_TOKEN_ENDPOINT: DRIVE + '/token', P37_GOOGLE_AUTH_ENDPOINT: DRIVE + '/o/oauth2/v2/auth'}), stdio: 'ignore'});
   const g = google.start(8872);
   await sleep(800);
+  // The desktop app's sign-in (2.0): token.php sends the person back to the
+  // shell's one-time address on their computer, and accepts the app's page.
+  {
+    const start = ret=> fetch(TOKEN + '?op=start&return=' + encodeURIComponent(ret) + '&nonce=abcdefgh12', {redirect: 'manual'});
+    ok((await start('http://127.0.0.1:53123/p37auth')).status === 302, 'token.php: the desktop app\'s one-time address on the computer is a place to come back to');
+    ok((await start('http://127.0.0.1:53123/elsewhere')).status === 400 && (await start('http://evil.example/p37auth')).status === 400, 'token.php: nothing else there, or anywhere else');
+    const o = await fetch(TOKEN, {method: 'OPTIONS', headers: {Origin: 'tauri://localhost'}});
+    const w = await fetch(TOKEN, {method: 'OPTIONS', headers: {Origin: 'http://tauri.localhost'}});
+    ok(o.headers.get('access-control-allow-origin') === 'tauri://localhost' && w.headers.get('access-control-allow-origin') === 'http://tauri.localhost', 'token.php: the desktop app\'s page may refresh its access (Mac, Windows)');
+  }
   const b = await puppeteer.launch({executablePath: process.env.CHROME || '/usr/bin/google-chrome', args: ['--no-sandbox'], protocolTimeout: 120000});
   try{
     // ---- A: a library, then onto Google Drive
@@ -66,12 +76,14 @@ const openShared = async p=>{ await p.evaluate(()=>{ window.__dbg.setMode('editi
     ok(/Signed in as center@example\.org/.test(m), 'the chooser names the account signed in');
     await A.screenshot({path: 'shots/drive-chooser-empty.png'});
     ok(await A.evaluate(()=> document.getElementById('drLib').value === 'new' && document.getElementById('drNewBox').style.display !== 'none' && document.getElementById('drGo').textContent === 'Next'), 'nothing there yet: "Make a new library" chosen, its name field showing, one button');
-    // Making one and backing out at the last step: its empty folders go to the trash (1.4.134)
+    // Making one and backing out at the last step: its empty folders go to the trash (1.4.134; kept so on 7 Nov 2026, Gen Rinzin: cleanest)
     await A.evaluate(()=>{ document.getElementById('drName').value = 'Chicken'; document.getElementById('drDevice').value = 'Laptop'; document.getElementById('drGo').click(); });
     let backedOut = false;
-    for(let k=0; k<40 && !backedOut; k++){ if(await A.evaluate(()=> [...document.querySelectorAll('.modal button')].some(b=> /^Do it now$/.test(b.textContent.trim())))){ backedOut = await clickText(A, '.modal button', '^Cancel$'); } else await sleep(250); }
+    let lastQ = '';
+    for(let k=0; k<40 && !backedOut; k++){ if(await A.evaluate(()=> [...document.querySelectorAll('.modal button')].some(b=> /^Do it now$/.test(b.textContent.trim())))){ lastQ = await modal(A); backedOut = await clickText(A, '.modal button', '^Cancel$'); } else await sleep(250); }
     await sleep(1500);
     const chicken = [...g.files.values()].find(f=> f.name === '37 Player \u2013 Chicken');
+    ok(/“Chicken” is set up on your Google Drive/.test(lastQ) && /taken off your Drive again/.test(lastQ), 'the last question says the new library is on the Drive, and goes again if cancelled');
     ok(backedOut && chicken && chicken.trashed, 'a new Drive library whose joining was cancelled goes to the trash: ' + JSON.stringify(chicken && {trashed: chicken.trashed}));
     ok(!(await A.evaluate(()=> window.__dbg.getRoot().settings.sharedLibrary)), 'and this device isn\'t joined');
     await openShared(A);

@@ -32,6 +32,18 @@ const clickText = (p, sel, src) => p.evaluate((sel, src)=>{ const re=new RegExp(
       ok(done && after.size === after.read && after.size === fileSize && Math.abs(after.size - before.size) < 4096, (wk ? 'Safari way' : 'other browsers') + ', ' + t.file + ': re-tagged, stored whole (' + before.size + ' → ' + after.size + ', read back ' + after.read + ')');
       ok(tags && tags.artist === 'New Kadampa Tradition' && tags.album === 'Quick Path parts', '  and the new tags are in the file');
     }
+    // A very big file in WebKit's storage (1.4.187): not rewritten (that read
+    // it all into memory); the library's details change all the same.
+    // "Very big" is made 1 MB here (window.__bigRewriteBytes).
+    if(wk && ids.length){
+      const t = ids.find(x=> /ten\.mp3/.test(x.file || '')) || ids[0];
+      await p.evaluateOnNewDocument(()=>{ window.__bigRewriteBytes = 1000000; });
+      await p.reload({waitUntil: 'networkidle0'}); await sleep(1200);
+      const before = await p.evaluate((id)=> window.__wk.stored(id), t.id);
+      const out = await p.evaluate(async(id)=>{ const tr = window.__dbg.getRoot().library.find(x=> x.id === id); tr.name = 'Renamed big one'; const done = await window.__wk.rewrite(id); return {done, name: window.__dbg.getRoot().library.find(x=> x.id === id).name}; }, t.id);
+      const after = await p.evaluate((id)=> window.__wk.stored(id), t.id);
+      ok(out.done === false && before.size === after.size && out.name === 'Renamed big one', 'Safari way, a file over the limit (' + before.size + ' bytes): left as it is, the library\'s name changed (' + JSON.stringify(out) + ')');
+    }
     await p.close();
   }
   console.log(fails ? fails + ' FAILED' : 'ALL OK'); await b.close();

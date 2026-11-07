@@ -1,4 +1,4 @@
-// Deleting tracks that playlists use (1.4.177, Gen): after the first
+// Deleting tracks that playlists use (1.4.177, Gen Rinzin): after the first
 // "Delete", a second question: delete the playlists and folders this leaves
 // empty (ticked), and the playlists that used the tracks but hold others
 // (not ticked, listed). A playlist or folder empty before stays. One Undo

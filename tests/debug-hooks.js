@@ -137,3 +137,9 @@ window.__driveStart = (el)=> driveStartFrom(el, {what: "connect"}); window.__inD
 window.__delAsk = (ids)=> confirmDeleteTracksFromLibrary(ids, ()=> deleteLibraryTracks(ids));
 window.__edPrev = (id)=>{ loadEditorPreview(id); document.getElementById('edPreviewPlay').click(); };
 window.__edPrevPaused = ()=> document.getElementById('edPreviewAudio').paused;
+window.__lvl = ()=> ({ctx: levelCtx, routed: levelGains.has(audioEl)}); // levelwatch.js
+window.__share.note = (m)=> sharedMissingNote(m); // miss.js
+window.__dbg3.trashKeys = ()=> undoTrashKeys(); // reconcile.js
+window.__dbg3.downloadPass = ()=> sharedDownloadPending(sharedConfig()); // reconcile.js
+window.__disk = {kind: ()=> STORAGE_KIND, idbPut, idbGet, DiskBlob, JoinedBlob, audioObjectUrl, writeFileTo, storageOpen, readLibraryList, writeLibraryList, libraryDbName, renameLibrary, id: ()=> LIBRARY_ID, openImportChoice, desktopImportFolder, placeFolders, placeIntoLibrary, placeLookForNew, placePathFrom, libStore: ()=> libStore, rewriteFileTagsIfPossible, tracksWithMissingAudio, showAudioMissing, confirmDeleteTracksFromLibrary, syncPlaylistFiles, placeOffline, switchLibrary, togglePlay}; // diskblob.js, desktoplibs.js, inplace.js, switchplaying.js
+window.__sil = {mp3: buildSilentMp3Bytes, entries: buildPlaceholderEntries, recognize: recognizePlaceholder, tags: parseAudioTags}; // silencemp3.js

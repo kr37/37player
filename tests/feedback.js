@@ -53,6 +53,18 @@ const clickText = (p, sel, src) => p.evaluate((sel, src)=>{ const re=new RegExp(
     // another site can't send through it
     const other = await p.evaluate(async()=>{ const r = await fetch('feedback.php?op=status'); return r.status; });
     ok(other === 200, 'status answers this site');
+    // The desktop app (1.4.187): its page isn't at a web address, so the
+    // server lets its addresses in, with the headers a browser needs; any
+    // other site still can't.
+    const ask = (method, origin)=> new Promise(res=>{
+      const req = require('http').request({host: '127.0.0.1', port: 8874, path: '/feedback.php?op=status', method, headers: {Origin: origin, 'Sec-Fetch-Site': 'cross-site', 'Access-Control-Request-Method': 'POST'}}, r=>{ r.resume(); r.on('end', ()=> res({code: r.statusCode, acao: r.headers['access-control-allow-origin'] || ''})); });
+      req.end(); });
+    for(const o of ['tauri://localhost', 'https://tauri.localhost']){
+      const pre = await ask('OPTIONS', o), get = await ask('GET', o);
+      ok(pre.code === 204 && get.code === 200 && get.acao === o, 'the desktop app (' + o + ') may send: ' + JSON.stringify([pre, get]));
+    }
+    const evil = await ask('GET', 'https://example.org');
+    ok(evil.code === 403 && !evil.acao, 'another site may not: ' + evil.code);
   } finally {
     await b.close(); php.kill();
     fs.rmSync(root, {recursive: true, force: true});

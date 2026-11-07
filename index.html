@@ -82,7 +82,10 @@
           box-shadow: 0 2px 5px rgba(0,0,0,0.3);
         }
 
-
+        #getIt    { float:right; margin-left: 1em; font-size:large; padding: 1em; border-radius: .5em; border: 1px solid gray; }
+        #getIt p  { margin: 0;  }
+        #getIt li { padding: 0; }
+        #getIt ul { margin: 0;  }
 
 
     </style>
@@ -91,10 +94,18 @@
 
 <body>
     <div id="bodyDiv">
-        <h1><img src="homepage/37player.png" style="height: 1em; vertical-align: -.2em;"> 37 Player</h1>
-        <p style="text-align:right;font-size:large;"><b>Run it: <a href="37-player.html">37-player.html</a></b></p>
+        <div id="getIt" >
+            <p><b>Run it: &nbsp; <a href="37-player.html">37-player.html</a></b></p>
 
-        <h2>What it is</h2>
+            <p><b>Install it:</b></p>
+            <ul>
+                <li><b>Mac:</b> <a href="https://github.com/kr37/37player/releases/download/desktop-latest/37-Player-mac.dmg">37-Player-mac.dmg</a></li>
+                <li><b>Windows:</b> <a href="https://github.com/kr37/37player/releases/download/desktop-latest/37-Player-windows-setup.exe">37-Player-windows-setup.exe</a><br> (or the <a href="https://github.com/kr37/37player/releases/download/desktop-latest/37-Player-windows.msi">.msi</a>, for installing on many computers)</li>
+            </ul>
+        </div>
+        <h1><img src="homepage/37player.png" style="height: 1em; vertical-align: -.2em;"> 37 Player</h1>
+
+        <h2 style="margin-top: 4em;">What it is</h2>
         <p>37 Player is a multi-platform music player and playlist creator/organizer. It was created based on years of using iTunes/Music.app in Buddhist centers - understanding that much of what iTunes does is very good, but some things can be improved for our usage.</p>
         <img src="homepage/Screenshot_Playing_Seekbar.png" style="border: 1px solid gray;">
 
@@ -158,6 +169,25 @@
             <li>Or download <a href="37-player.html" download="37-player.html">37-player.html</a> and run from your machine.</a> (more complete functionality coming soon)</li>
         </ul>
         <p>If you download and run locally, then choose one spot and leave it there. If you move the .html file, then it loses its library, and you'll need to re-import.</p>
+
+        <h2>The desktop app <span id="desktopVersion" style="font-weight:normal; font-size:medium;"></span></h2>
+        <p>37 Player as an app on a Mac or a Windows computer. Each library is an ordinary folder on your computer, which no cleaning program can erase; recordings can stay where they already are (<b>Use in place</b>), and big recordings play straight from the disk.</p>
+        <ul>
+            <li><b>Mac:</b> <a href="https://github.com/kr37/37player/releases/download/desktop-latest/37-Player-mac.dmg">37-Player-mac.dmg</a></li>
+            <li><b>Windows:</b> <a href="https://github.com/kr37/37player/releases/download/desktop-latest/37-Player-windows-setup.exe">37-Player-windows-setup.exe</a> (or the <a href="https://github.com/kr37/37player/releases/download/desktop-latest/37-Player-windows.msi">.msi</a>, for installing on many computers)</li>
+        </ul>
+        <p style="font-size:small;">These are early versions, not signed yet. On a Mac, the first time: right-click the app → <b>Open</b>. On Windows, if SmartScreen stops it: <b>More info</b> → <b>Run anyway</b>.</p>
+        <script>
+            // test.37player.com offers the build whose pages follow dev
+            // (desktop-latest-dev); 37player.com the one following main.
+            const desktopRelease = /^test\./.test(location.hostname) ? "desktop-latest-dev" : "desktop-latest";
+            document.querySelectorAll('a[href*="/releases/download/desktop-latest/"]').forEach(a=>{ a.href = a.href.replace("/desktop-latest/", "/" + desktopRelease + "/"); });
+            // The version on offer, from GitHub (the downloads above always point to it).
+            fetch("https://api.github.com/repos/kr37/37player/releases/tags/" + desktopRelease).then(r=> r.ok ? r.json() : null).then(j=>{
+                const v = j && /37 Player ([0-9.]+)/.exec(j.name || "");
+                if(v) document.getElementById("desktopVersion").textContent = "(version " + v[1] + (desktopRelease === "desktop-latest-dev" ? ", following test.37player.com" : "") + ")";
+            }).catch(()=>{});
+        </script>
 
         <h2>Libraries</h2>
         <p>The app has access to some libraries of playlists. These are full of Tharpa copyright music. You need to have bought and paid for the tracks yourself.</p>

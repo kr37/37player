@@ -1,6 +1,6 @@
 # Design note: the desktop app's files backend (bridge 2)
 
-For Gen to review before anything is built. 5 Nov 2026; Gen's answers the same
+For Gen Rinzin to review before anything is built. 5 Nov 2026; Gen Rinzin's answers the same
 evening are worked in (see the end).
 
 ## What it's for
@@ -27,7 +27,7 @@ Rust:
 | `getDirectoryHandle(name, {create})` | `fs_dir(path, create)` |
 | `getFileHandle(name, {create})`, `getFile()` | `fs_stat(path)`, and reading (below) |
 | `entries()` | `fs_list(path)` |
-| `createWritable()`, `write()`, `close()` | `fs_write(path, bytes)`: to a temporary file, then renamed over the old one, so a file is never half written |
+| `createWritable()`, `write()`, `close()` | `fs_write(path, bytes)`: to a temporary file, then renamed over the old one, so a file is never half written. Over 8 MB the page sends pieces to `<name>.p37part` (`fs_write` with the header `p37-append: 1`) and renames that onto the file (`fs_rename`); a whole file read where it lies is copied (`fs_copy`) |
 | `removeEntry(name, {recursive})` | `fs_remove(path)` |
 
 Plus a sixth, `fs_rename(root, from, to)`, for readable names (below).
@@ -90,7 +90,7 @@ watched in Activity Monitor, answers it in a few minutes.
 
 ## Where libraries live, and the small things around it
 
-- **Where (Gen):** a new library in the desktop app goes in
+- **Where (Gen Rinzin):** a new library in the desktop app goes in
   `Music/37 Player Libraries/<library name>/`, unless the person chooses elsewhere (the system's folder dialog,
   through Tauri). The same layout as today's folder libraries, with
   `37 Player library.json` saying which library it is, so a folder can be moved
@@ -99,7 +99,7 @@ watched in Activity Monitor, answers it in a few minutes.
 - **The list of libraries and their folders:** today in localStorage and a tiny
   IndexedDB database; in the desktop app, a small file in the app's own data
   folder, kept by Rust, so it can't be lost along with the webview's storage.
-- **Moving a library in** from the webview's storage **happens by itself (Gen)**:
+- **Moving a library in** from the webview's storage **happens by itself (Gen Rinzin; dropped 6 Nov 2026, see below)**:
   on the first start of a desktop app with bridge 2, each library in the
   webview's storage is copied into its folder, checked (every record and file
   read back), and then used from there; a notice says where it went. The
@@ -115,9 +115,9 @@ watched in Activity Monitor, answers it in a few minutes.
 - **Bridge number 2** for the shell that has all this; a page that needs it on
   an older shell says to download the new desktop app.
 
-## Readable names (Gen: integral, the same week)
+## Readable names (Gen Rinzin: integral, the same week)
 
-Gen: readable artist / album / track file names are part of this move, not a
+Gen Rinzin: readable artist / album / track file names are part of this move, not a
 later step. So the files store names recordings readably from the start, and
 nothing is first laid out by ID and then moved again:
 
@@ -132,7 +132,7 @@ Music/37 Player Libraries/Rinzin's library/
   37 Player's own files/   (playlists and details, artwork, the waiting room; not for editing)
 ```
 
-(Gen, 6 Nov 2026, built in 1.4.179: recordings under `music/` and a visible
+(Gen Rinzin, 6 Nov 2026, built in 1.4.179: recordings under `music/` and a visible
 `playlists/`, so the top of the folder reads like a table of contents.)
 
 The names are made the way the portable export already makes them
@@ -152,7 +152,7 @@ The names are made the way the portable export already makes them
 - The order of work: readable names go into step 2 (the store learns them
   while it's being given Rust's handles), tested through the same fake.
 
-## Use in place (Gen likes it)
+## Use in place (Gen Rinzin likes it)
 
 Of the three import modes planned for v2 (Copy, **Use in place**, Move), Use in
 place leaves the recordings where they are: the person's own music folder
@@ -165,12 +165,12 @@ stays theirs, and the library only points into it.
 - Its recordings play by address and are read in pieces like the library's own.
 - A shared library still gets a copy of the audio when it syncs (another
   device can't reach this computer's folder).
-- **Edits to a track used in place** (Gen's three ways, 5 Nov 2026: a) copy
+- **Edits to a track used in place** (Gen Rinzin's three ways, 5 Nov 2026: a) copy
   the recording into the library and point there, b) keep the edited details
   in the library's records only, c) write them into the file, which may
-  belong to Music.app's library; Gen leaned to a), and also floated setup
+  belong to Music.app's library; Gen Rinzin leaned to a), and also floated setup
   options: no edits at all, ask each time, or a lasting choice).
-  **Suggested (waiting for Gen): b) as the rule, no prompts, plus one switch
+  **Suggested (waiting for Gen Rinzin): b) as the rule, no prompts, plus one switch
   per folder, "Also write my changes into these files" (c), off by default.**
   a) quietly turns Use in place back into copying, one edit at a time (the
   disk fills unpredictably); under b) nothing inside 37 Player loses the
@@ -178,7 +178,7 @@ stays theirs, and the library only points into it.
   copy) gets the edited tags written into its own copy, so only the original
   file stays as it was, which is what Music.app would want. "No edits at all"
   can come later if someone asks.
-- **Gen, 5 Nov 2026: b) it is, explained at the start of the import.** While
+- **Gen Rinzin, 5 Nov 2026: b) it is, explained at the start of the import.** While
   a folder is used in place, its files **will not be touched**: edits live only
   in 37 Player's library (its records, `meta.json` and so on). Anyone who wants
   their edits in ordinary files to use elsewhere can export from 37 Player, or
@@ -206,7 +206,7 @@ stays theirs, and the library only points into it.
   warning. When the drive isn't connected, its tracks show as "on a drive
   that isn't connected" (not missing, not damaged, nothing offered to delete)
   and come back when it is.
-- **playlists/ with tracks used in place** (Gen, 6 Nov 2026): the .m3u8
+- **playlists/ with tracks used in place** (Gen Rinzin, 6 Nov 2026): the .m3u8
   points to the file where it is, with as many `../` as it takes
   (`../../../Music/iTunes/…`), so the playlist still works if the whole
   drive's tree moves together. Where no relative path exists (on Windows, a
@@ -216,7 +216,7 @@ stays theirs, and the library only points into it.
 - Use in place and Move come after the backend and readable names work (they
   need the roots and the addresses, nothing more).
 
-## The device's own settings (Gen, 6 Nov 2026: as persistent as possible)
+## The device's own settings (Gen Rinzin, 6 Nov 2026: as persistent as possible)
 
 With libraries in folders, the webview's storage still holds a little: the
 list of libraries and where each is, which one opens, the language, theme and
@@ -233,10 +233,78 @@ webview's storage is lost, nothing is: the libraries are found again from
 for folders with a `37 Player library.json`. Each library's own settings
 already live in its folder.
 
-- The app's identifier (now `com.player37.spike`; to be `com.player37.app`,
-  Gen, 6 Nov 2026) names that data folder, and
+- The app's identifier (`com.player37.app` from the bridge-2 builds, 1.4.196;
+  the 1.4 test builds were `com.player37.spike`; Gen Rinzin, 6 Nov 2026) names that data folder, and
   the webview's storage, so the real one is set before friends' beta tests
   and then never changed.
+
+## Everything the page keeps in browser storage, and where it goes (6 Nov 2026)
+
+Gen Rinzin's test for 2.0: **delete the app's webview storage (CCleaner, CleanMyMac),
+start again, and nothing is missing.** So everything a person would miss lives
+in a file the shell can reach; the webview's storage holds only copies and
+caches. Inventory of 1.4.190:
+
+**A library's IndexedDB (`temple-sound-library`, `…~<id>`)** → its folder. A
+folder library (`FolderLibraryStore`) already keeps all three stores as files,
+so moving the library moves all of it:
+
+| Store / record | What | In the folder |
+|---|---|---|
+| `audio`, `artwork` | recordings and pictures | `music/…` (readable names), `37 Player's own files/artwork/` |
+| `state` `root` | tracks, playlists, the library's settings (shared library's join details too) | `37 Player's own files/state/` |
+| `state` `undo`, `undotrash:*` | Undo's history, and what it keeps a day | same |
+| `state` `sharedBase`, `sharedPending`, `sharedSeen`, `sharedCovered` | the shared library's last agreed version, files waiting either way | same |
+| `state` `convertQueue`, `checkLibrary`, `libraryInfo`, `mp4repair`, `incomingCopies`, `copyPartial`, `replacing` | work in progress, and its markers | same |
+
+**The device's IndexedDB** → stays (a cache): `converter` in the main
+library's `state` (ffmpeg.wasm, fetched again from the app when missing);
+`37player-folders` (folder handles of a browser; the desktop app finds its
+folders by path, in `device.json` and `roots.json`).
+
+**localStorage, the device's** → `device.json` (the shell's, in the app's data
+folder), with localStorage as its copy:
+
+| Key | What | |
+|---|---|---|
+| `37player.libraries` | the list of libraries, each one's folder, which opened last | **device.json** (lost: found again under the libraries' folder, below) |
+| `37player.device` | language, theme, playback choices and other settings of this device | **device.json** |
+| `37player.libTable` | Library → Table's columns | device.json |
+| `37player.playLog` | the playback log | device.json (a log file beside it, trimmed) |
+| `37player.storage`, `37player.autoRestore`, `37player.driveSignIn` | how this device stores, restores, signs in | device.json (Drive sign-in: re-asked if lost, fine) |
+| `37player.feedbackSent`, `37player.logsSentAt` | when feedback and logs were last sent | can be lost |
+| `37player.acceptEmpty`, `37player.newEmpty`, `37player.pendingJoin`, sessionStorage `37player.library`, `37player.place` | a step in progress, this window's library and place | can be lost |
+
+**localStorage, a library's** (`….<library id>` or `…~<id>`) → its folder,
+where a person would miss it, else nothing (built in 1.4.195: `local.json` in its own files' folder):
+
+| Key | What | |
+|---|---|---|
+| `37player.sharedLog` | the shared library's sync log | the folder (`37 Player's own files/`), trimmed as now |
+| `37player.syncPendingSince`, `37player.dailyAsk`, `37player.autoRestoreDeclined`, `37player.autoRestoreSent`, `37player.movedToFolder` | reminders and answers | the folder |
+| `37player.analyzing`, `37player.downloading`, `37player.downloadCrashed` | crash markers (what was being done when the page died) | can be lost (worst case: one retry) |
+
+**The shell's own** (`roots.json`, `pages/`, `device.json`) is in the app's
+data folder: AppData on Windows, `~/Library/Application Support/<identifier>/`
+on the Mac. A cleaner that empties that too (or a new computer) loses the list
+of libraries: the app then looks for folders with a `37 Player library.json`
+in the libraries' default place (`Music/37 Player Libraries/`), and **Find a
+library folder…** opens any other (Gen Rinzin: the place is the person's choice; the
+default is only a suggestion).
+
+**Reading the list before the page starts:** the page reads the library list
+synchronously as it loads (`pickWindowLibrary`), and `invoke` is asynchronous,
+so the shell hands the page `device.json` as it starts (an initialization
+script setting `window.__p37Device`); the page uses localStorage when it has
+it, and that when it doesn't (a wiped webview), writing it back.
+
+**Built (1.4.195–196):** see NOTES.md, "The desktop app's libraries". **Changed (Gen Rinzin, 6 Nov 2026):** no move from the webview's storage after all: only he had used the 1.4 desktop app, with test libraries, and the real identifier starts the 2.0 app with an empty webview storage. Libraries from a browser come over by the shared library or a .37p. The rest stands: the place is asked, libraries are found again by their markers, Find a library folder….
+
+**The move (step 4, Gen Rinzin):** the first start of 2.0 asks where the libraries
+should live, suggesting `Music/37 Player Libraries/` with **Choose another
+place…**, then copies each library from browser storage into its folder,
+checks every file, and switches. The browser-storage copy stays 30 days as a
+fallback, then goes.
 
 ## Testing
 
@@ -263,18 +331,30 @@ already live in its folder.
    fake runs readnames.js's scenario, not yet the whole `STORE=opfs` set. Not
    switched on: the page doesn't use them, and the bridge stays 1.
 3. Playing by address; the stand-in for big files; the places needing real
-   blobs, one by one.
-4. Where libraries live, the list file, moving libraries in by themselves;
-   bridge 2.
+   blobs, one by one. **Done 6 Nov 2026** (page 1.4.194: DiskBlob, JoinedBlob,
+   pieces of 8 MB with `p37-append`; the `STORE=desktop` set with every file
+   a DiskBlob; `tests/diskblob.js`).
+4. Where libraries live, the list file, finding them again; bridge 2.
+   **Done 6–7 Nov 2026** (page 1.4.196, shell on the bridge2 branch:
+   `fs_place`, `fs_place_default`, `fs_find_libraries`,
+   `fs_root_choose_library`; `BRIDGE = 2` and `window.__p37Bridge` set before
+   the page runs; identifier `com.player37.app`; `tests/desktoplibs.js`, which
+   is also the wipe test of step 5 run through the stand-in shell). Moving
+   libraries in from webview storage: built in 1.4.195, dropped in 1.4.196.
+   Left for the Mac: the wipe test by hand.
 5. The three machines.
 
-6. Use in place, then Move.
+6. Use in place, then Move. **Done 7 Nov 2026** (page 1.4.199, shell
+   `fs_root_info`; `tests/inplace.js`): the three modes at Import → Choose a
+   folder…, Copy and Move into the library later, Look for new files, drives
+   not connected, playlist files with `../`. Removable drives are told apart
+   by where they're mounted (`/Volumes/`, `/media/`, another drive letter).
 
-## Gen's answers (5 Nov 2026)
+## Gen Rinzin's answers (5 Nov 2026)
 
 - **Default place:** `Music/37 Player Libraries/`.
 - **Moving libraries out of the webview's storage:** automatic (few people use
-  37 Player yet, and Gen can tell them; still, it should just happen).
+  37 Player yet, and Gen Rinzin can tell them; still, it should just happen).
 - **Readable names:** integral to the move, ideally the same week: built into
   the store in step 2, above.
 - **Use in place:** Rust's access covers those folders too, as roots the
@@ -286,4 +366,6 @@ already live in its folder.
 
 ## Still open
 
-- Nothing at the moment. (Edits to tracks used in place: decided, b).)
+- Nothing at the moment. (The identifier and the move, 7 Nov 2026: decided,
+  a): `com.player37.app` now; no move from webview storage, see below.)
+- (Edits to tracks used in place: decided, b).)

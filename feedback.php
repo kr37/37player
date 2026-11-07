@@ -1,6 +1,6 @@
 <?php
 /*
- * 37 Player — feedback to its developer (1.4.136).
+ * 37 Player — feedback to its developer (1.4.136; the desktop app, 1.4.187).
  *
  * The app's Send feedback form posts here. Each message:
  *   - is mailed to FEEDBACK_TO only (rinzin@kr37.net), through this server's
@@ -19,7 +19,10 @@
  *                     logs: [{name, text}]} → {"ok": true, "id", "mailed", "filed"}
  *
  * Limits: 3 MB a message, 1 MB a log, 8 logs; 6 messages an hour and 20 a day
- * from one address (kept only as a hash). Same origin only, as restore.php.
+ * from one address (kept only as a hash). Same origin only, as restore.php,
+ * and the desktop app (1.4.187: its page is at tauri://localhost on the Mac,
+ * https://tauri.localhost on Windows, never a web address; no web page can
+ * claim those origins).
  *
  * Settings, in sync-config.php beside sync.php (optional):
  *   define('FEEDBACK_TO', 'rinzin@kr37.net');
@@ -43,12 +46,19 @@ const MAX_BODY = 3 * 1024 * 1024, MAX_LOG = 1024 * 1024, MAX_LOGS = 8, PER_HOUR 
 function out($code, $v) { http_response_code($code); header('Content-Type: application/json'); echo json_encode($v, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); exit; }
 function is_https() { return (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https'; }
 
-// Same origin only: no other site can send through this.
+// Same origin only, and the desktop app: no other site can send through this.
 $host = $_SERVER['HTTP_HOST'] ?? '';
 $self = (is_https() ? 'https' : 'http') . '://' . $host;
 $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
 $site = $_SERVER['HTTP_SEC_FETCH_SITE'] ?? '';
-if (($origin !== '' && $origin !== $self) || ($site !== '' && $site !== 'same-origin' && $site !== 'none')) out(403, ['error' => 'same_origin_only']);
+$fromApp = in_array($origin, ['tauri://localhost', 'https://tauri.localhost', 'http://tauri.localhost'], true);
+if ($fromApp) {
+    header('Access-Control-Allow-Origin: ' . $origin);
+    header('Vary: Origin');
+    header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
+    header('Access-Control-Allow-Headers: Content-Type');
+    if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(204); exit; }
+} elseif (($origin !== '' && $origin !== $self) || ($site !== '' && $site !== 'same-origin' && $site !== 'none')) out(403, ['error' => 'same_origin_only']);
 
 $op = $_GET['op'] ?? '';
 $store = rtrim(DATA_DIR, '/') . '/feedback';

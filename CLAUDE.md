@@ -9,7 +9,7 @@ Read the sections that bear on your task before changing code.
 - **Keep NOTES.md true.** A change to behaviour, architecture or a design
   decision updates NOTES.md in the same commit. Notes that no longer match
   the code are a bug, like a failing test. Write down the *why*, especially
-  Gen's decisions and what was tried and dropped.
+  Gen Rinzin's decisions and what was tried and dropped.
 - **Every shipped change bumps** `<meta name="app-version">` in
   `37-player.html` (only that first tag; see NOTES.md, Testing).
 - **One file, one name space:** grep for a function name before adding a
@@ -22,7 +22,7 @@ Read the sections that bear on your task before changing code.
 
 The droplet (37player.com, kr37.net) is the production server: it serves
 the website and the Centers' shared libraries. **Never connect to it** (SSH,
-sshfs, scp, rsync, its web root), even to pass a file along. Gen deploys.
+sshfs, scp, rsync, its web root), even to pass a file along. Gen Rinzin deploys.
 - Test builds of the desktop app come from GitHub Actions, as pre-releases
   on the repo's Releases page.
 - Something to paste on another machine goes in a file in the repo (or a
@@ -30,15 +30,15 @@ sshfs, scp, rsync, its web root), even to pass a file along. Gen deploys.
 
 ## Branches and commits
 
-- `main` is what Gen has approved; `dev` is where work lands for him to try
+- `main` is what Gen Rinzin has approved; `dev` is where work lands for him to try
   on test.37player.com. Small fixes may go straight to `main`; bigger work
   goes to `dev`. Keep `dev` level with `main` after a merge.
-- Commit as Gen (`Kelsang Rinzin <kelsangrinzin@gmail.com>`), with the
+- Commit as Gen Rinzin (`Kelsang Rinzin <kelsangrinzin@gmail.com>`), with the
   session's Co-Authored-By line.
 
 ## Tests
 
 - `tests/` (see `tests/README.md`): Puppeteer against a test copy of the app.
   Needs `CHROME=<path to Chrome or Chromium>` and `LANG=C.UTF-8`.
-- Run single tests for what you changed. **Ask Gen before running the full
+- Run single tests for what you changed. **Ask Gen Rinzin before running the full
   suite** (`tests/run-all.sh` with no names).

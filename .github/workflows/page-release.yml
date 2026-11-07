@@ -1,0 +1,49 @@
+# Signs the page and publishes it for the desktop app to update itself
+# (desktop/PAGE-UPDATES.md): main → the release "page-latest", dev →
+# "page-test" (the test builds). Each holds index.html (37-player.html),
+# help.json, a signature for each (`tauri signer sign`, with the private key
+# in this repo's secrets), and page.json ({version, bridge}), written last.
+# The desktop app checks the signatures with the public key built into it
+# (desktop/src-tauri/page-key.pub), so only pages signed here are used.
+# Without the key in the secrets, this does nothing.
+name: Page for the desktop app
+on:
+  push:
+    branches: [main, dev]
+    paths: ["37-player.html", "help.json", ".github/workflows/page-release.yml"]
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: page-release-${{ github.ref_name }}
+  cancel-in-progress: true
+jobs:
+  page:
+    runs-on: ubuntu-latest
+    env:
+      TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+      TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - name: Sign and publish
+        run: |
+          if [ -z "$TAURI_SIGNING_PRIVATE_KEY" ]; then echo "::notice::No signing key in the secrets (TAURI_SIGNING_PRIVATE_KEY): nothing published."; exit 0; fi
+          meta(){ head -c 8000 37-player.html | grep -m1 -o "name=\"$1\" content=\"[^\"]*\"" | sed 's/.*content="//;s/"$//'; }
+          version=$(meta app-version); bridge=$(meta desktop-bridge); bridge=${bridge:-1}
+          [ -n "$version" ] || { echo "no app-version"; exit 1; }
+          case "$GITHUB_REF_NAME" in main) ch=latest;; *) ch=test;; esac
+          mkdir out && cp 37-player.html out/index.html && cp help.json out/help.json
+          for f in out/index.html out/help.json; do npx --yes @tauri-apps/cli@2 signer sign "$f"; done
+          ls out/*.sig >/dev/null
+          printf '{"version":"%s","bridge":%s}\n' "$version" "$bridge" > out/page.json
+          if ! gh release view "page-$ch" >/dev/null 2>&1; then
+            gh release create "page-$ch" --prerelease --target "$GITHUB_SHA" \
+              --title "Page for the desktop app ($ch)" \
+              --notes "37 Player's page, signed, for the desktop app to update itself (from $GITHUB_REF_NAME). Not something to download: the app fetches it by itself."
+          fi
+          gh release upload "page-$ch" out/index.html out/index.html.sig out/help.json out/help.json.sig --clobber
+          gh release upload "page-$ch" out/page.json --clobber
+          echo "### page-$ch: $version (bridge $bridge)" >> "$GITHUB_STEP_SUMMARY"
