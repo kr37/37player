@@ -229,13 +229,95 @@ fn roots(app: &tauri::AppHandle) -> tauri::State<'_, Roots> { app.state::<Roots>
 #[tauri::command]
 pub fn fs_roots(app: tauri::AppHandle) -> BTreeMap<String, String> { roots(&app).list() }
 
-// A new library's folder in the app's default place,
-// Music/37 Player Libraries/<name> (" (2)" and so on when that's taken),
-// made and put on the list as `id`. Returns its path.
+// ---- Where the libraries live (2.0, step 4)
+// The libraries' place: the folder new libraries' folders are made in, and
+// where the app looks for them when its list is lost. The person chooses it
+// (the first start of 2.0 asks): on the list as the root "place" (chosen
+// with fs_root_choose, or fs_place_default); until then, the suggestion,
+// Music/37 Player Libraries. A library's folder is the root "lib-<id>".
+pub const MARKER: &str = "37 Player library.json";
+fn default_place(app: &tauri::AppHandle) -> Result<PathBuf, String> {
+    let music = app.path().audio_dir().or_else(|_| app.path().home_dir().map(|h| h.join("Music"))).map_err(|e| e.to_string())?;
+    Ok(music.join("37 Player Libraries"))
+}
+fn place(app: &tauri::AppHandle) -> Result<PathBuf, String> { roots(app).get("place").or_else(|_| default_place(app)) }
+
+// A library's folder says whose it is: (id, name) from its marker file.
+pub fn read_marker(dir: &Path) -> Option<(String, String)> {
+    let v: serde_json::Value = serde_json::from_slice(&fs::read(dir.join(MARKER)).ok()?).ok()?;
+    if v.get("format")?.as_str()? != "37player-library" { return None; }
+    let id = v.get("id")?.as_str()?.to_string();
+    if id.is_empty() || id.len() > 40 || !id.chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-') { return None; }
+    Some((id, v.get("name").and_then(|n| n.as_str()).unwrap_or("").to_string()))
+}
+
+#[derive(serde::Serialize, Debug, PartialEq)]
+pub struct Found { pub id: String, pub name: String, pub path: String }
+
+// The library folders directly inside a folder.
+pub fn find_libraries(base: &Path) -> Vec<Found> {
+    let mut out = vec![];
+    let Ok(rd) = fs::read_dir(base) else { return out };
+    for e in rd.flatten() {
+        let p = e.path();
+        if !p.is_dir() { continue; }
+        if let Some((id, name)) = read_marker(&p) { out.push(Found { id, name, path: p.to_string_lossy().into_owned() }); }
+    }
+    out.sort_by(|a, b| a.path.cmp(&b.path));
+    out
+}
+
+#[derive(serde::Serialize)]
+pub struct Place { path: String, chosen: bool }
+
+#[tauri::command]
+pub fn fs_place(app: tauri::AppHandle) -> Result<Place, String> {
+    let chosen = roots(&app).get("place").is_ok();
+    Ok(Place { path: place(&app)?.to_string_lossy().into_owned(), chosen })
+}
+
+// The person took the suggestion: Music/37 Player Libraries, made.
+#[tauri::command]
+pub fn fs_place_default(app: tauri::AppHandle) -> Result<String, String> {
+    let p = default_place(&app)?;
+    fs::create_dir_all(&p).map_err(|e| e.to_string())?;
+    roots(&app).set("place", p.clone())?;
+    Ok(p.to_string_lossy().into_owned())
+}
+
+// The library folders in the libraries' place, each put on the list as
+// "lib-<id>" unless it's there already and its folder still is (the app's
+// own data folder lost or emptied, a folder moved within the place).
+#[tauri::command]
+pub fn fs_find_libraries(app: tauri::AppHandle) -> Result<Vec<Found>, String> {
+    let found = find_libraries(&place(&app)?);
+    let r = roots(&app);
+    for f in &found {
+        let rid = format!("lib-{}", f.id);
+        let keep = r.get(&rid).map(|p| p.is_dir()).unwrap_or(false);
+        if !keep { r.set(&rid, PathBuf::from(&f.path))?; }
+    }
+    Ok(found)
+}
+
+// Find a library folder…: the person chooses a folder anywhere; if it's a
+// library's, it goes on the list as that library's. None if they cancel.
+#[tauri::command]
+pub async fn fs_root_choose_library(app: tauri::AppHandle, title: String) -> Result<Option<Found>, String> {
+    use tauri_plugin_dialog::DialogExt;
+    let Some(p) = app.dialog().file().set_title(title).blocking_pick_folder() else { return Ok(None) };
+    let path = p.into_path().map_err(|e| e.to_string())?;
+    let Some((id, name)) = read_marker(&path) else { return Err("not a library folder".into()) };
+    roots(&app).set(&format!("lib-{}", id), path.clone())?;
+    Ok(Some(Found { id, name, path: path.to_string_lossy().into_owned() }))
+}
+
+// A new library's folder in the libraries' place (see above),
+// <place>/<name> (" (2)" and so on when that's taken), made and put on the
+// list as `id`. Returns its path.
 #[tauri::command]
 pub fn fs_root_default(app: tauri::AppHandle, id: String, name: String) -> Result<String, String> {
-    let music = app.path().audio_dir().or_else(|_| app.path().home_dir().map(|h| h.join("Music"))).map_err(|e| e.to_string())?;
-    let base = music.join("37 Player Libraries");
+    let base = place(&app)?;
     let name = folder_name(&name);
     let mut dir = base.join(&name);
     let mut n = 2;
@@ -402,6 +484,18 @@ mod tests {
         assert!(read(&d, "escape/secret.txt", 0, None).is_err());
         assert!(write(&d, "escape/new.txt", b"x").is_err());
         assert!(!outside.join("new.txt").exists());
+    }
+    #[test]
+    fn library_folders_are_found_by_their_marker() {
+        let d = tmp("find");
+        write(&d, "Kadampa/37 Player library.json", br#"{"format":"37player-library","id":"abc_1","name":"Kadampa"}"#).unwrap();
+        write(&d, "Main/37 Player library.json", br#"{"format":"37player-library","id":"main"}"#).unwrap();
+        write(&d, "Other/37 Player library.json", br#"{"format":"something-else","id":"x"}"#).unwrap();
+        write(&d, "Bad/37 Player library.json", br#"{"format":"37player-library","id":"../x"}"#).unwrap();
+        write(&d, "Plain/a.mp3", b"x").unwrap();
+        let f = find_libraries(&d);
+        assert_eq!(f.iter().map(|x| (x.id.as_str(), x.name.as_str())).collect::<Vec<_>>(), vec![("abc_1", "Kadampa"), ("main", "")]);
+        assert!(find_libraries(&d.join("nothing")).is_empty());
     }
     #[test]
     fn a_big_file_in_pieces() {
