@@ -360,4 +360,14 @@ fallback, then goes.
 
 ## Still open
 
-- Nothing at the moment. (Edits to tracks used in place: decided, b).)
+- **The identifier and the move (7 Nov 2026, for Gen Rinzin):** the webview's
+  storage is named by the app's identifier, so a 2.0.000 with
+  `com.player37.app` starts with empty browser storage, and the move finds
+  nothing to move (the 1.4 app's libraries stay in `com.player37.spike`'s).
+  Either (a) change it anyway, and bring 1.4's libraries over by .37p or the
+  shared library; (b) keep `com.player37.spike` through 2.0.000, so they move,
+  and change it later (a change then loses only device.json and roots.json:
+  libraries in the default place are found by their markers, others by Find a
+  library folder…; the device's settings would be set again); or (c) the
+  shell copies the old identifier's webview data before the page starts.
+- (Edits to tracks used in place: decided, b).)
