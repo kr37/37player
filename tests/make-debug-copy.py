@@ -14,7 +14,12 @@ f = 'function sharedTransfersOutstanding(){'
 if f in src: src = src.replace(f, f + '\n  if(window.__fakeOut != null) return window.__fakeOut;', 1)
 # STORE=opfs: the test copy keeps its libraries as files (FolderLibraryStore)
 # instead of IndexedDB, so the same tests check the other storage.
-if os.environ.get('STORE'):
+# STORE=desktop: the page runs as the desktop app with bridge 2 (2.0), its
+# libraries in folders through a stand-in for the shell (fake-shell.js).
+if os.environ.get('STORE') == 'desktop':
+    shell = open(os.path.join(here, 'fake-shell.js'), encoding='utf-8').read()
+    src = src.replace('<head>', '<head><script>\n' + shell + '\n</script>', 1)
+elif os.environ.get('STORE'):
     src = src.replace('<head>', '<head><script>window.__p37Store = %r;</script>' % os.environ['STORE'], 1)
 os.makedirs(os.path.join(here, 'www'), exist_ok=True)
 open(os.path.join(here, 'www', '37-player.html'), 'w', encoding='utf-8').write(src)
