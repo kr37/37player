@@ -8,7 +8,11 @@
 // Commands: fs_* (files.rs), p37_shell_info, p37_device_get/put, the page
 // update commands (no updates), p37_quit.
 (function(){
+  if(window.__TAURI_INTERNALS__) return; // put in twice (a test that brings its own, run with STORE=desktop)
   window.__p37Bridge = 2;
+  // Every file read where it lies (a DiskBlob), however small, so the tests
+  // find each place that needs a real Blob (DISK_BLOB_MIN; FILES-DESIGN).
+  if(window.__diskBlobMin == null) window.__diskBlobMin = 0;
   try{ window.__p37Device = JSON.parse(localStorage.getItem('__fakeDevice') || 'null'); }catch(e){ window.__p37Device = null; }
   const top = async ()=> (await navigator.storage.getDirectory()).getDirectoryHandle('fake-shell', {create: true});
   const readRoots = async ()=>{ try{ return JSON.parse(await (await (await (await top()).getFileHandle('roots.json')).getFile()).text()); }catch(e){ return {}; } };
@@ -26,7 +30,7 @@
     return null;
   };
   const fileOf = async (root, path)=>{ const {dir, name} = split(path); return (await (await dirOf(root, dir, false)).getFileHandle(name)).getFile(); };
-  const writeFile = async (root, path, data)=>{ const {dir, name} = split(path); const d = await dirOf(root, dir, true); const w = await (await d.getFileHandle(name, {create: true})).createWritable(); await w.write(data); await w.close(); };
+  const writeFile = async (root, path, data, adding)=>{ const {dir, name} = split(path); const d = await dirOf(root, dir, true); const fh = await d.getFileHandle(name, {create: true}); const w = await fh.createWritable({keepExistingData: !!adding}); if(adding) await w.seek((await fh.getFile()).size); await w.write(data); await w.close(); };
   const folderName = (n)=> (n || '').replace(/[\/\\:*?"<>|]/g, '-').trim() || 'My library';
   window.__fakeShellCalls = [];
   const invoke = async (cmd, args, opts)=>{
@@ -46,7 +50,7 @@
         r[args.id] = p; await writeRoots(r); await dirOf(args.id, '', true); return p;
       }
       case 'fs_root_forget': { const r = await readRoots(); delete r[args.id]; await writeRoots(r); return null; }
-      case 'fs_write': { const root = decodeURIComponent(opts.headers['p37-root']), path = decodeURIComponent(opts.headers['p37-path']); checkRel(path); await writeFile(root, path, args); return null; }
+      case 'fs_write': { const root = decodeURIComponent(opts.headers['p37-root']), path = decodeURIComponent(opts.headers['p37-path']); checkRel(path); await writeFile(root, path, args, opts.headers['p37-append'] === '1'); window.__fakeShellWrites = (window.__fakeShellWrites || 0) + 1; window.__fakeShellBiggestWrite = Math.max(window.__fakeShellBiggestWrite || 0, args.byteLength || args.length || 0); return null; }
       case 'fs_stat': return statOf(args.root, args.path);
       case 'fs_mkdir': await dirOf(args.root, args.path, true); return null;
       case 'fs_list': { const d = await dirOf(args.root, args.path, false), out = []; for await (const [n] of d.entries()){ const st = await statOf(args.root, args.path ? args.path + '/' + n : n); if(st) out.push(st); } return out.sort((a, b)=> a.name < b.name ? -1 : 1); }

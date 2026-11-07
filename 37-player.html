@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="1.4.193">
+<meta name="app-version" content="1.4.194">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -2267,9 +2267,22 @@ async function folderIsEmpty(dir){
   try{ for await (const n of dir.keys()){ if(!/^\./.test(n) && n.toLowerCase() !== "desktop.ini" && n.toLowerCase() !== "thumbs.db") return false; } return true; }
   catch(err){ return false; }
 }
+// Writes data into an open writable. A big file of the desktop app's going
+// into another kind of folder goes piece by piece, never all of it in memory
+// (the desktop app's own folders copy it on disk when the writable closes).
+async function writeBlobInto(w, data, dir){
+  if((isDiskBlob(data) || data instanceof JoinedBlob) && !(dir instanceof DesktopDirHandle)){
+    for(const p of blobParts([data])){
+      if(!isDiskBlob(p)){ await w.write(p); continue; }
+      for(let at = 0; at < p.size; at += DISK_READ_PIECE) await w.write(await p.slice(at, at + DISK_READ_PIECE).arrayBuffer());
+    }
+    return;
+  }
+  await w.write(data);
+}
 async function writeWholeFile(dir, name, data){
   const w = await (await dir.getFileHandle(name, {create: true})).createWritable();
-  try{ await w.write(data); await w.close(); }
+  try{ await writeBlobInto(w, data, dir); await w.close(); }
   catch(err){ try{ await w.abort(); }catch(e){} throw err; }
 }
 class FolderLibraryStore {
@@ -2362,6 +2375,8 @@ class FolderLibraryStore {
       }
       catch(err){ if(err && err.name === "NotFoundError"){ console.warn("A stored file is missing:", v.$blob || v.$path); return null; } throw err; }
       if(v.buf){ const ab = await f.arrayBuffer(); return v.buf === "ArrayBuffer" ? ab : new globalThis[v.buf](ab); }
+      // A big file of the desktop app's stays where it lies, with its name.
+      if(isDiskBlob(f)){ const d = f.slice(0, f.size, v.type || f.type); d.name = v.name != null ? v.name : f.name; d.lastModified = v.lastModified || f.lastModified; return d; }
       if(v.name != null) return new File([f], v.name, {type: v.type || "", lastModified: v.lastModified || f.lastModified});
       return v.type ? f.slice(0, f.size, v.type) : f;
     }
@@ -2386,7 +2401,7 @@ class FolderLibraryStore {
     const written = [];
     const flat = async (v, path)=>{
       const isBuf = v instanceof ArrayBuffer || ArrayBuffer.isView(v);
-      if(v instanceof Blob || isBuf){
+      if(isBlobLike(v) || isBuf){
         const ext = isBuf ? ".bin" : path === "blob" && store === "audio" ? extensionFor(v) : path === "blob" && store === "artwork" ? imageExtensionFor(v) : ".bin";
         let ph;
         if(base && path === "blob" && !isBuf){
@@ -2404,7 +2419,7 @@ class FolderLibraryStore {
           if(isBuf) return {$blob: name, buf: v instanceof ArrayBuffer ? "ArrayBuffer" : v.constructor.name};
           ph = {$blob: name, type: v.type || "", size: v.size};
         }
-        if(typeof File !== "undefined" && v instanceof File){ ph.name = v.name; ph.lastModified = v.lastModified; }
+        if((typeof File !== "undefined" && v instanceof File) || (isDiskBlob(v) && v.name)){ ph.name = v.name; ph.lastModified = v.lastModified; }
         return ph;
       }
       if(Array.isArray(v)){ const out = []; for(let i = 0; i < v.length; i++) out.push(await flat(v[i], path + "-" + i)); return out; }
@@ -2864,25 +2879,125 @@ class DesktopDirHandle {
   async *values(){ for await (const [, h] of this.entries()) yield h; }
   [Symbol.asyncIterator](){ return this.entries(); }
 }
+/* A big file of the desktop app's, read where it lies (2.0, step 3b): what
+   getFile() gives for a file over DISK_BLOB_MIN instead of reading it all
+   into the page (a 1.3 GB WAV). It has a Blob's size, type, name and slice(),
+   and its bytes come from the shell in pieces (fs_read with a range) when
+   they're read; it plays from its address (p37lib://, audioObjectUrl). It
+   isn't a real Blob: anything that needs one (new Blob([…]), a request's
+   body, an object URL) gets an error from it, not "[object Object]", so a
+   place that was missed fails loudly (realBlob() reads it whole there). */
+const DISK_BLOB_MIN = window.__diskBlobMin != null ? window.__diskBlobMin : 32 * 1048576;
+const DISK_READ_PIECE = 8 * 1048576;
+class DiskBlob {
+  constructor(root, path, size, type, name, lastModified, start){ this.p37root = root; this.p37path = path; this.size = size; this.type = type || ""; this.name = name || ""; this.lastModified = lastModified || 0; this.start = start || 0; }
+  slice(a, b, type){
+    const n = this.size;
+    let s = a == null ? 0 : a < 0 ? Math.max(n + a, 0) : Math.min(a, n);
+    let e = b == null ? n : b < 0 ? Math.max(n + b, 0) : Math.min(b, n);
+    if(e < s) e = s;
+    const d = new DiskBlob(this.p37root, this.p37path, e - s, type == null ? "" : type, this.name, this.lastModified, this.start + s);
+    d.whole = this.whole && s === 0 && e === n;
+    return d;
+  }
+  async arrayBuffer(){
+    if(!this.size) return new ArrayBuffer(0);
+    const r = await desktopInvoke("fs_read", {root: this.p37root, path: this.p37path, start: this.start, end: this.start + this.size});
+    return r instanceof ArrayBuffer ? r : (r && r.buffer) ? r.buffer.slice(r.byteOffset, r.byteOffset + r.byteLength) : new Uint8Array(r).buffer;
+  }
+  async text(){ return new TextDecoder().decode(await this.arrayBuffer()); }
+  async bytes(){ return new Uint8Array(await this.arrayBuffer()); }
+  stream(){
+    let at = 0; const self = this;
+    return new ReadableStream({async pull(c){ if(at >= self.size){ c.close(); return; } const n = Math.min(DISK_READ_PIECE, self.size - at); c.enqueue(new Uint8Array(await self.slice(at, at + n).arrayBuffer())); at += n; }});
+  }
+  toString(){ throw new TypeError("A file read where it lies (DiskBlob) used where a real Blob is needed: use realBlob()"); }
+  [Symbol.toPrimitive](){ return this.toString(); }
+}
+function isDiskBlob(b){ return b instanceof DiskBlob; }
+// Bytes put together from pieces, some of them a DiskBlob's: a track cut out
+// of a big recording (the splitter) is a header, a stretch of the recording
+// and a tail. Only for writing into a library (writeBlobInto, the desktop
+// app's writable), which then reads the file back; never played or sent.
+class JoinedBlob {
+  constructor(parts, type){
+    this.parts = parts.filter(p=> p != null).map(p=> isDiskBlob(p) || p instanceof Blob ? p : new Blob([p]));
+    this.size = this.parts.reduce((n, p)=> n + p.size, 0); this.type = type || "";
+  }
+  async arrayBuffer(){ return new Blob(await Promise.all(this.parts.map(p=> isDiskBlob(p) ? p.arrayBuffer() : p))).arrayBuffer(); }
+  toString(){ throw new TypeError("Joined bytes (JoinedBlob) used where a real Blob is needed"); }
+  [Symbol.toPrimitive](){ return this.toString(); }
+}
+// The converter's input is a real File, handed to its worker: a file read
+// where it lies is read whole for it (its memory, as before 2.0).
+async function converterFile(blob, name){ return new File([await realBlob(blob)], name); }
+// What a library can be given as a file's bytes: a Blob, or the desktop
+// app's stand-ins for one.
+function isBlobLike(v){ return v instanceof Blob || v instanceof DiskBlob || v instanceof JoinedBlob; }
+// The pieces to write, a JoinedBlob opened up.
+function blobParts(list){ const out = []; for(const p of list){ if(p instanceof JoinedBlob) out.push(...p.parts); else out.push(p); } return out; }
+// A real Blob for something that may be a DiskBlob: read whole (memory!).
+async function realBlob(b, type){ return isDiskBlob(b) ? new Blob([await b.arrayBuffer()], {type: type || b.type}) : b; }
+const DISK_TYPES = {mp3: "audio/mpeg", m4a: "audio/mp4", mp4: "audio/mp4", aac: "audio/aac", wav: "audio/wav", flac: "audio/flac", ogg: "audio/ogg", oga: "audio/ogg", opus: "audio/ogg", webm: "audio/webm", aif: "audio/aiff", aiff: "audio/aiff", wma: "audio/x-ms-wma", jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png", gif: "image/gif", webp: "image/webp"};
+// A playable address for a track's audio: a DiskBlob's own (the shell
+// serves it with Range, so the player streams and seeks from disk), else an
+// object URL of the blob, typed.
+async function audioObjectUrl(blob, filenameHint){
+  if(isDiskBlob(blob) && !blob.whole) blob = await realBlob(blob); // a part of a file: its own bytes
+  if(isDiskBlob(blob)){
+    if(window.__p37FileUrl) return window.__p37FileUrl(blob.p37root, blob.p37path); // the tests' stand-in shell
+    return window.__TAURI__.core.convertFileSrc(blob.p37root + "/" + blob.p37path, "p37lib");
+  }
+  return URL.createObjectURL(await typedAudioBlob(blob, filenameHint));
+}
 class DesktopFileHandle {
   constructor(root, path){ this.root = root; this.path = path; this.kind = "file"; this.name = path.split("/").pop(); }
   async getFile(){
     const st = await desktopInvoke("fs_stat", {root: this.root, path: this.path});
     if(!st || st.kind !== "file") throw desktopNotFound(this.path);
+    if(st.size > DISK_BLOB_MIN){ const d = new DiskBlob(this.root, this.path, st.size, DISK_TYPES[(this.name.split(".").pop() || "").toLowerCase()] || "", this.name, Math.round(st.modified) || Date.now()); d.whole = true; return d; };
     const bytes = await desktopInvoke("fs_read", {root: this.root, path: this.path});
     return new File([bytes], this.name, {lastModified: Math.round(st.modified) || Date.now()});
   }
-  // Collected in memory, and written whole on close (the shell writes it
-  // aside and swaps it in, as createWritable does).
+  // Collected, and written on close (the shell writes it aside and swaps it
+  // in, as createWritable does). A whole DiskBlob is copied by the shell,
+  // file to file, never through the page; anything big goes piece by piece
+  // into "<name>.p37part", renamed onto the file at the end, so the page
+  // never holds all of it.
   async createWritable(){
-    const parts = [], fh = this;
+    const collected = [], fh = this;
     return {
-      async write(data){ parts.push(data && data.type === "write" ? data.data : data); },
+      async write(data){ collected.push(data && data.type === "write" ? data.data : data); },
       async close(){
-        const bytes = new Uint8Array(await new Blob(parts).arrayBuffer());
-        await desktopInvoke("fs_write", bytes, {headers: {"p37-root": encodeURIComponent(fh.root), "p37-path": encodeURIComponent(fh.path)}});
+        const parts = blobParts(collected).map(x=> isBlobLike(x) ? x : new Blob([x]));
+        if(parts.length === 1 && isDiskBlob(parts[0]) && parts[0].start === 0){
+          const d = parts[0], st = await desktopInvoke("fs_stat", {root: d.p37root, path: d.p37path});
+          if(st && st.size === d.size){
+            if(d.p37root === fh.root && d.p37path === fh.path) return;
+            await desktopInvoke("fs_copy", {root: d.p37root, from: d.p37path, toRoot: fh.root, to: fh.path, replace: true});
+            return;
+          }
+        }
+        const total = parts.reduce((n, p)=> n + p.size, 0);
+        const put = (path, bytes, adding)=> desktopInvoke("fs_write", bytes, {headers: Object.assign({"p37-root": encodeURIComponent(fh.root), "p37-path": encodeURIComponent(path)}, adding ? {"p37-append": "1"} : {})});
+        if(total <= DISK_READ_PIECE && !parts.some(isDiskBlob)){
+          await put(fh.path, new Uint8Array(await new Blob(parts).arrayBuffer()));
+          return;
+        }
+        const aside = fh.path + ".p37part";
+        let first = true;
+        try{
+          for(const p of parts){
+            for(let at = 0; at < p.size; at += DISK_READ_PIECE){
+              await put(aside, new Uint8Array(await p.slice(at, Math.min(p.size, at + DISK_READ_PIECE)).arrayBuffer()), !first);
+              first = false;
+            }
+          }
+          if(first) await put(aside, new Uint8Array(0));
+          await desktopInvoke("fs_rename", {root: fh.root, from: aside, to: fh.path, replace: true});
+        }catch(err){ try{ await desktopInvoke("fs_remove", {root: fh.root, path: aside}); }catch(e){} throw err; }
       },
-      async abort(){ parts.length = 0; },
+      async abort(){ collected.length = 0; },
     };
   }
   async move(dir, name){
@@ -24240,6 +24355,7 @@ async function snapshotLegacyTagTracks(){
 // file it was made from — for Standardize's re-encoded files.
 async function blobWithCurrentTags(track, blob, opts){
   opts = opts || {};
+  blob = await realBlob(blob); // (the desktop app's big files: read whole to write the details in)
   const fmt = await sniffAudioFormat(blob, track.filename);
   if(!TAG_WRITABLE_KINDS.has(fmt.kind)) return {blob, fmt, written: false};
   let typed = blob.type ? blob : new Blob([blob], {type: fmt.mime});
@@ -24407,7 +24523,8 @@ async function rewriteFileTagsIfPossible(libraryId){
     // exports write the current ones in; other players reading the file
     // itself see its old ones. (In a folder, rewriting in place, piece by
     // piece, can come later.)
-    if(IS_WEBKIT && blob.size > BIG_REWRITE_BYTES && typeof IdbLibraryStore !== "undefined" && libStore instanceof IdbLibraryStore){
+    // So also for a big file of the desktop app's, read where it lies.
+    if(((IS_WEBKIT && typeof IdbLibraryStore !== "undefined" && libStore instanceof IdbLibraryStore) || isDiskBlob(blob)) && blob.size > BIG_REWRITE_BYTES){
       if(!track.filename && blob.name) track.filename = blob.name;
       return false;
     }
@@ -25237,7 +25354,7 @@ async function converterConvert(blob, sourceName, onFraction, target){
   const kind = FORMAT_KINDS[target.format];
   await converterStart();
   const ext = (String(sourceName || "").match(/\.[a-z0-9]{1,5}$/i) || [""])[0].toLowerCase();
-  const file = new File([blob], "source" + ext);
+  const file = await converterFile(blob, "source" + ext);
   const probe = await converterAsk({type: "run", file, args: ["-hide_banner", "-nostdin", "-i", "/in/" + file.name]});
   const info = converterReadInput(probe.log);
   if(!info.hasAudio) throw converterNoAudioError(probe.log, {page: await blobHeadHex(blob), worker: probe.head, size: blob.size});
@@ -25576,7 +25693,10 @@ async function applyConvertedAudio(id, blob, original, kind){
   // of the run: see showKeepOriginals.
   if(original && !tr.original){
     const name = tr.filename || (tr.name || "track");
-    await idbPut("audio", {id: ORIGINAL_KEY_PREFIX + id, blob: new File([original], name, {type: original.type || ""})});
+    let kept;
+    if(isDiskBlob(original)){ kept = original.slice(0, original.size, original.type); kept.name = name; } // copied on disk
+    else kept = new File([original], name, {type: original.type || ""});
+    await idbPut("audio", {id: ORIGINAL_KEY_PREFIX + id, blob: kept});
     // What it was, for comparing in Show → Kept originals (1.4.115).
     tr.original = {filename: name, size: original.size, detailed: 1};
     if(tr.duration > 0) tr.original.duration = tr.duration;
@@ -25751,6 +25871,14 @@ function slicePeaks(peaks, from, to){
 async function storeAudioFromRange(id, header, src, from, to, type, tail){
   tail = tail || new Uint8Array(0);
   const want = header.length + (to - from) + tail.length;
+  // From a big recording read where it lies (the desktop app): the library
+  // writes it on disk from the pieces, and it's read back the same way.
+  if(isDiskBlob(src)){
+    await idbPut("audio", {id, blob: new JoinedBlob([header, src.slice(from, to), tail], type)});
+    const back = await idbGet("audio", id);
+    if(!back || !back.blob || back.blob.size !== want) throw new Error("The new track wasn't saved whole");
+    return back.blob;
+  }
   if(!IS_WEBKIT){
     const blob = new Blob([header, src.slice(from, to), tail], {type});
     await idbPut("audio", {id, blob});
@@ -26004,7 +26132,7 @@ async function splitViaConverter(sourceTrack, blob, fmt, segs, ids, mode, step, 
   const run = async ()=>{
     await converterStart();
     const ext = fileExt(sourceTrack.filename) || (fmt.ext || ".bin").replace(/^\./, "");
-    const file = new File([blob], "source." + ext);
+    const file = await converterFile(blob, "source." + ext);
     const probe = await converterAsk({type: "run", file, args: ["-hide_banner", "-nostdin", "-i", "/in/" + file.name]});
     const info = converterReadInput(probe.log);
     if(!info.hasAudio) throw converterNoAudioError(probe.log);
@@ -26462,7 +26590,7 @@ async function openSplitter(track, opts){
   page.querySelector("#spTitle").textContent = t("splitPageTitle", {name: track.name});
   page.querySelector("#spSub").textContent = [track.artist, track.album, fmtTimeLong(dur)].filter(Boolean).join(" · ");
   const a = page.querySelector("#spAudio");
-  spl.url = URL.createObjectURL(await typedAudioBlob(rec.blob, trackFileName(track.id)));
+  spl.url = await audioObjectUrl(rec.blob, trackFileName(track.id));
   a.src = spl.url;
   a.preservesPitch = true; a.mozPreservesPitch = true; a.webkitPreservesPitch = true;
   applyLevel(a, track.id, true);
@@ -28401,9 +28529,8 @@ function getTrackWaveformBg(track){
 // just the duration, rather than accepting a hardcoded, wrong zero. A short
 // timeout guards against the rare case where neither event ever fires.
 async function getDurationViaAudioElement(fileOrBlob){
-  const typed = await typedAudioBlob(fileOrBlob, fileOrBlob && fileOrBlob.name);
+  const url = await audioObjectUrl(fileOrBlob, fileOrBlob && fileOrBlob.name);
   return new Promise((resolve)=>{
-    const url = URL.createObjectURL(typed);
     const tempAudio = document.createElement("audio");
     tempAudio.preload = "metadata";
     let settled = false;
@@ -29193,7 +29320,7 @@ async function analyzeWithConverter(blob){
   const run = async ()=>{
     await converterStart();
     const fmt = await sniffAudioFormat(blob).catch(()=> ({}));
-    const file = new File([blob], "source" + (fmt.ext || ""));
+    const file = await converterFile(blob, "source" + (fmt.ext || ""));
     const probe = await converterAsk({type: "run", file, args: ["-hide_banner", "-nostdin", "-i", "/in/" + file.name]});
     const info = converterReadInput(probe.log);
     if(!info.hasAudio || !(info.duration > 0)) throw new Error("the converter found no sound with a length");
@@ -31536,7 +31663,7 @@ async function playLibraryPreview(trackId, seekRatio){
   try{ rec = await idbGet("audio", trackId); if(rec && rec.blob && rec.blob.size) await rec.blob.slice(0, 1).arrayBuffer(); else rec = null; }catch(err){ rec = null; }
   if(!rec){ showAudioMissing(trackId); return; }
   if(libPreviewUrl){ URL.revokeObjectURL(libPreviewUrl); libPreviewUrl = null; }
-  libPreviewUrl = URL.createObjectURL(await typedAudioBlob(rec.blob, trackFileName(trackId)));
+  libPreviewUrl = await audioObjectUrl(rec.blob, trackFileName(trackId));
   libPreviewTrackId = trackId;
   const audioEl = document.getElementById("libPreviewAudio");
   audioEl.src = libPreviewUrl;
@@ -32380,7 +32507,7 @@ async function ensureEditorPreviewSource(){
 // another device gave "not supported" on the iPad. Wrapping a blob in a blob
 // copies nothing.
 async function typedAudioBlob(blob, filenameHint){
-  if(!blob || (blob.type && blob.type !== "application/octet-stream")) return blob;
+  if(!blob || isDiskBlob(blob) || (blob.type && blob.type !== "application/octet-stream")) return blob;
   try{
     const f = await sniffAudioFormat(blob, filenameHint);
     if(f.mime && f.mime !== "application/octet-stream") return new Blob([blob], {type: f.mime});
@@ -32394,7 +32521,7 @@ async function getAudioUrl(libraryId){
   if(objectUrlCache[libraryId]) return objectUrlCache[libraryId];
   const rec = await idbGet("audio", libraryId);
   if(!rec) return null;
-  const url = URL.createObjectURL(await typedAudioBlob(rec.blob, trackFileName(libraryId)));
+  const url = await audioObjectUrl(rec.blob, trackFileName(libraryId));
   objectUrlCache[libraryId] = url;
   return url;
 }
@@ -32407,7 +32534,7 @@ async function getPlayableAudioUrl(libraryId){
     const rec = await idbGet("audio", libraryId);
     if(!rec || !rec.blob || !rec.blob.size) return null;
     await rec.blob.slice(0, 1).arrayBuffer();
-    const url = URL.createObjectURL(await typedAudioBlob(rec.blob, trackFileName(libraryId)));
+    const url = await audioObjectUrl(rec.blob, trackFileName(libraryId));
     objectUrlCache[libraryId] = url;
     return url;
   }catch(err){
@@ -34749,13 +34876,13 @@ async function renderOrphanList(ids){
     row.querySelector('[data-act="add"]').textContent = t("orphanAddBtnOne");
     const del = row.querySelector('[data-act="del"]'); del.textContent = t("orphanDelete");
     const play = row.querySelector('[data-act="play"]');
-    play.addEventListener("click", ()=>{
+    play.addEventListener("click", async ()=>{
       if(!orphanAudioEl){ orphanAudioEl = new Audio(); orphanAudioEl.addEventListener("ended", ()=> document.querySelectorAll('.orphan-row [data-act="play"]').forEach(b=> b.textContent = "▶")); }
       const same = orphanAudioEl._id === id && !orphanAudioEl.paused;
       orphanAudioEl.pause(); document.querySelectorAll('.orphan-row [data-act="play"]').forEach(b=> b.textContent = "▶");
       if(same) return;
       if(orphanAudioEl._url) URL.revokeObjectURL(orphanAudioEl._url);
-      orphanAudioEl._url = URL.createObjectURL(rec.blob); orphanAudioEl._id = id; orphanAudioEl.src = orphanAudioEl._url;
+      orphanAudioEl._url = await audioObjectUrl(rec.blob); orphanAudioEl._id = id; orphanAudioEl.src = orphanAudioEl._url;
       orphanAudioEl.play().then(()=> play.textContent = "⏸").catch(()=>{});
     });
     row.querySelector('[data-act="add"]').addEventListener("click", async ()=>{ if(orphanAudioEl) orphanAudioEl.pause(); await rebuildFromStoredAudio([id]); renderSettingsSection(); });
@@ -35779,7 +35906,7 @@ async function dupPlay(id){
   const rec = await idbGet("audio", id);
   if(!rec || !rec.blob){ showAudioMissing(id); return; }
   if(a.dataset.url) URL.revokeObjectURL(a.dataset.url);
-  a.dataset.url = URL.createObjectURL(await typedAudioBlob(rec.blob, trackFileName(id)));
+  a.dataset.url = await audioObjectUrl(rec.blob, trackFileName(id));
   a.dataset.id = id;
   a.src = a.dataset.url;
   applyLevel(a, id, true);
@@ -36441,8 +36568,10 @@ async function writeFileTo(dir, name, blob){
   const ms = 120*1000 + Math.ceil((blob.size || 0) / 200000) * 1000;
   const fh = await withFolderTimeout(dir.getFileHandle(name, {create:true}), FOLDER_OP_MS, name);
   const w = await withFolderTimeout(fh.createWritable(), FOLDER_OP_MS, name);
-  await withFolderTimeout(w.write(blob), ms, name);
-  await withFolderTimeout(w.close(), ms, name);
+  try{
+    await withFolderTimeout(writeBlobInto(w, blob, dir), ms, name);
+    await withFolderTimeout(w.close(), ms, name);
+  }catch(err){ try{ await w.abort(); }catch(e){} throw err; }
 }
 // The file a backup folder already holds for a track: the name this window
 // last wrote, else any "<id>" or "<id>.<ext>" (IDs never contain a dot).
@@ -37212,7 +37341,7 @@ async function rebuildFromStoredAudio(ids){
       if(!rec || !rec.blob || !rec.blob.size){ failed++; continue; }
       let fmt = {}; try{ fmt = await sniffAudioFormat(rec.blob, ""); }catch(err){}
       const ext = SNIFF_EXT[fmt.kind] || "mp3";
-      const file = new File([rec.blob], "recovered-" + id.slice(0, 8) + "." + ext, {type: rec.blob.type || ""});
+      const file = new File([await realBlob(rec.blob)], "recovered-" + id.slice(0, 8) + "." + ext, {type: rec.blob.type || ""});
       const {duration, peaks, sampleRate, channels, loudness} = await analyzeAudio(file);
       let tags = null; try{ tags = await parseAudioTags(file); }catch(err){}
       let hasArtwork = false;
@@ -39212,7 +39341,7 @@ async function buildZipBlob(entries, onProgress){
   for(let i=0;i<entries.length;i++){
     const entry = entries[i];
     const nameBytes = new TextEncoder().encode(entry.name);
-    const sourceBlob = entry.blob ? entry.blob : new Blob([entry.data instanceof Uint8Array ? entry.data : new Uint8Array(entry.data)]);
+    const sourceBlob = entry.blob ? await realBlob(entry.blob) : new Blob([entry.data instanceof Uint8Array ? entry.data : new Uint8Array(entry.data)]);
     const size = sourceBlob.size;
     // Materialized only long enough to checksum — this temporary copy is
     // released once crc32 returns; the zip's actual content below uses
@@ -39587,7 +39716,7 @@ async function saveUnzipped(entries, opts, cancelled){
   if(opts.saveAs === "file"){
     const e = entries[0];
     if(!e) return;
-    const blob = e.blob || new Blob([e.data]);
+    const blob = e.blob ? await realBlob(e.blob) : new Blob([e.data]);
     if((await blobReadableBytes(blob)) !== blob.size){ zipSkippedEarly.push(base(e.name)); return; }
     const url = URL.createObjectURL(blob), a = document.createElement("a");
     a.href = url; a.download = base(e.name); a.click();
@@ -39599,7 +39728,7 @@ async function saveUnzipped(entries, opts, cancelled){
   let done = 0;
   for(const e of entries){
     if(cancelled()) break;
-    const blob = e.blob || new Blob([e.data]);
+    const blob = e.blob ? await realBlob(e.blob) : new Blob([e.data]);
     if((await blobReadableBytes(blob)) !== blob.size){ zipSkippedEarly.push(base(e.name)); continue; }
     let name = base(e.name);
     const stem = name.replace(/\.[^.]+$/, ""), ext = (name.match(/\.[^.]+$/) || [""])[0];
@@ -41277,6 +41406,9 @@ function sharedUrl(cfg, params){
   return cfg.url + (cfg.url.includes("?") ? "&" : "?") + q;
 }
 async function sharedFetch(cfg, params, init){
+  // A file of the desktop app's read where it lies goes as real bytes (whole
+  // files are sent only below 48 MB; bigger ones go in 16 MB pieces).
+  if(init && isDiskBlob(init.body)) init = Object.assign({}, init, {body: await realBlob(init.body)});
   if(cfg.kind === "gdrive") return driveFetch(cfg, params, init || {});
   init = init || {};
   // URL-encoded: a passphrase may use any language's letters, and headers carry only plain ASCII.
@@ -41369,6 +41501,7 @@ async function driveAccessToken(cfg, force){
 // A Drive API call with this library's token; refreshed once on 401.
 async function driveCall(cfg, path, init){
   init = Object.assign({}, init || {});
+  if(isDiskBlob(init.body)) init.body = await realBlob(init.body);
   for(let attempt = 0; attempt < 2; attempt++){
     const token = await driveAccessToken(cfg, attempt > 0);
     init.headers = Object.assign({}, init.headers || {}, {Authorization: "Bearer " + token});

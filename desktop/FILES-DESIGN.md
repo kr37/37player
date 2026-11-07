@@ -27,7 +27,7 @@ Rust:
 | `getDirectoryHandle(name, {create})` | `fs_dir(path, create)` |
 | `getFileHandle(name, {create})`, `getFile()` | `fs_stat(path)`, and reading (below) |
 | `entries()` | `fs_list(path)` |
-| `createWritable()`, `write()`, `close()` | `fs_write(path, bytes)`: to a temporary file, then renamed over the old one, so a file is never half written |
+| `createWritable()`, `write()`, `close()` | `fs_write(path, bytes)`: to a temporary file, then renamed over the old one, so a file is never half written. Over 8 MB the page sends pieces to `<name>.p37part` (`fs_write` with the header `p37-append: 1`) and renames that onto the file (`fs_rename`); a whole file read where it lies is copied (`fs_copy`) |
 | `removeEntry(name, {recursive})` | `fs_remove(path)` |
 
 Plus a sixth, `fs_rename(root, from, to)`, for readable names (below).
