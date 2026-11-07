@@ -1,7 +1,7 @@
 <?php
 /*
  * 37 Player — shared library sync server.
- * Version 1.4.197 (the 37 Player version this file was last changed for;
+ * Version 1.4.198 (the 37 Player version this file was last changed for;
  * keep it the same as SYNC_VERSION below).
  *
  * One file, plain PHP (7.4+), no database. It keeps each shared library in
@@ -56,7 +56,8 @@
  *                                   make a library; prints its join code (a
  *                                   passphrase is generated if none is given)
  *   php sync.php newcode <library> ["passphrase"]    replace its join code (old one stops working)
- *   php sync.php list                                list libraries
+ *   php sync.php list                                list libraries: newest version,
+ *                                   the space it needs, all the space taken
  *   php sync.php cleanup [library] [days] [--versions N] [--dry-run]
  *                                   prune old versions and the files no kept
  *                                   version uses: every library, or one; keeps
@@ -80,7 +81,7 @@ const KINDS = ['audio', 'artwork', 'peaks'];
 // The 37 Player version this file was last changed for (it doesn't change
 // with every release of the app, only when this file does). Shown in the
 // app's Settings → Shared library, and by `php sync.php version`.
-const SYNC_VERSION = '1.4.197';
+const SYNC_VERSION = '1.4.198';
 
 if (PHP_SAPI === 'cli') { exit(cli($argv)); }
 
@@ -381,11 +382,16 @@ function cli($argv) {
         return 0;
     }
     if ($cmd === 'list') {
+        // The space the newest version needs (its record and every file it
+        // uses), and all the library takes (older versions, files kept for
+        // them, uploads not yet saved): the difference is what cleanup can free.
+        echo str_pad('library', 16) . str_pad('version', 9) . str_pad('newest', 11) . str_pad('all', 11) . "name\n";
         foreach (scandir(DATA_DIR) ?: [] as $lib) {
-            $metaF = DATA_DIR . "/$lib/meta.json";
-            if ($lib[0] === '.' || !is_file($metaF)) continue;
-            $meta = json_decode(file_get_contents($metaF), true);
-            echo str_pad($lib, 16) . str_pad('v' . latest(DATA_DIR . "/$lib"), 8) . ($meta['name'] ?? '') . "\n";
+            $dir = DATA_DIR . "/$lib";
+            if ($lib[0] === '.' || !is_file("$dir/meta.json")) continue;
+            $meta = json_decode(file_get_contents("$dir/meta.json"), true);
+            $v = latest($dir);
+            echo str_pad($lib, 16) . str_pad('v' . $v, 9) . str_pad(human_bytes(newest_bytes($dir, $v)), 11) . str_pad(human_bytes(dir_bytes($dir)), 11) . ($meta['name'] ?? '') . "\n";
         }
         return 0;
     }
@@ -416,6 +422,30 @@ function cli($argv) {
     fwrite(STDERR, $usageMsg);
     return 1;
 }
+// The files one version uses, by kind: [kind => [name => 1]].
+function files_used($dir, $v) {
+    $used = ['audio' => [], 'artwork' => [], 'peaks' => []];
+    $f = state_file($dir, $v);
+    if (!$v || !is_file($f)) return $used;
+    $doc = json_decode(gzdecode(file_get_contents($f)), true);
+    foreach (($doc['tracks'] ?? []) as $t) {
+        $a = $t['id'] . '.' . ($t['audioRev'] ?? '0');
+        $used['audio'][$a] = 1; $used['peaks'][$a] = 1;
+        if (!empty($t['hasArtwork'])) $used['artwork'][$t['id'] . '.' . ($t['artRev'] ?? '0')] = 1;
+    }
+    return $used;
+}
+function newest_bytes($dir, $v) {
+    if (!$v || !is_file(state_file($dir, $v))) return 0;
+    $n = filesize(state_file($dir, $v));
+    foreach (files_used($dir, $v) as $k => $names) foreach ($names as $name => $_) if (is_file("$dir/$k/$name")) $n += filesize("$dir/$k/$name");
+    return $n;
+}
+function dir_bytes($dir) {
+    $n = 0;
+    foreach (new RecursiveIteratorIterator(new RecursiveDirectoryIterator($dir, FilesystemIterator::SKIP_DOTS)) as $f) if ($f->isFile()) $n += $f->getSize();
+    return $n;
+}
 function get_current_user_name() { return function_exists('posix_getpwuid') ? (posix_getpwuid(posix_geteuid())['name'] ?? '?') : get_current_user(); }
 function human_bytes($n) { foreach (['B', 'KB', 'MB', 'GB'] as $u) { if ($n < 1024 || $u === 'GB') return round($n, $u === 'B' ? 0 : 1) . " $u"; $n /= 1024; } }
 // Keeps every version from the last $days days and the newest $keep; then
@@ -435,14 +465,7 @@ function cleanup_library($dir, $days, $keep = KEEP_VERSIONS, $dry = false) {
         if (!$dry) { unlink($f); if (is_file(info_file($dir, $v))) unlink(info_file($dir, $v)); }
     }
     $used = ['audio' => [], 'artwork' => [], 'peaks' => []];
-    foreach ($kept as $v) {
-        $doc = json_decode(gzdecode(file_get_contents(state_file($dir, $v))), true);
-        foreach (($doc['tracks'] ?? []) as $t) {
-            $a = $t['id'] . '.' . ($t['audioRev'] ?? '0');
-            $used['audio'][$a] = 1; $used['peaks'][$a] = 1;
-            if (!empty($t['hasArtwork'])) $used['artwork'][$t['id'] . '.' . ($t['artRev'] ?? '0')] = 1;
-        }
-    }
+    foreach ($kept as $v) foreach (files_used($dir, $v) as $k => $names) $used[$k] += $names;
     $removed = 0; $big = [];
     foreach (KINDS as $k) foreach ((is_dir("$dir/$k") ? scandir("$dir/$k") : []) as $n) {
         if ($n[0] === '.') continue;
