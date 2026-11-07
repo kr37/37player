@@ -251,6 +251,50 @@ pub fn fs_root_info(app: tauri::AppHandle, id: String) -> Result<RootInfo, Strin
     Ok(RootInfo { present: p.is_dir(), other_drive: other_drive(&p), path: p.to_string_lossy().into_owned() })
 }
 
+// Opens one of the folders on the list in Finder, Explorer or the like
+// (Settings → Library → Library folder → Show).
+#[tauri::command]
+pub fn fs_root_show(app: tauri::AppHandle, id: String) -> Result<(), String> {
+    let p = roots(&app).get(&id)?;
+    if !p.is_dir() { return Err("the folder isn't there".into()); }
+    #[cfg(target_os = "macos")]
+    let r = std::process::Command::new("open").arg(&p).spawn();
+    #[cfg(windows)]
+    let r = std::process::Command::new("explorer").arg(&p).spawn();
+    #[cfg(all(unix, not(target_os = "macos")))]
+    let r = std::process::Command::new("xdg-open").arg(&p).spawn();
+    r.map(|_| ()).map_err(|e| e.to_string())
+}
+
+// ---- A library's folder follows its name (Gen Rinzin, 7 Nov 2026): renamed
+// within the folder it's in, at the app's start before the library opens
+// (Windows won't rename a folder whose files are in use). " (2)" and so on
+// when the name is taken; nothing to do when the folder already has it.
+pub fn renamed_path(cur: &Path, name: &str) -> Option<PathBuf> {
+    let want = folder_name(name);
+    let base = cur.file_name()?.to_string_lossy().into_owned();
+    let bare = match base.rfind(" (") { Some(i) if base.ends_with(')') && base[i + 2..base.len() - 1].chars().all(|c| c.is_ascii_digit()) => base[..i].to_string(), _ => base.clone() };
+    if bare == want { return None; }
+    let parent = cur.parent()?;
+    // Only the capitals differ: the same name on Windows and Mac folders.
+    if base.to_lowercase() == want.to_lowercase() { return Some(parent.join(&want)); }
+    let mut p = parent.join(&want);
+    let mut n = 2;
+    while p.exists() { p = parent.join(format!("{} ({})", want, n)); n += 1; }
+    Some(p)
+}
+
+#[tauri::command]
+pub fn fs_root_rename(app: tauri::AppHandle, id: String, name: String) -> Result<String, String> {
+    if !id.starts_with("lib-") { return Err("only a library's folder".into()); }
+    let r = roots(&app);
+    let cur = r.get(&id)?;
+    let Some(to) = renamed_path(&cur, &name) else { return Ok(cur.to_string_lossy().into_owned()) };
+    fs::rename(&cur, &to).map_err(|e| e.to_string())?;
+    r.set(&id, to.clone())?;
+    Ok(to.to_string_lossy().into_owned())
+}
+
 // ---- Where the libraries live (2.0, step 4)
 // The libraries' place: the folder new libraries' folders are made in, and
 // where the app looks for them when its list is lost. The person chooses it
@@ -506,6 +550,18 @@ mod tests {
         assert!(read(&d, "escape/secret.txt", 0, None).is_err());
         assert!(write(&d, "escape/new.txt", b"x").is_err());
         assert!(!outside.join("new.txt").exists());
+    }
+    #[test]
+    fn a_folder_follows_its_library_s_name() {
+        let d = tmp("rename");
+        fs::create_dir_all(d.join("My library")).unwrap();
+        fs::create_dir_all(d.join("Prayers")).unwrap();
+        assert_eq!(renamed_path(&d.join("My library"), "My library"), None);
+        assert_eq!(renamed_path(&d.join("My library (2)"), "My library"), None);
+        assert_eq!(renamed_path(&d.join("My library"), "Teachings"), Some(d.join("Teachings")));
+        assert_eq!(renamed_path(&d.join("My library"), "Prayers"), Some(d.join("Prayers (2)")));
+        assert_eq!(renamed_path(&d.join("My library"), "My Library"), Some(d.join("My Library")));
+        assert_eq!(renamed_path(&d.join("My library"), "Rinzin's: 2.0"), Some(d.join("Rinzin's- 2.0")));
     }
     #[test]
     fn another_drive() {
