@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="1.4.200">
+<meta name="app-version" content="2.0.000">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -40060,6 +40060,8 @@ async function buildMusicEntries(usedIds, onProgress, opts){
     const id = idList[i];
     const track = findLibraryTrack(id); if(!track) continue;
     let rec = await idbGet("audio", id); if(!rec) continue;
+    // Used in place on a drive that isn't connected: left out, and named.
+    if(!rec.blob){ zipSkippedEarly.push(track.name || track.filename || id); continue; }
     // A converted track whose original was kept exports the original.
     if(track.original){ try{ const o = await idbGet("audio", ORIGINAL_KEY_PREFIX + id); if(o && o.blob) rec = o; }catch(err){} }
     // Current name/artist/album/track number/artwork written into the

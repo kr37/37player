@@ -13,7 +13,7 @@
 //   node diskblob.js
 const puppeteer = require('puppeteer-core'); const sleep = ms=>new Promise(r=>setTimeout(r,ms));
 const fs = require('fs'), path = require('path');
-const APP = 'http://localhost:8861/37-player.html';
+const APP = process.env.APP || 'http://localhost:8861/37-player.html';
 const SHELL = fs.readFileSync(path.join(__dirname, 'fake-shell.js'), 'utf8');
 let fails = 0; const ok=(c,m)=>{ console.log((c?'ok   ':'FAIL ')+m); if(!c) fails++; };
 const clickText = (p, sel, src) => p.evaluate((sel, src)=>{ const re=new RegExp(src); const el=[...document.querySelectorAll(sel)].find(e=>e.offsetParent!==null && re.test(e.textContent.trim())); if(el){ el.click(); return true; } return false; }, sel, src);
