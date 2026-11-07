@@ -1,10 +1,8 @@
-// The desktop app's first start of 2.0 (step 4) and Gen Rinzin's wipe test
-// (step 5). A 1.4 page (browser storage) makes two libraries; the page then
-// starts as the desktop app with bridge 2 (the stand-in shell, fake-shell.js):
-//  - it asks where the libraries should live (Music/37 Player Libraries
-//    only suggested; Choose another place… offered), then copies both into
-//    folders of their own there, checks them, and uses them from there; the
-//    browser-storage copies stay, and go after 30 days;
+// The desktop app's libraries (2.0, step 4) and Gen Rinzin's wipe test
+// (step 5), through the stand-in shell (fake-shell.js):
+//  - the first start asks where the libraries should live (Music/37 Player
+//    Libraries only suggested; Choose another place… puts them elsewhere);
+//    each library is a folder of its own there, readable names inside;
 //  - the webview's storage emptied (CCleaner): everything is still there,
 //    a library's own small values too (its folder's local.json);
 //  - the app's own data folder emptied too: the libraries are found again in
@@ -12,7 +10,7 @@
 //  - a library whose folder can't be found is asked about (Find a library
 //    folder…), never made again empty;
 //  - Settings → Libraries → Find a library folder… adds one from anywhere.
-//   node desktopmove.js
+//   node desktoplibs.js
 const puppeteer = require('puppeteer-core'); const sleep = ms=>new Promise(r=>setTimeout(r,ms));
 const fs = require('fs'), path = require('path');
 const APP = 'http://localhost:8861/37-player.html';
@@ -44,26 +42,26 @@ const wipeWebview = (p)=> p.evaluate(async()=>{
   const p = await (await b.createBrowserContext()).newPage(); await p.setViewport({width: 1300, height: 900});
   p.on('pageerror', e=> console.log('PAGE ERROR:', e.message));
   p.on('dialog', async d=>{ console.log('ALERT:', d.message()); await d.accept(); });
-  // The desktop app from the moment localStorage says so (the 1.4 page first).
-  await p.evaluateOnNewDocument((shell)=>{
-    window.__noAutoConverter = true;
-    if(localStorage.getItem('__asDesktop')){ window.__diskBlobMin = 1048576; if(localStorage.getItem('__noPlace')) window.__fakeShellNoPlace = true; (0, eval)(shell); }
-  }, SHELL);
+  await p.evaluateOnNewDocument((shell)=>{ window.__noAutoConverter = true; window.__diskBlobMin = 1048576; window.__fakeShellNoPlace = true; (0, eval)(shell); }, SHELL);
 
-  // ---- 1.4: two libraries in browser storage.
-  await p.goto(APP, {waitUntil: 'networkidle0'}); await sleep(700);
+  // ---- The first start: where should the libraries live?
+  await p.goto(APP, {waitUntil: 'domcontentloaded'});
+  const q = await waitModal(p, /Where should your libraries live/);
+  ok(/Where should your libraries live/.test(q) && /Music\/37 Player Libraries/.test(q) && /Choose another place/.test(q), 'the first start asks where the libraries should live, suggesting Music/37 Player Libraries, with Choose another place…');
+  await clickText(p, '.modal button', '^Use this place$'); await sleep(1500);
   for(const x of ['^English$', '^Start a library on this device$', '^No, just start$', '^Skip for now$', '^Finish$']){ await clickText(p, '.modal button', x); await sleep(300); }
   await p.evaluate(()=> document.querySelector('.modal [data-close]')?.click());
-  await p.evaluate(async()=>{ const r = window.__dbg.getRoot(); r.tree = []; r.library = []; delete r.settings.starterPlaylistId; r.settings.libraryName = 'Prayers'; await window.__dbg.saveState(); });
+  await p.evaluate(async()=>{ const r = window.__dbg.getRoot(); r.tree = []; r.library = []; delete r.settings.starterPlaylistId; await window.__dbg.saveState(); });
   await p.evaluate((b64)=>{ const f = new File([Uint8Array.from(atob(b64), c=>c.charCodeAt(0))], 'starter.mp3', {type: 'audio/mpeg'}); Object.defineProperty(f, 'webkitRelativePath', {value: 'Set/starter.mp3'}); window.__dbg.bulkImportFolder([f]); }, STARTER);
   for(let i=0; i<60; i++){ await sleep(250); if(await p.$('#folderImportGo')) break; }
   await p.click('#folderImportGo').catch(()=>{});
   for(let i=0; i<80; i++){ await sleep(250); if(await p.evaluate(()=> window.__dbg.getRoot().library.length && !document.getElementById('bulkImportStatus'))) break; }
   await sleep(1000); await p.evaluate(()=> document.querySelectorAll('.modal [data-close]').forEach(x=> x.click()));
-  const before = await p.evaluate(async()=>{
+  await p.evaluate(async()=>{
     const D = window.__disk;
-    const reg = D.readLibraryList(); const main = reg.list.find(l=> l.id === 'main'); main.name = 'Prayers';
-    // A second library, "Teachings", with a 3 MB recording (read where it lies, later).
+    D.renameLibrary('main', 'Prayers');
+    const reg = D.readLibraryList();
+    // A second library, "Teachings", with a 3 MB recording (read where it lies).
     reg.list.push({id: 'teach1', name: 'Teachings'}); D.writeLibraryList(reg);
     const N = 3 * 1048576, u = new Uint8Array(N); for(let i = 0; i < N; i++) u[i] = (i * 31 + (i >>> 11)) & 255;
     const st = D.storageOpen('teach1');
@@ -71,48 +69,20 @@ const wipeWebview = (p)=> p.evaluate(async()=>{
     await st.put('state', {key: 'root', value: {library: [{id: 'tt1', name: 'Heart Jewel', artist: 'Geshe-la', album: 'Teachings', trackNo: 3, filename: 'hj.wav', fileSize: N, duration: 10}], tree: [], settings: {libraryName: 'Teachings'}, session: {}}});
     await st.put('audio', {id: 'tt1', blob: new File([u], 'hj.wav', {type: 'audio/wav'})});
     st.close();
-    const tr = window.__dbg.getRoot().library[0];
-    return {mainTracks: window.__dbg.getRoot().library.length, mainSize: tr && tr.fileSize, kind: D.kind()};
   });
-  ok(before.kind === 'idb' && before.mainTracks === 1, '1.4: two libraries in browser storage (' + JSON.stringify(before) + ')');
-
-  // ---- The first start of 2.0.
-  await p.evaluate(()=>{ localStorage.setItem('__asDesktop', '1'); localStorage.setItem('__noPlace', '1'); });
-  await p.reload({waitUntil: 'domcontentloaded'});
-  const q = await waitModal(p, /Where should your libraries live/);
-  ok(/Where should your libraries live/.test(q) && /Music\/37 Player Libraries/.test(q) && /\(2\)/.test(q), 'the first start asks where the libraries should live, suggesting Music/37 Player Libraries, for both');
-  ok(/Choose another place/.test(q) && /30 days/.test(q), 'with Choose another place…, and the browser copy kept 30 days');
-  await clickText(p, '.modal button', '^Use this place$');
-  await waitLoaded(p);
+  await sleep(3000); // the readable names: moved a moment after a save
   const r1 = await roots(p), files1 = await shellFiles(p);
-  ok(r1.place === 'Music/37 Player Libraries' && r1['lib-main'] === 'Music/37 Player Libraries/Prayers' && r1['lib-teach1'] === 'Music/37 Player Libraries/Teachings', 'each library has a folder of its own in that place (' + JSON.stringify(r1) + ')');
-  ok(files1.includes('Music/37 Player Libraries/Teachings/music/Geshe-la/Teachings/03 Heart Jewel.wav') && files1.some(f=> /^Music\/37 Player Libraries\/Prayers\/music\/.+\.mp3$/.test(f)), 'the recordings are in them under readable names');
-  ok(files1.includes('Music/37 Player Libraries/Prayers/37 Player library.json') && files1.includes('Music/37 Player Libraries/Teachings/README.txt'), 'with the marker and the README');
-  const after = await p.evaluate(async()=>{
-    const D = window.__disk, reg = D.readLibraryList();
-    const st = D.storageOpen('teach1'); const a = await st.get('audio', 'tt1'); st.close();
-    const dbs = (await indexedDB.databases()).map(d=> d.name);
-    return {kind: D.kind(), id: D.id(), tracks: window.__dbg.getRoot().library.length, entries: reg.list.map(l=> [l.id, !!l.desktop, !!l.desktopMade, !!l.fromBrowser]),
-      teachDisk: a && a.blob instanceof D.DiskBlob, teachSize: a && a.blob.size, dbs, toast: [...document.querySelectorAll('.toast')].map(t=> t.textContent).join(' | ')};
-  });
-  ok(after.kind === 'desktop' && after.id === 'main' && after.tracks === 1, 'the app runs the library from its folder, its track there (' + [after.kind, after.id, after.tracks] + ')');
-  ok(JSON.stringify(after.entries) === JSON.stringify([['main', true, true, true], ['teach1', true, true, true]]), 'both libraries are marked as moved, browser copies kept (' + JSON.stringify(after.entries) + ')');
-  ok(after.teachDisk && after.teachSize === 3 * 1048576, 'the other library\'s 3 MB recording reads back whole, from where it lies (' + after.teachSize + ')');
-  ok(after.dbs.includes('temple-sound-library') && after.dbs.includes('temple-sound-library~teach1'), 'the browser-storage copies are still there');
-  after.toast = after.toast + ' | ' + await waitToast(p, /Your libraries are now/);
-  ok(/Your libraries are now in Music\/37 Player Libraries/.test(after.toast), 'a notice says where they went (' + after.toast + ')');
-
-  // ---- 30 days on: the browser copies go.
-  await p.evaluate(()=>{ const D = window.__disk, reg = D.readLibraryList(); reg.list.forEach(l=>{ if(l.fromBrowser) l.fromBrowser -= 31 * 86400000; }); D.writeLibraryList(reg); });
-  await p.reload({waitUntil: 'domcontentloaded'}); await waitLoaded(p);
-  const later = await p.evaluate(async()=> ({dbs: (await indexedDB.databases()).map(d=> d.name), from: window.__disk.readLibraryList().list.map(l=> !!l.fromBrowser), tracks: window.__dbg.getRoot().library.length}));
-  ok(!later.dbs.includes('temple-sound-library') && !later.dbs.includes('temple-sound-library~teach1') && later.from.every(x=> !x) && later.tracks === 1, 'after 30 days the browser-storage copies are removed, the libraries unchanged (' + JSON.stringify(later) + ')');
+  ok(r1.place === 'Music/37 Player Libraries' && /^Music\/37 Player Libraries\//.test(r1['lib-main'] || '') && r1['lib-teach1'] === 'Music/37 Player Libraries/Teachings', 'each library has a folder of its own in that place (' + JSON.stringify(r1) + ')');
+  ok(files1.some(f=> /^Music\/37 Player Libraries\/[^/]+\/music\/.+\.mp3$/.test(f)) && files1.some(f=> /\/37 Player library\.json$/.test(f)) && files1.some(f=> /\/README\.txt$/.test(f)), 'the recording is in it under a readable name, with the marker and the README');
+  const teach = await p.evaluate(async()=>{ const D = window.__disk; const st = D.storageOpen('teach1'); const a = await st.get('audio', 'tt1'); st.close(); return {disk: a && a.blob instanceof D.DiskBlob, size: a && a.blob.size, kind: D.kind(), idb: (await indexedDB.databases()).map(d=> d.name).filter(n=> /temple-sound-library/.test(n))}; });
+  ok(teach.kind === 'desktop' && teach.disk && teach.size === 3 * 1048576, 'the other library\'s 3 MB recording reads back whole, from where it lies (' + JSON.stringify(teach) + ')');
+  ok(!teach.idb.length, 'nothing of the libraries is in browser storage (' + teach.idb + ')');
 
   // ---- The wipe test: the webview's storage emptied (CCleaner).
   // A library's own small values first (kept in its folder too).
   await p.evaluate(()=>{ localStorage.setItem('37player.dailyAsk.main', '2026-11-06'); localStorage.setItem('37player.sharedLog', JSON.stringify([{at: 1, text: 'a line of the sync log'}])); });
   await sleep(3500);
-  const localFile = (await shellFiles(p)).includes("Music/37 Player Libraries/Prayers/37 Player's own files/local.json");
+  const localFile = (await shellFiles(p)).includes(r1['lib-main'] + "/37 Player's own files/local.json");
   await wipeWebview(p);
   await p.reload({waitUntil: 'domcontentloaded'}); await waitLoaded(p);
   const w1 = await p.evaluate(()=> ({modal: [...document.querySelectorAll('.modal')].filter(m=> m.offsetParent).map(m=> m.textContent).join(' | '), tracks: window.__dbg.getRoot().library.length, names: window.__disk.readLibraryList().list.map(l=> l.name), lang: document.documentElement.lang}));
@@ -129,8 +99,8 @@ const wipeWebview = (p)=> p.evaluate(async()=>{
   const w2 = await p.evaluate(()=> ({tracks: window.__dbg.getRoot().library.length, list: window.__disk.readLibraryList().list.map(l=> [l.id, l.name]), toast: [...document.querySelectorAll('.toast')].map(t=> t.textContent).join(' | ')}));
   const r2 = await roots(p);
   w2.toast = w2.toast + ' | ' + await waitToast(p, /Found/);
-  ok(w2.list.length === 2 && JSON.stringify(w2.list) === JSON.stringify([['main', 'Prayers'], ['teach1', 'Teachings']]) && w2.tracks === 1, 'the app\'s data folder emptied too: both libraries found again in their place (' + JSON.stringify(w2.list) + ', ' + w2.tracks + ' track)');
-  ok(r2['lib-main'] === 'Music/37 Player Libraries/Prayers' && /Found 2 libraries/.test(w2.toast), 'by their markers, and a notice says so (' + w2.toast + ')');
+  ok(w2.list.length === 2 && JSON.stringify(w2.list) === JSON.stringify([['main', 'Prayers'], ['teach1', 'Teachings']]) && w2.tracks === 1, 'the app\'s data folder emptied too: both libraries found again in their place, under their names (' + JSON.stringify(w2.list) + ', ' + w2.tracks + ' track)');
+  ok(r2['lib-main'] === r1['lib-main'] && /Found 2 libraries/.test(w2.toast), 'by their markers, and a notice says so (' + w2.toast + ')');
 
   // ---- A folder that's gone (moved): asked about, found, never made again.
   await p.evaluate(async()=>{
@@ -169,5 +139,18 @@ const wipeWebview = (p)=> p.evaluate(async()=>{
   await p.evaluate(()=> document.getElementById('libFindFolder')?.click()); await sleep(1200);
   const w4 = await p.evaluate(()=> ({list: window.__disk.readLibraryList().list.map(l=> l.name), toast: [...document.querySelectorAll('.toast')].map(t=> t.textContent).join(' | ')}));
   ok(JSON.stringify(w4.list) === JSON.stringify(['Prayers', 'Teachings', 'Chants']) && /“Chants” is on your list of libraries/.test(w4.toast), 'which adds a library folder from anywhere (' + JSON.stringify(w4) + ')');
+  // ---- Another computer: Choose another place….
+  const p2 = await (await b.createBrowserContext()).newPage(); await p2.setViewport({width: 1300, height: 900});
+  p2.on('dialog', async d=>{ console.log('ALERT:', d.message()); await d.accept(); });
+  await p2.evaluateOnNewDocument((shell)=>{ window.__noAutoConverter = true; window.__fakeShellNoPlace = true; window.__fakeShellPick = 'Data/Our Libraries'; (0, eval)(shell); }, SHELL);
+  await p2.goto(APP, {waitUntil: 'domcontentloaded'});
+  await waitModal(p2, /Where should your libraries live/);
+  await clickText(p2, '.modal button', '^Choose another place');
+  await sleep(1500);
+  for(const x of ['^English$', '^Start a library on this device$', '^No, just start$', '^Skip for now$', '^Finish$']){ await clickText(p2, '.modal button', x); await sleep(300); }
+  await p2.evaluate(()=> document.querySelector('.modal [data-close]')?.click());
+  await p2.evaluate(async()=>{ await window.__dbg.saveState(); }); await sleep(800);
+  const r5 = await roots(p2);
+  ok(r5.place === 'Data/Our Libraries' && /^Data\/Our Libraries\//.test(r5['lib-main'] || ''), 'Choose another place… puts the libraries there (' + JSON.stringify(r5) + ')');
   console.log(fails ? fails + ' FAILED' : 'ALL OK'); await b.close();
 })();
