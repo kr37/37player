@@ -1,4 +1,4 @@
-// Readable recording names in the files store (1.4.174; v2, Gen: "integral").
+// Readable recording names in the files store (1.4.174; v2, Gen Rinzin: "integral").
 // Checked directly, in the browser's private file system: a recording is kept
 // as Artist/Album/01 Title.ext, everything else in "37 Player's own files/";
 // a clash gets " (2)"; a change of details moves it (and Undo moves it back),

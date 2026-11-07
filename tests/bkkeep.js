@@ -3,7 +3,7 @@
 // deleted every folder file whose audio wasn't in IndexedDB at that moment:
 // a full disk, a restore whose writes failed, or storage thrown away while
 // the track list came back from the shared library emptied the backup
-// (Gen's T470, 1 Nov 2026). Only a track leaving the library frees its file.
+// (Gen Rinzin's T470, 1 Nov 2026). Only a track leaving the library frees its file.
 // The folder is a stand-in in the browser's private file system (OPFS).
 const puppeteer = require('puppeteer-core');
 const fs = require('fs'), path = require('path'); const sleep = ms=>new Promise(r=>setTimeout(r,ms));

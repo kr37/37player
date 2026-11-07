@@ -1,6 +1,6 @@
 # Tags each version of 37 Player on main (v1.4.181, …), so every past version
 # can be downloaded from the repo's Tags page without git, to compare old and
-# new behaviour (Gen, 6 Nov 2026). A downloaded 37-player.html opened from
+# new behaviour (Gen Rinzin, 6 Nov 2026). A downloaded 37-player.html opened from
 # disk keeps its own browser storage, apart from the website's.
 # Each run tags every version in main's history that isn't tagged yet (the
 # last commit with that version), so the first run tags the past ones too

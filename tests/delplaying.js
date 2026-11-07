@@ -1,4 +1,4 @@
-// Deleting a track that's playing (1.4.162, Gen's design): the confirmation
+// Deleting a track that's playing (1.4.162, Gen Rinzin's design): the confirmation
 // says first that it's playing and that deleting stops it; Delete stops it
 // and deletes. Deleting another track says nothing of the kind, and what's
 // playing carries on.

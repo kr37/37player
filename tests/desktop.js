@@ -17,10 +17,28 @@ const modalText = p=> p.evaluate(()=> document.querySelector('.modal-backdrop.sh
   await p.evaluateOnNewDocument(()=>{
     window.__TAURI_INTERNALS__ = {};
     window.__quits = 0; window.__listeners = {};
-    window.__TAURI__ = {event: {listen: async (name, fn)=>{ window.__listeners[name] = fn; return ()=>{}; }}, core: {invoke: async (cmd)=>{ if(cmd === 'p37_quit') window.__quits++; if(cmd === 'p37_shell_info') return {version: '1.4.159', bridge: Number(localStorage.getItem('__bridge') || 1)}; }}};
+    // device.json (1.4.192): the stand-in shell keeps it in sessionStorage, which a "wipe" here leaves alone, and hands it over as the page starts.
+    window.__p37Device = JSON.parse(sessionStorage.getItem('__devicejson') || 'null');
+    window.__TAURI__ = {event: {listen: async (name, fn)=>{ window.__listeners[name] = fn; return ()=>{}; }}, core: {invoke: async (cmd, args)=>{
+      // Page updates (1.4.182): what the stand-in shell says comes from localStorage, and the calls are kept in sessionStorage across reloads.
+      const calls = JSON.parse(sessionStorage.getItem('__calls') || '[]'); calls.push(cmd + (args && args.version ? ' ' + args.version : '')); sessionStorage.setItem('__calls', JSON.stringify(calls));
+      if(cmd === 'p37_quit') window.__quits++;
+      if(cmd === 'p37_shell_info') return {version: '1.4.159', bridge: Number(localStorage.getItem('__bridge') || 1), pages: localStorage.getItem('__pages') === '1'};
+      if(cmd === 'p37_page_info'){ const i = JSON.parse(localStorage.getItem('__pageInfo') || '{}'); const once = {...i}; delete i.reverted; localStorage.setItem('__pageInfo', JSON.stringify(i)); return once; }
+      if(cmd === 'p37_page_check') return JSON.parse(localStorage.getItem('__pageCheck') || '{"status":"error","error":"none"}');
+      if(cmd === 'p37_page_switch') return '9.9.001';
+      if(cmd === 'p37_device_put') sessionStorage.setItem('__devicejson', JSON.stringify(args.values));
+    }}};
   });
   await p.goto('http://localhost:8861/37-player.html', {waitUntil:'networkidle0'}); await sleep(800); await settle(p);
   ok(await p.evaluate(()=> typeof window.__listeners['p37-close-requested'] === 'function'), 'in the desktop app, it listens for the shell\'s close');
+  // The page's height is the window's (1.4.184: Monterey's webview made 100vh 28px too tall).
+  const fit = async ()=> p.evaluate(()=> ({cls: document.documentElement.classList.contains('fit-height'), app: Math.round(document.getElementById('app').getBoundingClientRect().height), win: window.innerHeight}));
+  let f = await fit();
+  ok(f.cls && f.app === f.win, 'the page is exactly as tall as the window (' + JSON.stringify(f) + ')');
+  await p.setViewport({width: 1300, height: 700}); for(let i = 0; i < 20 && (f = await fit()).app !== 700; i++) await sleep(150);
+  ok(f.app === 700, 'and follows it when the window changes (' + f.app + ')');
+  await p.setViewport({width: 1300, height: 900}); await sleep(300);
   await p.evaluate(()=>{ window.__dbg.setMode('editing'); window.__dbg4.settings(); window.__dbg4.section('about'); }); await sleep(500);
   const about = await p.evaluate(()=> document.getElementById('aboutRunning').textContent);
   ok(/desktop app \(version 1\.4\.159\)/.test(about), 'About names the desktop app\'s own version (' + about + ')');
@@ -35,6 +53,44 @@ const modalText = p=> p.evaluate(()=> document.querySelector('.modal-backdrop.sh
   ok(/newer desktop app/.test(old), 'a shell offering less than the page needs: "Please download the newer desktop app"');
   await clickText(p, '.modal button', '^OK$'); await p.evaluate(()=> localStorage.removeItem('__bridge')); await p.reload({waitUntil:'networkidle0'}); await sleep(1200);
   ok(!/newer desktop app/.test(await p.evaluate(()=> document.querySelector('.modal-backdrop.show .modal')?.innerText || '')), 'and not when it offers enough');
+  // Feedback in the desktop app (1.4.187): offered, and sent to 37player.com.
+  await p.evaluate(()=> document.getElementById('btnHelp').click()); await sleep(400);
+  ok(await p.evaluate(()=> !!document.getElementById('helpFeedback')), 'Help has Send feedback… in the desktop app');
+  await p.evaluate(()=> document.querySelectorAll('#helpPage [data-close], #helpClose').forEach(x=> x.click())); await sleep(200);
+  // Page updates (1.4.182): a shell that has them.
+  const calls = ()=> p.evaluate(()=> JSON.parse(sessionStorage.getItem('__calls') || '[]'));
+  ok(!(await calls()).some(c=> /^p37_page/.test(c)), 'a shell without page updates: no page-update calls');
+  await p.evaluate(()=>{ localStorage.setItem('__pages', '1'); localStorage.setItem('__pageInfo', JSON.stringify({running: '1.4.182', ready: '9.9.001', reverted: {from: '9.9.000', to: '1.4.182'}})); sessionStorage.removeItem('__calls'); });
+  await p.reload({waitUntil:'networkidle0'}); await sleep(2500);
+  const version = await p.evaluate(()=> document.querySelector('meta[name="app-version"]').content);
+  ok((await calls()).includes('p37_page_ok ' + version), 'it tells the shell it started (p37_page_ok ' + version + ')');
+  const toast = await p.evaluate(()=> document.getElementById('toast')?.textContent || '');
+  ok(/9\.9\.000 didn't start properly/.test(toast) && /1\.4\.182/.test(toast), 'a page the shell put aside: it says so (' + toast.slice(0, 70) + ')');
+  ok(await p.evaluate(()=> document.getElementById('appVersion').classList.contains('has-update') && /Update now/.test(document.getElementById('appVersion').textContent)), 'a newer page waiting: "Update now" under the version');
+  await p.evaluate(()=> window.__listeners['p37-page-ready'] && window.__listeners['p37-page-ready']({payload: '9.9.002'})); await sleep(200);
+  ok(await p.evaluate(()=> /9\.9\.002/.test(document.getElementById('appVersion').title)), 'one downloaded while open: the same ("p37-page-ready")');
+  // Check for updates.
+  const check = async (answer)=>{
+    await p.evaluate((a)=> localStorage.setItem('__pageCheck', JSON.stringify(a)), answer);
+    await p.evaluate(()=>{ window.__dbg.setMode('editing'); window.__dbg4.settings(); window.__dbg4.section('about'); }); await sleep(400);
+    await p.evaluate(()=> document.getElementById('checkUpdates').click()); await sleep(700);
+    return modalText(p);
+  };
+  let m = await check({status: 'needs-app', version: '9.9.003'});
+  ok(/9\.9\.003/.test(m) && /newer desktop app/.test(m) && /keeps working/.test(m), 'Check for updates, the newest needing a newer app: says so (' + m.replace(/\n+/g, ' | ').slice(0, 80) + ')');
+  await clickText(p, '.modal button', '^OK$'); await sleep(300);
+  m = await check({status: 'current', version: version});
+  ok(/latest version/.test(m), 'nothing newer: "You have the latest version"');
+  await clickText(p, '.modal button', '^OK$'); await sleep(300);
+  m = await check({status: 'ready', version: '9.9.004'});
+  ok(/9\.9\.004 is available/.test(m), 'a newer page downloaded: offered (' + m.replace(/\n+/g, ' | ').slice(0, 60) + ')');
+  await p.evaluate(()=> sessionStorage.removeItem('__calls'));
+  const nav = p.waitForNavigation({waitUntil: 'networkidle0', timeout: 20000}).catch(()=>{});
+  await clickText(p, '.modal button', '^Update to 9\\.9\\.004$'); await nav; await sleep(1500);
+  ok((await calls()).includes('p37_page_switch'), 'Update: the shell switches to it, and the window reloads into it');
+  await p.evaluate(()=>{ localStorage.removeItem('__pages'); localStorage.removeItem('__pageInfo'); localStorage.removeItem('__pageCheck'); sessionStorage.removeItem('__calls'); });
+  await p.reload({waitUntil:'networkidle0'}); await sleep(1200);
+  await p.evaluate(()=> document.querySelectorAll('.modal [data-close]').forEach(x=> x.click()));
   await p.evaluate(()=> window.__listeners['p37-close-requested']()); await sleep(800);
   ok((await p.evaluate(()=> window.__quits)) === 1 && !/Close 37 Player/.test(await modalText(p)), 'nothing going on: it quits at once');
   // Something playing.
@@ -58,6 +114,17 @@ const modalText = p=> p.evaluate(()=> document.querySelector('.modal-backdrop.sh
   // Google Drive.
   const drive = await p.evaluate(async()=>{ const el = document.createElement('p'); await window.__driveStart(el); return el.textContent; });
   ok(/isn't available in the desktop app yet/.test(drive), 'Google Drive: not available in the desktop app yet (' + drive.slice(0, 60) + ')');
+  // device.json (1.4.192): the device's settings go to the shell, and come back after the webview's storage is emptied.
+  await p.evaluate(()=>{ const d = JSON.parse(localStorage.getItem('37player.device') || '{}'); d.theme = 'dark'; localStorage.setItem('37player.device', JSON.stringify(d)); });
+  await sleep(1600);
+  const kept = await p.evaluate(()=> JSON.parse(sessionStorage.getItem('__devicejson') || '{}'));
+  ok(kept['37player.libraries'] && /"theme":"dark"/.test(kept['37player.device'] || ''), 'the shell is given the device\'s settings, a second after they change (' + Object.keys(kept).join(', ') + ')');
+  const libBefore = await p.evaluate(()=> localStorage.getItem('37player.libraries'));
+  await p.evaluate(()=> localStorage.clear()); // as CCleaner would
+  await p.reload({waitUntil: 'networkidle0'}); await sleep(1500);
+  const back = await p.evaluate(()=> ({lib: localStorage.getItem('37player.libraries'), dark: /"theme":"dark"/.test(localStorage.getItem('37player.device') || ''), log: window.__log().join('\n')}));
+  ok(back.lib === libBefore && back.dark, 'storage emptied: the list of libraries and the settings come back from the shell\'s copy');
+  ok(/settings came back from the app's own copy/.test(back.log), 'and the playback log says so');
   // A plain browser: none of it.
   const p2 = await b.newPage();
   await p2.goto('http://localhost:8861/37-player.html', {waitUntil:'networkidle0'}); await sleep(800);
