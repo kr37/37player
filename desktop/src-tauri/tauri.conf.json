@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "37 Player",
-  "version": "1.4.195",
-  "identifier": "com.player37.spike",
+  "version": "1.4.196",
+  "identifier": "com.player37.app",
   "build": {
     "frontendDist": "../dist",
     "beforeDevCommand": "node copy-app.mjs",
