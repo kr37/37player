@@ -65,10 +65,15 @@ jobs:
         env: { GH_TOKEN: "${{ github.token }}" }
         run: |
           tag="desktop-test-${{ github.run_number }}"
-          # GitHub's list cuts titles short, so the number comes first.
+          # Named by the version first (Gen Rinzin, 7 Nov 2026), the build's
+          # number after; the files carry the version too.
           v=$(curl -s "https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/37-player.html" | head -c 4000 | grep -o 'app-version" content="[^"]*' | head -1 | sed 's/.*content="//')
-          syms=$(ls 37-Player-mac-test-symbols.zip 2>/dev/null || true)
-          gh release create "$tag" 37-Player-mac-test.dmg 37-Player-windows-test-setup.exe 37-Player-windows-test.msi $syms \
+          mv 37-Player-mac-test.dmg "37-Player-$v-mac.dmg"
+          mv 37-Player-windows-test-setup.exe "37-Player-$v-windows-setup.exe"
+          mv 37-Player-windows-test.msi "37-Player-$v-windows.msi"
+          syms=""
+          if [ -f 37-Player-mac-test-symbols.zip ]; then mv 37-Player-mac-test-symbols.zip "37-Player-$v-mac-symbols.zip"; syms="37-Player-$v-mac-symbols.zip"; fi
+          gh release create "$tag" "37-Player-$v-mac.dmg" "37-Player-$v-windows-setup.exe" "37-Player-$v-windows.msi" $syms \
             --repo "${{ github.repository }}" --prerelease --target "${{ github.sha }}" \
-            --title "Test ${{ github.run_number }}: 37 Player $v, desktop" \
+            --title "37 Player $v for computers (build ${{ github.run_number }})" \
             --notes "Unsigned test builds of the desktop app (Tauri) from branch ${{ github.ref_name }} (desktop/SPIKE.md). Mac: right-click → Open. Windows: SmartScreen → More info → Run anyway."

@@ -36,6 +36,10 @@ struct Quitting(AtomicBool);
 //     keeps the device's settings in device.json (p37_device_get/put). The
 //     page reads it as window.__p37Bridge, set before it runs (below), to
 //     choose its storage (2.0.000).
+//     Bridge 2 is everything the shell has as of 2.2.000 (Google sign-in,
+//     folders renamed, shown and put back, Use in place's commands). The
+//     version's middle number is the bridge (Gen Rinzin, 7 Nov 2026): a new
+//     command the page relies on after that makes bridge 3, version 2.3.000.
 const BRIDGE: u32 = 2;
 
 #[derive(serde::Serialize)]
