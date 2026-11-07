@@ -121,6 +121,18 @@ const closeModals = (p)=> p.evaluate(()=> document.querySelectorAll('.modal [dat
   const n3 = await p.evaluate(async()=> ({n: window.__dbg.getRoot().library.length, refs: (await window.__disk.libStore().placeRefs()).size}));
   ok(n3.n === 3 && n3.refs === 3, 'Look for new files brings in a recording added to the folder, used in place too (' + JSON.stringify(n3) + ')');
 
+  // A track that's the library's own now (as after converting a .wma and
+  // letting its original go): its file isn't new to Look for new files.
+  alerts.length = 0;
+  await p.evaluate(async()=>{
+    const D = window.__disk, tr = window.__dbg.getRoot().library.find(t=> /02 Tone/.test(t.filename));
+    const rec = await D.idbGet('audio', tr.id); const own = rec.blob.slice(0, rec.blob.size, rec.blob.type); own.inPlace = false; own.name = rec.blob.name;
+    await D.libStore().put('audio', Object.assign({}, rec, {blob: own}));
+  });
+  await p.evaluate((rid)=> window.__disk.placeLookForNew(rid), rid); await sleep(1500);
+  ok(alerts.some(a=> /No new recordings/.test(a)) && !(await p.$('#folderImportGo')), 'a track whose recording is the library\'s own now (converted) isn\'t new to Look for new files (' + alerts.join(' / ') + ')');
+  await closeModals(p);
+
   // ---- Deleting a track used in place: its file stays.
   const del = await p.evaluate(async()=>{
     const D = window.__disk, tr = window.__dbg.getRoot().library.find(t=> /Tone again/.test(t.filename));
@@ -134,7 +146,14 @@ const closeModals = (p)=> p.evaluate(()=> document.querySelectorAll('.modal [dat
   });
   ok(/stay in their folder/.test(del) && await fileSize(p, T + '/Geshe-la/Heart Jewel/03 Tone again.mp3') > 0, 'deleting a track used in place leaves its file, and the confirmation says so');
 
-  // ---- The drive unplugged.
+  // ---- The drive unplugged. Playing one of its tracks first (Playing).
+  await p.evaluate(async()=>{
+    const r = window.__dbg.getRoot(), tr = r.library.find(t=> /Starter/.test(t.filename));
+    r.tree.push({id: 'plU', kind: 'playlist', name: 'Unplug', items: [{id: 'u1', kind: 'track', refId: tr.id, order: 0}]}); await window.__dbg.saveState();
+    window.__dbg.setMode('playing'); window.__play('u1');
+  });
+  for(let i = 0; i < 40; i++){ await sleep(250); if(await p.evaluate(()=> !window.__aud().paused && window.__aud().t > 0.3)) break; }
+  ok(await p.evaluate(()=> !window.__aud().paused), 'a track used in place plays in Playing');
   await p.evaluate(async(T)=>{
     const top = await (await navigator.storage.getDirectory()).getDirectoryHandle('fake-shell');
     const copy = async (from, to)=>{ for await (const [n, h] of from.entries()){ if(h.kind === 'directory') await copy(h, await to.getDirectoryHandle(n, {create: true})); else { const w = await (await to.getFileHandle(n, {create: true})).createWritable(); await w.write(await h.getFile()); await w.close(); } } };
@@ -142,6 +161,22 @@ const closeModals = (p)=> p.evaluate(()=> document.querySelectorAll('.modal [dat
     await copy(await music.getDirectoryHandle('Talks'), await (await top.getDirectoryHandle('Backup', {create: true})).getDirectoryHandle('Talks', {create: true}));
     await music.removeEntry('Talks', {recursive: true});
   }, T);
+  // What the player sees when the file goes from under it: an error.
+  const lost = await p.evaluate(async()=>{
+    const el = [...document.querySelectorAll('audio')].find(a=> !a.paused) || document.querySelector('audio');
+    el.dispatchEvent(new Event('error'));
+    await new Promise(r=> setTimeout(r, 800));
+    const text = [...document.querySelectorAll('.modal')].filter(m=> m.offsetParent).map(m=> m.textContent).join(' ');
+    document.querySelectorAll('.modal [data-close]').forEach(x=> x.click());
+    await new Promise(r=> setTimeout(r, 200));
+    window.__disk.togglePlay(); // Play, while it's still gone
+    await new Promise(r=> setTimeout(r, 800));
+    const again = [...document.querySelectorAll('.modal')].filter(m=> m.offsetParent).map(m=> m.textContent).join(' ');
+    document.querySelectorAll('.modal [data-close]').forEach(x=> x.click());
+    return {paused: window.__aud().paused, text, again};
+  });
+  ok(lost.paused && /On a drive that isn't connected/.test(lost.text) && /Copy into the library makes these recordings the library's own/.test(lost.text), 'the file gone while playing: the player pauses and says the drive isn\'t connected, with the way to avoid it');
+  ok(/On a drive that isn't connected/.test(lost.again) && await p.evaluate(()=> window.__aud().paused), 'Play while it\'s still gone says so again, and doesn\'t pretend to play');
   const off = await p.evaluate(async()=>{
     const D = window.__disk, tr = window.__dbg.getRoot().library.find(t=> /Starter/.test(t.filename));
     const rec = await D.idbGet('audio', tr.id);
@@ -164,7 +199,7 @@ const closeModals = (p)=> p.evaluate(()=> document.querySelectorAll('.modal [dat
   ok(/Folders used in place/.test(set1) && /not connected/.test(set1) && /Find this folder/.test(set1), 'Settings → Library lists the folder as not connected, with Find this folder… (' + set1.slice(0, 140) + ')');
   const where = await p.evaluate(()=> document.getElementById('settingsBody').innerText);
   const libPath0 = (await roots(p))['lib-main'];
-  ok(where.includes('the desktop app, version') && where.includes('Library folder') && where.includes(libPath0) && /0 in the library's folder, 2 used in place/.test(where) && /None needed from 37 Player/.test(where), 'Settings → Library says the desktop app, the library\'s folder, where its recordings are, and that it needs no backups of 37 Player\'s');
+  ok(where.includes('the desktop app, version') && where.includes('Library folder') && where.includes(libPath0) && /1 in the library's folder, 1 used in place/.test(where) && /None needed from 37 Player/.test(where), 'Settings → Library says the desktop app, the library\'s folder, where its recordings are, and that it needs no backups of 37 Player\'s');
   ok(!/IndexedDB|own storage|available|persistent/.test(where) && /In the library's folder: .*Used in place, in their own folders/.test(where), 'and nothing of the browser\'s storage (' + (where.match(/In the library's folder[^\n]*/) || [''])[0] + ')');
   await p.evaluate(()=> document.getElementById('infoShowFolder').click()); await sleep(300);
   ok(await p.evaluate(()=> window.__fakeShellShown) === libPath0, 'Show opens the library\'s folder');
@@ -173,6 +208,11 @@ const closeModals = (p)=> p.evaluate(()=> document.querySelectorAll('.modal [dat
   await waitFor(p, ()=> /Look for new files/.test((document.getElementById('placeFolders') || {}).textContent || ''), null, 8000);
   const back = await p.evaluate(async()=>{ const D = window.__disk, tr = window.__dbg.getRoot().library.find(t=> /Starter/.test(t.filename)); const rec = await D.idbGet('audio', tr.id); return rec && rec.blob ? rec.blob.size : -1; });
   ok(back === startSize, 'found where it was moved, it plays again (' + back + ')');
+  // Play now: the player starts the file again (it was stuck on the lost one).
+  await p.evaluate(()=> window.__disk.togglePlay());
+  for(let i = 0; i < 40; i++){ await sleep(250); if(await p.evaluate(()=> !window.__aud().paused && window.__aud().t > 0.3)) break; }
+  ok(await p.evaluate(()=> !window.__aud().paused && !document.querySelector('audio[data-p37stuck]')), 'and Play in Playing carries on with it (' + JSON.stringify(await p.evaluate(()=> window.__aud())) + ')');
+  await p.evaluate(()=> document.querySelectorAll('audio').forEach(a=> a.pause()));
 
   // ---- Copy into the library.
   await clickText(p, '#placeFolders button', '^Copy into the library$');

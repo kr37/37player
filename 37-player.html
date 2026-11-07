@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.0.002">
+<meta name="app-version" content="2.0.003">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -3142,8 +3142,28 @@ async function finishPlaceImport(){
   const used = [...(await libStore.placeRefs()).values()].some(r=> r.root === p.root);
   if(!used){ if(!p.adding) await forgetPlaceRoot(p.root); return; }
   const list = await placeFolders();
-  if(!list.some(f=> f.root === p.root)){ list.push({root: p.root, label: p.label, added: Date.now()}); await savePlaceFolders(list); }
+  let f = list.find(x=> x.root === p.root);
+  if(!f){ f = {root: p.root, label: p.label, added: Date.now()}; list.push(f); }
+  await placeRemember(f);
+  await savePlaceFolders(list);
   if(p.mode === "copy" || p.mode === "move") await placeIntoLibrary(p.root, p.mode === "move");
+}
+// Which files of a folder used in place the library took, and the track each
+// became (f.seen: {path: track id}): a track converted (a .wma, say) is the
+// library's own afterwards, and once its original is let go nothing points
+// into the folder for it, but it's still that file's track, so Look for new
+// files doesn't bring the file in again (Gen Rinzin on the HP, 7 Nov 2026).
+async function placeRemember(f){
+  f.seen = f.seen || {};
+  for(const [key, r] of await libStore.placeRefs()) if(r.root === f.root) f.seen[r.at] = key.startsWith(ORIGINAL_KEY_PREFIX) ? key.slice(ORIGINAL_KEY_PREFIX.length) : key;
+}
+// The paths of a folder's files that are tracks in the library now.
+async function placeKnownPaths(f){
+  const known = new Set();
+  for(const r of (await libStore.placeRefs()).values()) if(r.root === f.root) known.add(r.at.toLowerCase());
+  const ids = new Set(root.library.map(tr=> tr.id));
+  for(const [at, id] of Object.entries(f.seen || {})) if(ids.has(id)) known.add(at.toLowerCase());
+  return known;
 }
 // A folder used in place becomes the library's own: each recording copied
 // into the library's folder (by the shell, file to file), checked, and with
@@ -3184,9 +3204,10 @@ async function placeLookForNew(rootId){
   await new Promise(r=> setTimeout(r, 30));
   const files = await placeListFiles(rootId, topName);
   closeModal();
-  const known = new Set([...(await libStore.placeRefs()).values()].filter(r=> r.root === rootId).map(r=> r.at.toLowerCase()));
+  const known = await placeKnownPaths(f);
+  const pointed = new Set([...(await libStore.placeRefs()).values()].filter(r=> r.root === rootId).map(r=> r.at.toLowerCase()));
   const here = new Set(files.filter(x=> isImportableAudioFile(x)).map(x=> x.p37rel.toLowerCase()));
-  const gone = [...known].filter(at=> !here.has(at)).length;
+  const gone = [...pointed].filter(at=> !here.has(at)).length; // (a converted one's file may go: it's the library's own now)
   const fresh = files.filter(x=> isImportableAudioFile(x) ? !known.has(x.p37rel.toLowerCase()) : /\.(jpe?g|png)$/i.test(x.name));
   if(!fresh.some(x=> isImportableAudioFile(x))){ alert(t("placeNothingNew", {path: f.label}) + (gone ? " " + t("placeGone", {n: gone}) : "")); return; }
   if(gone) alert(t("placeGone", {n: gone}));
@@ -3199,6 +3220,10 @@ async function tidyPlaces(){
   if(STORAGE_KIND !== "desktop" || pendingPlaceImport || placeChoosing) return;
   const refs = await libStore.placeRefs(), roots = await desktopRoots(true);
   const usedRoots = new Set([...refs.values()].map(r=> r.root));
+  // A folder whose tracks are all the library's own now (converted) is still
+  // looked in for new files, while any of those tracks is in the library.
+  const ids = new Set(root.library.map(tr=> tr.id));
+  for(const f of await placeFolders()) if(Object.values(f.seen || {}).some(id=> ids.has(id))) usedRoots.add(f.root);
   for(const f of await placeFolders()) if(!usedRoots.has(f.root)) await forgetPlaceRoot(f.root);
   const listed = new Set((await placeFolders()).map(f=> f.root));
   for(const id of Object.keys(roots)) if(id.startsWith("in-" + LIBRARY_ID + "-") && !listed.has(id) && !usedRoots.has(id)){ try{ await desktopInvoke("fs_root_forget", {id}); }catch(err){} }
@@ -3210,6 +3235,59 @@ async function tidyPlaces(){
 function placeOfTrack(id){
   const m = libStore && libStore.places;
   return m ? m.get(id) || null : null;
+}
+// A drive unplugged while one of its tracks plays (Gen Rinzin on the HP, 7 Nov
+// 2026: it played on from what was buffered, then stood still, and Play did
+// nothing even once the stick was back). Each of the three players is
+// watched: an error, or waiting more than 3 s, on a track used in place
+// looks at its file; gone, the player is paused and says the drive isn't
+// connected. Play (placeAwarePlay) looks too: still gone, it says so; back,
+// or the player still stuck on the lost file, it loads the file again and
+// carries on from where it was.
+async function placeFileThere(trackId){
+  if(STORAGE_KIND !== "desktop" || !trackId) return null;
+  await libStore.placeRefs();
+  const place = placeOfTrack(trackId);
+  if(!place) return null;
+  let st = null;
+  try{ st = await desktopInvoke("fs_stat", {root: place.root, path: place.at}); }catch(err){}
+  const there = !!(st && st.kind === "file");
+  return {place, there};
+}
+function watchPlaceDrive(el, getTrackId){
+  let timer = null, lastT = -1;
+  const check = async ()=>{
+    timer = null;
+    const id = getTrackId(), r = await placeFileThere(id);
+    if(!r || r.there) return;
+    placeOffline.add(r.place.root);
+    el.dataset.p37stuck = "1";
+    playLog("the drive of a track used in place isn't connected: paused");
+    el.pause();
+    showAudioMissing(id);
+  };
+  el.addEventListener("error", ()=>{ if(getTrackId()){ el.dataset.p37stuck = "1"; check(); } });
+  ["waiting", "stalled"].forEach(ev=> el.addEventListener(ev, ()=>{ if(!timer && !el.paused){ lastT = el.currentTime; timer = setTimeout(()=>{ if(el.currentTime === lastT) check(); else timer = null; }, 3000); } }));
+  el.addEventListener("playing", ()=>{ if(timer){ clearTimeout(timer); timer = null; } });
+}
+async function placeAwarePlay(el, trackId){
+  const r = await placeFileThere(trackId);
+  if(r){
+    if(!r.there){ placeOffline.add(r.place.root); el.pause(); showAudioMissing(trackId); return false; }
+    const lost = placeOffline.has(r.place.root) || !!el.error || el.dataset.p37stuck === "1";
+    placeOffline.delete(r.place.root);
+    if(lost){
+      const at = el.currentTime || 0;
+      delete objectUrlCache[trackId];
+      const url = await getPlayableAudioUrl(trackId);
+      if(!url){ showAudioMissing(trackId); return false; }
+      delete el.dataset.p37stuck;
+      el.src = url;
+      el.addEventListener("loadedmetadata", ()=>{ try{ el.currentTime = at; }catch(err){} }, {once: true});
+      playLog("its drive is back: the track used in place starts again at " + Math.round(at) + " s");
+    }
+  }
+  return el.play().then(()=> true, ()=> false);
 }
 // A playlist file's line for a recording used in place: relative to the
 // library's folder (["..", "..", "Music", …]), or the full path where there's
@@ -3760,6 +3838,7 @@ const STRINGS = {
     "placeGone": "{n} of the library's recordings from this folder aren't there any more (moved, renamed or deleted): those tracks can't play until they're back.",
     "placeOfflineTitle": "On a drive that isn't connected",
     "placeOfflineBody": "“{name}” is used in place from {path}, which can't be reached now. Connect the drive (or find the folder in Settings → Library), then play it again.",
+    "placeOfflineTip": "To keep this from happening, Settings → Library → Copy into the library makes these recordings the library's own.",
     "placeDeleteNote": "Recordings used in place stay in their folder: the library only forgets them.",
     "folderLibRemovedToast": "The browser's copy was removed",
     "folderLibOpenTitle": "Open the library's folder",
@@ -5597,6 +5676,7 @@ const STRINGS = {
     "placeGone": "{n} de las grabaciones de la biblioteca de esta carpeta ya no están (movidas, renombradas o borradas): esas pistas no se pueden reproducir hasta que vuelvan.",
     "placeOfflineTitle": "En un disco que no está conectado",
     "placeOfflineBody": "«{name}» se usa en su sitio desde {path}, al que no se puede acceder ahora. Conecta el disco (o busca la carpeta en Ajustes → Biblioteca) y vuelve a reproducirla.",
+    "placeOfflineTip": "Para que no vuelva a pasar, Ajustes → Biblioteca → Copiar a la biblioteca hace que estas grabaciones sean de la biblioteca.",
     "placeDeleteNote": "Las grabaciones usadas en su sitio se quedan en su carpeta: la biblioteca solo las olvida.",
     "folderLibRemovedToast": "Se quitó la copia del navegador",
     "folderLibOpenTitle": "Abrir la carpeta de la biblioteca",
@@ -7434,6 +7514,7 @@ const STRINGS = {
     "placeGone": "{n} des enregistrements de la bibliothèque venant de ce dossier n'y sont plus (déplacés, renommés ou supprimés) : ces pistes ne peuvent pas être lues tant qu'ils ne sont pas revenus.",
     "placeOfflineTitle": "Sur un disque non branché",
     "placeOfflineBody": "« {name} » est utilisé sur place depuis {path}, qui est inaccessible pour l'instant. Branchez le disque (ou retrouvez le dossier dans Réglages → Bibliothèque), puis relancez la lecture.",
+    "placeOfflineTip": "Pour que cela n'arrive plus, Paramètres → Bibliothèque → Copier dans la bibliothèque fait de ces enregistrements ceux de la bibliothèque.",
     "placeDeleteNote": "Les enregistrements utilisés sur place restent dans leur dossier : la bibliothèque les oublie seulement.",
     "folderLibRemovedToast": "La copie du navigateur a été supprimée",
     "folderLibOpenTitle": "Ouvrir le dossier de la bibliothèque",
@@ -9271,6 +9352,7 @@ const STRINGS = {
     "placeGone": "{n} das gravações da biblioteca desta pasta já lá não estão (movidas, renomeadas ou apagadas): essas faixas não tocam até voltarem.",
     "placeOfflineTitle": "Num disco que não está ligado",
     "placeOfflineBody": "«{name}» é usada no lugar a partir de {path}, que não está acessível agora. Ligue o disco (ou procure a pasta em Configurações → Biblioteca) e toque-a de novo.",
+    "placeOfflineTip": "Para que isto não volte a acontecer, Configurações → Biblioteca → Copiar para a biblioteca torna estas gravações da biblioteca.",
     "placeDeleteNote": "As gravações usadas no lugar ficam na sua pasta: a biblioteca apenas as esquece.",
     "folderLibRemovedToast": "A cópia do navegador foi removida",
     "folderLibOpenTitle": "Abrir a pasta da biblioteca",
@@ -11108,6 +11190,7 @@ const STRINGS = {
     "placeGone": "{n} der Aufnahmen der Bibliothek aus diesem Ordner sind nicht mehr da (verschoben, umbenannt oder gelöscht): Diese Titel können erst wieder abgespielt werden, wenn sie zurück sind.",
     "placeOfflineTitle": "Auf einem Laufwerk, das nicht angeschlossen ist",
     "placeOfflineBody": "„{name}“ wird am Ort aus {path} verwendet, das gerade nicht erreichbar ist. Schließen Sie das Laufwerk an (oder suchen Sie den Ordner unter Einstellungen → Bibliothek) und spielen Sie den Titel erneut ab.",
+    "placeOfflineTip": "Damit das nicht wieder passiert: Einstellungen → Bibliothek → In die Bibliothek kopieren macht diese Aufnahmen zu denen der Bibliothek.",
     "placeDeleteNote": "Am Ort verwendete Aufnahmen bleiben in ihrem Ordner: Die Bibliothek vergisst sie nur.",
     "folderLibRemovedToast": "Die Kopie im Browser wurde entfernt",
     "folderLibOpenTitle": "Den Ordner der Bibliothek öffnen",
@@ -12945,6 +13028,7 @@ const STRINGS = {
     "placeGone": "曲库中来自这个文件夹的 {n} 个录音已不在那里（被移动、改名或删除）：这些曲目在它们回来之前无法播放。",
     "placeOfflineTitle": "在未连接的磁盘上",
     "placeOfflineBody": "“{name}”原地使用自 {path}，现在无法访问。请连接磁盘（或在 设置 → 曲库 中找到该文件夹），然后再播放。",
+    "placeOfflineTip": "为避免再次出现这种情况：设置 → 曲库 → 复制到曲库，可让这些录音归曲库所有。",
     "placeDeleteNote": "原地使用的录音留在它们的文件夹中：曲库只是忘记它们。",
     "folderLibRemovedToast": "已删除浏览器中的副本",
     "folderLibOpenTitle": "打开曲库的文件夹",
@@ -14782,6 +14866,7 @@ const STRINGS = {
     "placeGone": "{n} bản ghi của thư viện từ thư mục này không còn ở đó (đã chuyển, đổi tên hoặc xoá): các bài đó không phát được cho tới khi chúng trở lại.",
     "placeOfflineTitle": "Trên một ổ chưa kết nối",
     "placeOfflineBody": "“{name}” được dùng tại chỗ từ {path}, hiện không truy cập được. Hãy cắm ổ (hoặc tìm thư mục trong Cài đặt → Thư viện), rồi phát lại.",
+    "placeOfflineTip": "Để điều này không xảy ra nữa: Cài đặt → Thư viện → Sao chép vào thư viện sẽ làm các bản ghi này thuộc về thư viện.",
     "placeDeleteNote": "Bản ghi dùng tại chỗ vẫn ở trong thư mục của chúng: thư viện chỉ quên chúng đi.",
     "folderLibRemovedToast": "Đã xóa bản sao trong trình duyệt",
     "folderLibOpenTitle": "Mở thư mục của thư viện",
@@ -16619,6 +16704,7 @@ const STRINGS = {
     "placeGone": "{n} από τις ηχογραφήσεις της βιβλιοθήκης από αυτόν τον φάκελο δεν είναι πια εκεί (μετακινήθηκαν, μετονομάστηκαν ή σβήστηκαν): αυτά τα κομμάτια δεν παίζουν μέχρι να επιστρέψουν.",
     "placeOfflineTitle": "Σε δίσκο που δεν είναι συνδεδεμένος",
     "placeOfflineBody": "Η «{name}» χρησιμοποιείται στη θέση της από το {path}, που δεν είναι προσβάσιμο τώρα. Συνδέστε τον δίσκο (ή βρείτε τον φάκελο στις Ρυθμίσεις → Βιβλιοθήκη) και παίξτε την ξανά.",
+    "placeOfflineTip": "Για να μη συμβεί ξανά: Ρυθμίσεις → Βιβλιοθήκη → Αντιγραφή στη βιβλιοθήκη κάνει αυτές τις ηχογραφήσεις δικές της.",
     "placeDeleteNote": "Οι ηχογραφήσεις στη θέση τους μένουν στον φάκελό τους: η βιβλιοθήκη απλώς τις ξεχνά.",
     "folderLibRemovedToast": "Το αντίγραφο του προγράμματος περιήγησης αφαιρέθηκε",
     "folderLibOpenTitle": "Άνοιγμα του φακέλου της βιβλιοθήκης",
@@ -18456,6 +18542,7 @@ const STRINGS = {
     "placeGone": "{n} delle registrazioni della libreria da questa cartella non ci sono più (spostate, rinominate o cancellate): quelle tracce non si possono riprodurre finché non tornano.",
     "placeOfflineTitle": "Su un disco non collegato",
     "placeOfflineBody": "«{name}» è usata sul posto da {path}, che ora non è raggiungibile. Collega il disco (o trova la cartella in Impostazioni → Libreria), poi riproducila di nuovo.",
+    "placeOfflineTip": "Perché non succeda più: Impostazioni → Libreria → Copia nella libreria rende queste registrazioni della libreria.",
     "placeDeleteNote": "Le registrazioni usate sul posto restano nella loro cartella: la libreria le dimentica soltanto.",
     "folderLibRemovedToast": "La copia nel browser è stata rimossa",
     "folderLibOpenTitle": "Apri la cartella della libreria",
@@ -32649,7 +32736,7 @@ async function playLibraryPreview(trackId, seekRatio){
 function toggleLibraryPreviewPlay(){
   if(!libPreviewTrackId) return;
   const audioEl = document.getElementById("libPreviewAudio");
-  if(audioEl.paused) audioEl.play(); else audioEl.pause();
+  if(audioEl.paused || audioEl.dataset.p37stuck === "1") placeAwarePlay(audioEl, libPreviewTrackId); else audioEl.pause();
 }
 // The track the fixed panel should currently be showing — whatever's actually
 // loaded for playback, or (if nothing is) the sole selected track, so hovering
@@ -33438,7 +33525,7 @@ async function ensureEditorPreviewSource(){
   document.getElementById("edPreviewPlay").addEventListener("click", async ()=>{
     if(!edPreviewTrackId) return;
     const el = await ensureEditorPreviewSource();
-    if(el.paused) el.play().catch(()=>{}); else el.pause();
+    if(el.paused || el.dataset.p37stuck === "1") placeAwarePlay(el, edPreviewTrackId); else el.pause();
   });
   document.getElementById("edPreviewWave").addEventListener("click", async (e)=>{
     if(!edPreviewTrackId) return;
@@ -33515,7 +33602,7 @@ function showAudioMissing(libraryId, why){
   const place = placeOfTrack(libraryId);
   if(place && placeOffline.has(place.root)){
     if(document.getElementById("audioMissingBody")) closeModal();
-    openModal(`<h3>${t("placeOfflineTitle")}</h3><p id="audioMissingBody"></p><div class="modal-actions"><button class="btn primary" data-close>${t("ok")}</button></div>`);
+    openModal(`<h3>${t("placeOfflineTitle")}</h3><p id="audioMissingBody"></p><p class="settings-note">${escapeHtmlText(t("placeOfflineTip"))}</p><div class="modal-actions"><button class="btn primary" data-close>${t("ok")}</button></div>`);
     placeFolders().then(list=>{ const f = list.find(x=> x.root === place.root), el = document.getElementById("audioMissingBody"); if(el) el.textContent = t("placeOfflineBody", {name: tr ? tr.name : "?", path: f ? f.label : "?"}); });
     return;
   }
@@ -33965,6 +34052,10 @@ document.addEventListener("visibilitychange", ()=>{ if(document.visibilityState=
 // producing sound, which are just the moments worth writing accurately,
 // regardless of what any other tab is doing.
 audioEl.addEventListener("pause", snapshotPlaybackPosition);
+// The three players, watched for a drive unplugged under a track used in place.
+watchPlaceDrive(audioEl, ()=>{ const ctx = currentItemId ? findItemContext(currentItemId) : null; return ctx && ctx.item.kind === "track" ? ctx.item.refId : null; });
+watchPlaceDrive(document.getElementById("libPreviewAudio"), ()=> libPreviewTrackId);
+setTimeout(()=>{ const ed = document.getElementById("edPreviewAudio"); if(ed) watchPlaceDrive(ed, ()=> edPreviewTrackId); }, 0);
 audioEl.addEventListener("play", snapshotPlaybackPosition);
 function continueAfterStop(){
   stoppedActive = false;
@@ -34165,7 +34256,8 @@ function togglePlay(){
     // Stops are resumed via the dedicated "Continue playing" button, not this toggle.
     return;
   } else {
-    if(audioEl.paused) audioEl.play(); else pauseMain();
+    // (A track used in place: its drive may have gone, or come back.)
+    if(audioEl.paused || audioEl.dataset.p37stuck === "1") placeAwarePlay(audioEl, ctx && ctx.item.refId); else pauseMain();
   }
 }
 function skip(dir){
