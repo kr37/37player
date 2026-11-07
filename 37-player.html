@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="1.4.192">
+<meta name="app-version" content="1.4.193">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -1898,12 +1898,16 @@ const MAIN_LIBRARY_ID = "main";
 const MAIN_DB_NAME = "temple-sound-library";
 function libraryDbName(id){ return id === MAIN_LIBRARY_ID ? MAIN_DB_NAME : MAIN_DB_NAME + "~" + id; }
 function readLibraryList(){
-  let reg = null;
-  try{ reg = JSON.parse(localStorage.getItem(LIBRARY_LIST_KEY) || "null"); }catch(err){}
+  let reg = null, raw = null;
+  try{ raw = localStorage.getItem(LIBRARY_LIST_KEY); reg = JSON.parse(raw || "null"); }catch(err){}
   if(!reg || typeof reg !== "object" || !Array.isArray(reg.list)) reg = {list: [], last: MAIN_LIBRARY_ID};
   reg.list = reg.list.filter(l=> l && typeof l.id === "string" && /^[A-Za-z0-9_-]{1,40}$/.test(l.id));
   if(!reg.mainDeleted && !reg.list.some(l=> l.id === MAIN_LIBRARY_ID)) reg.list.unshift({id: MAIN_LIBRARY_ID, name: ""});
   if(!reg.list.length){ reg.list.push({id: MAIN_LIBRARY_ID, name: ""}); delete reg.mainDeleted; }
+  // The desktop app (2.0) with no list at all, a new install: its first
+  // library goes in a folder from the start. (A list from before keeps its
+  // libraries where they are until they're moved.)
+  if(raw === null && window.__TAURI_INTERNALS__ && (window.__p37Bridge || 0) >= 2) reg.list.forEach(l=>{ l.desktop = true; });
   return reg;
 }
 function writeLibraryList(reg){
@@ -2890,8 +2894,37 @@ class DesktopFileHandle {
 function desktopRootDir(root){ return new DesktopDirHandle(root, ""); }
 // Which kind of storage this device's libraries use: "idb" (IndexedDB, the
 // default) or "opfs" (files, in the browser's private file system).
-const STORAGE_KIND = (()=>{ if(window.__p37Store) return window.__p37Store; try{ return localStorage.getItem("37player.storage") || "idb"; }catch(err){ return "idb"; } })();
+// "desktop" (2.0, bridge 2): the desktop app keeps each library in a folder
+// of its own, through the shell (desktopLibraryDir); a library still in
+// browser storage from before stays there until it's moved.
+const STORAGE_KIND = (()=>{
+  if(window.__p37Store) return window.__p37Store;
+  if(window.__TAURI_INTERNALS__ && (window.__p37Bridge || 0) >= 2) return "desktop";
+  try{ return localStorage.getItem("37player.storage") || "idb"; }catch(err){ return "idb"; }
+})();
 async function filesRootDir(create){ return folderChild(await navigator.storage.getDirectory(), "37player-libraries", create); }
+// The desktop app's library folders (2.0): each on the shell's list of
+// folders as "lib-<id>", made in the default place (Music/37 Player
+// Libraries/<name>) the first time it's needed, with the marker saying whose
+// it is. A library's place can be anywhere the person chose (step 4).
+let desktopRootsCache = null;
+async function desktopRoots(fresh){ if(fresh || !desktopRootsCache) desktopRootsCache = await desktopInvoke("fs_roots"); return desktopRootsCache; }
+function desktopRootOf(id){ return "lib-" + id; }
+function libraryEntry(id){ return readLibraryList().list.find(l=> l.id === id) || null; }
+async function desktopLibraryDir(id, create){
+  const rid = desktopRootOf(id);
+  if(!(rid in await desktopRoots())){
+    if(!(rid in await desktopRoots(true))){
+      if(!create) return null;
+      const e = libraryEntry(id), name = (e && e.name) || (id === LIBRARY_ID && root && root.settings && root.settings.libraryName) || t("libDefaultName");
+      await desktopInvoke("fs_root_default", {id: rid, name});
+      await desktopRoots(true);
+      await writeWholeFile(desktopRootDir(rid), FOLDER_MARKER, JSON.stringify({format: "37player-library", id, name, createdAt: Date.now()}, null, 1));
+    }
+  }
+  return desktopRootDir(rid);
+}
+function libraryInDesktopFolder(id){ const e = libraryEntry(id); return STORAGE_KIND === "desktop" && !!(e && e.desktop); }
 // The device's libraries, as stores.
 function storageOpen(id, opts){
   // This window's library has readable recording names (1.4.174): its
@@ -2899,11 +2932,17 @@ function storageOpen(id, opts){
   // removing) keeps the names it has.
   if(id === LIBRARY_ID) opts = Object.assign({}, opts, recordingNameOpts());
   if(STORAGE_KIND === "idb" && libraryFolderName(id)) return new FolderLibraryStore(()=> libraryFolderDir(id), "37player-files~" + id, opts);
+  if(libraryInDesktopFolder(id)) return new FolderLibraryStore((create)=> desktopLibraryDir(id, create), "37player-files~" + id, opts);
   if(STORAGE_KIND === "opfs") return new FolderLibraryStore(async (create)=>{ const r = await filesRootDir(create); return r && folderChild(r, fileKeyOf(id), create); }, "37player-files~" + id, opts);
   return new IdbLibraryStore(libraryDbName(id), opts);
 }
 // Every library ID with storage on this device, or null if the browser can't say.
 async function storageLibraryIds(){
+  if(STORAGE_KIND === "desktop"){
+    const ids = Object.keys(await desktopRoots(true)).filter(r=> r.startsWith("lib-")).map(r=> r.slice(4));
+    if(indexedDB.databases){ for(const d of await indexedDB.databases()){ if(!d || typeof d.name !== "string") continue; if(d.name === MAIN_DB_NAME) ids.push(MAIN_LIBRARY_ID); else if(d.name.startsWith(MAIN_DB_NAME + "~")) ids.push(d.name.slice(MAIN_DB_NAME.length + 1)); } }
+    return [...new Set(ids)];
+  }
   if(STORAGE_KIND === "opfs"){
     const r = await filesRootDir(false), ids = [];
     if(r) for await (const [name, h] of r.entries()) if(h.kind === "directory") ids.push(keyOfFile(name));
@@ -2919,6 +2958,9 @@ async function storageLibraryIds(){
   return [...new Set(ids)];
 }
 async function storageRemove(id){
+  // The desktop app: the library's folder and its files stay (as for a
+  // library kept in a folder in a browser); the app forgets it.
+  if(libraryInDesktopFolder(id)){ try{ await desktopInvoke("fs_root_forget", {id: desktopRootOf(id)}); desktopRootsCache = null; }catch(err){ console.warn("Forgetting a library's folder:", err); } return; }
   if(STORAGE_KIND === "opfs"){
     const r = await filesRootDir(false);
     if(r) try{ await r.removeEntry(fileKeyOf(id), {recursive: true}); }catch(err){ console.warn("Deleting a library's files:", err); }
@@ -44962,6 +45004,7 @@ async function createLibrary(name, join){
   saveDeviceSettings(root.settings);
   const reg = readLibraryList(), id = newLibraryId();
   const entry = {id, name: (name || "").trim()};
+  if(STORAGE_KIND === "desktop") entry.desktop = true;
   if(!entry.name){ entry.name = join ? (join.code || "").trim().split(/\s+/)[0] : ""; entry.auto = !!join; }
   reg.list.push(entry);
   writeLibraryList(reg);
