@@ -15,11 +15,13 @@
   if(window.__diskBlobMin == null) window.__diskBlobMin = 0;
   try{ window.__p37Device = JSON.parse(localStorage.getItem('__fakeDevice') || 'null'); }catch(e){ window.__p37Device = null; }
   const top = async ()=> (await navigator.storage.getDirectory()).getDirectoryHandle('fake-shell', {create: true});
-  const readRoots = async ()=>{ try{ return JSON.parse(await (await (await (await top()).getFileHandle('roots.json')).getFile()).text()); }catch(e){ return {}; } };
+  // A new stand-in starts with the libraries' place chosen (the tests that
+  // ask it set __fakeShellNoPlace first).
+  const readRoots = async ()=>{ try{ return JSON.parse(await (await (await (await top()).getFileHandle('roots.json')).getFile()).text()); }catch(e){ return window.__fakeShellNoPlace ? {} : {place: 'Music/37 Player Libraries'}; } };
   const writeRoots = async (r)=>{ const w = await (await (await top()).getFileHandle('roots.json', {create: true})).createWritable(); await w.write(JSON.stringify(r)); await w.close(); };
   const parts = (p)=> (p || '').split('/').filter(Boolean);
   const checkRel = (p)=>{ for(const x of parts(p)) if(x === '..' || x === '.') throw new Error('outside the folder: ' + p); };
-  const baseOf = async (root)=>{ const r = await readRoots(); if(!(root in r)) throw new Error('not a folder on the list: ' + root); let d = await top(); for(const x of parts(r[root])) d = await d.getDirectoryHandle(x, {create: true}); return d; };
+  const baseOf = async (root)=>{ const r = await readRoots(); if(!(root in r)) throw new Error('not a folder on the list: ' + root); let d = await top(); for(const x of parts(r[root])){ try{ d = await d.getDirectoryHandle(x); }catch(e){ throw new Error('the folder of ' + root + ' is gone'); } } return d; }; // (as files.rs: a root that's gone isn't made again)
   const dirOf = async (root, path, create)=>{ checkRel(path); let d = await baseOf(root); for(const x of parts(path)) d = await d.getDirectoryHandle(x, {create}); return d; };
   const split = (path)=>{ const p = parts(path); return {dir: p.slice(0, -1).join('/'), name: p[p.length - 1]}; };
   const statOf = async (root, path)=>{
@@ -31,6 +33,9 @@
   };
   const fileOf = async (root, path)=>{ const {dir, name} = split(path); return (await (await dirOf(root, dir, false)).getFileHandle(name)).getFile(); };
   const writeFile = async (root, path, data, adding)=>{ const {dir, name} = split(path); const d = await dirOf(root, dir, true); const fh = await d.getFileHandle(name, {create: true}); const w = await fh.createWritable({keepExistingData: !!adding}); if(adding) await w.seek((await fh.getFile()).size); await w.write(data); await w.close(); };
+  const DEFAULT_PLACE = 'Music/37 Player Libraries';
+  const pathDir = async (p, create)=>{ try{ let d = await top(); for(const x of parts(p)) d = await d.getDirectoryHandle(x, {create: !!create}); return d; }catch(e){ return null; } };
+  const markerOf = async (d)=>{ try{ const m = JSON.parse(await (await (await d.getFileHandle('37 Player library.json')).getFile()).text()); return m && m.format === '37player-library' && /^[A-Za-z0-9_-]{1,40}$/.test(m.id) ? {id: m.id, name: m.name || ''} : null; }catch(e){ return null; } };
   const folderName = (n)=> (n || '').replace(/[\/\\:*?"<>|]/g, '-').trim() || 'My library';
   window.__fakeShellCalls = [];
   const invoke = async (cmd, args, opts)=>{
@@ -44,10 +49,36 @@
       case 'p37_page_ok': case 'p37_quit': return null;
       case 'fs_roots': return readRoots();
       case 'fs_root_default': {
-        const r = await readRoots(), base = 'Music/37 Player Libraries/' + folderName(args.name);
+        const r = await readRoots(), base = (r.place || DEFAULT_PLACE) + '/' + folderName(args.name);
         let p = base, n = 2; const taken = new Set(Object.values(r));
-        while(taken.has(p)) p = base + ' (' + (n++) + ')';
-        r[args.id] = p; await writeRoots(r); await dirOf(args.id, '', true); return p;
+        while(taken.has(p) || await pathDir(p)) p = base + ' (' + (n++) + ')';
+        await pathDir(p, true); r[args.id] = p; await writeRoots(r); return p;
+      }
+      // The libraries' place (files.rs, step 4); the system's dialog is
+      // window.__fakeShellPick: a path under fake-shell/, or null (cancelled).
+      case 'fs_place': { const r = await readRoots(); return {path: r.place || DEFAULT_PLACE, chosen: 'place' in r}; }
+      case 'fs_place_default': { const r = await readRoots(); r.place = DEFAULT_PLACE; await writeRoots(r); await pathDir(DEFAULT_PLACE, true); return DEFAULT_PLACE; }
+      case 'fs_root_choose': {
+        const pick = window.__fakeShellPick; window.__fakeShellPicked = (window.__fakeShellPicked || 0) + 1;
+        if(pick == null) return null;
+        const r = await readRoots(); r[args.id] = pick; await writeRoots(r); await pathDir(pick, true); return pick;
+      }
+      case 'fs_find_libraries': {
+        const r = await readRoots(), base = r.place || DEFAULT_PLACE, d = await pathDir(base), out = [];
+        if(d) for await (const [n, h] of d.entries()){
+          if(h.kind !== 'directory') continue;
+          const m = await markerOf(h); if(m) out.push({id: m.id, name: m.name, path: base + '/' + n});
+        }
+        out.sort((a, b)=> a.path < b.path ? -1 : 1);
+        for(const f of out){ const rid = 'lib-' + f.id; if(!(rid in r) || !(await pathDir(r[rid]))) r[rid] = f.path; }
+        await writeRoots(r); return out;
+      }
+      case 'fs_root_choose_library': {
+        const pick = window.__fakeShellPick; window.__fakeShellPicked = (window.__fakeShellPicked || 0) + 1;
+        if(pick == null) return null;
+        const d = await pathDir(pick), m = d && await markerOf(d);
+        if(!m) throw new Error('not a library folder');
+        const r = await readRoots(); r['lib-' + m.id] = pick; await writeRoots(r); return {id: m.id, name: m.name, path: pick};
       }
       case 'fs_root_forget': { const r = await readRoots(); delete r[args.id]; await writeRoots(r); return null; }
       case 'fs_write': { const root = decodeURIComponent(opts.headers['p37-root']), path = decodeURIComponent(opts.headers['p37-path']); checkRel(path); await writeFile(root, path, args, opts.headers['p37-append'] === '1'); window.__fakeShellWrites = (window.__fakeShellWrites || 0) + 1; window.__fakeShellBiggestWrite = Math.max(window.__fakeShellBiggestWrite || 0, args.byteLength || args.length || 0); return null; }

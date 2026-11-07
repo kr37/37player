@@ -276,7 +276,7 @@ folder), with localStorage as its copy:
 | `37player.acceptEmpty`, `37player.newEmpty`, `37player.pendingJoin`, sessionStorage `37player.library`, `37player.place` | a step in progress, this window's library and place | can be lost |
 
 **localStorage, a library's** (`….<library id>` or `…~<id>`) → its folder,
-where a person would miss it, else nothing:
+where a person would miss it, else nothing (built in 1.4.195: `local.json` in its own files' folder):
 
 | Key | What | |
 |---|---|---|
@@ -297,6 +297,8 @@ synchronously as it loads (`pickWindowLibrary`), and `invoke` is asynchronous,
 so the shell hands the page `device.json` as it starts (an initialization
 script setting `window.__p37Device`); the page uses localStorage when it has
 it, and that when it doesn't (a wiped webview), writing it back.
+
+**Built (1.4.195):** see NOTES.md, "The desktop app's first start of 2.0".
 
 **The move (step 4, Gen Rinzin):** the first start of 2.0 asks where the libraries
 should live, suggesting `Music/37 Player Libraries/` with **Choose another
@@ -329,9 +331,15 @@ fallback, then goes.
    fake runs readnames.js's scenario, not yet the whole `STORE=opfs` set. Not
    switched on: the page doesn't use them, and the bridge stays 1.
 3. Playing by address; the stand-in for big files; the places needing real
-   blobs, one by one.
+   blobs, one by one. **Done 6 Nov 2026** (page 1.4.194: DiskBlob, JoinedBlob,
+   pieces of 8 MB with `p37-append`; the `STORE=desktop` set with every file
+   a DiskBlob; `tests/diskblob.js`).
 4. Where libraries live, the list file, moving libraries in by themselves;
-   bridge 2.
+   bridge 2. **Done 6 Nov 2026** (page 1.4.195, shell on the bridge2 branch:
+   `fs_place`, `fs_place_default`, `fs_find_libraries`,
+   `fs_root_choose_library`; `BRIDGE = 2` and `window.__p37Bridge` set before
+   the page runs; `tests/desktopmove.js`, which is also the wipe test of step
+   5 run through the stand-in shell). Left for the Mac: the same by hand.
 5. The three machines.
 
 6. Use in place, then Move.

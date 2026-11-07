@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="1.4.194">
+<meta name="app-version" content="1.4.195">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -1886,8 +1886,10 @@ function deviceMirrorSoon(){
 }
 if(window.__TAURI_INTERNALS__){
   const set = Storage.prototype.setItem, remove = Storage.prototype.removeItem;
-  Storage.prototype.setItem = function(k, v){ set.call(this, k, v); if(this === window.localStorage && DEVICE_MIRROR_KEYS.includes(k)) deviceMirrorSoon(); };
-  Storage.prototype.removeItem = function(k){ remove.call(this, k); if(this === window.localStorage && DEVICE_MIRROR_KEYS.includes(k)) deviceMirrorSoon(); };
+  // (And a library's own small values, into its folder: libraryMirrorKeys.)
+  const mirrored = (k)=>{ if(DEVICE_MIRROR_KEYS.includes(k)) deviceMirrorSoon(); else { try{ if(libraryMirrorKeys().includes(k)) libraryMirrorSoon(); }catch(err){} } };
+  Storage.prototype.setItem = function(k, v){ set.call(this, k, v); if(this === window.localStorage) mirrored(k); };
+  Storage.prototype.removeItem = function(k){ remove.call(this, k); if(this === window.localStorage) mirrored(k); };
   setTimeout(deviceMirrorSoon, 3000); // an app that had none yet gets the current values
 }
 const LIBRARY_WINDOW_KEY = "37player.library";
@@ -1924,8 +1926,41 @@ function pickWindowLibrary(){
   try{ sessionStorage.setItem(LIBRARY_WINDOW_KEY, id); }catch(err){}
   return id;
 }
+// No list of libraries at all as the page starts: a new install, or the
+// desktop app's storage and its own data folder both emptied (desktop
+// app: its libraries are looked for in their place; desktopLibrariesAtStart).
+const LIBRARY_LIST_WAS_EMPTY = (()=>{ try{ return localStorage.getItem(LIBRARY_LIST_KEY) === null; }catch(err){ return true; } })();
 const LIBRARY_ID = pickWindowLibrary();
 function libScoped(name){ return LIBRARY_ID === MAIN_LIBRARY_ID ? name : name + "~" + LIBRARY_ID; }
+/* A library's own small values in localStorage (its shared library's sync
+   log, its reminders and answers) are kept in its folder too in the desktop
+   app (2.0: desktop/FILES-DESIGN.md, the inventory), as
+   "37 Player's own files/local.json", a couple of seconds after each change;
+   any missing from localStorage as the library opens (a wiped webview) are
+   put back from there. Crash markers aren't: losing one costs a retry. */
+const LIBRARY_LOCAL_FILE = "local.json";
+function libraryMirrorKeys(){ return [libScoped("37player.sharedLog"), "37player.syncPendingSince." + LIBRARY_ID, "37player.dailyAsk." + LIBRARY_ID, "37player.autoRestoreDeclined." + LIBRARY_ID, "37player.autoRestoreSent." + LIBRARY_ID]; }
+let libraryMirrorTimer = null;
+function libraryMirrorSoon(){
+  if(!libraryInDesktopFolder(LIBRARY_ID)) return;
+  clearTimeout(libraryMirrorTimer);
+  libraryMirrorTimer = setTimeout(async ()=>{
+    const values = {};
+    for(const k of libraryMirrorKeys()){ try{ const v = localStorage.getItem(k); if(v !== null) values[k] = v; }catch(err){} }
+    try{ await libStore.open(); await writeWholeFile(libStore.own, LIBRARY_LOCAL_FILE, JSON.stringify(values)); }catch(err){ console.warn("Keeping the library's own values in its folder:", err); }
+  }, 2000);
+}
+async function libraryMirrorRestore(){
+  if(!libraryInDesktopFolder(LIBRARY_ID) || !libStore.own) return [];
+  let values;
+  try{ values = JSON.parse(await (await (await libStore.own.getFileHandle(LIBRARY_LOCAL_FILE)).getFile()).text()); }catch(err){ return []; }
+  const back = [];
+  for(const k of libraryMirrorKeys()){
+    if(!values || typeof values[k] !== "string") continue;
+    try{ if(localStorage.getItem(k) === null){ localStorage.setItem(k, values[k]); back.push(k); } }catch(err){}
+  }
+  return back;
+}
 // 37 Player's old addresses, and where each moved (see "The move to 37player.com").
 const OLD_HOSTS = {"player.37dakinis.net": "37player.com", "playertest.37dakinis.net": "test.37player.com"};
 const MOVED_TO = window.__p37MovedTo || OLD_HOSTS[location.hostname] || null;
@@ -2294,11 +2329,15 @@ class FolderLibraryStore {
     if(!this.dir){
       let dir = await this.getDir(false);
       if(!dir){ dir = await this.getDir(true); if(this.opts.onCreated) this.opts.onCreated(); }
-      // Records, artwork and the waiting list: in "37 Player's own files/" for
-      // a library with readable names, unless it began without them (state/
-      // already at the top).
-      let own = dir;
-      if(this.opts.recordingPath && !(await folderChild(dir, "state", false))) own = await folderChild(dir, OWN_FILES_FOLDER, true);
+      // Records, artwork and the waiting list: in "37 Player's own files/"
+      // for a library with readable names (or one 37 Player makes now:
+      // ownFiles), unless it began without them (state/ already at the top).
+      // A folder that has that folder is read from it, whoever opens it:
+      // another library's store (copying into it) once looked at the top of
+      // a library that keeps them in its own files' folder (found by the
+      // desktop app's move, 1.4.195).
+      let own = await folderChild(dir, OWN_FILES_FOLDER, false);
+      if(!own) own = (await folderChild(dir, "state", false)) || !(this.opts.recordingPath || this.opts.ownFiles) ? dir : await folderChild(dir, OWN_FILES_FOLDER, true);
       this.dir = dir; this.own = own; this.subs = {};
       if(!this.tidied){ this.tidied = true; setTimeout(()=> this.tidy().then(()=> this.renameRecordings()).then(()=>{ if(this === libStore) return syncPlaylistFiles(); }).catch(err=> console.warn("Tidying the library's files:", err)), 20000); }
     }
@@ -2835,6 +2874,221 @@ async function offerRemoveBrowserCopy(){
   try{ localStorage.removeItem(key); }catch(err){}
   showToast(t("folderLibRemovedToast"));
 }
+/* ---- The desktop app's libraries at its start (2.0, step 4) ----
+   Gen Rinzin's test for 2.0: the app's webview storage deleted (CCleaner,
+   CleanMyMac), nothing is missing. So at each start of the desktop app with
+   bridge 2, before the window's library opens (desktopLibrariesAtStart):
+   - With no list of libraries (a new install, or the app's own data folder
+     emptied too), the libraries' place is searched for library folders (their
+     "37 Player library.json"; fs_find_libraries), and those found go on the
+     list. Settings → Libraries has Find a library folder… for one elsewhere.
+   - Each library still in browser storage (from 1.4) is copied into a folder
+     of its own in the libraries' place, every record and file read back and
+     compared, and then used from there; the place is asked once, the first
+     time (Music/37 Player Libraries is only the suggestion). A copy that
+     fails or is cut off leaves the library where it was, and the next start
+     carries on (a record already there at the same size and revision stays).
+   - The browser-storage copy stays 30 days (fromBrowser), then is removed.
+   - A library whose folder was made but can't be found now (a drive not
+     plugged in, a folder moved) is asked about, never made again empty
+     (ensureDesktopFolder). */
+const DESKTOP_BROWSER_COPY_DAYS = 30;
+// The libraries' place, asked the first time it's needed. False if the
+// person closes the question without answering (asked again next start).
+async function askDesktopPlace(moving){
+  let place;
+  try{ place = await desktopInvoke("fs_place"); }catch(err){ return true; } // an older shell: its default
+  if(place && place.chosen) return true;
+  for(;;){
+    const body = [t(moving ? "desktopPlaceBodyMove" : "desktopPlaceBodyNew", {count: moving})].map(x=> `<p>${escapeHtmlText(x)}</p>`).join("")
+      + `<p><b class="desktop-place-path">${escapeHtmlText(place.path)}</b></p>`
+      + (moving ? `<p>${escapeHtmlText(t("desktopPlaceKeep"))}</p>` : "");
+    const c = await askChoice(t("desktopPlaceTitle"), body,
+      [{label: t("desktopPlaceUseBtn"), value: "use", kind: "primary"}, {label: t("desktopPlaceChooseBtn"), value: "choose"}]);
+    try{
+      if(c === "use"){ await desktopInvoke("fs_place_default"); return true; }
+      if(c === "choose"){ if(await desktopInvoke("fs_root_choose", {id: "place", title: t("desktopPlaceChooseTitle")})) return true; continue; }
+    }catch(err){ alert(t("desktopFindFailed", {error: (err && err.message) || String(err)})); continue; }
+    return false;
+  }
+}
+async function browserDatabaseNames(){
+  if(!indexedDB.databases) return null;
+  try{ return new Set((await indexedDB.databases()).map(d=> d && d.name).filter(Boolean)); }catch(err){ return null; }
+}
+function deleteBrowserDatabase(name){
+  return new Promise(resolve=>{
+    const req = indexedDB.deleteDatabase(name);
+    req.onsuccess = req.onerror = ()=> resolve();
+    req.onblocked = ()=> console.warn("Removing " + name + " waits for it to be closed");
+  });
+}
+// Copies one library from browser storage into its folder, and checks it.
+async function desktopMoveOne(entry){
+  const src = new IdbLibraryStore(libraryDbName(entry.id));
+  try{
+    const rootRec = await src.get("state", "root");
+    const tracks = new Map(((rootRec && rootRec.value && rootRec.value.library) || []).map(x=> [x.id, x]));
+    const name = (entry.name && entry.name.trim()) || (rootRec && rootRec.value && rootRec.value.settings && rootRec.value.settings.libraryName) || t("libDefaultName");
+    const shown = libraryDisplayName(entry);
+    await desktopLibraryDir(entry.id, true, name);
+    const dest = new FolderLibraryStore((create)=> desktopLibraryDir(entry.id, create, name), "37player-files~" + entry.id,
+      {recordingPath: (tid)=> tracks.has(tid) ? recordingPathFor(tracks.get(tid)) : null, canMove: ()=> true});
+    const files = [];
+    for(const store of ["audio", "artwork"]) for(const k of await src.keys(store)) files.push([store, k]);
+    const total = files.length;
+    for(let i = 0; i < files.length; i++){
+      const [store, k] = files[i];
+      if(i % 5 === 0) setActiveOperationProgress(t("desktopMoveCopying", {name: shown, done: workingOn(i, total), total}), null, "desktopMove");
+      const rec = await src.get(store, k);
+      if(!rec) continue;
+      let there = null; try{ there = await dest.readRaw(store, k); }catch(err){}
+      if(there && there.blob && rec.blob && there.blob.size === rec.blob.size && there.rev === rec.rev) continue;
+      await dest.put(store, rec);
+    }
+    // The details and playlists last (the device's converter goes to its own
+    // database: mainStateOp).
+    for(const k of await src.keys("state")){
+      const rec = await src.get("state", k);
+      if(!rec) continue;
+      if(k === "converter"){ try{ await mainStatePut(rec); }catch(err){} continue; }
+      await dest.put("state", rec);
+    }
+    // Every record there, and every file read back at its size.
+    setActiveOperationProgress(t("desktopMoveChecking", {name: shown}), null, "desktopMove");
+    for(const store of ["state", "audio", "artwork"]){
+      const want = (await src.keys(store)).filter(k=> store !== "state" || k !== "converter"), have = new Set(await dest.keys(store));
+      const missing = want.filter(k=> !have.has(k));
+      if(missing.length) throw new Error(missing.length + " " + store + " records didn't arrive");
+    }
+    for(const [store, k] of files){
+      const a = await src.get(store, k);
+      if(!a) continue;
+      const b = await dest.get(store, k);
+      const sa = a.blob ? a.blob.size : -1, sb = b && b.blob ? b.blob.size : -2;
+      if(sa !== sb) throw new Error(store + " " + k + " came out at " + sb + " bytes, not " + sa);
+    }
+    const r2 = await dest.get("state", "root");
+    if(rootRec && (!r2 || r2.rev !== rootRec.rev)) throw new Error("the library record didn't arrive whole");
+  } finally {
+    try{ src.close(); }catch(err){}
+  }
+}
+// Returns true when the list changed under this window's library: the
+// window then starts again (its store was made from the old list).
+async function desktopLibrariesAtStart(){
+  if(STORAGE_KIND !== "desktop") return false;
+  const run = async ()=>{
+    let changed = false, note = null;
+    // Lost list: the libraries' place is searched.
+    let reg = readLibraryList(), roots = await desktopRoots(true);
+    if(LIBRARY_LIST_WAS_EMPTY || reg.list.some(l=> l.desktopMade && !(desktopRootOf(l.id) in roots))){
+      let found = [];
+      try{ found = await desktopInvoke("fs_find_libraries") || []; }catch(err){ console.warn("Looking for library folders:", err); }
+      desktopRootsCache = null;
+      if(found.length){
+        reg = readLibraryList();
+        if(LIBRARY_LIST_WAS_EMPTY && !found.some(f=> f.id === MAIN_LIBRARY_ID)){ reg.list = reg.list.filter(l=> l.id !== MAIN_LIBRARY_ID); reg.mainDeleted = true; }
+        let added = 0;
+        for(const f of found){
+          let e = reg.list.find(l=> l.id === f.id);
+          if(!e){ e = {id: f.id, name: f.name || ""}; reg.list.push(e); added++; }
+          if(!e.name && f.name) e.name = f.name;
+          e.desktop = true; e.desktopMade = true;
+        }
+        if(!reg.list.some(l=> l.id === reg.last)) reg.last = reg.list[0].id;
+        writeLibraryList(reg);
+        if(LIBRARY_LIST_WAS_EMPTY){
+          changed = true;
+          let place = null; try{ place = await desktopInvoke("fs_place"); }catch(err){}
+          note = t("desktopFoundToast", {count: found.length, path: (place && place.path) || ""});
+        } else if(added) changed = true;
+      }
+    }
+    // The browser-storage copies of moved libraries, after their 30 days.
+    reg = readLibraryList();
+    for(const l of reg.list){
+      if(!l.fromBrowser || Date.now() - l.fromBrowser < DESKTOP_BROWSER_COPY_DAYS * 86400000) continue;
+      await deleteBrowserDatabase(libraryDbName(l.id));
+      const r = readLibraryList(), e = r.list.find(x=> x.id === l.id);
+      if(e){ delete e.fromBrowser; writeLibraryList(r); }
+    }
+    // Libraries still in browser storage: moved into their folders.
+    reg = readLibraryList();
+    const dbs = await browserDatabaseNames();
+    const waiting = reg.list.filter(l=> !l.desktop && !l.folder);
+    const toCopy = waiting.filter(l=> !dbs || dbs.has(libraryDbName(l.id)));
+    const empty = waiting.filter(l=> !toCopy.includes(l));
+    if(empty.length){ const r = readLibraryList(); r.list.forEach(e=>{ if(empty.some(x=> x.id === e.id)) e.desktop = true; }); writeLibraryList(r); if(empty.some(x=> x.id === LIBRARY_ID)) changed = true; }
+    const asking = toCopy.length || (LIBRARY_LIST_WAS_EMPTY && !note);
+    if(asking && !(await askDesktopPlace(toCopy.length))) return changed;
+    let moved = 0;
+    for(const l of toCopy){
+      try{ await desktopMoveOne(l); }
+      catch(err){
+        clearActiveOperation("desktopMove");
+        console.warn("Moving a library into its folder:", l.id, err);
+        alert(t("desktopMoveFailed", {name: libraryDisplayName(l), error: isQuotaError(err) ? t("copyLibFull") : (err && err.message) || String(err)}));
+        continue;
+      }
+      const r = readLibraryList(), e = r.list.find(x=> x.id === l.id);
+      if(e){ e.desktop = true; e.desktopMade = true; e.fromBrowser = Date.now(); writeLibraryList(r); }
+      moved++;
+      if(l.id === LIBRARY_ID) changed = true;
+    }
+    clearActiveOperation("desktopMove");
+    if(moved){ let place = null; try{ place = await desktopInvoke("fs_place"); }catch(err){} note = t("desktopMovedToast", {path: (place && place.path) || ""}); changed = true; }
+    if(note){ try{ sessionStorage.setItem("37player.desktopNote", note); }catch(err){} }
+    return changed;
+  };
+  return navigator.locks ? navigator.locks.request("37player-desktop-move", run) : run();
+}
+// After the start: what it did, said once.
+function showDesktopStartNote(){
+  let note = null; try{ note = sessionStorage.getItem("37player.desktopNote"); sessionStorage.removeItem("37player.desktopNote"); }catch(err){}
+  if(note) setTimeout(()=> showToast(note), 1200);
+}
+// Find a library folder…: one anywhere, put on the list. The found entry,
+// or null.
+async function desktopFindLibraryFolder(){
+  let f;
+  try{ f = await desktopInvoke("fs_root_choose_library", {title: t("desktopFindTitle")}); }
+  catch(err){ alert(/not a library/i.test(String((err && err.message) || err)) ? t("desktopFindNotLibrary") : t("desktopFindFailed", {error: (err && err.message) || String(err)})); return null; }
+  desktopRootsCache = null;
+  if(!f) return null;
+  const reg = readLibraryList();
+  let e = reg.list.find(l=> l.id === f.id);
+  if(!e){ e = {id: f.id, name: f.name || ""}; reg.list.push(e); }
+  if(!e.name && f.name) e.name = f.name;
+  if(f.id === MAIN_LIBRARY_ID) delete reg.mainDeleted;
+  reg.deleted = (reg.deleted || []).filter(x=> x !== f.id);
+  e.desktop = true; e.desktopMade = true;
+  writeLibraryList(reg);
+  return e;
+}
+// Before this window's library opens: its folder must be there.
+async function ensureDesktopFolder(){
+  if(!libraryInDesktopFolder(LIBRARY_ID)) return;
+  const e = libraryEntry(LIBRARY_ID);
+  if(!e || !e.desktopMade) return; // not made yet: made when it's first written
+  for(;;){
+    let ok = false;
+    try{ const st = await desktopInvoke("fs_stat", {root: desktopRootOf(LIBRARY_ID), path: FOLDER_MARKER}); ok = !!(st && st.kind === "file"); }catch(err){}
+    if(ok) return;
+    const others = readLibraryList().list.filter(l=> l.id !== LIBRARY_ID);
+    const buttons = [{label: t("notLoadedTryAgain"), value: "again", kind: "primary"}, {label: t("desktopFindBtn"), value: "find"}];
+    if(others.length) buttons.push({label: t("folderLibOtherBtn"), value: "other"});
+    const c = await askChoice(t("desktopFolderMissingTitle"), `<p>${escapeHtmlText(t("desktopFolderMissingBody", {name: libraryDisplayName(e)}))}</p>`, buttons);
+    if(c === "find"){
+      const f = await desktopFindLibraryFolder();
+      if(f && f.id !== LIBRARY_ID) alert(t("desktopFindOther", {name: libraryDisplayName(f)}));
+    } else if(c === "other"){
+      const pick = await askChoice(t("folderLibWhichTitle"), "", others.map(l=> ({label: libraryDisplayName(l), value: l.id})));
+      if(pick){ try{ sessionStorage.setItem(LIBRARY_WINDOW_KEY, pick); }catch(err){} leavingOnPurpose = true; location.reload(); await new Promise(()=>{}); }
+    }
+    desktopRootsCache = null;
+  }
+}
 /* ---- The desktop app's folders, as handles (v2, bridge 2; not used yet) ----
    Stand-ins for the browser's folder and file handles (the File System
    Access API, as much of it as FolderLibraryStore uses), backed by the
@@ -3026,15 +3280,20 @@ let desktopRootsCache = null;
 async function desktopRoots(fresh){ if(fresh || !desktopRootsCache) desktopRootsCache = await desktopInvoke("fs_roots"); return desktopRootsCache; }
 function desktopRootOf(id){ return "lib-" + id; }
 function libraryEntry(id){ return readLibraryList().list.find(l=> l.id === id) || null; }
-async function desktopLibraryDir(id, create){
+async function desktopLibraryDir(id, create, nameHint){
   const rid = desktopRootOf(id);
   if(!(rid in await desktopRoots())){
     if(!(rid in await desktopRoots(true))){
       if(!create) return null;
-      const e = libraryEntry(id), name = (e && e.name) || (id === LIBRARY_ID && root && root.settings && root.settings.libraryName) || t("libDefaultName");
+      const e = libraryEntry(id), name = nameHint || (e && e.name) || (id === LIBRARY_ID && root && root.settings && root.settings.libraryName) || t("libDefaultName");
       await desktopInvoke("fs_root_default", {id: rid, name});
       await desktopRoots(true);
       await writeWholeFile(desktopRootDir(rid), FOLDER_MARKER, JSON.stringify({format: "37player-library", id, name, createdAt: Date.now()}, null, 1));
+      await writeWholeFile(desktopRootDir(rid), "README.txt", FOLDER_README);
+      // From now on a missing folder is asked about, not made again empty
+      // (ensureDesktopFolder).
+      const reg = readLibraryList(), le = reg.list.find(l=> l.id === id);
+      if(le && le.desktop && !le.desktopMade){ le.desktopMade = true; writeLibraryList(reg); } // (a library being moved in: when it's done)
     }
   }
   return desktopRootDir(rid);
@@ -3046,8 +3305,11 @@ function storageOpen(id, opts){
   // tracks' details are at hand. Another library's store (copying,
   // removing) keeps the names it has.
   if(id === LIBRARY_ID) opts = Object.assign({}, opts, recordingNameOpts());
-  if(STORAGE_KIND === "idb" && libraryFolderName(id)) return new FolderLibraryStore(()=> libraryFolderDir(id), "37player-files~" + id, opts);
+  else opts = Object.assign({}, opts, {ownFiles: true}); // (a new one, made from here: the layout of today)
   if(libraryInDesktopFolder(id)) return new FolderLibraryStore((create)=> desktopLibraryDir(id, create), "37player-files~" + id, opts);
+  // (A library a Windows desktop app of 1.4 kept in a folder of the
+  // browser's kind stays there in 2.0: it's out of browser storage already.)
+  if((STORAGE_KIND === "idb" || STORAGE_KIND === "desktop") && libraryFolderName(id)) return new FolderLibraryStore(()=> libraryFolderDir(id), "37player-files~" + id, opts);
   if(STORAGE_KIND === "opfs") return new FolderLibraryStore(async (create)=>{ const r = await filesRootDir(create); return r && folderChild(r, fileKeyOf(id), create); }, "37player-files~" + id, opts);
   return new IdbLibraryStore(libraryDbName(id), opts);
 }
@@ -3152,7 +3414,14 @@ function idbDelete(store, key){
 // The device's own records (the converter) live in the first library's
 // database whichever library is open, so the converter is downloaded once
 // per device, not once per library.
+// In the desktop app (2.0) they're a cache in the webview's own database
+// (DEVICE_DB_NAME), not in the main library's folder.
+const DEVICE_DB_NAME = "37player-device";
 async function mainStateOp(fn){
+  if(STORAGE_KIND === "desktop"){
+    const st = new IdbLibraryStore(DEVICE_DB_NAME);
+    try{ return await fn(st); } finally { st.close(); }
+  }
   if(LIBRARY_ID === MAIN_LIBRARY_ID) return fn(libStore);
   const st = storageOpen(MAIN_LIBRARY_ID);
   try{ return await fn(st); } finally { st.close(); }
@@ -3260,6 +3529,26 @@ const STRINGS = {
     "folderLibDoneBody": "37 Player now runs this library from the folder “{folder}”: {tracks} tracks. The copy in the browser isn't used any more. Remove it, to free about {size}?",
     "folderLibRemoveBtn": "Remove the browser's copy",
     "folderLibLaterBtn": "Not now",
+    "desktopPlaceTitle": "Where should your libraries live?",
+    "desktopPlaceBodyMove": "37 Player now keeps each library in a folder of its own on this computer, where a cleaning program can't erase it. Your libraries ({count}) will be copied into this place, each in its own folder:",
+    "desktopPlaceBodyNew": "37 Player keeps each library in a folder of its own on this computer. New libraries go in this place, each in its own folder:",
+    "desktopPlaceKeep": "Each one is checked before it's used from there. The copy in the app's own storage stays for 30 days, in case.",
+    "desktopPlaceUseBtn": "Use this place",
+    "desktopPlaceChooseBtn": "Choose another place…",
+    "desktopPlaceChooseTitle": "Where should 37 Player keep its libraries?",
+    "desktopMoveCopying": "Copying “{name}” to its folder: {done} of {total}…",
+    "desktopMoveChecking": "Checking “{name}” in its folder…",
+    "desktopMoveFailed": "“{name}” couldn't be copied to its folder ({error}). It's still in the app's own storage, as it was; 37 Player tries again the next time it starts.",
+    "desktopMovedToast": "Your libraries are now in {path}",
+    "desktopFoundToast": "Found {count} libraries in {path}",
+    "desktopFolderMissingTitle": "Where is this library's folder?",
+    "desktopFolderMissingBody": "37 Player can't find the folder of “{name}”. If it's on a drive that isn't plugged in, plug it in and try again; if the folder was moved, find it.",
+    "desktopFindBtn": "Find a library folder…",
+    "desktopFindTitle": "Choose a 37 Player library's folder",
+    "desktopFindNotLibrary": "That folder isn't a 37 Player library: it has no “37 Player library.json” in it.",
+    "desktopFindOther": "That's the folder of another library, “{name}”: it's now on your list of libraries.",
+    "desktopFindAdded": "“{name}” is on your list of libraries.",
+    "desktopFindFailed": "The folder couldn't be opened ({error}).",
     "folderLibRemovedToast": "The browser's copy was removed",
     "folderLibOpenTitle": "Open the library's folder",
     "folderLibPermBody": "This library is kept in the folder “{name}”. The browser needs your permission to open it.",
@@ -5041,6 +5330,26 @@ const STRINGS = {
     "folderLibDoneBody": "37 Player usa ahora esta biblioteca desde la carpeta “{folder}”: {tracks} pistas. La copia del navegador ya no se usa. ¿Quitarla para liberar unos {size}?",
     "folderLibRemoveBtn": "Quitar la copia del navegador",
     "folderLibLaterBtn": "Ahora no",
+    "desktopPlaceTitle": "¿Dónde deben estar tus bibliotecas?",
+    "desktopPlaceBodyMove": "37 Player guarda ahora cada biblioteca en una carpeta propia en este ordenador, donde un programa de limpieza no puede borrarla. Tus bibliotecas ({count}) se copiarán a este lugar, cada una en su carpeta:",
+    "desktopPlaceBodyNew": "37 Player guarda cada biblioteca en una carpeta propia en este ordenador. Las bibliotecas nuevas van a este lugar, cada una en su carpeta:",
+    "desktopPlaceKeep": "Cada una se comprueba antes de usarla desde allí. La copia en el almacenamiento propio de la aplicación se queda 30 días, por si acaso.",
+    "desktopPlaceUseBtn": "Usar este lugar",
+    "desktopPlaceChooseBtn": "Elegir otro lugar…",
+    "desktopPlaceChooseTitle": "¿Dónde debe guardar 37 Player sus bibliotecas?",
+    "desktopMoveCopying": "Copiando «{name}» a su carpeta: {done} de {total}…",
+    "desktopMoveChecking": "Comprobando «{name}» en su carpeta…",
+    "desktopMoveFailed": "«{name}» no se pudo copiar a su carpeta ({error}). Sigue en el almacenamiento propio de la aplicación, como estaba; 37 Player lo intentará de nuevo la próxima vez que se abra.",
+    "desktopMovedToast": "Tus bibliotecas están ahora en {path}",
+    "desktopFoundToast": "Se encontraron {count} bibliotecas en {path}",
+    "desktopFolderMissingTitle": "¿Dónde está la carpeta de esta biblioteca?",
+    "desktopFolderMissingBody": "37 Player no encuentra la carpeta de «{name}». Si está en un disco que no está conectado, conéctalo y vuelve a intentarlo; si la carpeta se movió, búscala.",
+    "desktopFindBtn": "Buscar la carpeta de una biblioteca…",
+    "desktopFindTitle": "Elige la carpeta de una biblioteca de 37 Player",
+    "desktopFindNotLibrary": "Esa carpeta no es una biblioteca de 37 Player: no contiene «37 Player library.json».",
+    "desktopFindOther": "Esa es la carpeta de otra biblioteca, «{name}»: ya está en tu lista de bibliotecas.",
+    "desktopFindAdded": "«{name}» está en tu lista de bibliotecas.",
+    "desktopFindFailed": "No se pudo abrir la carpeta ({error}).",
     "folderLibRemovedToast": "Se quitó la copia del navegador",
     "folderLibOpenTitle": "Abrir la carpeta de la biblioteca",
     "folderLibPermBody": "Esta biblioteca está guardada en la carpeta “{name}”. El navegador necesita su permiso para abrirla.",
@@ -6822,6 +7131,26 @@ const STRINGS = {
     "folderLibDoneBody": "37 Player utilise maintenant cette bibliothèque depuis le dossier « {folder} » : {tracks} pistes. La copie du navigateur ne sert plus. La supprimer pour libérer environ {size} ?",
     "folderLibRemoveBtn": "Supprimer la copie du navigateur",
     "folderLibLaterBtn": "Pas maintenant",
+    "desktopPlaceTitle": "Où ranger vos bibliothèques ?",
+    "desktopPlaceBodyMove": "37 Player garde désormais chaque bibliothèque dans un dossier à elle sur cet ordinateur, où un programme de nettoyage ne peut pas l'effacer. Vos bibliothèques ({count}) seront copiées à cet endroit, chacune dans son dossier :",
+    "desktopPlaceBodyNew": "37 Player garde chaque bibliothèque dans un dossier à elle sur cet ordinateur. Les nouvelles bibliothèques vont à cet endroit, chacune dans son dossier :",
+    "desktopPlaceKeep": "Chacune est vérifiée avant d'être utilisée depuis là. La copie dans le stockage propre de l'application reste 30 jours, au cas où.",
+    "desktopPlaceUseBtn": "Utiliser cet endroit",
+    "desktopPlaceChooseBtn": "Choisir un autre endroit…",
+    "desktopPlaceChooseTitle": "Où 37 Player doit-il garder ses bibliothèques ?",
+    "desktopMoveCopying": "Copie de « {name} » dans son dossier : {done} sur {total}…",
+    "desktopMoveChecking": "Vérification de « {name} » dans son dossier…",
+    "desktopMoveFailed": "« {name} » n'a pas pu être copiée dans son dossier ({error}). Elle est toujours dans le stockage propre de l'application, comme avant ; 37 Player réessaiera au prochain démarrage.",
+    "desktopMovedToast": "Vos bibliothèques sont maintenant dans {path}",
+    "desktopFoundToast": "{count} bibliothèques trouvées dans {path}",
+    "desktopFolderMissingTitle": "Où est le dossier de cette bibliothèque ?",
+    "desktopFolderMissingBody": "37 Player ne trouve pas le dossier de « {name} ». S'il est sur un disque non branché, branchez-le et réessayez ; si le dossier a été déplacé, retrouvez-le.",
+    "desktopFindBtn": "Retrouver le dossier d'une bibliothèque…",
+    "desktopFindTitle": "Choisissez le dossier d'une bibliothèque 37 Player",
+    "desktopFindNotLibrary": "Ce dossier n'est pas une bibliothèque 37 Player : il ne contient pas de « 37 Player library.json ».",
+    "desktopFindOther": "C'est le dossier d'une autre bibliothèque, « {name} » : elle est maintenant dans votre liste de bibliothèques.",
+    "desktopFindAdded": "« {name} » est dans votre liste de bibliothèques.",
+    "desktopFindFailed": "Le dossier n'a pas pu être ouvert ({error}).",
     "folderLibRemovedToast": "La copie du navigateur a été supprimée",
     "folderLibOpenTitle": "Ouvrir le dossier de la bibliothèque",
     "folderLibPermBody": "Cette bibliothèque est conservée dans le dossier « {name} ». Le navigateur a besoin de votre permission pour l'ouvrir.",
@@ -8603,6 +8932,26 @@ const STRINGS = {
     "folderLibDoneBody": "O 37 Player agora usa esta biblioteca a partir da pasta “{folder}”: {tracks} faixas. A cópia do navegador já não é usada. Removê-la para liberar cerca de {size}?",
     "folderLibRemoveBtn": "Remover a cópia do navegador",
     "folderLibLaterBtn": "Agora não",
+    "desktopPlaceTitle": "Onde devem ficar as suas bibliotecas?",
+    "desktopPlaceBodyMove": "O 37 Player guarda agora cada biblioteca numa pasta própria neste computador, onde um programa de limpeza não a pode apagar. As suas bibliotecas ({count}) serão copiadas para este lugar, cada uma na sua pasta:",
+    "desktopPlaceBodyNew": "O 37 Player guarda cada biblioteca numa pasta própria neste computador. As bibliotecas novas vão para este lugar, cada uma na sua pasta:",
+    "desktopPlaceKeep": "Cada uma é verificada antes de ser usada a partir daí. A cópia no armazenamento próprio da aplicação fica 30 dias, por precaução.",
+    "desktopPlaceUseBtn": "Usar este lugar",
+    "desktopPlaceChooseBtn": "Escolher outro lugar…",
+    "desktopPlaceChooseTitle": "Onde deve o 37 Player guardar as suas bibliotecas?",
+    "desktopMoveCopying": "A copiar «{name}» para a sua pasta: {done} de {total}…",
+    "desktopMoveChecking": "A verificar «{name}» na sua pasta…",
+    "desktopMoveFailed": "Não foi possível copiar «{name}» para a sua pasta ({error}). Continua no armazenamento próprio da aplicação, como estava; o 37 Player tenta de novo da próxima vez que abrir.",
+    "desktopMovedToast": "As suas bibliotecas estão agora em {path}",
+    "desktopFoundToast": "Encontradas {count} bibliotecas em {path}",
+    "desktopFolderMissingTitle": "Onde está a pasta desta biblioteca?",
+    "desktopFolderMissingBody": "O 37 Player não encontra a pasta de «{name}». Se estiver num disco que não está ligado, ligue-o e tente de novo; se a pasta foi movida, procure-a.",
+    "desktopFindBtn": "Procurar a pasta de uma biblioteca…",
+    "desktopFindTitle": "Escolha a pasta de uma biblioteca do 37 Player",
+    "desktopFindNotLibrary": "Essa pasta não é uma biblioteca do 37 Player: não tem «37 Player library.json».",
+    "desktopFindOther": "Essa é a pasta de outra biblioteca, «{name}»: já está na sua lista de bibliotecas.",
+    "desktopFindAdded": "«{name}» está na sua lista de bibliotecas.",
+    "desktopFindFailed": "Não foi possível abrir a pasta ({error}).",
     "folderLibRemovedToast": "A cópia do navegador foi removida",
     "folderLibOpenTitle": "Abrir a pasta da biblioteca",
     "folderLibPermBody": "Esta biblioteca está guardada na pasta “{name}”. O navegador precisa da sua permissão para abri-la.",
@@ -10384,6 +10733,26 @@ const STRINGS = {
     "folderLibDoneBody": "37 Player verwendet diese Bibliothek jetzt aus dem Ordner „{folder}“: {tracks} Titel. Die Kopie im Browser wird nicht mehr gebraucht. Entfernen, um etwa {size} freizugeben?",
     "folderLibRemoveBtn": "Kopie im Browser entfernen",
     "folderLibLaterBtn": "Jetzt nicht",
+    "desktopPlaceTitle": "Wo sollen Ihre Bibliotheken liegen?",
+    "desktopPlaceBodyMove": "37 Player bewahrt jetzt jede Bibliothek in einem eigenen Ordner auf diesem Computer auf, wo ein Reinigungsprogramm sie nicht löschen kann. Ihre Bibliotheken ({count}) werden an diesen Ort kopiert, jede in ihren eigenen Ordner:",
+    "desktopPlaceBodyNew": "37 Player bewahrt jede Bibliothek in einem eigenen Ordner auf diesem Computer auf. Neue Bibliotheken kommen an diesen Ort, jede in ihren eigenen Ordner:",
+    "desktopPlaceKeep": "Jede wird geprüft, bevor sie von dort verwendet wird. Die Kopie im eigenen Speicher der App bleibt 30 Tage erhalten, für alle Fälle.",
+    "desktopPlaceUseBtn": "Diesen Ort verwenden",
+    "desktopPlaceChooseBtn": "Anderen Ort wählen…",
+    "desktopPlaceChooseTitle": "Wo soll 37 Player seine Bibliotheken aufbewahren?",
+    "desktopMoveCopying": "„{name}“ wird in ihren Ordner kopiert: {done} von {total}…",
+    "desktopMoveChecking": "„{name}“ wird in ihrem Ordner geprüft…",
+    "desktopMoveFailed": "„{name}“ konnte nicht in ihren Ordner kopiert werden ({error}). Sie ist weiter im eigenen Speicher der App, wie zuvor; 37 Player versucht es beim nächsten Start erneut.",
+    "desktopMovedToast": "Ihre Bibliotheken liegen jetzt in {path}",
+    "desktopFoundToast": "{count} Bibliotheken in {path} gefunden",
+    "desktopFolderMissingTitle": "Wo ist der Ordner dieser Bibliothek?",
+    "desktopFolderMissingBody": "37 Player findet den Ordner von „{name}“ nicht. Liegt er auf einem Laufwerk, das nicht angeschlossen ist, schließen Sie es an und versuchen Sie es erneut; wurde der Ordner verschoben, suchen Sie ihn.",
+    "desktopFindBtn": "Ordner einer Bibliothek suchen…",
+    "desktopFindTitle": "Wählen Sie den Ordner einer 37-Player-Bibliothek",
+    "desktopFindNotLibrary": "Dieser Ordner ist keine 37-Player-Bibliothek: Er enthält keine „37 Player library.json“.",
+    "desktopFindOther": "Das ist der Ordner einer anderen Bibliothek, „{name}“: Sie steht jetzt in Ihrer Liste der Bibliotheken.",
+    "desktopFindAdded": "„{name}“ steht in Ihrer Liste der Bibliotheken.",
+    "desktopFindFailed": "Der Ordner konnte nicht geöffnet werden ({error}).",
     "folderLibRemovedToast": "Die Kopie im Browser wurde entfernt",
     "folderLibOpenTitle": "Den Ordner der Bibliothek öffnen",
     "folderLibPermBody": "Diese Bibliothek ist im Ordner „{name}“ gespeichert. Der Browser braucht Ihre Erlaubnis, um ihn zu öffnen.",
@@ -12165,6 +12534,26 @@ const STRINGS = {
     "folderLibDoneBody": "37 Player 现在从文件夹“{folder}”运行这个曲库：共 {tracks} 首曲目。浏览器中的副本已不再使用。要删除它，腾出约 {size} 吗？",
     "folderLibRemoveBtn": "删除浏览器中的副本",
     "folderLibLaterBtn": "暂不",
+    "desktopPlaceTitle": "曲库要放在哪里？",
+    "desktopPlaceBodyMove": "37 Player 现在把每个曲库放在这台电脑上它自己的文件夹里，清理程序不会把它删掉。你的曲库（{count} 个）将复制到这个位置，每个放在自己的文件夹中：",
+    "desktopPlaceBodyNew": "37 Player 把每个曲库放在这台电脑上它自己的文件夹里。新曲库会放在这个位置，每个放在自己的文件夹中：",
+    "desktopPlaceKeep": "每个曲库都会先检查，再从那里使用。应用自身存储中的副本保留 30 天，以防万一。",
+    "desktopPlaceUseBtn": "使用这个位置",
+    "desktopPlaceChooseBtn": "选择其他位置…",
+    "desktopPlaceChooseTitle": "37 Player 应把曲库放在哪里？",
+    "desktopMoveCopying": "正在把“{name}”复制到它的文件夹：{done} / {total}…",
+    "desktopMoveChecking": "正在检查文件夹中的“{name}”…",
+    "desktopMoveFailed": "“{name}”无法复制到它的文件夹（{error}）。它仍在应用自身的存储中，和以前一样；37 Player 下次启动时会再试。",
+    "desktopMovedToast": "你的曲库现在在 {path}",
+    "desktopFoundToast": "在 {path} 找到 {count} 个曲库",
+    "desktopFolderMissingTitle": "这个曲库的文件夹在哪里？",
+    "desktopFolderMissingBody": "37 Player 找不到“{name}”的文件夹。如果它在未连接的磁盘上，请连接后再试；如果文件夹被移动了，请找到它。",
+    "desktopFindBtn": "查找曲库文件夹…",
+    "desktopFindTitle": "选择一个 37 Player 曲库的文件夹",
+    "desktopFindNotLibrary": "这个文件夹不是 37 Player 曲库：里面没有“37 Player library.json”。",
+    "desktopFindOther": "这是另一个曲库“{name}”的文件夹：它现在已在你的曲库列表中。",
+    "desktopFindAdded": "“{name}”已在你的曲库列表中。",
+    "desktopFindFailed": "无法打开这个文件夹（{error}）。",
     "folderLibRemovedToast": "已删除浏览器中的副本",
     "folderLibOpenTitle": "打开曲库的文件夹",
     "folderLibPermBody": "这个曲库保存在文件夹“{name}”中。浏览器需要您的许可才能打开它。",
@@ -13946,6 +14335,26 @@ const STRINGS = {
     "folderLibDoneBody": "37 Player giờ chạy thư viện này từ thư mục “{folder}”: {tracks} bản nhạc. Bản sao trong trình duyệt không còn được dùng. Xóa nó để giải phóng khoảng {size}?",
     "folderLibRemoveBtn": "Xóa bản sao trong trình duyệt",
     "folderLibLaterBtn": "Để sau",
+    "desktopPlaceTitle": "Các thư viện của bạn nên nằm ở đâu?",
+    "desktopPlaceBodyMove": "37 Player giờ giữ mỗi thư viện trong một thư mục riêng trên máy tính này, nơi chương trình dọn dẹp không xoá được. Các thư viện của bạn ({count}) sẽ được sao chép vào nơi này, mỗi thư viện một thư mục:",
+    "desktopPlaceBodyNew": "37 Player giữ mỗi thư viện trong một thư mục riêng trên máy tính này. Thư viện mới sẽ nằm ở nơi này, mỗi thư viện một thư mục:",
+    "desktopPlaceKeep": "Mỗi thư viện được kiểm tra trước khi dùng từ đó. Bản sao trong bộ nhớ riêng của ứng dụng được giữ 30 ngày, phòng khi cần.",
+    "desktopPlaceUseBtn": "Dùng nơi này",
+    "desktopPlaceChooseBtn": "Chọn nơi khác…",
+    "desktopPlaceChooseTitle": "37 Player nên giữ các thư viện ở đâu?",
+    "desktopMoveCopying": "Đang sao chép “{name}” vào thư mục của nó: {done}/{total}…",
+    "desktopMoveChecking": "Đang kiểm tra “{name}” trong thư mục của nó…",
+    "desktopMoveFailed": "Không sao chép được “{name}” vào thư mục của nó ({error}). Nó vẫn ở trong bộ nhớ riêng của ứng dụng như trước; 37 Player sẽ thử lại lần mở sau.",
+    "desktopMovedToast": "Các thư viện của bạn giờ ở {path}",
+    "desktopFoundToast": "Đã tìm thấy {count} thư viện trong {path}",
+    "desktopFolderMissingTitle": "Thư mục của thư viện này ở đâu?",
+    "desktopFolderMissingBody": "37 Player không tìm thấy thư mục của “{name}”. Nếu nó nằm trên ổ chưa cắm, hãy cắm vào rồi thử lại; nếu thư mục đã bị chuyển đi, hãy tìm nó.",
+    "desktopFindBtn": "Tìm thư mục của một thư viện…",
+    "desktopFindTitle": "Chọn thư mục của một thư viện 37 Player",
+    "desktopFindNotLibrary": "Thư mục đó không phải thư viện 37 Player: trong đó không có “37 Player library.json”.",
+    "desktopFindOther": "Đó là thư mục của một thư viện khác, “{name}”: nó giờ đã có trong danh sách thư viện của bạn.",
+    "desktopFindAdded": "“{name}” đã có trong danh sách thư viện của bạn.",
+    "desktopFindFailed": "Không mở được thư mục ({error}).",
     "folderLibRemovedToast": "Đã xóa bản sao trong trình duyệt",
     "folderLibOpenTitle": "Mở thư mục của thư viện",
     "folderLibPermBody": "Thư viện này được lưu trong thư mục “{name}”. Trình duyệt cần bạn cho phép để mở nó.",
@@ -15727,6 +16136,26 @@ const STRINGS = {
     "folderLibDoneBody": "Το 37 Player τρέχει τώρα αυτή τη βιβλιοθήκη από τον φάκελο «{folder}»: {tracks} κομμάτια. Το αντίγραφο του προγράμματος περιήγησης δεν χρησιμοποιείται πια. Να αφαιρεθεί, για να ελευθερωθούν περίπου {size};",
     "folderLibRemoveBtn": "Αφαίρεση του αντιγράφου του προγράμματος περιήγησης",
     "folderLibLaterBtn": "Όχι τώρα",
+    "desktopPlaceTitle": "Πού να βρίσκονται οι βιβλιοθήκες σας;",
+    "desktopPlaceBodyMove": "Το 37 Player κρατά πλέον κάθε βιβλιοθήκη σε δικό της φάκελο σε αυτόν τον υπολογιστή, όπου ένα πρόγραμμα καθαρισμού δεν μπορεί να τη σβήσει. Οι βιβλιοθήκες σας ({count}) θα αντιγραφούν σε αυτή τη θέση, η καθεμία σε δικό της φάκελο:",
+    "desktopPlaceBodyNew": "Το 37 Player κρατά κάθε βιβλιοθήκη σε δικό της φάκελο σε αυτόν τον υπολογιστή. Οι νέες βιβλιοθήκες μπαίνουν σε αυτή τη θέση, η καθεμία σε δικό της φάκελο:",
+    "desktopPlaceKeep": "Η καθεμία ελέγχεται πριν χρησιμοποιηθεί από εκεί. Το αντίγραφο στον δικό αποθηκευτικό χώρο της εφαρμογής μένει 30 ημέρες, για κάθε ενδεχόμενο.",
+    "desktopPlaceUseBtn": "Χρήση αυτής της θέσης",
+    "desktopPlaceChooseBtn": "Επιλογή άλλης θέσης…",
+    "desktopPlaceChooseTitle": "Πού να κρατά το 37 Player τις βιβλιοθήκες του;",
+    "desktopMoveCopying": "Αντιγραφή της «{name}» στον φάκελό της: {done} από {total}…",
+    "desktopMoveChecking": "Έλεγχος της «{name}» στον φάκελό της…",
+    "desktopMoveFailed": "Η «{name}» δεν αντιγράφηκε στον φάκελό της ({error}). Είναι ακόμη στον δικό αποθηκευτικό χώρο της εφαρμογής, όπως ήταν· το 37 Player θα ξαναδοκιμάσει την επόμενη φορά που θα ανοίξει.",
+    "desktopMovedToast": "Οι βιβλιοθήκες σας είναι τώρα στο {path}",
+    "desktopFoundToast": "Βρέθηκαν {count} βιβλιοθήκες στο {path}",
+    "desktopFolderMissingTitle": "Πού είναι ο φάκελος αυτής της βιβλιοθήκης;",
+    "desktopFolderMissingBody": "Το 37 Player δεν βρίσκει τον φάκελο της «{name}». Αν είναι σε δίσκο που δεν είναι συνδεδεμένος, συνδέστε τον και δοκιμάστε ξανά· αν ο φάκελος μετακινήθηκε, βρείτε τον.",
+    "desktopFindBtn": "Εύρεση φακέλου βιβλιοθήκης…",
+    "desktopFindTitle": "Επιλέξτε τον φάκελο μιας βιβλιοθήκης του 37 Player",
+    "desktopFindNotLibrary": "Αυτός ο φάκελος δεν είναι βιβλιοθήκη του 37 Player: δεν περιέχει «37 Player library.json».",
+    "desktopFindOther": "Αυτός είναι ο φάκελος άλλης βιβλιοθήκης, της «{name}»: είναι πλέον στη λίστα των βιβλιοθηκών σας.",
+    "desktopFindAdded": "Η «{name}» είναι στη λίστα των βιβλιοθηκών σας.",
+    "desktopFindFailed": "Ο φάκελος δεν άνοιξε ({error}).",
     "folderLibRemovedToast": "Το αντίγραφο του προγράμματος περιήγησης αφαιρέθηκε",
     "folderLibOpenTitle": "Άνοιγμα του φακέλου της βιβλιοθήκης",
     "folderLibPermBody": "Αυτή η βιβλιοθήκη φυλάσσεται στον φάκελο «{name}». Το πρόγραμμα περιήγησης χρειάζεται την άδειά σας για να τον ανοίξει.",
@@ -17508,6 +17937,26 @@ const STRINGS = {
     "folderLibDoneBody": "37 Player ora usa questa libreria dalla cartella “{folder}”: {tracks} brani. La copia nel browser non viene più usata. Rimuoverla per liberare circa {size}?",
     "folderLibRemoveBtn": "Rimuovi la copia nel browser",
     "folderLibLaterBtn": "Non ora",
+    "desktopPlaceTitle": "Dove devono stare le tue librerie?",
+    "desktopPlaceBodyMove": "37 Player ora tiene ogni libreria in una cartella tutta sua su questo computer, dove un programma di pulizia non può cancellarla. Le tue librerie ({count}) saranno copiate in questo posto, ognuna nella sua cartella:",
+    "desktopPlaceBodyNew": "37 Player tiene ogni libreria in una cartella tutta sua su questo computer. Le nuove librerie vanno in questo posto, ognuna nella sua cartella:",
+    "desktopPlaceKeep": "Ognuna viene controllata prima di essere usata da lì. La copia nello spazio dell'app resta 30 giorni, per sicurezza.",
+    "desktopPlaceUseBtn": "Usa questo posto",
+    "desktopPlaceChooseBtn": "Scegli un altro posto…",
+    "desktopPlaceChooseTitle": "Dove deve tenere le sue librerie 37 Player?",
+    "desktopMoveCopying": "Copia di «{name}» nella sua cartella: {done} di {total}…",
+    "desktopMoveChecking": "Controllo di «{name}» nella sua cartella…",
+    "desktopMoveFailed": "Non è stato possibile copiare «{name}» nella sua cartella ({error}). È ancora nello spazio dell'app, com'era; 37 Player riproverà al prossimo avvio.",
+    "desktopMovedToast": "Le tue librerie ora sono in {path}",
+    "desktopFoundToast": "Trovate {count} librerie in {path}",
+    "desktopFolderMissingTitle": "Dov'è la cartella di questa libreria?",
+    "desktopFolderMissingBody": "37 Player non trova la cartella di «{name}». Se è su un disco non collegato, collegalo e riprova; se la cartella è stata spostata, trovala.",
+    "desktopFindBtn": "Trova la cartella di una libreria…",
+    "desktopFindTitle": "Scegli la cartella di una libreria di 37 Player",
+    "desktopFindNotLibrary": "Quella cartella non è una libreria di 37 Player: non contiene «37 Player library.json».",
+    "desktopFindOther": "Quella è la cartella di un'altra libreria, «{name}»: ora è nel tuo elenco di librerie.",
+    "desktopFindAdded": "«{name}» è nel tuo elenco di librerie.",
+    "desktopFindFailed": "Non è stato possibile aprire la cartella ({error}).",
     "folderLibRemovedToast": "La copia nel browser è stata rimossa",
     "folderLibOpenTitle": "Apri la cartella della libreria",
     "folderLibPermBody": "Questa libreria è conservata nella cartella “{name}”. Il browser ha bisogno del tuo permesso per aprirla.",
@@ -45301,7 +45750,7 @@ document.getElementById("btnLibrary").addEventListener("click", openLibraryPopov
 function renderLibrariesSection(body){
   const reg = readLibraryList();
   body.innerHTML = `<p>${escapeHtmlText(t("libIntro"))}</p><div class="library-list"></div>
-    <div class="settings-row" style="margin-top:14px;"><button class="btn primary" id="libNew" type="button">${escapeHtmlText(t("libNewBtn"))}</button></div>`;
+    <div class="settings-row" style="margin-top:14px;"><button class="btn primary" id="libNew" type="button">${escapeHtmlText(t("libNewBtn"))}</button>${STORAGE_KIND === "desktop" ? ` <button class="btn" id="libFindFolder" type="button">${escapeHtmlText(t("desktopFindBtn"))}</button>` : ""}</div>`;
   const list = body.querySelector(".library-list");
   reg.list.forEach(l=>{
     const row = document.createElement("div");
@@ -45357,6 +45806,14 @@ function renderLibrariesSection(body){
     list.appendChild(row);
   });
   body.querySelector("#libNew").addEventListener("click", openNewLibraryDialog);
+  const find = body.querySelector("#libFindFolder");
+  if(find) find.addEventListener("click", async ()=>{
+    const e = await desktopFindLibraryFolder();
+    if(!e) return;
+    // This window's own library in another folder: it starts again from there.
+    if(e.id === LIBRARY_ID){ leavingOnPurpose = true; location.reload(); return; }
+    showToast(t("desktopFindAdded", {name: libraryDisplayName(e)})); renderSettingsSection();
+  });
 }
 // A name, or null if cancelled.
 function askLibraryName(title, value){
@@ -45688,9 +46145,15 @@ if(IN_DESKTOP_APP && window.__TAURI__ && window.__TAURI__.event && window.__TAUR
   const driveSignInResult = driveTakeSignInResult(); // first, so the tokens leave the address at once
   if(MOVED_TO && !driveSignInResult && await neverUsedHere()){ location.replace(movedUrl() + location.hash); return; }
   await desktopShellCheck();
+  // The desktop app (2.0): libraries found, moved out of browser storage,
+  // and this one's folder there, before it opens.
+  if(await desktopLibrariesAtStart()){ leavingOnPurpose = true; location.reload(); return; }
+  await ensureDesktopFolder();
+  showDesktopStartNote();
   await ensureLibraryFolder(); // a library kept in a folder: the folder first, with permission
   const storageWatch = setTimeout(openStorageNotResponding, 8000);
   await libStore.open();
+  if(STORAGE_KIND === "desktop"){ const back = await libraryMirrorRestore(); if(back.length) setTimeout(()=> playLog("this library's own values came back from its folder (" + back.join(", ") + "): the app's browser storage had been emptied"), 2000); }
   await loadState();
   undoInit();
   clearTimeout(storageWatch);
