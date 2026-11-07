@@ -17,6 +17,8 @@ const modalText = p=> p.evaluate(()=> document.querySelector('.modal-backdrop.sh
   await p.evaluateOnNewDocument(()=>{
     window.__TAURI_INTERNALS__ = {};
     window.__quits = 0; window.__listeners = {};
+    // device.json (1.4.192): the stand-in shell keeps it in sessionStorage, which a "wipe" here leaves alone, and hands it over as the page starts.
+    window.__p37Device = JSON.parse(sessionStorage.getItem('__devicejson') || 'null');
     window.__TAURI__ = {event: {listen: async (name, fn)=>{ window.__listeners[name] = fn; return ()=>{}; }}, core: {invoke: async (cmd, args)=>{
       // Page updates (1.4.182): what the stand-in shell says comes from localStorage, and the calls are kept in sessionStorage across reloads.
       const calls = JSON.parse(sessionStorage.getItem('__calls') || '[]'); calls.push(cmd + (args && args.version ? ' ' + args.version : '')); sessionStorage.setItem('__calls', JSON.stringify(calls));
@@ -25,6 +27,7 @@ const modalText = p=> p.evaluate(()=> document.querySelector('.modal-backdrop.sh
       if(cmd === 'p37_page_info'){ const i = JSON.parse(localStorage.getItem('__pageInfo') || '{}'); const once = {...i}; delete i.reverted; localStorage.setItem('__pageInfo', JSON.stringify(i)); return once; }
       if(cmd === 'p37_page_check') return JSON.parse(localStorage.getItem('__pageCheck') || '{"status":"error","error":"none"}');
       if(cmd === 'p37_page_switch') return '9.9.001';
+      if(cmd === 'p37_device_put') sessionStorage.setItem('__devicejson', JSON.stringify(args.values));
     }}};
   });
   await p.goto('http://localhost:8861/37-player.html', {waitUntil:'networkidle0'}); await sleep(800); await settle(p);
@@ -111,6 +114,17 @@ const modalText = p=> p.evaluate(()=> document.querySelector('.modal-backdrop.sh
   // Google Drive.
   const drive = await p.evaluate(async()=>{ const el = document.createElement('p'); await window.__driveStart(el); return el.textContent; });
   ok(/isn't available in the desktop app yet/.test(drive), 'Google Drive: not available in the desktop app yet (' + drive.slice(0, 60) + ')');
+  // device.json (1.4.192): the device's settings go to the shell, and come back after the webview's storage is emptied.
+  await p.evaluate(()=>{ const d = JSON.parse(localStorage.getItem('37player.device') || '{}'); d.theme = 'dark'; localStorage.setItem('37player.device', JSON.stringify(d)); });
+  await sleep(1600);
+  const kept = await p.evaluate(()=> JSON.parse(sessionStorage.getItem('__devicejson') || '{}'));
+  ok(kept['37player.libraries'] && /"theme":"dark"/.test(kept['37player.device'] || ''), 'the shell is given the device\'s settings, a second after they change (' + Object.keys(kept).join(', ') + ')');
+  const libBefore = await p.evaluate(()=> localStorage.getItem('37player.libraries'));
+  await p.evaluate(()=> localStorage.clear()); // as CCleaner would
+  await p.reload({waitUntil: 'networkidle0'}); await sleep(1500);
+  const back = await p.evaluate(()=> ({lib: localStorage.getItem('37player.libraries'), dark: /"theme":"dark"/.test(localStorage.getItem('37player.device') || ''), log: window.__log().join('\n')}));
+  ok(back.lib === libBefore && back.dark, 'storage emptied: the list of libraries and the settings come back from the shell\'s copy');
+  ok(/settings came back from the app's own copy/.test(back.log), 'and the playback log says so');
   // A plain browser: none of it.
   const p2 = await b.newPage();
   await p2.goto('http://localhost:8861/37-player.html', {waitUntil:'networkidle0'}); await sleep(800);
