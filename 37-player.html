@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="1.4.191">
+<meta name="app-version" content="1.4.192">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -1858,6 +1858,38 @@ const ICON_PLAYLIST = `<svg class="icon" viewBox="0 0 20 20" fill="none" xmlns="
    first library's keep their old names, so an older window still agrees
    with a newer one about them. */
 const LIBRARY_LIST_KEY = "37player.libraries";
+/* The device's settings, kept by the desktop app's shell too (device.json;
+   1.4.192, the 2.0 groundwork; desktop/FILES-DESIGN.md). Gen Rinzin's test:
+   delete the app's webview storage (CCleaner), start again, nothing missing.
+   These localStorage values are the ones a person would miss on a device:
+   the list of libraries and where each is, the device's settings, the
+   Library table's columns, the playback log. The shell hands its copy over
+   before this script runs (window.__p37Device); a value missing here, a
+   wiped webview, is put back from it at once, before anything reads it.
+   Every change to one of them is sent to the shell (a second later). */
+const DEVICE_MIRROR_KEYS = ["37player.libraries", "37player.device", "37player.libTable", "37player.storage", "37player.autoRestore", "37player.driveSignIn", "37player.playLog"];
+const deviceRestoredKeys = [];
+if(window.__TAURI_INTERNALS__ && window.__p37Device && typeof window.__p37Device === "object"){
+  for(const k of DEVICE_MIRROR_KEYS){
+    try{ if(localStorage.getItem(k) === null && typeof window.__p37Device[k] === "string"){ localStorage.setItem(k, window.__p37Device[k]); deviceRestoredKeys.push(k); } }catch(err){}
+  }
+}
+let deviceMirrorTimer = null;
+function deviceMirrorSoon(){
+  if(!window.__TAURI__ || !window.__TAURI__.core) return;
+  clearTimeout(deviceMirrorTimer);
+  deviceMirrorTimer = setTimeout(()=>{
+    const values = {};
+    for(const k of DEVICE_MIRROR_KEYS){ try{ const v = localStorage.getItem(k); if(v !== null) values[k] = v; }catch(err){} }
+    window.__TAURI__.core.invoke("p37_device_put", {values}).catch(()=>{}); // an older app has no device.json: nothing to do
+  }, 1000);
+}
+if(window.__TAURI_INTERNALS__){
+  const set = Storage.prototype.setItem, remove = Storage.prototype.removeItem;
+  Storage.prototype.setItem = function(k, v){ set.call(this, k, v); if(this === window.localStorage && DEVICE_MIRROR_KEYS.includes(k)) deviceMirrorSoon(); };
+  Storage.prototype.removeItem = function(k){ remove.call(this, k); if(this === window.localStorage && DEVICE_MIRROR_KEYS.includes(k)) deviceMirrorSoon(); };
+  setTimeout(deviceMirrorSoon, 3000); // an app that had none yet gets the current values
+}
 const LIBRARY_WINDOW_KEY = "37player.library";
 const LIBRARY_PENDING_JOIN_KEY = "37player.pendingJoin";
 const LIBRARY_NEW_EMPTY_KEY = "37player.newEmpty";
@@ -45447,6 +45479,7 @@ function closingWouldStop(){
    one that doesn't within a minute, or over two starts, is put aside and the
    one before it opens, which this page then says (swReverted). */
 const desktopCall = (cmd, args)=> window.__TAURI__.core.invoke(cmd, args);
+if(IN_DESKTOP_APP && deviceRestoredKeys.length) setTimeout(()=> playLog("this device's settings came back from the app's own copy (" + deviceRestoredKeys.join(", ") + "): its browser storage had been emptied"), 0);
 const desktopPages = ()=> IN_DESKTOP_APP && !!(desktopShell && desktopShell.pages) && !!(window.__TAURI__ && window.__TAURI__.core);
 async function desktopPageUp(){
   if(!desktopPages()) return;
