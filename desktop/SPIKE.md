@@ -89,7 +89,7 @@ stops, a long teaching (1–2 hours), and the 1.2 GB WAV if it's to hand.
 devtools, or `navigator.userAgent`), Windows version on each machine, the
 checklist with pass / fail / notes, every console error worth knowing, any
 workaround used, and a short verdict: go, go with conditions, or no-go.
-Add a two-line summary to NOTES.md under the v2.0 item. Commit as Gen (see
+Add a two-line summary to NOTES.md under the v2.0 item. Commit as Gen Rinzin (see
 CLAUDE.md) to `tauri-spike`; push; don't merge.
 
 ## The Mac (SKBC's Mac mini, macOS 12 Monterey)

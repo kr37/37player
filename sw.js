@@ -15,7 +15,7 @@
 // app is that folder's index.html.
 //
 // Since 1.4.104 the app page opens from the copy saved here, at once, with
-// no wait for the server (row 6 of Gen's 28 Oct list): the newest copy
+// no wait for the server (row 6 of Gen Rinzin's 28 Oct list): the newest copy
 // fetched ("new") if there is one, else the last one that started properly
 // ("good"). Meanwhile the page is fetched from the server in the background;
 // a different, complete version is saved as "new", and the open page is told

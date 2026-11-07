@@ -1,4 +1,4 @@
-// Two copies of one recording when a device rejoins (1.4.190, Gen's cases):
+// Two copies of one recording when a device rejoins (1.4.190, Gen Rinzin's cases):
 // B leaves the shared library; meanwhile A replaces three tracks' audio:
 //   t1 with the same bytes (1. the same recording: B takes the new revision,
 //      nothing downloaded),
