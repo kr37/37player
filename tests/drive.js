@@ -42,6 +42,16 @@ const openShared = async p=>{ await p.evaluate(()=>{ window.__dbg.setMode('editi
   const php = spawn('php', ['-S', '127.0.0.1:8871', '-t', '..'], {cwd: __dirname, env: Object.assign({}, process.env, {P37_GOOGLE_CONFIG: cfgFile, P37_GOOGLE_TOKEN_ENDPOINT: DRIVE + '/token', P37_GOOGLE_AUTH_ENDPOINT: DRIVE + '/o/oauth2/v2/auth'}), stdio: 'ignore'});
   const g = google.start(8872);
   await sleep(800);
+  // The desktop app's sign-in (2.0): token.php sends the person back to the
+  // shell's one-time address on their computer, and accepts the app's page.
+  {
+    const start = ret=> fetch(TOKEN + '?op=start&return=' + encodeURIComponent(ret) + '&nonce=abcdefgh12', {redirect: 'manual'});
+    ok((await start('http://127.0.0.1:53123/p37auth')).status === 302, 'token.php: the desktop app\'s one-time address on the computer is a place to come back to');
+    ok((await start('http://127.0.0.1:53123/elsewhere')).status === 400 && (await start('http://evil.example/p37auth')).status === 400, 'token.php: nothing else there, or anywhere else');
+    const o = await fetch(TOKEN, {method: 'OPTIONS', headers: {Origin: 'tauri://localhost'}});
+    const w = await fetch(TOKEN, {method: 'OPTIONS', headers: {Origin: 'http://tauri.localhost'}});
+    ok(o.headers.get('access-control-allow-origin') === 'tauri://localhost' && w.headers.get('access-control-allow-origin') === 'http://tauri.localhost', 'token.php: the desktop app\'s page may refresh its access (Mac, Windows)');
+  }
   const b = await puppeteer.launch({executablePath: process.env.CHROME || '/usr/bin/google-chrome', args: ['--no-sandbox'], protocolTimeout: 120000});
   try{
     // ---- A: a library, then onto Google Drive
