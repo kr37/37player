@@ -20,6 +20,7 @@
 //    (CCleaner) loses nothing a person would miss.
 mod device;
 mod files;
+mod oauth;
 mod pages;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -243,7 +244,8 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![p37_quit, p37_shell_info,
             p37_page_info, p37_page_check, p37_page_ok, p37_page_switch, p37_device_get, p37_device_put,
             files::fs_roots, files::fs_root_default, files::fs_root_choose, files::fs_root_forget,
-            files::fs_place, files::fs_place_default, files::fs_root_info, files::fs_find_libraries, files::fs_root_choose_library,
+            files::fs_place, files::fs_place_default, files::fs_root_info,
+            oauth::p37_google_signin, oauth::p37_open_url, files::fs_find_libraries, files::fs_root_choose_library,
             files::fs_list, files::fs_stat, files::fs_read, files::fs_write, files::fs_copy, files::fs_rename, files::fs_remove, files::fs_mkdir])
         .on_window_event(|window, event| {
             if let WindowEvent::CloseRequested { api, .. } = event {
