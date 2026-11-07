@@ -65,6 +65,24 @@
       }
       // A folder used in place: where, there now, on another drive (Volumes/…).
       case 'fs_root_info': { const r = await readRoots(); if(!(args.id in r)) throw new Error('no folder called ' + args.id + ' on the list'); return {path: r[args.id], present: !!(await pathDir(r[args.id])), other_drive: /^Volumes\//.test(r[args.id])}; }
+      // A library's folder follows its name (files.rs renamed_path).
+      case 'fs_root_rename': {
+        if(!/^lib-/.test(args.id)) throw new Error("only a library's folder");
+        const r = await readRoots(), cur = r[args.id];
+        if(cur == null) throw new Error('no folder called ' + args.id + ' on the list');
+        const segs = parts(cur), base = segs.pop(), parentPath = segs.join('/'), want = folderName(args.name);
+        const bare = base.replace(/ \(\d+\)$/, '');
+        if(bare === want) return cur;
+        let to = (parentPath ? parentPath + '/' : '') + want, n = 2;
+        if(base.toLowerCase() !== want.toLowerCase()) while(await pathDir(to)) to = (parentPath ? parentPath + '/' : '') + want + ' (' + (n++) + ')';
+        const copy = async (from, into)=>{ for await (const [nm, h] of from.entries()){ if(h.kind === 'directory') await copy(h, await into.getDirectoryHandle(nm, {create: true})); else { const w = await (await into.getFileHandle(nm, {create: true})).createWritable(); await w.write(await h.getFile()); await w.close(); } } };
+        const src = await pathDir(cur), parent = await pathDir(parentPath);
+        const tmp = await parent.getDirectoryHandle('.renaming', {create: true});
+        await copy(src, tmp); await parent.removeEntry(base, {recursive: true});
+        await copy(tmp, await pathDir(to, true)); await parent.removeEntry('.renaming', {recursive: true});
+        r[args.id] = to; await writeRoots(r); return to;
+      }
+      case 'fs_root_show': { const r = await readRoots(); if(!(args.id in r)) throw new Error('no folder called ' + args.id + ' on the list'); window.__fakeShellShown = r[args.id]; return null; }
       case 'fs_find_libraries': {
         const r = await readRoots(), base = r.place || DEFAULT_PLACE, d = await pathDir(base), out = [];
         if(d) for await (const [n, h] of d.entries()){

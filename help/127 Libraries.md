@@ -35,6 +35,8 @@ Normally a library lives inside the browser, where the browser can erase it (see
 The desktop app keeps every library in a folder of its own on the computer, where no cleaning program can erase it.
 
 - **Where:** the first time, it asks where your libraries should live, suggesting **Music/37 Player Libraries**. Choose another place if you like; each library gets its own folder inside it, with the same readable names as above.
+- **Its name:** the folder takes the library's name (rename the library and the folder follows the next time 37 Player starts). Settings → **Library** shows where it is, with **Show** to open it.
+- **Backups:** 37 Player doesn't make its own here, and doesn't ask: the folder is ordinary files, so back it up with the rest of the computer, or share the library.
 - **Found again:** if the app's own settings are ever lost (a reinstall, a cleaning program), it looks in that place and finds its libraries by their "37 Player library.json". A library kept anywhere else: Settings → **Library** → **All libraries** → **Find a library folder…**. If a library's folder can't be found (a drive that isn't plugged in, a folder moved), the app asks where it is rather than starting it again empty.
 
 **Importing a folder** (Import / Export → **Choose a folder…**) asks how to take its recordings:

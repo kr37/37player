@@ -159,6 +159,21 @@
         </ul>
         <p>If you download and run locally, then choose one spot and leave it there. If you move the .html file, then it loses its library, and you'll need to re-import.</p>
 
+        <h2>The desktop app <span id="desktopVersion" style="font-weight:normal; font-size:medium;"></span></h2>
+        <p>37 Player as an app on a Mac or a Windows computer. Each library is an ordinary folder on your computer, which no cleaning program can erase; recordings can stay where they already are (<b>Use in place</b>), and big recordings play straight from the disk.</p>
+        <ul>
+            <li><b>Mac:</b> <a href="https://github.com/kr37/37player/releases/download/desktop-latest/37-Player-mac.dmg">37-Player-mac.dmg</a></li>
+            <li><b>Windows:</b> <a href="https://github.com/kr37/37player/releases/download/desktop-latest/37-Player-windows-setup.exe">37-Player-windows-setup.exe</a> (or the <a href="https://github.com/kr37/37player/releases/download/desktop-latest/37-Player-windows.msi">.msi</a>, for installing on many computers)</li>
+        </ul>
+        <p style="font-size:small;">These are early versions, not signed yet. On a Mac, the first time: right-click the app → <b>Open</b>. On Windows, if SmartScreen stops it: <b>More info</b> → <b>Run anyway</b>.</p>
+        <script>
+            // The version on offer, from GitHub (the downloads above always point to it).
+            fetch("https://api.github.com/repos/kr37/37player/releases/tags/desktop-latest").then(r=> r.ok ? r.json() : null).then(j=>{
+                const v = j && /37 Player ([0-9.]+)/.exec(j.name || "");
+                if(v) document.getElementById("desktopVersion").textContent = "(version " + v[1] + ")";
+            }).catch(()=>{});
+        </script>
+
         <h2>Libraries</h2>
         <p>The app has access to some libraries of playlists. These are full of Tharpa copyright music. You need to have bought and paid for the tracks yourself.</p>
 

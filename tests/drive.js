@@ -76,12 +76,14 @@ const openShared = async p=>{ await p.evaluate(()=>{ window.__dbg.setMode('editi
     ok(/Signed in as center@example\.org/.test(m), 'the chooser names the account signed in');
     await A.screenshot({path: 'shots/drive-chooser-empty.png'});
     ok(await A.evaluate(()=> document.getElementById('drLib').value === 'new' && document.getElementById('drNewBox').style.display !== 'none' && document.getElementById('drGo').textContent === 'Next'), 'nothing there yet: "Make a new library" chosen, its name field showing, one button');
-    // Making one and backing out at the last step: its empty folders go to the trash (1.4.134)
+    // Making one and backing out at the last step: its empty folders go to the trash (1.4.134; kept so on 7 Nov 2026, Gen Rinzin: cleanest)
     await A.evaluate(()=>{ document.getElementById('drName').value = 'Chicken'; document.getElementById('drDevice').value = 'Laptop'; document.getElementById('drGo').click(); });
     let backedOut = false;
-    for(let k=0; k<40 && !backedOut; k++){ if(await A.evaluate(()=> [...document.querySelectorAll('.modal button')].some(b=> /^Do it now$/.test(b.textContent.trim())))){ backedOut = await clickText(A, '.modal button', '^Cancel$'); } else await sleep(250); }
+    let lastQ = '';
+    for(let k=0; k<40 && !backedOut; k++){ if(await A.evaluate(()=> [...document.querySelectorAll('.modal button')].some(b=> /^Do it now$/.test(b.textContent.trim())))){ lastQ = await modal(A); backedOut = await clickText(A, '.modal button', '^Cancel$'); } else await sleep(250); }
     await sleep(1500);
     const chicken = [...g.files.values()].find(f=> f.name === '37 Player \u2013 Chicken');
+    ok(/“Chicken” is set up on your Google Drive/.test(lastQ) && /taken off your Drive again/.test(lastQ), 'the last question says the new library is on the Drive, and goes again if cancelled');
     ok(backedOut && chicken && chicken.trashed, 'a new Drive library whose joining was cancelled goes to the trash: ' + JSON.stringify(chicken && {trashed: chicken.trashed}));
     ok(!(await A.evaluate(()=> window.__dbg.getRoot().settings.sharedLibrary)), 'and this device isn\'t joined');
     await openShared(A);

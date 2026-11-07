@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.0.000">
+<meta name="app-version" content="2.0.003">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -2984,6 +2984,20 @@ async function desktopFindLibraryFolder(){
   writeLibraryList(reg);
   return e;
 }
+// A library's folder follows its name (Gen Rinzin, 7 Nov 2026): renamed by
+// the shell within the folder it's in, here, before the library opens (a
+// folder whose files are in use can't be renamed on Windows). A first
+// library without a name keeps "My library".
+async function desktopFolderFollowsName(){
+  if(STORAGE_KIND !== "desktop") return;
+  const e = libraryEntry(LIBRARY_ID);
+  if(!e || !e.desktopMade || !(e.name || "").trim()) return;
+  const rid = desktopRootOf(LIBRARY_ID);
+  if(!(rid in await desktopRoots(true))) return;
+  try{ await desktopInvoke("fs_root_rename", {id: rid, name: e.name.trim()}); }
+  catch(err){ console.warn("Renaming the library's folder after its name:", err); }
+  desktopRootsCache = null;
+}
 // Before this window's library opens: its folder must be there.
 async function ensureDesktopFolder(){
   if(!libraryInDesktopFolder(LIBRARY_ID)) return;
@@ -3029,6 +3043,7 @@ async function ensureDesktopFolder(){
    say "on a drive that isn't connected" while it isn't (placeOffline). */
 const PLACES_KEY = "places";
 let pendingPlaceImport = null;
+let placeChoosing = false; // a folder being chosen or asked about: tidyPlaces waits
 async function placeFolders(){ try{ const r = await idbGet("state", PLACES_KEY); return r && Array.isArray(r.value) ? r.value : []; }catch(err){ return []; } }
 async function savePlaceFolders(list){ await libStore.put("state", {key: PLACES_KEY, value: list}); }
 async function forgetPlaceRoot(rootId){
@@ -3087,6 +3102,10 @@ async function askPlaceMode(info){
 }
 // Import → A folder, in the desktop app.
 async function desktopImportFolder(){
+  placeChoosing = true;
+  try{ return await desktopImportFolderSteps(); } finally { placeChoosing = false; }
+}
+async function desktopImportFolderSteps(){
   const rid = "in-" + LIBRARY_ID + "-" + uid().slice(0, 8);
   let path;
   try{ path = await desktopInvoke("fs_root_choose", {id: rid, title: t("placeChooseTitle")}); }
@@ -3123,8 +3142,28 @@ async function finishPlaceImport(){
   const used = [...(await libStore.placeRefs()).values()].some(r=> r.root === p.root);
   if(!used){ if(!p.adding) await forgetPlaceRoot(p.root); return; }
   const list = await placeFolders();
-  if(!list.some(f=> f.root === p.root)){ list.push({root: p.root, label: p.label, added: Date.now()}); await savePlaceFolders(list); }
+  let f = list.find(x=> x.root === p.root);
+  if(!f){ f = {root: p.root, label: p.label, added: Date.now()}; list.push(f); }
+  await placeRemember(f);
+  await savePlaceFolders(list);
   if(p.mode === "copy" || p.mode === "move") await placeIntoLibrary(p.root, p.mode === "move");
+}
+// Which files of a folder used in place the library took, and the track each
+// became (f.seen: {path: track id}): a track converted (a .wma, say) is the
+// library's own afterwards, and once its original is let go nothing points
+// into the folder for it, but it's still that file's track, so Look for new
+// files doesn't bring the file in again (Gen Rinzin on the HP, 7 Nov 2026).
+async function placeRemember(f){
+  f.seen = f.seen || {};
+  for(const [key, r] of await libStore.placeRefs()) if(r.root === f.root) f.seen[r.at] = key.startsWith(ORIGINAL_KEY_PREFIX) ? key.slice(ORIGINAL_KEY_PREFIX.length) : key;
+}
+// The paths of a folder's files that are tracks in the library now.
+async function placeKnownPaths(f){
+  const known = new Set();
+  for(const r of (await libStore.placeRefs()).values()) if(r.root === f.root) known.add(r.at.toLowerCase());
+  const ids = new Set(root.library.map(tr=> tr.id));
+  for(const [at, id] of Object.entries(f.seen || {})) if(ids.has(id)) known.add(at.toLowerCase());
+  return known;
 }
 // A folder used in place becomes the library's own: each recording copied
 // into the library's folder (by the shell, file to file), checked, and with
@@ -3165,9 +3204,10 @@ async function placeLookForNew(rootId){
   await new Promise(r=> setTimeout(r, 30));
   const files = await placeListFiles(rootId, topName);
   closeModal();
-  const known = new Set([...(await libStore.placeRefs()).values()].filter(r=> r.root === rootId).map(r=> r.at.toLowerCase()));
+  const known = await placeKnownPaths(f);
+  const pointed = new Set([...(await libStore.placeRefs()).values()].filter(r=> r.root === rootId).map(r=> r.at.toLowerCase()));
   const here = new Set(files.filter(x=> isImportableAudioFile(x)).map(x=> x.p37rel.toLowerCase()));
-  const gone = [...known].filter(at=> !here.has(at)).length;
+  const gone = [...pointed].filter(at=> !here.has(at)).length; // (a converted one's file may go: it's the library's own now)
   const fresh = files.filter(x=> isImportableAudioFile(x) ? !known.has(x.p37rel.toLowerCase()) : /\.(jpe?g|png)$/i.test(x.name));
   if(!fresh.some(x=> isImportableAudioFile(x))){ alert(t("placeNothingNew", {path: f.label}) + (gone ? " " + t("placeGone", {n: gone}) : "")); return; }
   if(gone) alert(t("placeGone", {n: gone}));
@@ -3177,9 +3217,13 @@ async function placeLookForNew(rootId){
 // Folders no recording points into any more (all deleted, or an import
 // given up) are forgotten, here and on the shell's list.
 async function tidyPlaces(){
-  if(STORAGE_KIND !== "desktop" || pendingPlaceImport) return;
+  if(STORAGE_KIND !== "desktop" || pendingPlaceImport || placeChoosing) return;
   const refs = await libStore.placeRefs(), roots = await desktopRoots(true);
   const usedRoots = new Set([...refs.values()].map(r=> r.root));
+  // A folder whose tracks are all the library's own now (converted) is still
+  // looked in for new files, while any of those tracks is in the library.
+  const ids = new Set(root.library.map(tr=> tr.id));
+  for(const f of await placeFolders()) if(Object.values(f.seen || {}).some(id=> ids.has(id))) usedRoots.add(f.root);
   for(const f of await placeFolders()) if(!usedRoots.has(f.root)) await forgetPlaceRoot(f.root);
   const listed = new Set((await placeFolders()).map(f=> f.root));
   for(const id of Object.keys(roots)) if(id.startsWith("in-" + LIBRARY_ID + "-") && !listed.has(id) && !usedRoots.has(id)){ try{ await desktopInvoke("fs_root_forget", {id}); }catch(err){} }
@@ -3191,6 +3235,59 @@ async function tidyPlaces(){
 function placeOfTrack(id){
   const m = libStore && libStore.places;
   return m ? m.get(id) || null : null;
+}
+// A drive unplugged while one of its tracks plays (Gen Rinzin on the HP, 7 Nov
+// 2026: it played on from what was buffered, then stood still, and Play did
+// nothing even once the stick was back). Each of the three players is
+// watched: an error, or waiting more than 3 s, on a track used in place
+// looks at its file; gone, the player is paused and says the drive isn't
+// connected. Play (placeAwarePlay) looks too: still gone, it says so; back,
+// or the player still stuck on the lost file, it loads the file again and
+// carries on from where it was.
+async function placeFileThere(trackId){
+  if(STORAGE_KIND !== "desktop" || !trackId) return null;
+  await libStore.placeRefs();
+  const place = placeOfTrack(trackId);
+  if(!place) return null;
+  let st = null;
+  try{ st = await desktopInvoke("fs_stat", {root: place.root, path: place.at}); }catch(err){}
+  const there = !!(st && st.kind === "file");
+  return {place, there};
+}
+function watchPlaceDrive(el, getTrackId){
+  let timer = null, lastT = -1;
+  const check = async ()=>{
+    timer = null;
+    const id = getTrackId(), r = await placeFileThere(id);
+    if(!r || r.there) return;
+    placeOffline.add(r.place.root);
+    el.dataset.p37stuck = "1";
+    playLog("the drive of a track used in place isn't connected: paused");
+    el.pause();
+    showAudioMissing(id);
+  };
+  el.addEventListener("error", ()=>{ if(getTrackId()){ el.dataset.p37stuck = "1"; check(); } });
+  ["waiting", "stalled"].forEach(ev=> el.addEventListener(ev, ()=>{ if(!timer && !el.paused){ lastT = el.currentTime; timer = setTimeout(()=>{ if(el.currentTime === lastT) check(); else timer = null; }, 3000); } }));
+  el.addEventListener("playing", ()=>{ if(timer){ clearTimeout(timer); timer = null; } });
+}
+async function placeAwarePlay(el, trackId){
+  const r = await placeFileThere(trackId);
+  if(r){
+    if(!r.there){ placeOffline.add(r.place.root); el.pause(); showAudioMissing(trackId); return false; }
+    const lost = placeOffline.has(r.place.root) || !!el.error || el.dataset.p37stuck === "1";
+    placeOffline.delete(r.place.root);
+    if(lost){
+      const at = el.currentTime || 0;
+      delete objectUrlCache[trackId];
+      const url = await getPlayableAudioUrl(trackId);
+      if(!url){ showAudioMissing(trackId); return false; }
+      delete el.dataset.p37stuck;
+      el.src = url;
+      el.addEventListener("loadedmetadata", ()=>{ try{ el.currentTime = at; }catch(err){} }, {once: true});
+      playLog("its drive is back: the track used in place starts again at " + Math.round(at) + " s");
+    }
+  }
+  return el.play().then(()=> true, ()=> false);
 }
 // A playlist file's line for a recording used in place: relative to the
 // library's folder (["..", "..", "Music", …]), or the full path where there's
@@ -3647,6 +3744,16 @@ const STRINGS = {
   "en": {
     "deletePlayingNow": "This track, “{name}”, is playing right now. Deleting it stops it.",
     "infoRunningDesktop": "the desktop app's own storage (IndexedDB)",
+    "infoAppLabel": "37 Player",
+    "infoAppDesktop": "the desktop app, version {version}",
+    "infoFolderLabel": "Library folder",
+    "infoShowFolderBtn": "Show",
+    "infoRecordingsLabel": "Recordings",
+    "infoRecordingsDesktop": "{own} in the library's folder, {place} used in place",
+    "infoRecordingsAllOwn": "{own}, all in the library's folder",
+    "infoBackupsLabel": "Backups",
+    "infoBackupsDesktop": "None needed from 37 Player: the library's folder is ordinary files. Back it up with the rest of the computer.",
+    "infoStorageDesktop": "In the library's folder: {own}. Used in place, in their own folders: {place}.",
     "folderLibDesktopApp": "the desktop app's own storage",
     "aboutRunningDesktop": "Running in the desktop app (version {version}).",
     "desktopShellOldTitle": "Please download the newer desktop app",
@@ -3731,6 +3838,7 @@ const STRINGS = {
     "placeGone": "{n} of the library's recordings from this folder aren't there any more (moved, renamed or deleted): those tracks can't play until they're back.",
     "placeOfflineTitle": "On a drive that isn't connected",
     "placeOfflineBody": "“{name}” is used in place from {path}, which can't be reached now. Connect the drive (or find the folder in Settings → Library), then play it again.",
+    "placeOfflineTip": "To keep this from happening, Settings → Library → Copy into the library makes these recordings the library's own.",
     "placeDeleteNote": "Recordings used in place stay in their folder: the library only forgets them.",
     "folderLibRemovedToast": "The browser's copy was removed",
     "folderLibOpenTitle": "Open the library's folder",
@@ -4355,6 +4463,7 @@ const STRINGS = {
     "sharedSizeDown": "downloads about {size}.",
     "sharedSizeUpDown": "sends about {up} and downloads about {down}.",
     "sharedSizeHint": "On mobile data or a slow connection? You can cancel now and join later.",
+    "driveMadeSizeHint": "“{name}” is set up on your Google Drive. On mobile data or a slow connection? You can cancel now: it's taken off your Drive again, and you can set it up later.",
     "sharedJoinTitle": "Join “{name}”",
     "sharedJoinDownloadBody": "This will download about {size} ({n} tracks).",
     "sharedJoinUploadBody": "This will send about {size} ({n} tracks) to the shared library.",
@@ -5473,6 +5582,16 @@ const STRINGS = {
   "es": {
     "deletePlayingNow": "Esta pista, “{name}”, está sonando ahora mismo. Borrarla la detiene.",
     "infoRunningDesktop": "el almacenamiento propio de la aplicación de escritorio (IndexedDB)",
+    "infoAppLabel": "37 Player",
+    "infoAppDesktop": "la aplicación de escritorio, versión {version}",
+    "infoFolderLabel": "Carpeta de la biblioteca",
+    "infoShowFolderBtn": "Mostrar",
+    "infoRecordingsLabel": "Grabaciones",
+    "infoRecordingsDesktop": "{own} en la carpeta de la biblioteca, {place} usadas en su sitio",
+    "infoRecordingsAllOwn": "{own}, todas en la carpeta de la biblioteca",
+    "infoBackupsLabel": "Copias de seguridad",
+    "infoBackupsDesktop": "37 Player no necesita hacer ninguna: la carpeta de la biblioteca son archivos normales. Haz su copia con el resto del ordenador.",
+    "infoStorageDesktop": "En la carpeta de la biblioteca: {own}. Usadas en su sitio, en sus propias carpetas: {place}.",
     "folderLibDesktopApp": "el almacenamiento propio de la aplicación de escritorio",
     "aboutRunningDesktop": "Funcionando en la aplicación de escritorio (versión {version}).",
     "desktopShellOldTitle": "Descargue la aplicación de escritorio más nueva",
@@ -5557,6 +5676,7 @@ const STRINGS = {
     "placeGone": "{n} de las grabaciones de la biblioteca de esta carpeta ya no están (movidas, renombradas o borradas): esas pistas no se pueden reproducir hasta que vuelvan.",
     "placeOfflineTitle": "En un disco que no está conectado",
     "placeOfflineBody": "«{name}» se usa en su sitio desde {path}, al que no se puede acceder ahora. Conecta el disco (o busca la carpeta en Ajustes → Biblioteca) y vuelve a reproducirla.",
+    "placeOfflineTip": "Para que no vuelva a pasar, Ajustes → Biblioteca → Copiar a la biblioteca hace que estas grabaciones sean de la biblioteca.",
     "placeDeleteNote": "Las grabaciones usadas en su sitio se quedan en su carpeta: la biblioteca solo las olvida.",
     "folderLibRemovedToast": "Se quitó la copia del navegador",
     "folderLibOpenTitle": "Abrir la carpeta de la biblioteca",
@@ -6181,6 +6301,7 @@ const STRINGS = {
     "sharedSizeDown": "descarga unos {size}.",
     "sharedSizeUpDown": "envía unos {up} y descarga unos {down}.",
     "sharedSizeHint": "¿Con datos móviles o una conexión lenta? Puedes cancelar ahora y unirte más tarde.",
+    "driveMadeSizeHint": "«{name}» ya está creada en tu Google Drive. ¿Con datos móviles o una conexión lenta? Puedes cancelar ahora: se quita de nuevo de tu Drive y puedes crearla más tarde.",
     "sharedJoinTitle": "Unirse a «{name}»",
     "sharedJoinDownloadBody": "Se descargarán unos {size} ({n} pistas).",
     "sharedJoinUploadBody": "Se enviarán unos {size} ({n} pistas) a la biblioteca compartida.",
@@ -7299,6 +7420,16 @@ const STRINGS = {
   "fr": {
     "deletePlayingNow": "Cette piste, « {name} », est en lecture en ce moment. La supprimer l'arrête.",
     "infoRunningDesktop": "le stockage propre à l'application de bureau (IndexedDB)",
+    "infoAppLabel": "37 Player",
+    "infoAppDesktop": "l'application de bureau, version {version}",
+    "infoFolderLabel": "Dossier de la bibliothèque",
+    "infoShowFolderBtn": "Afficher",
+    "infoRecordingsLabel": "Enregistrements",
+    "infoRecordingsDesktop": "{own} dans le dossier de la bibliothèque, {place} utilisés sur place",
+    "infoRecordingsAllOwn": "{own}, tous dans le dossier de la bibliothèque",
+    "infoBackupsLabel": "Sauvegardes",
+    "infoBackupsDesktop": "Aucune nécessaire de la part de 37 Player : le dossier de la bibliothèque est fait de fichiers ordinaires. Sauvegardez-le avec le reste de l'ordinateur.",
+    "infoStorageDesktop": "Dans le dossier de la bibliothèque : {own}. Utilisés sur place, dans leurs propres dossiers : {place}.",
     "folderLibDesktopApp": "le stockage propre à l'application de bureau",
     "aboutRunningDesktop": "Fonctionne dans l'application de bureau (version {version}).",
     "desktopShellOldTitle": "Téléchargez l'application de bureau plus récente",
@@ -7383,6 +7514,7 @@ const STRINGS = {
     "placeGone": "{n} des enregistrements de la bibliothèque venant de ce dossier n'y sont plus (déplacés, renommés ou supprimés) : ces pistes ne peuvent pas être lues tant qu'ils ne sont pas revenus.",
     "placeOfflineTitle": "Sur un disque non branché",
     "placeOfflineBody": "« {name} » est utilisé sur place depuis {path}, qui est inaccessible pour l'instant. Branchez le disque (ou retrouvez le dossier dans Réglages → Bibliothèque), puis relancez la lecture.",
+    "placeOfflineTip": "Pour que cela n'arrive plus, Paramètres → Bibliothèque → Copier dans la bibliothèque fait de ces enregistrements ceux de la bibliothèque.",
     "placeDeleteNote": "Les enregistrements utilisés sur place restent dans leur dossier : la bibliothèque les oublie seulement.",
     "folderLibRemovedToast": "La copie du navigateur a été supprimée",
     "folderLibOpenTitle": "Ouvrir le dossier de la bibliothèque",
@@ -8007,6 +8139,7 @@ const STRINGS = {
     "sharedSizeDown": "télécharge environ {size}.",
     "sharedSizeUpDown": "envoie environ {up} et télécharge environ {down}.",
     "sharedSizeHint": "Sur données mobiles ou une connexion lente ? Vous pouvez annuler et rejoindre plus tard.",
+    "driveMadeSizeHint": "« {name} » est créée sur votre Google Drive. Sur données mobiles ou une connexion lente ? Vous pouvez annuler maintenant : elle est retirée de votre Drive, et vous pourrez la créer plus tard.",
     "sharedJoinTitle": "Rejoindre « {name} »",
     "sharedJoinDownloadBody": "Environ {size} seront téléchargés ({n} pistes).",
     "sharedJoinUploadBody": "Environ {size} ({n} pistes) seront envoyés à la bibliothèque partagée.",
@@ -9125,6 +9258,16 @@ const STRINGS = {
   "pt": {
     "deletePlayingNow": "Esta faixa, “{name}”, está tocando agora. Apagá-la faz a reprodução parar.",
     "infoRunningDesktop": "o armazenamento próprio do aplicativo de computador (IndexedDB)",
+    "infoAppLabel": "37 Player",
+    "infoAppDesktop": "a aplicação de computador, versão {version}",
+    "infoFolderLabel": "Pasta da biblioteca",
+    "infoShowFolderBtn": "Mostrar",
+    "infoRecordingsLabel": "Gravações",
+    "infoRecordingsDesktop": "{own} na pasta da biblioteca, {place} usadas no lugar",
+    "infoRecordingsAllOwn": "{own}, todas na pasta da biblioteca",
+    "infoBackupsLabel": "Cópias de segurança",
+    "infoBackupsDesktop": "O 37 Player não precisa de fazer nenhuma: a pasta da biblioteca são ficheiros normais. Faça a cópia dela com o resto do computador.",
+    "infoStorageDesktop": "Na pasta da biblioteca: {own}. Usadas no lugar, nas suas próprias pastas: {place}.",
     "folderLibDesktopApp": "o armazenamento próprio do aplicativo de computador",
     "aboutRunningDesktop": "Rodando no aplicativo de computador (versão {version}).",
     "desktopShellOldTitle": "Baixe o aplicativo de computador mais novo",
@@ -9208,7 +9351,8 @@ const STRINGS = {
     "placeNothingNew": "Não há gravações novas em {path}.",
     "placeGone": "{n} das gravações da biblioteca desta pasta já lá não estão (movidas, renomeadas ou apagadas): essas faixas não tocam até voltarem.",
     "placeOfflineTitle": "Num disco que não está ligado",
-    "placeOfflineBody": "«{name}» é usada no lugar a partir de {path}, que não está acessível agora. Ligue o disco (ou procure a pasta em Definições → Biblioteca) e toque-a de novo.",
+    "placeOfflineBody": "«{name}» é usada no lugar a partir de {path}, que não está acessível agora. Ligue o disco (ou procure a pasta em Configurações → Biblioteca) e toque-a de novo.",
+    "placeOfflineTip": "Para que isto não volte a acontecer, Configurações → Biblioteca → Copiar para a biblioteca torna estas gravações da biblioteca.",
     "placeDeleteNote": "As gravações usadas no lugar ficam na sua pasta: a biblioteca apenas as esquece.",
     "folderLibRemovedToast": "A cópia do navegador foi removida",
     "folderLibOpenTitle": "Abrir a pasta da biblioteca",
@@ -9833,6 +9977,7 @@ const STRINGS = {
     "sharedSizeDown": "baixa cerca de {size}.",
     "sharedSizeUpDown": "envia cerca de {up} e baixa cerca de {down}.",
     "sharedSizeHint": "Em dados móveis ou com conexão lenta? Você pode cancelar agora e entrar depois.",
+    "driveMadeSizeHint": "«{name}» está criada no seu Google Drive. Com dados móveis ou uma ligação lenta? Pode cancelar agora: é retirada de novo do seu Drive, e pode criá-la mais tarde.",
     "sharedJoinTitle": "Entrar em “{name}”",
     "sharedJoinDownloadBody": "Isto vai baixar cerca de {size} ({n} faixas).",
     "sharedJoinUploadBody": "Isto vai enviar cerca de {size} ({n} faixas) para a biblioteca compartilhada.",
@@ -10951,6 +11096,16 @@ const STRINGS = {
   "de": {
     "deletePlayingNow": "Dieser Titel, „{name}“, spielt gerade. Beim Löschen wird er angehalten.",
     "infoRunningDesktop": "dem eigenen Speicher der Desktop-App (IndexedDB)",
+    "infoAppLabel": "37 Player",
+    "infoAppDesktop": "die Desktop-App, Version {version}",
+    "infoFolderLabel": "Ordner der Bibliothek",
+    "infoShowFolderBtn": "Zeigen",
+    "infoRecordingsLabel": "Aufnahmen",
+    "infoRecordingsDesktop": "{own} im Ordner der Bibliothek, {place} am Ort verwendet",
+    "infoRecordingsAllOwn": "{own}, alle im Ordner der Bibliothek",
+    "infoBackupsLabel": "Sicherungen",
+    "infoBackupsDesktop": "Von 37 Player keine nötig: Der Ordner der Bibliothek besteht aus gewöhnlichen Dateien. Sichern Sie ihn mit dem Rest des Computers.",
+    "infoStorageDesktop": "Im Ordner der Bibliothek: {own}. Am Ort verwendet, in ihren eigenen Ordnern: {place}.",
     "folderLibDesktopApp": "dem eigenen Speicher der Desktop-App",
     "aboutRunningDesktop": "Läuft in der Desktop-App (Version {version}).",
     "desktopShellOldTitle": "Bitte die neuere Desktop-App herunterladen",
@@ -11035,6 +11190,7 @@ const STRINGS = {
     "placeGone": "{n} der Aufnahmen der Bibliothek aus diesem Ordner sind nicht mehr da (verschoben, umbenannt oder gelöscht): Diese Titel können erst wieder abgespielt werden, wenn sie zurück sind.",
     "placeOfflineTitle": "Auf einem Laufwerk, das nicht angeschlossen ist",
     "placeOfflineBody": "„{name}“ wird am Ort aus {path} verwendet, das gerade nicht erreichbar ist. Schließen Sie das Laufwerk an (oder suchen Sie den Ordner unter Einstellungen → Bibliothek) und spielen Sie den Titel erneut ab.",
+    "placeOfflineTip": "Damit das nicht wieder passiert: Einstellungen → Bibliothek → In die Bibliothek kopieren macht diese Aufnahmen zu denen der Bibliothek.",
     "placeDeleteNote": "Am Ort verwendete Aufnahmen bleiben in ihrem Ordner: Die Bibliothek vergisst sie nur.",
     "folderLibRemovedToast": "Die Kopie im Browser wurde entfernt",
     "folderLibOpenTitle": "Den Ordner der Bibliothek öffnen",
@@ -11659,6 +11815,7 @@ const STRINGS = {
     "sharedSizeDown": "lädt etwa {size} herunter.",
     "sharedSizeUpDown": "sendet etwa {up} und lädt etwa {down} herunter.",
     "sharedSizeHint": "Mobile Daten oder langsame Verbindung? Sie können jetzt abbrechen und später beitreten.",
+    "driveMadeSizeHint": "„{name}“ ist in Ihrem Google Drive angelegt. Mobile Daten oder eine langsame Verbindung? Sie können jetzt abbrechen: Sie wird wieder aus Ihrem Drive entfernt, und Sie können sie später anlegen.",
     "sharedJoinTitle": "„{name}“ beitreten",
     "sharedJoinDownloadBody": "Dabei werden etwa {size} heruntergeladen ({n} Titel).",
     "sharedJoinUploadBody": "Dabei werden etwa {size} ({n} Titel) an die gemeinsame Bibliothek gesendet.",
@@ -12777,6 +12934,16 @@ const STRINGS = {
   "zh": {
     "deletePlayingNow": "这首曲目“{name}”正在播放。删除它会停止播放。",
     "infoRunningDesktop": "桌面应用自己的存储空间（IndexedDB）",
+    "infoAppLabel": "37 Player",
+    "infoAppDesktop": "桌面应用，版本 {version}",
+    "infoFolderLabel": "曲库文件夹",
+    "infoShowFolderBtn": "显示",
+    "infoRecordingsLabel": "录音",
+    "infoRecordingsDesktop": "曲库文件夹中 {own} 个，原地使用 {place} 个",
+    "infoRecordingsAllOwn": "{own} 个，全部在曲库文件夹中",
+    "infoBackupsLabel": "备份",
+    "infoBackupsDesktop": "37 Player 无需另做备份：曲库文件夹就是普通文件。请和电脑上的其他文件一起备份。",
+    "infoStorageDesktop": "曲库文件夹中：{own}。原地使用（在各自的文件夹中）：{place}。",
     "folderLibDesktopApp": "桌面应用自己的存储空间",
     "aboutRunningDesktop": "在桌面应用中运行（版本 {version}）。",
     "desktopShellOldTitle": "请下载较新的桌面应用",
@@ -12861,6 +13028,7 @@ const STRINGS = {
     "placeGone": "曲库中来自这个文件夹的 {n} 个录音已不在那里（被移动、改名或删除）：这些曲目在它们回来之前无法播放。",
     "placeOfflineTitle": "在未连接的磁盘上",
     "placeOfflineBody": "“{name}”原地使用自 {path}，现在无法访问。请连接磁盘（或在 设置 → 曲库 中找到该文件夹），然后再播放。",
+    "placeOfflineTip": "为避免再次出现这种情况：设置 → 曲库 → 复制到曲库，可让这些录音归曲库所有。",
     "placeDeleteNote": "原地使用的录音留在它们的文件夹中：曲库只是忘记它们。",
     "folderLibRemovedToast": "已删除浏览器中的副本",
     "folderLibOpenTitle": "打开曲库的文件夹",
@@ -13485,6 +13653,7 @@ const STRINGS = {
     "sharedSizeDown": "下载约 {size}。",
     "sharedSizeUpDown": "发送约 {up}，下载约 {down}。",
     "sharedSizeHint": "正在使用移动数据或网络较慢？可以现在取消，稍后再加入。",
+    "driveMadeSizeHint": "“{name}”已在你的 Google Drive 上建好。在使用移动数据或网速慢？你可以现在取消：它会从你的 Drive 上再移除，以后可以再建。",
     "sharedJoinTitle": "加入“{name}”",
     "sharedJoinDownloadBody": "将下载约 {size}（{n} 首曲目）。",
     "sharedJoinUploadBody": "将向共享资料库发送约 {size}（{n} 首曲目）。",
@@ -14603,6 +14772,16 @@ const STRINGS = {
   "vi": {
     "deletePlayingNow": "Bản nhạc này, “{name}”, đang phát. Xóa nó sẽ dừng phát.",
     "infoRunningDesktop": "bộ nhớ riêng của ứng dụng máy tính (IndexedDB)",
+    "infoAppLabel": "37 Player",
+    "infoAppDesktop": "ứng dụng máy tính, phiên bản {version}",
+    "infoFolderLabel": "Thư mục thư viện",
+    "infoShowFolderBtn": "Hiện",
+    "infoRecordingsLabel": "Bản ghi",
+    "infoRecordingsDesktop": "{own} trong thư mục thư viện, {place} dùng tại chỗ",
+    "infoRecordingsAllOwn": "{own}, tất cả trong thư mục thư viện",
+    "infoBackupsLabel": "Sao lưu",
+    "infoBackupsDesktop": "37 Player không cần sao lưu riêng: thư mục thư viện là các tệp bình thường. Hãy sao lưu nó cùng phần còn lại của máy tính.",
+    "infoStorageDesktop": "Trong thư mục thư viện: {own}. Dùng tại chỗ, trong thư mục riêng của chúng: {place}.",
     "folderLibDesktopApp": "bộ nhớ riêng của ứng dụng máy tính",
     "aboutRunningDesktop": "Đang chạy trong ứng dụng máy tính (phiên bản {version}).",
     "desktopShellOldTitle": "Hãy tải ứng dụng máy tính mới hơn",
@@ -14687,6 +14866,7 @@ const STRINGS = {
     "placeGone": "{n} bản ghi của thư viện từ thư mục này không còn ở đó (đã chuyển, đổi tên hoặc xoá): các bài đó không phát được cho tới khi chúng trở lại.",
     "placeOfflineTitle": "Trên một ổ chưa kết nối",
     "placeOfflineBody": "“{name}” được dùng tại chỗ từ {path}, hiện không truy cập được. Hãy cắm ổ (hoặc tìm thư mục trong Cài đặt → Thư viện), rồi phát lại.",
+    "placeOfflineTip": "Để điều này không xảy ra nữa: Cài đặt → Thư viện → Sao chép vào thư viện sẽ làm các bản ghi này thuộc về thư viện.",
     "placeDeleteNote": "Bản ghi dùng tại chỗ vẫn ở trong thư mục của chúng: thư viện chỉ quên chúng đi.",
     "folderLibRemovedToast": "Đã xóa bản sao trong trình duyệt",
     "folderLibOpenTitle": "Mở thư mục của thư viện",
@@ -15311,6 +15491,7 @@ const STRINGS = {
     "sharedSizeDown": "tải về khoảng {size}.",
     "sharedSizeUpDown": "gửi khoảng {up} và tải về khoảng {down}.",
     "sharedSizeHint": "Đang dùng dữ liệu di động hoặc mạng chậm? Bạn có thể hủy bây giờ và tham gia sau.",
+    "driveMadeSizeHint": "“{name}” đã được tạo trên Google Drive của bạn. Đang dùng dữ liệu di động hoặc mạng chậm? Bạn có thể huỷ bây giờ: nó sẽ được gỡ khỏi Drive, và bạn có thể tạo lại sau.",
     "sharedJoinTitle": "Tham gia “{name}”",
     "sharedJoinDownloadBody": "Sẽ tải về khoảng {size} ({n} bản).",
     "sharedJoinUploadBody": "Sẽ gửi khoảng {size} ({n} bản) lên thư viện dùng chung.",
@@ -16429,6 +16610,16 @@ const STRINGS = {
   "el": {
     "deletePlayingNow": "Αυτό το κομμάτι, «{name}», παίζει αυτή τη στιγμή. Η διαγραφή του το σταματά.",
     "infoRunningDesktop": "τον δικό αποθηκευτικό χώρο της εφαρμογής υπολογιστή (IndexedDB)",
+    "infoAppLabel": "37 Player",
+    "infoAppDesktop": "η εφαρμογή υπολογιστή, έκδοση {version}",
+    "infoFolderLabel": "Φάκελος βιβλιοθήκης",
+    "infoShowFolderBtn": "Εμφάνιση",
+    "infoRecordingsLabel": "Ηχογραφήσεις",
+    "infoRecordingsDesktop": "{own} στον φάκελο της βιβλιοθήκης, {place} στη θέση τους",
+    "infoRecordingsAllOwn": "{own}, όλες στον φάκελο της βιβλιοθήκης",
+    "infoBackupsLabel": "Αντίγραφα ασφαλείας",
+    "infoBackupsDesktop": "Δεν χρειάζεται κανένα από το 37 Player: ο φάκελος της βιβλιοθήκης είναι κανονικά αρχεία. Κρατήστε αντίγραφό του μαζί με τον υπόλοιπο υπολογιστή.",
+    "infoStorageDesktop": "Στον φάκελο της βιβλιοθήκης: {own}. Στη θέση τους, στους δικούς τους φακέλους: {place}.",
     "folderLibDesktopApp": "τον δικό αποθηκευτικό χώρο της εφαρμογής υπολογιστή",
     "aboutRunningDesktop": "Λειτουργεί στην εφαρμογή υπολογιστή (έκδοση {version}).",
     "desktopShellOldTitle": "Κατεβάστε τη νεότερη εφαρμογή υπολογιστή",
@@ -16513,6 +16704,7 @@ const STRINGS = {
     "placeGone": "{n} από τις ηχογραφήσεις της βιβλιοθήκης από αυτόν τον φάκελο δεν είναι πια εκεί (μετακινήθηκαν, μετονομάστηκαν ή σβήστηκαν): αυτά τα κομμάτια δεν παίζουν μέχρι να επιστρέψουν.",
     "placeOfflineTitle": "Σε δίσκο που δεν είναι συνδεδεμένος",
     "placeOfflineBody": "Η «{name}» χρησιμοποιείται στη θέση της από το {path}, που δεν είναι προσβάσιμο τώρα. Συνδέστε τον δίσκο (ή βρείτε τον φάκελο στις Ρυθμίσεις → Βιβλιοθήκη) και παίξτε την ξανά.",
+    "placeOfflineTip": "Για να μη συμβεί ξανά: Ρυθμίσεις → Βιβλιοθήκη → Αντιγραφή στη βιβλιοθήκη κάνει αυτές τις ηχογραφήσεις δικές της.",
     "placeDeleteNote": "Οι ηχογραφήσεις στη θέση τους μένουν στον φάκελό τους: η βιβλιοθήκη απλώς τις ξεχνά.",
     "folderLibRemovedToast": "Το αντίγραφο του προγράμματος περιήγησης αφαιρέθηκε",
     "folderLibOpenTitle": "Άνοιγμα του φακέλου της βιβλιοθήκης",
@@ -17137,6 +17329,7 @@ const STRINGS = {
     "sharedSizeDown": "κατεβάζει περίπου {size}.",
     "sharedSizeUpDown": "στέλνει περίπου {up} και κατεβάζει περίπου {down}.",
     "sharedSizeHint": "Με δεδομένα κινητής ή αργή σύνδεση; Μπορείτε να ακυρώσετε τώρα και να συμμετάσχετε αργότερα.",
+    "driveMadeSizeHint": "Η «{name}» δημιουργήθηκε στο Google Drive σας. Με δεδομένα κινητής ή αργή σύνδεση; Μπορείτε να ακυρώσετε τώρα: αφαιρείται ξανά από το Drive σας, και μπορείτε να τη δημιουργήσετε αργότερα.",
     "sharedJoinTitle": "Συμμετοχή στο «{name}»",
     "sharedJoinDownloadBody": "Θα κατέβουν περίπου {size} ({n} κομμάτια).",
     "sharedJoinUploadBody": "Θα σταλούν περίπου {size} ({n} κομμάτια) στην κοινή βιβλιοθήκη.",
@@ -18255,6 +18448,16 @@ const STRINGS = {
   "it": {
     "deletePlayingNow": "Questo brano, “{name}”, sta suonando adesso. Eliminarlo lo ferma.",
     "infoRunningDesktop": "lo spazio di archiviazione dell'app per computer (IndexedDB)",
+    "infoAppLabel": "37 Player",
+    "infoAppDesktop": "l'app per computer, versione {version}",
+    "infoFolderLabel": "Cartella della libreria",
+    "infoShowFolderBtn": "Mostra",
+    "infoRecordingsLabel": "Registrazioni",
+    "infoRecordingsDesktop": "{own} nella cartella della libreria, {place} usate sul posto",
+    "infoRecordingsAllOwn": "{own}, tutte nella cartella della libreria",
+    "infoBackupsLabel": "Backup",
+    "infoBackupsDesktop": "Nessuno necessario da 37 Player: la cartella della libreria è fatta di file normali. Fanne il backup insieme al resto del computer.",
+    "infoStorageDesktop": "Nella cartella della libreria: {own}. Usate sul posto, nelle loro cartelle: {place}.",
     "folderLibDesktopApp": "lo spazio di archiviazione dell'app per computer",
     "aboutRunningDesktop": "In esecuzione nell'app per computer (versione {version}).",
     "desktopShellOldTitle": "Scarica l'app per computer più recente",
@@ -18339,6 +18542,7 @@ const STRINGS = {
     "placeGone": "{n} delle registrazioni della libreria da questa cartella non ci sono più (spostate, rinominate o cancellate): quelle tracce non si possono riprodurre finché non tornano.",
     "placeOfflineTitle": "Su un disco non collegato",
     "placeOfflineBody": "«{name}» è usata sul posto da {path}, che ora non è raggiungibile. Collega il disco (o trova la cartella in Impostazioni → Libreria), poi riproducila di nuovo.",
+    "placeOfflineTip": "Perché non succeda più: Impostazioni → Libreria → Copia nella libreria rende queste registrazioni della libreria.",
     "placeDeleteNote": "Le registrazioni usate sul posto restano nella loro cartella: la libreria le dimentica soltanto.",
     "folderLibRemovedToast": "La copia nel browser è stata rimossa",
     "folderLibOpenTitle": "Apri la cartella della libreria",
@@ -18963,6 +19167,7 @@ const STRINGS = {
     "sharedSizeDown": "scarica circa {size}.",
     "sharedSizeUpDown": "invia circa {up} e scarica circa {down}.",
     "sharedSizeHint": "Con dati mobili o una connessione lenta? Puoi annullare ora e unirti più tardi.",
+    "driveMadeSizeHint": "«{name}» è creata sul tuo Google Drive. Con dati mobili o una connessione lenta? Puoi annullare ora: viene tolta di nuovo dal tuo Drive, e puoi crearla più tardi.",
     "sharedJoinTitle": "Unisciti a “{name}”",
     "sharedJoinDownloadBody": "Verranno scaricati circa {size} ({n} brani).",
     "sharedJoinUploadBody": "Verranno inviati circa {size} ({n} brani) alla libreria condivisa.",
@@ -26423,8 +26628,12 @@ function stopConverting(){
 // At the end of a run: the converted files' originals are kept for now;
 // keep them for a later export, or discard them? Asked once for the whole
 // run, with their size.
-function showKeepOriginals(ids, failures){
-  const tracks = ids.map(id=> findLibraryTrack(id)).filter(tr=> tr && tr.original);
+async function showKeepOriginals(ids, failures){
+  // An original used in place stays where it is and takes no room: kept,
+  // and not asked about (Gen Rinzin, 7 Nov 2026: a disconcerting question
+  // for a folder used in place).
+  if(STORAGE_KIND === "desktop" && libStore.placeRefs) await libStore.placeRefs();
+  const tracks = ids.map(id=> findLibraryTrack(id)).filter(tr=> tr && tr.original && !placeOfTrack(ORIGINAL_KEY_PREFIX + tr.id));
   if(!tracks.length){ if(failures.length) showConvertFailures(failures); return; }
   const mb = Math.max(1, Math.round(tracks.reduce((n, tr)=> n + (tr.original.size || 0), 0) / 1048576));
   openModal(`
@@ -32527,7 +32736,7 @@ async function playLibraryPreview(trackId, seekRatio){
 function toggleLibraryPreviewPlay(){
   if(!libPreviewTrackId) return;
   const audioEl = document.getElementById("libPreviewAudio");
-  if(audioEl.paused) audioEl.play(); else audioEl.pause();
+  if(audioEl.paused || audioEl.dataset.p37stuck === "1") placeAwarePlay(audioEl, libPreviewTrackId); else audioEl.pause();
 }
 // The track the fixed panel should currently be showing — whatever's actually
 // loaded for playback, or (if nothing is) the sole selected track, so hovering
@@ -33316,7 +33525,7 @@ async function ensureEditorPreviewSource(){
   document.getElementById("edPreviewPlay").addEventListener("click", async ()=>{
     if(!edPreviewTrackId) return;
     const el = await ensureEditorPreviewSource();
-    if(el.paused) el.play().catch(()=>{}); else el.pause();
+    if(el.paused || el.dataset.p37stuck === "1") placeAwarePlay(el, edPreviewTrackId); else el.pause();
   });
   document.getElementById("edPreviewWave").addEventListener("click", async (e)=>{
     if(!edPreviewTrackId) return;
@@ -33393,7 +33602,7 @@ function showAudioMissing(libraryId, why){
   const place = placeOfTrack(libraryId);
   if(place && placeOffline.has(place.root)){
     if(document.getElementById("audioMissingBody")) closeModal();
-    openModal(`<h3>${t("placeOfflineTitle")}</h3><p id="audioMissingBody"></p><div class="modal-actions"><button class="btn primary" data-close>${t("ok")}</button></div>`);
+    openModal(`<h3>${t("placeOfflineTitle")}</h3><p id="audioMissingBody"></p><p class="settings-note">${escapeHtmlText(t("placeOfflineTip"))}</p><div class="modal-actions"><button class="btn primary" data-close>${t("ok")}</button></div>`);
     placeFolders().then(list=>{ const f = list.find(x=> x.root === place.root), el = document.getElementById("audioMissingBody"); if(el) el.textContent = t("placeOfflineBody", {name: tr ? tr.name : "?", path: f ? f.label : "?"}); });
     return;
   }
@@ -33843,6 +34052,10 @@ document.addEventListener("visibilitychange", ()=>{ if(document.visibilityState=
 // producing sound, which are just the moments worth writing accurately,
 // regardless of what any other tab is doing.
 audioEl.addEventListener("pause", snapshotPlaybackPosition);
+// The three players, watched for a drive unplugged under a track used in place.
+watchPlaceDrive(audioEl, ()=>{ const ctx = currentItemId ? findItemContext(currentItemId) : null; return ctx && ctx.item.kind === "track" ? ctx.item.refId : null; });
+watchPlaceDrive(document.getElementById("libPreviewAudio"), ()=> libPreviewTrackId);
+setTimeout(()=>{ const ed = document.getElementById("edPreviewAudio"); if(ed) watchPlaceDrive(ed, ()=> edPreviewTrackId); }, 0);
 audioEl.addEventListener("play", snapshotPlaybackPosition);
 function continueAfterStop(){
   stoppedActive = false;
@@ -34043,7 +34256,8 @@ function togglePlay(){
     // Stops are resumed via the dedicated "Continue playing" button, not this toggle.
     return;
   } else {
-    if(audioEl.paused) audioEl.play(); else pauseMain();
+    // (A track used in place: its drive may have gone, or come back.)
+    if(audioEl.paused || audioEl.dataset.p37stuck === "1") placeAwarePlay(audioEl, ctx && ctx.item.refId); else pauseMain();
   }
 }
 function skip(dir){
@@ -34278,7 +34492,7 @@ const HELP_TOPICS = [
   {
     "id": "libraries",
     "title": "Libraries",
-    "bodyHtml": "\u003cp>One device can hold more than one library: a Center's library and your own, say, or your Dharma recordings and everything else. Each library has its own tracks, playlists, backups, PIN and sharing. Only one is open at a time, and switching never loses anything: the others are simply put aside until you open them again.\u003c/p>\n\u003ch3>Making one\u003c/h3>\n\u003cp>In Settings → \u003cstrong>Library\u003c/strong>, open \u003cstrong>All libraries\u003c/strong> and choose \u003cstrong>New library…\u003c/strong>, give it a name, and choose how it starts:\u003c/p>\n\u003cul>\n\u003cli>\u003cstrong>Start empty:\u003c/strong> a new, empty library. Fill it as usual, with Import / Export.\u003c/li>\n\u003cli>\u003cstrong>Join a shared library:\u003c/strong> enter the join code and this device's name, and the new library joins straight away. Leave the name empty and it takes the shared library's own name, such as \"IKRC Library\".\u003c/li>\n\u003c/ul>\n\u003cp>Joining a shared library from a library that already has tracks asks first whether to make a new library for it instead. That's usually the right choice: joining with an existing library would add all its tracks and playlists to the shared library, for everyone in it to see.\u003c/p>\n\u003ch3>Switching\u003c/h3>\n\u003cp>Once there's more than one library, the open library's name is shown in the top bar, so it's clear which one a session is about to play from. Click it to see the others and switch. Settings → \u003cstrong>Library\u003c/strong> → \u003cstrong>All libraries\u003c/strong> can switch too, and it's where libraries are renamed and deleted. Below it, the same page shows the open library: its tracks and playlists, where it lives (the browser it runs in, the shared library it syncs with, where it's backed up), its file types, and the storage all libraries use together.\u003c/p>\n\u003cp>If something is playing, switching asks first, because it stops playback. Each library remembers its own place: the playlist you had open and where the session had got to.\u003c/p>\n\u003cp>Two windows can have two different libraries open at the same time. A new window opens the library chosen most recently.\u003c/p>\n\u003ch3>Keeping a library in a folder (Chrome and Edge on a computer)\u003c/h3>\n\u003cp>Normally a library lives inside the browser, where the browser can erase it (see 'Reliability'), so most people also keep a backup folder: two copies of everything, three counting the music you imported from. In Chrome or Edge on a computer, a library can live in an ordinary folder instead: Settings → \u003cstrong>Library\u003c/strong> → \u003cstrong>Kept in\u003c/strong> → \u003cstrong>Keep it in a folder…\u003c/strong>\u003c/p>\n\u003cul>\n\u003cli>\u003cstrong>You choose where,\u003c/strong> for example in Music. 37 Player makes a folder named after the library there and copies the whole library into it. If you've already made an empty folder for this library, choose that folder: 37 Player asks whether to use it as it is. That needs as much free space as the library takes, for a while.\u003c/li>\n\u003cli>\u003cstrong>Then it runs from the folder.\u003c/strong> The browser's copy is no longer used, and 37 Player offers to remove it to free the space.\u003c/li>\n\u003cli>\u003cstrong>The folder is the library,\u003c/strong> not a backup of it, so automatic backups stop and the button at the top says \u003cstrong>In a folder\u003c/strong>. Back the folder up as you back up the rest of the computer, or export a .37p now and then. Please don't rename, move, add or remove files in it yourself.\u003c/li>\n\u003cli>\u003cstrong>Readable names:\u003c/strong> the recordings are in \"music\", in a folder for each artist, then each album, named after their details, such as \"music/Tharpa/Prayers for Meditation/01 Liberating Prayer.mp3\". \"playlists\" has each playlist as an .m3u8 file that other players (VLC, foobar2000, Music.app) can open; 37 Player keeps them up to date but doesn't use them itself. You can play them or copy them elsewhere with any other program. Edit a track's details in 37 Player and its file is renamed to match (Undo puts the name back). Playlists, artwork and settings are in the folder \"37 Player's own files\". A folder library made before version 1.4.174 has its recordings moved into the readable names by itself, the first time it's opened.\u003c/li>\n\u003cli>\u003cstrong>Permission:\u003c/strong> an installed 37 Player keeps permission to the folder. In a browser tab, Chrome may ask again after a restart: choose \u003cstrong>Open it\u003c/strong>.\u003c/li>\n\u003cli>\u003cstrong>Moving the folder:\u003c/strong> move the whole folder, then open 37 Player and choose \u003cstrong>Find the folder…\u003c/strong>. It knows its own folder again by the file \"37 Player library.json\" inside it.\u003c/li>\n\u003c/ul>\n\u003ch3>In the desktop app\u003c/h3>\n\u003cp>The desktop app keeps every library in a folder of its own on the computer, where no cleaning program can erase it.\u003c/p>\n\u003cul>\n\u003cli>\u003cstrong>Where:\u003c/strong> the first time, it asks where your libraries should live, suggesting \u003cstrong>Music/37 Player Libraries\u003c/strong>. Choose another place if you like; each library gets its own folder inside it, with the same readable names as above.\u003c/li>\n\u003cli>\u003cstrong>Found again:\u003c/strong> if the app's own settings are ever lost (a reinstall, a cleaning program), it looks in that place and finds its libraries by their \"37 Player library.json\". A library kept anywhere else: Settings → \u003cstrong>Library\u003c/strong> → \u003cstrong>All libraries\u003c/strong> → \u003cstrong>Find a library folder…\u003c/strong>. If a library's folder can't be found (a drive that isn't plugged in, a folder moved), the app asks where it is rather than starting it again empty.\u003c/li>\n\u003c/ul>\n\u003cp>\u003cstrong>Importing a folder\u003c/strong> (Import / Export → \u003cstrong>Choose a folder…\u003c/strong>) asks how to take its recordings:\u003c/p>\n\u003cul>\n\u003cli>\u003cstrong>Use in place:\u003c/strong> they stay where they are (your Music folder, say, or Music.app's), and the library only points to them. 37 Player never changes, moves or deletes those files. Your edits (names, artists, artwork, cuts) are kept in the library; exports, .37p files and shared libraries get copies with your edits. Deleting such a track from the library leaves its file alone.\u003c/li>\n\u003cli>\u003cstrong>Copy into the library:\u003c/strong> the library keeps its own copies; the originals stay as they are.\u003c/li>\n\u003cli>\u003cstrong>Move into the library:\u003c/strong> as Copy, then each original is deleted once its copy is checked.\u003c/li>\n\u003c/ul>\n\u003cp>Files dropped on 37 Player or picked one by one are always copied. A folder on another drive (a USB stick, an external disk) suggests Copy, because tracks used in place can't play while their drive is unplugged: they say \"on a drive that isn't connected\" and come back when it is.\u003c/p>\n\u003cp>Settings → \u003cstrong>Library\u003c/strong> lists the folders used in place, with \u003cstrong>Look for new files\u003c/strong> (for recordings added to the folder since), \u003cstrong>Copy into the library\u003c/strong> and \u003cstrong>Move into the library\u003c/strong> (to make them the library's own after all), and \u003cstrong>Find this folder…\u003c/strong> if one has moved. The library's playlists in \"playlists\" point to recordings used in place where they are, so other players find them too.\u003c/p>\n\u003ch3>Merging a backup or export into a library\u003c/h3>\n\u003cp>Importing a .37p (a backup or a library export) into a library that already has things offers \u003cstrong>Merge\u003c/strong> or \u003cstrong>Replace\u003c/strong>. Merging adds what's new. If some of the file's tracks are already here with other details (a different name, artist, album or number) or another copy of the recording, 37 Player lists them first and asks: \u003cstrong>Keep this library's\u003c/strong> (the usual choice: an older file shouldn't undo newer changes) or \u003cstrong>Take the file's\u003c/strong>.\u003c/p>\n\u003ch3>Very big recordings\u003c/h3>\n\u003cp>On a Mac, iPad or iPhone (Safari's engine), changing the details of a recording over 256 MB changes them in the library, and in a folder library the file's name, but not the details stored inside the file itself. Rewriting a file that big there means reading all of it into memory, and in a shared library sending all of it again. Exports always carry the current details. Other programs that open the stored file directly see the details it had when it was imported.\u003c/p>\n\u003ch3>Copying between libraries\u003c/h3>\n\u003cp>To copy tracks or playlists from the open library into another one on this device, use 'Import / Export' → \u003cstrong>Copy to another library\u003c/strong> (it's there once you have more than one library). Choose what to copy, as for Export (the selected tracks, a playlist, a folder, an album, all playlists or the whole library), then the library to copy into. That list starts at \u003cstrong>Choose a library…\u003c/strong> every time, so nothing goes to the wrong one out of habit.\u003c/p>\n\u003cul>\n\u003cli>\u003cstrong>Playlists go into folders of the same names\u003c/strong> in the other library, made there if they're missing.\u003c/li>\n\u003cli>\u003cstrong>Tracks the other library already has are left as they are there.\u003c/strong> Tracks keep their identity, so copying the same thing again doesn't make duplicates, and a playlist copied before is brought up to date.\u003c/li>\n\u003cli>\u003cstrong>A different playlist with the same name\u003c/strong> in that folder is kept, and the copy gets the source library's name added, such as \"Acoustic (My library)\".\u003c/li>\n\u003cli>\u003cstrong>Nothing stays linked:\u003c/strong> later changes on either side stay where they're made.\u003c/li>\n\u003cli>The copy appears at once in a window that has the other library open, and otherwise the next time it's opened. There it's one step that \u003cstrong>Undo\u003c/strong> can take back, and in a shared library it's sent to the other devices like anything else you add.\u003c/li>\n\u003cli>While copying, closing or refreshing the window asks first, and switching libraries says the copy would stop. A copy that's stopped leaves nothing half-copied behind.\u003c/li>\n\u003c/ul>\n\u003ch3>What belongs to each library, and what to the device\u003c/h3>\n\u003cul>\n\u003cli>\u003cstrong>Each library has its own:\u003c/strong> tracks and playlists, the PIN, the backup folder, the File format settings, and its shared library, if any, with What's on this device, Review changes and Receive updates only.\u003c/li>\n\u003cli>\u003cstrong>The device keeps for all of them:\u003c/strong> the language, display settings, the screen-off playback settings, this device's name for shared libraries, and the converter.\u003c/li>\n\u003c/ul>\n\u003ch3>Syncing\u003c/h3>\n\u003cp>Only the open library syncs. A shared library that isn't open catches up as soon as you open it, with whatever changed meanwhile, so nothing is missed.\u003c/p>\n\u003ch3>Deleting\u003c/h3>\n\u003cp>Settings → \u003cstrong>Library\u003c/strong> → \u003cstrong>All libraries\u003c/strong> → \u003cstrong>Delete…\u003c/strong> removes a library's tracks, playlists and settings from this device. If it keeps a backup folder (Chrome or Edge on a computer), the dialog offers to delete that backup too: only the files 37 Player put there, and only while the folder still holds that library's backup. Backup files the browser saved (Firefox, Safari, phones) can't be reached, so delete them yourself if you no longer want them; their names include the library's name, such as lib-native-backup-full-skbc-2026-10-22-1530.37p (.zip before version 1.4.092; backups made before version 1.4.051 don't include the name). The shared library it may be joined to isn't touched either: other devices keep it, and this device can join it again later. To keep a copy first, open the library and make a backup or a Portable export.\u003c/p>\n\u003cp>A library kept in a folder is only forgotten by this device: the folder and everything in it stay on the computer, to delete yourself if you don't need it.\u003c/p>\n\u003cp>The open library can't be deleted: switch to another one first.\u003c/p>\n\u003ch3>Space\u003c/h3>\n\u003cp>All libraries share the browser's storage on this device, except those kept in a folder, which take space on the disk like any other files. A recording in two libraries is stored twice.\u003c/p>"
+    "bodyHtml": "\u003cp>One device can hold more than one library: a Center's library and your own, say, or your Dharma recordings and everything else. Each library has its own tracks, playlists, backups, PIN and sharing. Only one is open at a time, and switching never loses anything: the others are simply put aside until you open them again.\u003c/p>\n\u003ch3>Making one\u003c/h3>\n\u003cp>In Settings → \u003cstrong>Library\u003c/strong>, open \u003cstrong>All libraries\u003c/strong> and choose \u003cstrong>New library…\u003c/strong>, give it a name, and choose how it starts:\u003c/p>\n\u003cul>\n\u003cli>\u003cstrong>Start empty:\u003c/strong> a new, empty library. Fill it as usual, with Import / Export.\u003c/li>\n\u003cli>\u003cstrong>Join a shared library:\u003c/strong> enter the join code and this device's name, and the new library joins straight away. Leave the name empty and it takes the shared library's own name, such as \"IKRC Library\".\u003c/li>\n\u003c/ul>\n\u003cp>Joining a shared library from a library that already has tracks asks first whether to make a new library for it instead. That's usually the right choice: joining with an existing library would add all its tracks and playlists to the shared library, for everyone in it to see.\u003c/p>\n\u003ch3>Switching\u003c/h3>\n\u003cp>Once there's more than one library, the open library's name is shown in the top bar, so it's clear which one a session is about to play from. Click it to see the others and switch. Settings → \u003cstrong>Library\u003c/strong> → \u003cstrong>All libraries\u003c/strong> can switch too, and it's where libraries are renamed and deleted. Below it, the same page shows the open library: its tracks and playlists, where it lives (the browser it runs in, the shared library it syncs with, where it's backed up), its file types, and the storage all libraries use together.\u003c/p>\n\u003cp>If something is playing, switching asks first, because it stops playback. Each library remembers its own place: the playlist you had open and where the session had got to.\u003c/p>\n\u003cp>Two windows can have two different libraries open at the same time. A new window opens the library chosen most recently.\u003c/p>\n\u003ch3>Keeping a library in a folder (Chrome and Edge on a computer)\u003c/h3>\n\u003cp>Normally a library lives inside the browser, where the browser can erase it (see 'Reliability'), so most people also keep a backup folder: two copies of everything, three counting the music you imported from. In Chrome or Edge on a computer, a library can live in an ordinary folder instead: Settings → \u003cstrong>Library\u003c/strong> → \u003cstrong>Kept in\u003c/strong> → \u003cstrong>Keep it in a folder…\u003c/strong>\u003c/p>\n\u003cul>\n\u003cli>\u003cstrong>You choose where,\u003c/strong> for example in Music. 37 Player makes a folder named after the library there and copies the whole library into it. If you've already made an empty folder for this library, choose that folder: 37 Player asks whether to use it as it is. That needs as much free space as the library takes, for a while.\u003c/li>\n\u003cli>\u003cstrong>Then it runs from the folder.\u003c/strong> The browser's copy is no longer used, and 37 Player offers to remove it to free the space.\u003c/li>\n\u003cli>\u003cstrong>The folder is the library,\u003c/strong> not a backup of it, so automatic backups stop and the button at the top says \u003cstrong>In a folder\u003c/strong>. Back the folder up as you back up the rest of the computer, or export a .37p now and then. Please don't rename, move, add or remove files in it yourself.\u003c/li>\n\u003cli>\u003cstrong>Readable names:\u003c/strong> the recordings are in \"music\", in a folder for each artist, then each album, named after their details, such as \"music/Tharpa/Prayers for Meditation/01 Liberating Prayer.mp3\". \"playlists\" has each playlist as an .m3u8 file that other players (VLC, foobar2000, Music.app) can open; 37 Player keeps them up to date but doesn't use them itself. You can play them or copy them elsewhere with any other program. Edit a track's details in 37 Player and its file is renamed to match (Undo puts the name back). Playlists, artwork and settings are in the folder \"37 Player's own files\". A folder library made before version 1.4.174 has its recordings moved into the readable names by itself, the first time it's opened.\u003c/li>\n\u003cli>\u003cstrong>Permission:\u003c/strong> an installed 37 Player keeps permission to the folder. In a browser tab, Chrome may ask again after a restart: choose \u003cstrong>Open it\u003c/strong>.\u003c/li>\n\u003cli>\u003cstrong>Moving the folder:\u003c/strong> move the whole folder, then open 37 Player and choose \u003cstrong>Find the folder…\u003c/strong>. It knows its own folder again by the file \"37 Player library.json\" inside it.\u003c/li>\n\u003c/ul>\n\u003ch3>In the desktop app\u003c/h3>\n\u003cp>The desktop app keeps every library in a folder of its own on the computer, where no cleaning program can erase it.\u003c/p>\n\u003cul>\n\u003cli>\u003cstrong>Where:\u003c/strong> the first time, it asks where your libraries should live, suggesting \u003cstrong>Music/37 Player Libraries\u003c/strong>. Choose another place if you like; each library gets its own folder inside it, with the same readable names as above.\u003c/li>\n\u003cli>\u003cstrong>Its name:\u003c/strong> the folder takes the library's name (rename the library and the folder follows the next time 37 Player starts). Settings → \u003cstrong>Library\u003c/strong> shows where it is, with \u003cstrong>Show\u003c/strong> to open it.\u003c/li>\n\u003cli>\u003cstrong>Backups:\u003c/strong> 37 Player doesn't make its own here, and doesn't ask: the folder is ordinary files, so back it up with the rest of the computer, or share the library.\u003c/li>\n\u003cli>\u003cstrong>Found again:\u003c/strong> if the app's own settings are ever lost (a reinstall, a cleaning program), it looks in that place and finds its libraries by their \"37 Player library.json\". A library kept anywhere else: Settings → \u003cstrong>Library\u003c/strong> → \u003cstrong>All libraries\u003c/strong> → \u003cstrong>Find a library folder…\u003c/strong>. If a library's folder can't be found (a drive that isn't plugged in, a folder moved), the app asks where it is rather than starting it again empty.\u003c/li>\n\u003c/ul>\n\u003cp>\u003cstrong>Importing a folder\u003c/strong> (Import / Export → \u003cstrong>Choose a folder…\u003c/strong>) asks how to take its recordings:\u003c/p>\n\u003cul>\n\u003cli>\u003cstrong>Use in place:\u003c/strong> they stay where they are (your Music folder, say, or Music.app's), and the library only points to them. 37 Player never changes, moves or deletes those files. Your edits (names, artists, artwork, cuts) are kept in the library; exports, .37p files and shared libraries get copies with your edits. Deleting such a track from the library leaves its file alone.\u003c/li>\n\u003cli>\u003cstrong>Copy into the library:\u003c/strong> the library keeps its own copies; the originals stay as they are.\u003c/li>\n\u003cli>\u003cstrong>Move into the library:\u003c/strong> as Copy, then each original is deleted once its copy is checked.\u003c/li>\n\u003c/ul>\n\u003cp>Files dropped on 37 Player or picked one by one are always copied. A folder on another drive (a USB stick, an external disk) suggests Copy, because tracks used in place can't play while their drive is unplugged: they say \"on a drive that isn't connected\" and come back when it is.\u003c/p>\n\u003cp>Settings → \u003cstrong>Library\u003c/strong> lists the folders used in place, with \u003cstrong>Look for new files\u003c/strong> (for recordings added to the folder since), \u003cstrong>Copy into the library\u003c/strong> and \u003cstrong>Move into the library\u003c/strong> (to make them the library's own after all), and \u003cstrong>Find this folder…\u003c/strong> if one has moved. The library's playlists in \"playlists\" point to recordings used in place where they are, so other players find them too.\u003c/p>\n\u003ch3>Merging a backup or export into a library\u003c/h3>\n\u003cp>Importing a .37p (a backup or a library export) into a library that already has things offers \u003cstrong>Merge\u003c/strong> or \u003cstrong>Replace\u003c/strong>. Merging adds what's new. If some of the file's tracks are already here with other details (a different name, artist, album or number) or another copy of the recording, 37 Player lists them first and asks: \u003cstrong>Keep this library's\u003c/strong> (the usual choice: an older file shouldn't undo newer changes) or \u003cstrong>Take the file's\u003c/strong>.\u003c/p>\n\u003ch3>Very big recordings\u003c/h3>\n\u003cp>On a Mac, iPad or iPhone (Safari's engine), changing the details of a recording over 256 MB changes them in the library, and in a folder library the file's name, but not the details stored inside the file itself. Rewriting a file that big there means reading all of it into memory, and in a shared library sending all of it again. Exports always carry the current details. Other programs that open the stored file directly see the details it had when it was imported.\u003c/p>\n\u003ch3>Copying between libraries\u003c/h3>\n\u003cp>To copy tracks or playlists from the open library into another one on this device, use 'Import / Export' → \u003cstrong>Copy to another library\u003c/strong> (it's there once you have more than one library). Choose what to copy, as for Export (the selected tracks, a playlist, a folder, an album, all playlists or the whole library), then the library to copy into. That list starts at \u003cstrong>Choose a library…\u003c/strong> every time, so nothing goes to the wrong one out of habit.\u003c/p>\n\u003cul>\n\u003cli>\u003cstrong>Playlists go into folders of the same names\u003c/strong> in the other library, made there if they're missing.\u003c/li>\n\u003cli>\u003cstrong>Tracks the other library already has are left as they are there.\u003c/strong> Tracks keep their identity, so copying the same thing again doesn't make duplicates, and a playlist copied before is brought up to date.\u003c/li>\n\u003cli>\u003cstrong>A different playlist with the same name\u003c/strong> in that folder is kept, and the copy gets the source library's name added, such as \"Acoustic (My library)\".\u003c/li>\n\u003cli>\u003cstrong>Nothing stays linked:\u003c/strong> later changes on either side stay where they're made.\u003c/li>\n\u003cli>The copy appears at once in a window that has the other library open, and otherwise the next time it's opened. There it's one step that \u003cstrong>Undo\u003c/strong> can take back, and in a shared library it's sent to the other devices like anything else you add.\u003c/li>\n\u003cli>While copying, closing or refreshing the window asks first, and switching libraries says the copy would stop. A copy that's stopped leaves nothing half-copied behind.\u003c/li>\n\u003c/ul>\n\u003ch3>What belongs to each library, and what to the device\u003c/h3>\n\u003cul>\n\u003cli>\u003cstrong>Each library has its own:\u003c/strong> tracks and playlists, the PIN, the backup folder, the File format settings, and its shared library, if any, with What's on this device, Review changes and Receive updates only.\u003c/li>\n\u003cli>\u003cstrong>The device keeps for all of them:\u003c/strong> the language, display settings, the screen-off playback settings, this device's name for shared libraries, and the converter.\u003c/li>\n\u003c/ul>\n\u003ch3>Syncing\u003c/h3>\n\u003cp>Only the open library syncs. A shared library that isn't open catches up as soon as you open it, with whatever changed meanwhile, so nothing is missed.\u003c/p>\n\u003ch3>Deleting\u003c/h3>\n\u003cp>Settings → \u003cstrong>Library\u003c/strong> → \u003cstrong>All libraries\u003c/strong> → \u003cstrong>Delete…\u003c/strong> removes a library's tracks, playlists and settings from this device. If it keeps a backup folder (Chrome or Edge on a computer), the dialog offers to delete that backup too: only the files 37 Player put there, and only while the folder still holds that library's backup. Backup files the browser saved (Firefox, Safari, phones) can't be reached, so delete them yourself if you no longer want them; their names include the library's name, such as lib-native-backup-full-skbc-2026-10-22-1530.37p (.zip before version 1.4.092; backups made before version 1.4.051 don't include the name). The shared library it may be joined to isn't touched either: other devices keep it, and this device can join it again later. To keep a copy first, open the library and make a backup or a Portable export.\u003c/p>\n\u003cp>A library kept in a folder is only forgotten by this device: the folder and everything in it stay on the computer, to delete yourself if you don't need it.\u003c/p>\n\u003cp>The open library can't be deleted: switch to another one first.\u003c/p>\n\u003ch3>Space\u003c/h3>\n\u003cp>All libraries share the browser's storage on this device, except those kept in a folder, which take space on the disk like any other files. A recording in two libraries is stored twice.\u003c/p>"
   },
   {
     "id": "history-and-undo",
@@ -35872,11 +36086,16 @@ async function renderSettingsSection(fromTimer){
         <tr><td>${t("infoUnused")}</td><td>${st.unused}</td></tr>
       </table>
       <h3 class="settings-h3">${t("infoWhere")}</h3>
-      <table class="settings-table">
+      <table class="settings-table">${STORAGE_KIND === "desktop" ? `
+        <tr><td>${t("infoAppLabel")}</td><td id="infoRunning"></td></tr>
+        <tr><td>${t("infoFolderLabel")}</td><td><span id="infoKept"></span> <button class="btn ghost" id="infoShowFolder" type="button" style="margin-left:8px;">${t("infoShowFolderBtn")}</button></td></tr>
+        <tr><td>${t("infoRecordingsLabel")}</td><td id="infoRecordings"></td></tr>
+        <tr><td>${t("infoSyncingWith")}</td><td id="infoSync"></td></tr>
+        <tr><td>${t("infoBackupsLabel")}</td><td id="infoBackup"></td></tr>` : `
         <tr><td>${t("infoRunningFrom")}</td><td id="infoRunning"></td></tr>
         <tr><td>${t("folderLibKeptIn")}</td><td><span id="infoKept"></span> <button class="btn ghost" id="infoKeepFolder" type="button" style="display:none; margin-left:8px;">${t("folderLibMoveBtn")}</button></td></tr>
         <tr><td>${t("infoSyncingWith")}</td><td id="infoSync"></td></tr>
-        <tr><td>${t("infoBackingUpTo")}</td><td id="infoBackup"></td></tr>
+        <tr><td>${t("infoBackingUpTo")}</td><td id="infoBackup"></td></tr>`}
       </table>
       <div id="placeFolders"></div>
       <h3 class="settings-h3">${t("infoFileTypes")}</h3>
@@ -35887,11 +36106,26 @@ async function renderSettingsSection(fromTimer){
     renderLibrariesSection(document.getElementById("libsMoreBody"));
     document.getElementById("libsMore").addEventListener("toggle", (e)=>{ libsMoreOpen = e.target.open; });
     document.getElementById("infoThis").textContent = t("infoThisLibrary", {name: currentLibraryName()});
-    document.getElementById("infoRunning").textContent = IN_DESKTOP_APP ? t("infoRunningDesktop") : t("infoRunningValue", {browser: browserLabel(), place: libraryHomeLabel()});
     document.getElementById("infoSync").textContent = librarySyncText();
-    document.getElementById("infoKept").textContent = libraryFolderName(LIBRARY_ID) ? t("folderLibFolder", {name: libraryFolderName(LIBRARY_ID)}) : t(IN_DESKTOP_APP ? "folderLibDesktopApp" : "folderLibBrowser");
-    if(canKeepInFolder()){ const b = document.getElementById("infoKeepFolder"); b.style.display = ""; b.addEventListener("click", moveLibraryToFolder); }
-    document.getElementById("infoBackup").textContent = libraryBackupText();
+    // The desktop app (2.0; Gen Rinzin, 7 Nov 2026): the app, the library's
+    // folder, where its recordings are, and no backups of 37 Player's own.
+    let desktopBytes = null;
+    if(STORAGE_KIND === "desktop"){
+      document.getElementById("infoRunning").textContent = t("infoAppDesktop", {version: APP_VERSION});
+      const roots = await desktopRoots(true).catch(()=> ({}));
+      document.getElementById("infoKept").textContent = roots[desktopRootOf(LIBRARY_ID)] || t("checkingLabel");
+      document.getElementById("infoShowFolder").addEventListener("click", ()=> desktopInvoke("fs_root_show", {id: desktopRootOf(LIBRARY_ID)}).catch(err=> alert(String((err && err.message) || err))));
+      await libStore.placeRefs();
+      let own = 0, place = 0; desktopBytes = {own: 0, place: 0};
+      for(const tr of root.library){ if(placeOfTrack(tr.id)){ place++; desktopBytes.place += tr.fileSize || 0; } else { own++; desktopBytes.own += tr.fileSize || 0; } }
+      document.getElementById("infoRecordings").textContent = place ? t("infoRecordingsDesktop", {own, place}) : t("infoRecordingsAllOwn", {own});
+      document.getElementById("infoBackup").textContent = t("infoBackupsDesktop");
+    } else {
+      document.getElementById("infoRunning").textContent = IN_DESKTOP_APP ? t("infoRunningDesktop") : t("infoRunningValue", {browser: browserLabel(), place: libraryHomeLabel()});
+      document.getElementById("infoKept").textContent = libraryFolderName(LIBRARY_ID) ? t("folderLibFolder", {name: libraryFolderName(LIBRARY_ID)}) : t(IN_DESKTOP_APP ? "folderLibDesktopApp" : "folderLibBrowser");
+      if(canKeepInFolder()){ const b = document.getElementById("infoKeepFolder"); b.style.display = ""; b.addEventListener("click", moveLibraryToFolder); }
+      document.getElementById("infoBackup").textContent = libraryBackupText();
+    }
     await renderPlaceFolders(document.getElementById("placeFolders"));
     const types = await libraryFileTypeCounts();
     const typeTable = document.getElementById("fileTypeTable");
@@ -35904,9 +36138,12 @@ async function renderSettingsSection(fromTimer){
         if(types.length > 1) row([t("infoTotal"), String(types.reduce((n, tp)=> n + tp.count, 0)), fmtBytes(types.reduce((n, tp)=> n + (tp.bytes || 0), 0))], "total");
       } else typeTable.innerHTML = "<tr><td>\u2014</td><td></td></tr>";
     }
-    const info = await getStorageInfo();
     const el = document.getElementById("storageInfo");
     if(!el) return;
+    // The desktop app: what's in the library's folder, and what stays where
+    // it is; the browser's storage quota means nothing here.
+    if(desktopBytes){ el.textContent = t("infoStorageDesktop", {own: fmtBytes(desktopBytes.own), place: fmtBytes(desktopBytes.place)}); return; }
+    const info = await getStorageInfo();
     // Safari's own figure can leave out the stored audio files (seen: 146 MB
     // for a 4.5 GB library), so it's never shown as less than the audio.
     const audioBytes = types.reduce((n, tp)=> n + (tp.bytes || 0), 0);
@@ -37363,8 +37600,19 @@ async function requestBackupPermission(){
   catch(err){ backupPermission = "denied"; }
   return backupPermission==="granted";
 }
+// The library is a folder of ordinary files: one a browser keeps (1.4.153),
+// or any library of the desktop app (2.0). It needs no backup of its own,
+// and 37 Player doesn't ask for one (Gen Rinzin, 7 Nov 2026: in the desktop
+// app, no Heads up before the first import, no Time for a backup).
+function libraryIsFolder(){ return !!libraryFolderName(LIBRARY_ID) || libraryInDesktopFolder(LIBRARY_ID); }
+// Its folder's name, for the button at the top.
+function libraryFolderLabel(){
+  if(libraryFolderName(LIBRARY_ID)) return libraryFolderName(LIBRARY_ID);
+  const p = desktopRootsCache && desktopRootsCache[desktopRootOf(LIBRARY_ID)];
+  return p ? String(p).replace(/[\\/]+$/, "").split(/[\\/]/).pop() : currentLibraryName();
+}
 function autoBackupActive(){
-  if(libraryFolderName(LIBRARY_ID)) return false; // the folder is the library (1.4.153)
+  if(libraryIsFolder()) return false; // the folder is the library (1.4.153)
   return !!backupInfo.handle && backupPermission==="granted" && !backupInfo.lastError && !backupInfo.foreignOwner && !backupInfo.heldAfterRecovery;
 }
 
@@ -37381,7 +37629,7 @@ function libraryFingerprint(){
 // A library that's all in its shared library needs no backup here: the
 // shared library is its backup (see sharedCoversLibrary).
 function libraryNeedsBackup(){
-  if(libraryFolderName(LIBRARY_ID)) return false;
+  if(libraryIsFolder()) return false;
   return root.library.length>0 && !libraryIsJustStarter() && libraryFingerprint()!==backupInfo.lastFingerprint && !(typeof sharedCoversLibrary === "function" && sharedCoversLibrary());
 }
 
@@ -38505,7 +38753,8 @@ function updateBackupIndicator(){
   btn.style.display = "";
   const lastTip = backupInfo.lastBackupAt ? t("backupLastTooltip",{time: new Date(backupInfo.lastBackupAt).toLocaleString()}) : t("backupNeverTooltip");
   if(sharedConfig() && sharedConfig().kind === "gdrive" && driveNeedsSignIn){ label = t("driveSignInShort"); cls = "warn"; title = t("driveSignInNeeded"); }
-  else if(libraryFolderName(LIBRARY_ID) && !syncStuck()){ label = t("folderLibIndicator"); cls = "ok"; title = t("folderLibIndicatorTip", {name: libraryFolderName(LIBRARY_ID)}); }
+  // (A desktop library in a shared library shows how its syncing stands.)
+  else if((libraryFolderName(LIBRARY_ID) || (libraryInDesktopFolder(LIBRARY_ID) && !sharedConfig())) && !syncStuck()){ label = t("folderLibIndicator"); cls = "ok"; title = t("folderLibIndicatorTip", {name: libraryFolderLabel()}); }
   else if(backupRunning){ label = (backupProgress && backupProgress.total > 20) ? t("backupIndicatorProgress", {done: workingOn(backupProgress.done, backupProgress.total), total: backupProgress.total}) : t("backupIndicatorRunning"); cls = "busy"; title = lastTip; }
   else if(backupInfo.handle && backupInfo.heldAfterRecovery){ label = t("backupIndicatorPausedOther"); cls = "warn"; title = t("backupHeldTooltip"); }
   else if(backupInfo.handle && backupInfo.foreignOwner){ label = t("backupIndicatorPausedOther"); cls = needs ? (urgent ? "urgent" : "warn") : "ok"; title = t("backupForeignOwnerTooltip"); }
@@ -38671,7 +38920,7 @@ function headsUpMattersForJoining(env){ return env.isHttp && !env.standalone && 
 let headsUpWaiting = null;
 async function headsUpBeforeImport(){
   if(window.__noHeadsUp || !backupInfo.headsUpPending) return true;
-  if(sharedConfig() || autoBackupActive() || quickJobActive()){ backupInfo.headsUpPending = false; await saveBackupInfo(); return true; }
+  if(sharedConfig() || autoBackupActive() || quickJobActive() || libraryIsFolder()){ backupInfo.headsUpPending = false; await saveBackupInfo(); return true; }
   if(!headsUpWaiting) headsUpWaiting = openHeadsUp("import").finally(()=>{ headsUpWaiting = null; });
   return headsUpWaiting;
 }
@@ -38946,7 +39195,7 @@ async function renderAutoRestoreSetting(holder){
 // ---- Is this library protected?
 // A shared library (when everything here has reached it) or automatic
 // backups on this device: then nothing needs asking.
-function libraryProtected(){ return !!libraryFolderName(LIBRARY_ID) || autoBackupActive() || (!!sharedConfig() && !syncStuck()); }
+function libraryProtected(){ return libraryIsFolder() || autoBackupActive() || (!!sharedConfig() && !syncStuck()); }
 
 // ---- Sync that doesn't finish (1.4.092)
 // Joined, but changes or audio have been waiting to be sent for days: what
@@ -39194,7 +39443,7 @@ async function checkForUpdatesNow(){
     await askChoice(t("updateLatest"), `<p>${escapeHtmlText(t("aboutVersion", {version: APP_VERSION}))}</p>`, [{label: t("ok"), value: null, kind: "primary"}]);
     return;
   }
-  const playing = isAnythingPlaying() || silenceState.active;
+  const playing = playingHere();
   const choice = await askChoice(t("updateAvailableLocal", {version: latest}),
     `<p>${escapeHtmlText(t("aboutVersion", {version: APP_VERSION}))} ${escapeHtmlText(t("updateKeepsLibrary"))}</p>${playing ? `<p><b>${escapeHtmlText(t("updateAvailPlaying"))}</b></p>` : ""}`,
     [{label: t("updateAvailableBtn", {version: latest}), value: "update", kind: "primary"}, {label: t("notNowBtn"), value: null}]);
@@ -39204,7 +39453,7 @@ async function checkForUpdatesNow(){
 }
 document.getElementById("appVersion").addEventListener("click", async ()=>{
   if(!siteUpdateReady) return checkForUpdatesNow();
-  if(isAnythingPlaying() || silenceState.active){
+  if(playingHere()){
     const go = await askChoice(t("updateAvailableLocal", {version: siteUpdateReady}), `<p><b>${escapeHtmlText(t("updateAvailPlaying"))}</b></p>`,
       [{label: t("updateNowLine"), value: "go", kind: "primary"}, {label: t("notNowBtn"), value: null}]);
     if(go !== "go") return;
@@ -39797,22 +40046,9 @@ function placeholderBareName(it){
   return it.name || (it.kind==="silence" ? defaultSilenceName(Math.floor(it.seconds/60), it.seconds%60) : t("stopFallbackLabel"));
 }
 function placeholderTitleFor(it){ return `>>> ${placeholderMarker(it)}: ${placeholderBareName(it)} <<<`; }
-// A silent, mono WAV of the given length, with Title/Artist/Album embedded in
-// standard LIST/INFO fields (INAM/IART/IPRD — IPRD, "Product", is the RIFF
-// slot most readers map to Album) so a player showing metadata shows something
-// meaningful, plus a matching filename for players that only show that.
-// 8kHz rather than a music sample rate: silence has no frequency content to
-// lose regardless of rate, so this is a ~5.5x size cut with zero audible
-// difference — a 60-second marker is under 1MB instead of over 5.
-function riffInfoField(fourcc, text){
-  const textBytes = new TextEncoder().encode(text||"");
-  const declaredSize = textBytes.length + 1; // +1 for an explicit NUL terminator
-  const paddedTotal = declaredSize % 2 === 0 ? declaredSize : declaredSize + 1;
-  return {fourcc, textBytes, declaredSize, paddedTotal};
-}
 // Writes a real PCM16 WAV file directly from a slice of an already-decoded
-// AudioBuffer — the core of the track-splitting feature below. Unlike
-// buildSilentWavBytes, this carries no RIFF INFO metadata chunk: a split
+// AudioBuffer — the core of the track-splitting feature below. It
+// carries no RIFF INFO metadata chunk: a split
 // track's actual name/artist/album live in its own library record the same
 // as any other import, not read back out of the file's own tags (matching
 // how every other imported track already works — WAV tag-writing was never
@@ -39854,53 +40090,30 @@ async function buildWavBytesFromAudioBuffer(audioBuffer, startSample, endSample)
   }
   return new Uint8Array(buf);
 }
-function buildSilentWavBytes(seconds, titleText, artistText, albumText){
-  // Matching the same 44.1kHz/stereo target we settled on for library-wide
-  // normalization, not the "silence needs no fidelity" logic from before —
-  // the actual risk isn't audio quality, it's a native player like Music.app
-  // hiccuping at a track transition when sample rate or channel count changes
-  // mid-stream. That risk is exactly as real for a silent file as a real one;
-  // silence doesn't make the transition itself any smoother.
-  const sampleRate = 44100, numChannels = 2, bitsPerSample = 16;
-  const numSamples = Math.max(1, Math.round(seconds * sampleRate));
-  const dataSize = numSamples * numChannels * (bitsPerSample/8);
-  const byteRate = sampleRate * numChannels * (bitsPerSample/8);
-  const blockAlign = numChannels * (bitsPerSample/8);
-
-  const fields = [
-    riffInfoField("INAM", titleText),
-    riffInfoField("IART", artistText),
-    riffInfoField("IPRD", albumText),
-  ];
-  const fieldsTotalBytes = fields.reduce((sum,f)=> sum + 8 + f.paddedTotal, 0);
-  const listChunkContentSize = 4 + fieldsTotalBytes;
-  const listChunkSize = 8 + listChunkContentSize;
-  const fmtChunkSize = 16;
-  const riffSize = 4 + (8+fmtChunkSize) + listChunkSize + (8+dataSize);
-
-  const buf = new ArrayBuffer(8 + riffSize);
-  const dv = new DataView(buf);
-  let pos = 0;
-  function writeStr(s){ for(let i=0;i<s.length;i++) dv.setUint8(pos++, s.charCodeAt(i)); }
-  function writeU32(v){ dv.setUint32(pos, v, true); pos+=4; }
-  function writeU16(v){ dv.setUint16(pos, v, true); pos+=2; }
-
-  writeStr("RIFF"); writeU32(riffSize); writeStr("WAVE");
-  writeStr("fmt "); writeU32(fmtChunkSize);
-  writeU16(1); writeU16(numChannels); writeU32(sampleRate); writeU32(byteRate); writeU16(blockAlign); writeU16(bitsPerSample);
-  writeStr("LIST"); writeU32(listChunkContentSize); writeStr("INFO");
-  fields.forEach(f=>{
-    writeStr(f.fourcc); writeU32(f.declaredSize);
-    for(let i=0;i<f.textBytes.length;i++) dv.setUint8(pos++, f.textBytes[i]);
-    dv.setUint8(pos++, 0);
-    if(f.paddedTotal > f.declaredSize) dv.setUint8(pos++, 0);
-  });
-  writeStr("data"); writeU32(dataSize);
-  // data section is silence — the ArrayBuffer is already zero-initialized, so
-  // there's nothing to write, just room to leave alone.
-  return new Uint8Array(buf);
+// Silence as an MP3 (Gen Rinzin, 7 Nov 2026: smaller, and tagged so other
+// players file it with Artist and Album "Silence"). No encoder is needed:
+// an MPEG-1 Layer III frame whose side information and audio are all zeros
+// decodes as silence, so the file is an ID3 tag and that frame, repeated.
+// 44.1 kHz stereo like everything else exported (a player like Music.app
+// can hiccup when the rate or channels change between tracks), at 32 kbit/s, the least there is: about 240 KB a minute.
+function buildSilentMp3Bytes(seconds, titleText, artistText, albumText){
+  const frames = Math.max(1, Math.ceil(seconds * 44100 / 1152));
+  const exact = 144 * 32000 / 44100, base = Math.floor(exact), frac = exact - base; // 104.49 bytes a frame
+  const tag = overlayId3Tag(null, {name: titleText, artist: artistText, album: albumText});
+  let total = 0, acc = 0;
+  const pads = new Uint8Array(frames);
+  for(let i = 0; i < frames; i++){ acc += frac; if(acc >= 1){ pads[i] = 1; acc -= 1; } total += base + pads[i]; }
+  const out = new Uint8Array(tag.length + total);
+  out.set(tag, 0);
+  let at = tag.length;
+  for(let i = 0; i < frames; i++){
+    // sync, MPEG-1, Layer III, no CRC; 32 kbit/s, 44.1 kHz, padding; stereo
+    out[at] = 0xFF; out[at + 1] = 0xFB; out[at + 2] = 0x10 | (pads[i] << 1); out[at + 3] = 0x00;
+    at += base + pads[i]; // side information and audio: zeros
+  }
+  return out;
 }
-// One WAV per distinct (seconds, name) silence and per distinct stop name — many
+// One file per distinct (seconds, name) silence and per distinct stop name — many
 // playlists reusing "Silence 1 minute" or "Stop for teaching" share a single
 // synthesized file rather than each getting its own multi-MB copy.
 function buildPlaceholderEntries(playlistsForZip){
@@ -39920,22 +40133,25 @@ function buildPlaceholderEntries(playlistsForZip){
   function claimFilename(folder, bareName){
     usedNames[folder] = usedNames[folder] || new Set();
     const baseName = sanitizeSegment(bareName);
-    let filename = baseName+".wav", n=2;
-    while(usedNames[folder].has(filename.toLowerCase())){ filename = baseName+" ("+n+").wav"; n++; }
+    let filename = baseName+".mp3", n=2;
+    while(usedNames[folder].has(filename.toLowerCase())){ filename = baseName+" ("+n+").mp3"; n++; }
     usedNames[folder].add(filename.toLowerCase());
     return filename;
   }
+  // As any track: music/<artist>/<album>/, Artist "Silence", Album
+  // "Silence" (stops: Album "Stops"), MP3 (2.0.002; before, WAVs in
+  // music/_Silence and music/_Stops, still recognised when imported).
   silenceMap.forEach((it,key)=>{
-    const filename = claimFilename("_Silence", "SILENCE - " + placeholderBareName(it));
-    const pathSegs = ["music","_Silence",filename];
+    const filename = claimFilename("Silence/Silence", "SILENCE - " + placeholderBareName(it));
+    const pathSegs = ["music","Silence","Silence",filename];
     silencePathByKey[key] = pathSegs;
-    zipEntries.push({name:pathSegs.join("/"), data: buildSilentWavBytes(it.seconds, placeholderTitleFor(it), "37 Player", "Silences")});
+    zipEntries.push({name:pathSegs.join("/"), data: buildSilentMp3Bytes(it.seconds, placeholderTitleFor(it), "Silence", "Silence")});
   });
   stopMap.forEach((it,key)=>{
-    const filename = claimFilename("_Stops", "STOP - " + placeholderBareName(it));
-    const pathSegs = ["music","_Stops",filename];
+    const filename = claimFilename("Silence/Stops", "STOP - " + placeholderBareName(it));
+    const pathSegs = ["music","Silence","Stops",filename];
     stopPathByKey[key] = pathSegs;
-    zipEntries.push({name:pathSegs.join("/"), data: buildSilentWavBytes(SILENCE_STOP_DURATION_SECONDS, placeholderTitleFor(it), "37 Player", "Stops")});
+    zipEntries.push({name:pathSegs.join("/"), data: buildSilentMp3Bytes(SILENCE_STOP_DURATION_SECONDS, placeholderTitleFor(it), "Silence", "Stops")});
   });
   return {zipEntries, silencePathByKey, stopPathByKey};
 }
@@ -42821,12 +43037,12 @@ async function openDriveChooser(res, intent){
     showChoice();
     document.getElementById("drName").value = currentLibraryName() === t("libDefaultName") ? "" : currentLibraryName();
     document.getElementById("drDevice").value = intent.device || root.settings.sharedLastDevice || "";
-    const join = async (folderId)=>{
+    const join = async (folderId, justMade)=>{
       const dev = document.getElementById("drDevice").value.trim(), partial = !!intent.partial;
       root.settings.sharedLastDevice = dev;
       settled = true; closeModal();
       const cfg = {kind: "gdrive", folderId, refreshToken: res.refreshToken, code: "gdrive " + folderId, url: "", account};
-      const r = await joinSharedLibrary("", "", dev, {cfg, partial});
+      const r = await joinSharedLibrary("", "", dev, {cfg, partial, justMade});
       if(r && r.error){ alert(r.error); resolve(); return r; }
       if(r && r.ok){
         if(!backupInfo.setupDone) await finishSetup();
@@ -42844,7 +43060,10 @@ async function openDriveChooser(res, intent){
       const msg = document.getElementById("drMsg");
       msg.textContent = t("driveCreating");
       let id = null;
-      try{ id = await driveCreateLibrary(temp, name); const r = await join(id); if(!(r && r.ok)) driveRemoveIfUnused(temp, id); }
+      // Cancelled at the last question (mobile data, say) or failed: the new,
+      // empty library goes to the Drive's trash (1.4.134; Gen Rinzin, 7 Nov
+      // 2026: cleanest, in case another shared library is chosen later).
+      try{ id = await driveCreateLibrary(temp, name); const r = await join(id, true); if(!(r && r.ok)) driveRemoveIfUnused(temp, id); }
       catch(err){ if(id) driveRemoveIfUnused(temp, id); msg.textContent = t("driveSignInFailed", {error: err.message || String(err)}); }
     });
   });
@@ -44078,7 +44297,8 @@ async function joinSharedLibrary(url, code, deviceName, opts){
     if(n > 0){
       const offerPartial = hasShared;
       const title = t("sharedJoinTitle", {name: remote.name || cfg.code.split(" ")[0]});
-      const hint = `<p class="settings-note">${escapeHtmlText(t("sharedSizeHint"))}</p>`;
+      // A library just made on Google Drive: it's there now, whatever comes next.
+      const hint = `<p class="settings-note">${escapeHtmlText(opts.justMade ? t("driveMadeSizeHint", {name: remote.name || ""}) : t("sharedSizeHint"))}</p>`;
       // Everything, or only what I choose: a choice, then Join.
       const ok = offerPartial
         ? await askRadio(title, hint, [
@@ -45974,7 +46194,9 @@ async function switchLibrary(id){
   if(id === LIBRARY_ID) return;
   const target = libraryEntry(id);
   if(!target) return;
-  if(isAnythingPlaying() || silenceState.active){
+  // Any of 37 Player's players (Edit Playlists' too: Gen Rinzin on the HP,
+  // 7 Nov 2026, switched while one played and wasn't asked), or a silence.
+  if(playingHere()){
     const ok = await askChoice(t("libSwitchTitle"), `<p>${escapeHtmlText(t("libSwitchPlaying", {name: libraryDisplayName(target)}))}</p>`,
       [{label: t("libSwitchBtn"), value: "go", kind: "primary"}, {label: t("cancel"), value: null}]);
     if(ok !== "go") return;
@@ -46030,16 +46252,20 @@ function renameLibrary(id, name){
   e.name = (name || "").trim();
   delete e.auto;
   writeLibraryList(reg);
-  // The desktop app: the folder's marker says the new name, so a library
-  // found again by it (desktopLibrariesAtStart) comes back under it.
-  if(STORAGE_KIND === "desktop") (async()=>{
+  desktopMarkerName(id, e.name);
+  if(id === LIBRARY_ID){ writeLibraryInfo(); updateLibrarySwitch(); }
+}
+// The desktop app: the folder's marker says the library's name, so a library
+// found again by it (desktopLibrariesAtStart) comes back under it.
+function desktopMarkerName(id, name){
+  if(STORAGE_KIND !== "desktop") return;
+  (async()=>{
     const d = await desktopLibraryDir(id, false);
     if(!d) return;
     const m = await folderLibraryMarker(d) || {format: "37player-library", id, createdAt: Date.now()};
-    m.name = e.name;
+    m.name = name;
     await writeWholeFile(d, FOLDER_MARKER, JSON.stringify(m, null, 1));
   })().catch(err=> console.warn("Writing the new name into the library's folder:", err));
-  if(id === LIBRARY_ID){ writeLibraryInfo(); updateLibrarySwitch(); }
 }
 // A library joined straight from "New library" takes the shared library's name.
 function libraryAdoptSharedName(name){
@@ -46047,6 +46273,7 @@ function libraryAdoptSharedName(name){
   if(!e || !name || (e.name && !e.auto)) return;
   e.name = name; delete e.auto;
   writeLibraryList(reg);
+  desktopMarkerName(LIBRARY_ID, name);
   writeLibraryInfo();
   updateLibrarySwitch();
 }
@@ -46534,7 +46761,7 @@ async function desktopShellCheck(){
 }
 function closingWouldStop(){
   const out = [];
-  if(isAnythingPlaying()) out.push(t("closeStopsPlaying"));
+  if(playingHere()) out.push(t("closeStopsPlaying"));
   if(sharedUploading && sharedStatus.transfer && sharedStatus.transfer.kind === "up") out.push(t("closeStopsSending"));
   if(copyRunning) out.push(t("closeStopsCopy"));
   return out;
@@ -46584,6 +46811,7 @@ if(IN_DESKTOP_APP && window.__TAURI__ && window.__TAURI__.event && window.__TAUR
   // and this one's folder there, before it opens.
   if(await desktopLibrariesAtStart()){ leavingOnPurpose = true; location.reload(); return; }
   await ensureDesktopFolder();
+  await desktopFolderFollowsName();
   showDesktopStartNote();
   await ensureLibraryFolder(); // a library kept in a folder: the folder first, with permission
   const storageWatch = setTimeout(openStorageNotResponding, 8000);
