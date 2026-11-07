@@ -238,6 +238,72 @@ already live in its folder.
   the webview's storage, so the real one is set before friends' beta tests
   and then never changed.
 
+## Everything the page keeps in browser storage, and where it goes (6 Nov 2026)
+
+Gen's test for 2.0: **delete the app's webview storage (CCleaner, CleanMyMac),
+start again, and nothing is missing.** So everything a person would miss lives
+in a file the shell can reach; the webview's storage holds only copies and
+caches. Inventory of 1.4.190:
+
+**A library's IndexedDB (`temple-sound-library`, `…~<id>`)** → its folder. A
+folder library (`FolderLibraryStore`) already keeps all three stores as files,
+so moving the library moves all of it:
+
+| Store / record | What | In the folder |
+|---|---|---|
+| `audio`, `artwork` | recordings and pictures | `music/…` (readable names), `37 Player's own files/artwork/` |
+| `state` `root` | tracks, playlists, the library's settings (shared library's join details too) | `37 Player's own files/state/` |
+| `state` `undo`, `undotrash:*` | Undo's history, and what it keeps a day | same |
+| `state` `sharedBase`, `sharedPending`, `sharedSeen`, `sharedCovered` | the shared library's last agreed version, files waiting either way | same |
+| `state` `convertQueue`, `checkLibrary`, `libraryInfo`, `mp4repair`, `incomingCopies`, `copyPartial`, `replacing` | work in progress, and its markers | same |
+
+**The device's IndexedDB** → stays (a cache): `converter` in the main
+library's `state` (ffmpeg.wasm, fetched again from the app when missing);
+`37player-folders` (folder handles of a browser; the desktop app finds its
+folders by path, in `device.json` and `roots.json`).
+
+**localStorage, the device's** → `device.json` (the shell's, in the app's data
+folder), with localStorage as its copy:
+
+| Key | What | |
+|---|---|---|
+| `37player.libraries` | the list of libraries, each one's folder, which opened last | **device.json** (lost: found again under the libraries' folder, below) |
+| `37player.device` | language, theme, playback choices and other settings of this device | **device.json** |
+| `37player.libTable` | Library → Table's columns | device.json |
+| `37player.playLog` | the playback log | device.json (a log file beside it, trimmed) |
+| `37player.storage`, `37player.autoRestore`, `37player.driveSignIn` | how this device stores, restores, signs in | device.json (Drive sign-in: re-asked if lost, fine) |
+| `37player.feedbackSent`, `37player.logsSentAt` | when feedback and logs were last sent | can be lost |
+| `37player.acceptEmpty`, `37player.newEmpty`, `37player.pendingJoin`, sessionStorage `37player.library`, `37player.place` | a step in progress, this window's library and place | can be lost |
+
+**localStorage, a library's** (`….<library id>` or `…~<id>`) → its folder,
+where a person would miss it, else nothing:
+
+| Key | What | |
+|---|---|---|
+| `37player.sharedLog` | the shared library's sync log | the folder (`37 Player's own files/`), trimmed as now |
+| `37player.syncPendingSince`, `37player.dailyAsk`, `37player.autoRestoreDeclined`, `37player.autoRestoreSent`, `37player.movedToFolder` | reminders and answers | the folder |
+| `37player.analyzing`, `37player.downloading`, `37player.downloadCrashed` | crash markers (what was being done when the page died) | can be lost (worst case: one retry) |
+
+**The shell's own** (`roots.json`, `pages/`, `device.json`) is in the app's
+data folder: AppData on Windows, `~/Library/Application Support/<identifier>/`
+on the Mac. A cleaner that empties that too (or a new computer) loses the list
+of libraries: the app then looks for folders with a `37 Player library.json`
+in the libraries' default place (`Music/37 Player Libraries/`), and **Find a
+library folder…** opens any other (Gen: the place is the person's choice; the
+default is only a suggestion).
+
+**Reading the list before the page starts:** the page reads the library list
+synchronously as it loads (`pickWindowLibrary`), and `invoke` is asynchronous,
+so the shell hands the page `device.json` as it starts (an initialization
+script setting `window.__p37Device`); the page uses localStorage when it has
+it, and that when it doesn't (a wiped webview), writing it back.
+
+**The move (step 4, Gen):** the first start of 2.0 asks where the libraries
+should live, suggesting `Music/37 Player Libraries/` with **Choose another
+place…**, then copies each library from browser storage into its folder,
+checks every file, and switches. The browser-storage copy stays 30 days as a
+fallback, then goes.
+
 ## Testing
 
 - The page side runs in the existing suite: a fake of the Rust commands,
