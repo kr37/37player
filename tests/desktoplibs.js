@@ -86,6 +86,8 @@ const wipeWebview = (p)=> p.evaluate(async()=>{
   await wipeWebview(p);
   await p.reload({waitUntil: 'domcontentloaded'}); await waitLoaded(p);
   const w1 = await p.evaluate(()=> ({modal: [...document.querySelectorAll('.modal')].filter(m=> m.offsetParent).map(m=> m.textContent).join(' | '), tracks: window.__dbg.getRoot().library.length, names: window.__disk.readLibraryList().list.map(l=> l.name), lang: document.documentElement.lang}));
+  const r1b = await roots(p), files1b = await shellFiles(p);
+  ok(r1['lib-main'] === 'Music/37 Player Libraries/My library' && r1b['lib-main'] === 'Music/37 Player Libraries/Prayers' && files1b.some(f=> f.startsWith('Music/37 Player Libraries/Prayers/music/')) && !files1b.some(f=> f.startsWith('Music/37 Player Libraries/My library/')), 'renamed "Prayers", the library\'s folder takes the name at the next start, everything in it (' + [r1['lib-main'], r1b['lib-main']] + ')');
   const w1b = await p.evaluate(()=> ({ask: localStorage.getItem('37player.dailyAsk.main'), log: localStorage.getItem('37player.sharedLog')}));
   ok(localFile && w1b.ask === '2026-11-06' && /a line of the sync log/.test(w1b.log || ''), 'and the library\'s own values (its sync log, its reminders) came back from its folder (' + [localFile, w1b.ask] + ')');
   ok(w1.tracks === 1 && JSON.stringify(w1.names) === JSON.stringify(['Prayers', 'Teachings']) && !/didn't load|Welcome/i.test(w1.modal), 'the webview\'s storage emptied: both libraries and the track are there, no welcome (' + JSON.stringify(w1) + ')');
@@ -100,7 +102,7 @@ const wipeWebview = (p)=> p.evaluate(async()=>{
   const r2 = await roots(p);
   w2.toast = w2.toast + ' | ' + await waitToast(p, /Found/);
   ok(w2.list.length === 2 && JSON.stringify(w2.list) === JSON.stringify([['main', 'Prayers'], ['teach1', 'Teachings']]) && w2.tracks === 1, 'the app\'s data folder emptied too: both libraries found again in their place, under their names (' + JSON.stringify(w2.list) + ', ' + w2.tracks + ' track)');
-  ok(r2['lib-main'] === r1['lib-main'] && /Found 2 libraries/.test(w2.toast), 'by their markers, and a notice says so (' + w2.toast + ')');
+  ok(r2['lib-main'] === 'Music/37 Player Libraries/Prayers' && /Found 2 libraries/.test(w2.toast), 'by their markers, and a notice says so (' + w2.toast + ')');
 
   // ---- A folder that's gone (moved): asked about, found, never made again.
   await p.evaluate(async()=>{

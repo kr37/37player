@@ -58,7 +58,7 @@ const closeModals = (p)=> p.evaluate(()=> document.querySelectorAll('.modal [dat
 (async()=>{
   const b = await puppeteer.launch({executablePath: process.env.CHROME || '/usr/bin/google-chrome', args: ['--no-sandbox']});
   const p = await (await b.createBrowserContext()).newPage(); await p.setViewport({width: 1300, height: 900});
-  p.on('pageerror', e=> console.log('PAGE ERROR:', e.message));
+  p.on('pageerror', e=> console.log('PAGE ERROR:', e.message)); if(process.env.LOGC) p.on('console', m=> console.log('CONSOLE:', m.text().slice(0, 200)));
   const alerts = []; p.on('dialog', async d=>{ alerts.push(d.message()); console.log('ALERT:', d.message()); await d.accept(); });
   await p.evaluateOnNewDocument((shell)=>{ window.__noAutoConverter = true; (0, eval)(shell); }, SHELL);
   await p.goto(APP, {waitUntil: 'networkidle0'}); await sleep(700);
@@ -162,6 +162,12 @@ const closeModals = (p)=> p.evaluate(()=> document.querySelectorAll('.modal [dat
   await waitFor(p, ()=> !!document.querySelector('#placeFolders table'), null, 8000);
   const set1 = await p.evaluate(()=> (document.getElementById('placeFolders') || {}).textContent || '');
   ok(/Folders used in place/.test(set1) && /not connected/.test(set1) && /Find this folder/.test(set1), 'Settings → Library lists the folder as not connected, with Find this folder… (' + set1.slice(0, 140) + ')');
+  const where = await p.evaluate(()=> document.getElementById('settingsBody').innerText);
+  const libPath0 = (await roots(p))['lib-main'];
+  ok(where.includes('the desktop app, version') && where.includes('Library folder') && where.includes(libPath0) && /0 in the library's folder, 2 used in place/.test(where) && /None needed from 37 Player/.test(where), 'Settings → Library says the desktop app, the library\'s folder, where its recordings are, and that it needs no backups of 37 Player\'s');
+  ok(!/IndexedDB|own storage|available|persistent/.test(where) && /In the library's folder: .*Used in place, in their own folders/.test(where), 'and nothing of the browser\'s storage (' + (where.match(/In the library's folder[^\n]*/) || [''])[0] + ')');
+  await p.evaluate(()=> document.getElementById('infoShowFolder').click()); await sleep(300);
+  ok(await p.evaluate(()=> window.__fakeShellShown) === libPath0, 'Show opens the library\'s folder');
   await p.evaluate(()=>{ window.__fakeShellPick = 'Backup/Talks'; });
   await clickText(p, '#placeFolders button', '^Find this folder');
   await waitFor(p, ()=> /Look for new files/.test((document.getElementById('placeFolders') || {}).textContent || ''), null, 8000);

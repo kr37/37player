@@ -76,22 +76,21 @@ const openShared = async p=>{ await p.evaluate(()=>{ window.__dbg.setMode('editi
     ok(/Signed in as center@example\.org/.test(m), 'the chooser names the account signed in');
     await A.screenshot({path: 'shots/drive-chooser-empty.png'});
     ok(await A.evaluate(()=> document.getElementById('drLib').value === 'new' && document.getElementById('drNewBox').style.display !== 'none' && document.getElementById('drGo').textContent === 'Next'), 'nothing there yet: "Make a new library" chosen, its name field showing, one button');
-    // Making one and backing out at the last step (mobile data, say): it stays on the Drive, to connect to later (Gen Rinzin, 7 Nov 2026; until then it went to the trash, 1.4.134)
+    // Making one and backing out at the last step: its empty folders go to the trash (1.4.134; kept so on 7 Nov 2026, Gen Rinzin: cleanest)
     await A.evaluate(()=>{ document.getElementById('drName').value = 'Chicken'; document.getElementById('drDevice').value = 'Laptop'; document.getElementById('drGo').click(); });
     let backedOut = false;
     let lastQ = '';
     for(let k=0; k<40 && !backedOut; k++){ if(await A.evaluate(()=> [...document.querySelectorAll('.modal button')].some(b=> /^Do it now$/.test(b.textContent.trim())))){ lastQ = await modal(A); backedOut = await clickText(A, '.modal button', '^Cancel$'); } else await sleep(250); }
     await sleep(1500);
     const chicken = [...g.files.values()].find(f=> f.name === '37 Player \u2013 Chicken');
-    ok(/“Chicken” is set up on your Google Drive/.test(lastQ) && /cancel now and connect to it later/.test(lastQ), 'the last question says the new library is on the Drive, and that it can be connected to later');
-    ok(backedOut && chicken && !chicken.trashed, 'cancelled there, the new Drive library stays: ' + JSON.stringify(chicken && {trashed: chicken.trashed}));
+    ok(/“Chicken” is set up on your Google Drive/.test(lastQ) && /taken off your Drive again/.test(lastQ), 'the last question says the new library is on the Drive, and goes again if cancelled');
+    ok(backedOut && chicken && chicken.trashed, 'a new Drive library whose joining was cancelled goes to the trash: ' + JSON.stringify(chicken && {trashed: chicken.trashed}));
     ok(!(await A.evaluate(()=> window.__dbg.getRoot().settings.sharedLibrary)), 'and this device isn\'t joined');
     await openShared(A);
     await A.evaluate(()=> document.getElementById('shJoinOrCreate').click()); await sleep(300);
     await A.evaluate(()=>{ document.querySelector('input[name=sjWhere][value=gdrive]').click(); document.getElementById('sjNext').click(); }); await sleep(300);
     await signIn(A, ()=> document.getElementById('sjGo').click());
-    ok(/Chicken/.test(await modal(A)), 'the chooser lists it, to connect to');
-    await A.evaluate(()=>{ const sel = document.getElementById('drLib'); sel.value = 'new'; sel.dispatchEvent(new Event('change')); });
+    ok(/no 37 Player libraries/.test(await modal(A)), 'the chooser doesn\'t list it');
     await A.evaluate(()=>{ document.getElementById('drName').value = 'IKRC'; document.getElementById('drDevice').value = 'Laptop'; document.getElementById('drGo').click(); });
     for(let k=0; k<40; k++){ if(await clickText(A, '.modal button', '^Do it now$')) break; await sleep(250); }
     await sleep(1000); console.log('A:', JSON.stringify(await waitIdle(A)));
@@ -121,9 +120,7 @@ const openShared = async p=>{ await p.evaluate(()=>{ window.__dbg.setMode('editi
     m = await modal(B);
     ok(/IKRC/.test(m), 'B, back from signing in, sees IKRC in the chooser');
     await B.screenshot({path: 'shots/drive-chooser.png'});
-    // (The library kept by a cancel, "Chicken", comes first alphabetically: IKRC chosen.)
-    await B.evaluate(()=>{ const sel = document.getElementById('drLib'), i = [...sel.options].findIndex(o=> o.textContent === 'IKRC'); sel.selectedIndex = i; sel.dispatchEvent(new Event('change')); });
-    ok(await B.evaluate(()=> document.getElementById('drNewBox').style.display === 'none' && document.getElementById('drGo').textContent === 'Next' && [...document.getElementById('drLib').options].map(o=> o.textContent).filter(x=> x !== 'Chicken').join('|') === 'IKRC|Make a new library on Google Drive'), 'the dropdown lists IKRC (and the kept Chicken), then Make a new library; joining is one button, no name field');
+    ok(await B.evaluate(()=> document.getElementById('drNewBox').style.display === 'none' && document.getElementById('drGo').textContent === 'Next' && [...document.getElementById('drLib').options].map(o=> o.textContent).join('|') === 'IKRC|Make a new library on Google Drive'), 'the dropdown lists IKRC, then Make a new library; joining is one button, no name field');
     await B.evaluate(()=>{ document.getElementById('drDevice').value = 'iPad'; { const sel = document.getElementById('drLib'); sel.value = [...sel.options].find(o=> o.textContent === 'IKRC').value; sel.dispatchEvent(new Event('change')); document.getElementById('drGo').click(); } });
     for(let k=0; k<40; k++){ if(await clickText(B, '.modal button', '^Do it now$') || await B.evaluate(()=> window.__radio('^Use the shared library here'))) break; await sleep(250); }
     await sleep(1000); console.log('B:', JSON.stringify(await waitIdle(B)));
