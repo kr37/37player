@@ -229,6 +229,28 @@ fn roots(app: &tauri::AppHandle) -> tauri::State<'_, Roots> { app.state::<Roots>
 #[tauri::command]
 pub fn fs_roots(app: tauri::AppHandle) -> BTreeMap<String, String> { roots(&app).list() }
 
+// ---- Folders used in place (2.0): one the person chose for a library to
+// point into. Where it is, whether it's there now (a drive unplugged), and
+// whether it's on another drive than the system's (the page defaults such an
+// import to Copy: removable drives come and go).
+#[derive(serde::Serialize)]
+pub struct RootInfo { path: String, present: bool, other_drive: bool }
+
+pub fn other_drive(p: &Path) -> bool {
+    let s = p.to_string_lossy().replace('\\', "/");
+    if cfg!(target_os = "windows") {
+        let sys = std::env::var("SystemDrive").unwrap_or_else(|_| "C:".into()).to_lowercase();
+        return !s.to_lowercase().starts_with(&sys);
+    }
+    s.starts_with("/Volumes/") || s.starts_with("/media/") || s.starts_with("/run/media/") || s.starts_with("/mnt/")
+}
+
+#[tauri::command]
+pub fn fs_root_info(app: tauri::AppHandle, id: String) -> Result<RootInfo, String> {
+    let p = roots(&app).get(&id)?;
+    Ok(RootInfo { present: p.is_dir(), other_drive: other_drive(&p), path: p.to_string_lossy().into_owned() })
+}
+
 // ---- Where the libraries live (2.0, step 4)
 // The libraries' place: the folder new libraries' folders are made in, and
 // where the app looks for them when its list is lost. The person chooses it
@@ -484,6 +506,14 @@ mod tests {
         assert!(read(&d, "escape/secret.txt", 0, None).is_err());
         assert!(write(&d, "escape/new.txt", b"x").is_err());
         assert!(!outside.join("new.txt").exists());
+    }
+    #[test]
+    fn another_drive() {
+        if cfg!(target_os = "windows") { return; }
+        assert!(other_drive(Path::new("/Volumes/USB/Talks")));
+        assert!(other_drive(Path::new("/media/me/USB")));
+        assert!(!other_drive(Path::new("/Users/me/Music")));
+        assert!(!other_drive(Path::new("/home/me/Music")));
     }
     #[test]
     fn library_folders_are_found_by_their_marker() {
