@@ -266,6 +266,66 @@ pub fn fs_root_show(app: tauri::AppHandle, id: String) -> Result<(), String> {
     r.map(|_| ()).map_err(|e| e.to_string())
 }
 
+// ---- Folders used in place, put back (Gen Rinzin's wipe test on the HP,
+// 7 Nov 2026): the app's data folder emptied, its list of folders goes, and
+// every track used in place couldn't be read. The library's own record of
+// them ("places", in its folder) names each one and its path; the shell reads
+// that record itself and puts back only those, under that library's own
+// ids ("in-<library>-…"), and only ones that are there.
+pub fn places_to_restore(lib: &Path, lib_id: &str) -> Vec<(String, PathBuf)> {
+    let mut out = vec![];
+    let file = [lib.join("37 Player's own files").join("state").join("places.json"), lib.join("state").join("places.json")].into_iter().find(|p| p.is_file());
+    let Some(file) = file else { return out };
+    let Ok(bytes) = fs::read(&file) else { return out };
+    let Ok(v) = serde_json::from_slice::<serde_json::Value>(&bytes) else { return out };
+    let prefix = format!("in-{}-", lib_id);
+    for e in v.get("value").and_then(|x| x.as_array()).cloned().unwrap_or_default() {
+        let (Some(root), Some(label)) = (e.get("root").and_then(|x| x.as_str()), e.get("label").and_then(|x| x.as_str())) else { continue };
+        if !root.starts_with(&prefix) || root.len() > 80 { continue; }
+        let p = PathBuf::from(label);
+        if p.is_absolute() && p.is_dir() { out.push((root.to_string(), p)); }
+    }
+    out
+}
+
+#[tauri::command]
+pub fn fs_places_restore(app: tauri::AppHandle, id: String) -> Result<u32, String> {
+    let Some(lib_id) = id.strip_prefix("lib-") else { return Err("only a library's folder".into()) };
+    let r = roots(&app);
+    let lib = r.get(&id)?;
+    let mut n = 0;
+    for (root, p) in places_to_restore(&lib, lib_id) {
+        if r.get(&root).map(|q| q.is_dir()).unwrap_or(false) { continue; }
+        r.set(&root, p)?;
+        n += 1;
+    }
+    Ok(n)
+}
+
+// A folder used in place that Move into the library has left with nothing in
+// it but empty folders and the system's own leftovers.
+pub fn only_empty(p: &Path) -> bool {
+    let Ok(rd) = fs::read_dir(p) else { return false };
+    for e in rd.flatten() {
+        let q = e.path();
+        if q.is_dir() { if !only_empty(&q) { return false; } continue; }
+        let n = e.file_name().to_string_lossy().to_lowercase();
+        if !(n == ".ds_store" || n == "thumbs.db" || n == "desktop.ini" || n.starts_with("._")) { return false; }
+    }
+    true
+}
+
+// Is it empty (dry), or remove it if it is; and forget it.
+#[tauri::command]
+pub fn fs_remove_if_empty(app: tauri::AppHandle, id: String, dry: bool) -> Result<bool, String> {
+    if !id.starts_with("in-") { return Err("only a folder used in place".into()); }
+    let r = roots(&app);
+    let p = r.get(&id)?;
+    if !only_empty(&p) { return Ok(false); }
+    if !dry { fs::remove_dir_all(&p).map_err(|e| e.to_string())?; r.forget(&id)?; }
+    Ok(true)
+}
+
 // ---- A library's folder follows its name (Gen Rinzin, 7 Nov 2026): renamed
 // within the folder it's in, at the app's start before the library opens
 // (Windows won't rename a folder whose files are in use). " (2)" and so on
@@ -550,6 +610,24 @@ mod tests {
         assert!(read(&d, "escape/secret.txt", 0, None).is_err());
         assert!(write(&d, "escape/new.txt", b"x").is_err());
         assert!(!outside.join("new.txt").exists());
+    }
+    #[test]
+    fn folders_used_in_place_come_back_from_the_library_s_record() {
+        let d = tmp("places");
+        let talks = d.join("Talks"); fs::create_dir_all(&talks).unwrap();
+        let rec = format!(r#"{{"key":"places","value":[{{"root":"in-main-ab12","label":{}}},{{"root":"in-other-cd34","label":{}}},{{"root":"in-main-gone","label":{}}}]}}"#,
+            serde_json::to_string(&talks.to_string_lossy()).unwrap(), serde_json::to_string(&talks.to_string_lossy()).unwrap(), serde_json::to_string(&d.join("nope").to_string_lossy()).unwrap());
+        write(&d, "Lib/37 Player's own files/state/places.json", rec.as_bytes()).unwrap();
+        assert_eq!(places_to_restore(&d.join("Lib"), "main"), vec![("in-main-ab12".to_string(), talks.clone())]);
+        assert!(places_to_restore(&d.join("Other"), "main").is_empty());
+    }
+    #[test]
+    fn an_emptied_folder() {
+        let d = tmp("empty");
+        write(&d, "A/B/.DS_Store", b"x").unwrap(); fs::create_dir_all(d.join("A/C")).unwrap();
+        assert!(only_empty(&d.join("A")));
+        write(&d, "A/C/left.mp3", b"x").unwrap();
+        assert!(!only_empty(&d.join("A")));
     }
     #[test]
     fn a_folder_follows_its_library_s_name() {
