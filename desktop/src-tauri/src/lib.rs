@@ -16,6 +16,9 @@
 //    may reach, the commands it uses there, and p37lib:// to play from them.
 //  - The page updates itself (pages.rs, desktop/PAGE-UPDATES.md): newer
 //    signed pages from GitHub, used from the next start or at Update now.
+//  - The device's own settings (device.rs): device.json, so a wiped webview
+//    (CCleaner) loses nothing a person would miss.
+mod device;
 mod files;
 mod pages;
 use std::sync::Arc;
@@ -32,14 +35,20 @@ struct Quitting(AtomicBool);
 const BRIDGE: u32 = 1;
 
 #[derive(serde::Serialize)]
-struct ShellInfo { version: String, bridge: u32, pages: bool }
+struct ShellInfo { version: String, bridge: u32, pages: bool, device: bool }
 
 // The shell's version is the page's version as of the shell's own last
 // change (tauri.conf.json "version"), like sync.php's.
 #[tauri::command]
 fn p37_shell_info(app: tauri::AppHandle) -> ShellInfo {
-    ShellInfo { version: app.package_info().version.to_string(), bridge: BRIDGE, pages: app.state::<Arc<pages::Pages>>().enabled() }
+    ShellInfo { version: app.package_info().version.to_string(), bridge: BRIDGE, pages: app.state::<Arc<pages::Pages>>().enabled(), device: true }
 }
+
+// The device's own settings (device.rs): read back, and kept.
+#[tauri::command]
+fn p37_device_get(device: tauri::State<'_, Arc<device::Device>>) -> serde_json::Map<String, serde_json::Value> { device.read() }
+#[tauri::command]
+fn p37_device_put(device: tauri::State<'_, Arc<device::Device>>, values: serde_json::Map<String, serde_json::Value>) -> Result<(), String> { device.write(&values) }
 
 // Page updates: where they come from. The public key is Gen's (`tauri signer
 // generate`; the private one is in GitHub's secrets); "none" turns them off.
@@ -156,6 +165,10 @@ pub fn run() {
     let pages = Arc::new(pages::Pages::new(pages_dir, &bundled, BRIDGE, verifier, Some(page_source), PAGE_CHANNEL));
     let first = pages.choose();
     context.set_assets(Box::new(pages::PageAssets { inner, pages: pages.clone() }));
+    // The device's settings, handed to the page before it runs.
+    let device_file = pages::data_dir(&context.config().identifier).map(|d| d.join("device.json")).unwrap_or_else(|| std::path::PathBuf::from("device.json"));
+    let device = Arc::new(device::Device::new(device_file));
+    let device_script = device.init_script();
     let mut builder = tauri::Builder::default();
     #[cfg(desktop)]
     {
@@ -207,6 +220,8 @@ pub fn run() {
     builder
         .manage(Quitting(AtomicBool::new(false)))
         .manage(pages.clone())
+        .manage(device.clone())
+        .plugin(tauri::plugin::Builder::<tauri::Wry, ()>::new("p37device").js_init_script(device_script).build())
         .plugin(tauri_plugin_dialog::init())
         .register_asynchronous_uri_scheme_protocol("p37lib", |ctx, req, responder| {
             let app = ctx.app_handle().clone();
@@ -223,7 +238,7 @@ pub fn run() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![p37_quit, p37_shell_info,
-            p37_page_info, p37_page_check, p37_page_ok, p37_page_switch,
+            p37_page_info, p37_page_check, p37_page_ok, p37_page_switch, p37_device_get, p37_device_put,
             files::fs_roots, files::fs_root_default, files::fs_root_choose, files::fs_root_forget,
             files::fs_list, files::fs_stat, files::fs_read, files::fs_write, files::fs_copy, files::fs_rename, files::fs_remove, files::fs_mkdir])
         .on_window_event(|window, event| {
