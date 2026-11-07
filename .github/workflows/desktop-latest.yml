@@ -1,16 +1,19 @@
 name: Desktop app on the home page
-# Puts one test build's installers on the release "desktop-latest", under
-# names that never change, which 37player.com's home page links to:
+# Puts one build's installers on a release under names that never change,
+# which the home page links to: an "m" build (its pages follow main) on
+# "desktop-latest", for 37player.com; a "d" build (dev's pages) on
+# "desktop-latest-dev", for test.37player.com:
 #   https://github.com/kr37/37player/releases/download/desktop-latest/37-Player-mac.dmg
 #   …/37-Player-windows-setup.exe and …/37-Player-windows.msi
 # Gen Rinzin chooses which build goes there (Actions → this workflow → Run
-# workflow, with the test number; empty means the newest), so a test build
-# reaches the home page only once he's happy with it.
+# workflow, with the build, "28m" say; empty means the newest m build), so a
+# build reaches a home page only once he's happy with it. (Builds up to 27
+# have no letter: they follow dev's pages.)
 on:
   workflow_dispatch:
     inputs:
       test:
-        description: "Test build number (empty: the newest)"
+        description: "Build, as 28m or 28d (empty: the newest m build)"
         required: false
         default: ""
 permissions:
@@ -27,18 +30,20 @@ jobs:
         run: |
           set -e
           if [ -n "$N" ]; then from="desktop-test-$N"
-          else from=$(gh api "repos/$REPO/releases?per_page=50" --jq '[.[] | select(.tag_name | startswith("desktop-test-"))][0].tag_name'); fi
+          else from=$(gh api "repos/$REPO/releases?per_page=50" --jq '[.[] | select(.tag_name | test("^desktop-test-[0-9]+m$"))][0].tag_name'); fi
+          [ -n "$from" ] && [ "$from" != "null" ] || { echo "No such build"; exit 1; }
+          case "$from" in *m) dest=desktop-latest; site=37player.com;; *) dest=desktop-latest-dev; site=test.37player.com;; esac
           title=$(gh api "repos/$REPO/releases/tags/$from" --jq .name)
           v=$(echo "$title" | grep -o '37 Player [0-9.]*' | sed 's/37 Player //')
           echo "From $from: $title"
           mkdir d && cd d
           gh release download "$from" --repo "$REPO" -p '*.dmg' -p '*.exe' -p '*.msi'
           mv ./*.dmg 37-Player-mac.dmg; mv ./*.exe 37-Player-windows-setup.exe; mv ./*.msi 37-Player-windows.msi
-          notes="37 Player $v for computers (from $from). Not signed yet: on a Mac, right-click the app → Open the first time; on Windows, SmartScreen → More info → Run anyway."
+          notes="37 Player $v for computers (from $from; on $site's home page). Not signed yet: on a Mac, right-click the app → Open the first time; on Windows, SmartScreen → More info → Run anyway."
           files="37-Player-mac.dmg 37-Player-windows-setup.exe 37-Player-windows.msi"
-          if gh release view desktop-latest --repo "$REPO" > /dev/null 2>&1; then
-            gh release upload desktop-latest $files --repo "$REPO" --clobber
-            gh release edit desktop-latest --repo "$REPO" --title "37 Player $v for computers" --notes "$notes"
+          if gh release view "$dest" --repo "$REPO" > /dev/null 2>&1; then
+            gh release upload "$dest" $files --repo "$REPO" --clobber
+            gh release edit "$dest" --repo "$REPO" --title "37 Player $v for computers" --notes "$notes"
           else
-            gh release create desktop-latest $files --repo "$REPO" --prerelease --title "37 Player $v for computers" --notes "$notes"
+            gh release create "$dest" $files --repo "$REPO" --prerelease --title "37 Player $v for computers" --notes "$notes"
           fi
