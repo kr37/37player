@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.0.000">
+<meta name="app-version" content="2.0.001">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -4355,6 +4355,8 @@ const STRINGS = {
     "sharedSizeDown": "downloads about {size}.",
     "sharedSizeUpDown": "sends about {up} and downloads about {down}.",
     "sharedSizeHint": "On mobile data or a slow connection? You can cancel now and join later.",
+    "driveMadeSizeHint": "“{name}” is set up on your Google Drive. On mobile data or a slow connection? You can cancel now and connect to it later: Settings → Shared library → Google Drive.",
+    "driveMadeKept": "“{name}” stays on your Google Drive, empty, until you connect to it (Settings → Shared library → Google Drive).",
     "sharedJoinTitle": "Join “{name}”",
     "sharedJoinDownloadBody": "This will download about {size} ({n} tracks).",
     "sharedJoinUploadBody": "This will send about {size} ({n} tracks) to the shared library.",
@@ -6181,6 +6183,8 @@ const STRINGS = {
     "sharedSizeDown": "descarga unos {size}.",
     "sharedSizeUpDown": "envía unos {up} y descarga unos {down}.",
     "sharedSizeHint": "¿Con datos móviles o una conexión lenta? Puedes cancelar ahora y unirte más tarde.",
+    "driveMadeSizeHint": "«{name}» ya está creada en tu Google Drive. ¿Con datos móviles o una conexión lenta? Puedes cancelar ahora y conectarte más tarde: Ajustes → Biblioteca compartida → Google Drive.",
+    "driveMadeKept": "«{name}» se queda en tu Google Drive, vacía, hasta que te conectes a ella (Ajustes → Biblioteca compartida → Google Drive).",
     "sharedJoinTitle": "Unirse a «{name}»",
     "sharedJoinDownloadBody": "Se descargarán unos {size} ({n} pistas).",
     "sharedJoinUploadBody": "Se enviarán unos {size} ({n} pistas) a la biblioteca compartida.",
@@ -8007,6 +8011,8 @@ const STRINGS = {
     "sharedSizeDown": "télécharge environ {size}.",
     "sharedSizeUpDown": "envoie environ {up} et télécharge environ {down}.",
     "sharedSizeHint": "Sur données mobiles ou une connexion lente ? Vous pouvez annuler et rejoindre plus tard.",
+    "driveMadeSizeHint": "« {name} » est créée sur votre Google Drive. Sur données mobiles ou une connexion lente ? Vous pouvez annuler maintenant et vous y connecter plus tard : Réglages → Bibliothèque partagée → Google Drive.",
+    "driveMadeKept": "« {name} » reste sur votre Google Drive, vide, jusqu'à ce que vous vous y connectiez (Réglages → Bibliothèque partagée → Google Drive).",
     "sharedJoinTitle": "Rejoindre « {name} »",
     "sharedJoinDownloadBody": "Environ {size} seront téléchargés ({n} pistes).",
     "sharedJoinUploadBody": "Environ {size} ({n} pistes) seront envoyés à la bibliothèque partagée.",
@@ -9208,7 +9214,7 @@ const STRINGS = {
     "placeNothingNew": "Não há gravações novas em {path}.",
     "placeGone": "{n} das gravações da biblioteca desta pasta já lá não estão (movidas, renomeadas ou apagadas): essas faixas não tocam até voltarem.",
     "placeOfflineTitle": "Num disco que não está ligado",
-    "placeOfflineBody": "«{name}» é usada no lugar a partir de {path}, que não está acessível agora. Ligue o disco (ou procure a pasta em Definições → Biblioteca) e toque-a de novo.",
+    "placeOfflineBody": "«{name}» é usada no lugar a partir de {path}, que não está acessível agora. Ligue o disco (ou procure a pasta em Configurações → Biblioteca) e toque-a de novo.",
     "placeDeleteNote": "As gravações usadas no lugar ficam na sua pasta: a biblioteca apenas as esquece.",
     "folderLibRemovedToast": "A cópia do navegador foi removida",
     "folderLibOpenTitle": "Abrir a pasta da biblioteca",
@@ -9833,6 +9839,8 @@ const STRINGS = {
     "sharedSizeDown": "baixa cerca de {size}.",
     "sharedSizeUpDown": "envia cerca de {up} e baixa cerca de {down}.",
     "sharedSizeHint": "Em dados móveis ou com conexão lenta? Você pode cancelar agora e entrar depois.",
+    "driveMadeSizeHint": "«{name}» está criada no seu Google Drive. Com dados móveis ou uma ligação lenta? Pode cancelar agora e ligar-se a ela mais tarde: Configurações → Biblioteca partilhada → Google Drive.",
+    "driveMadeKept": "«{name}» fica no seu Google Drive, vazia, até se ligar a ela (Configurações → Biblioteca partilhada → Google Drive).",
     "sharedJoinTitle": "Entrar em “{name}”",
     "sharedJoinDownloadBody": "Isto vai baixar cerca de {size} ({n} faixas).",
     "sharedJoinUploadBody": "Isto vai enviar cerca de {size} ({n} faixas) para a biblioteca compartilhada.",
@@ -11659,6 +11667,8 @@ const STRINGS = {
     "sharedSizeDown": "lädt etwa {size} herunter.",
     "sharedSizeUpDown": "sendet etwa {up} und lädt etwa {down} herunter.",
     "sharedSizeHint": "Mobile Daten oder langsame Verbindung? Sie können jetzt abbrechen und später beitreten.",
+    "driveMadeSizeHint": "„{name}“ ist in Ihrem Google Drive angelegt. Mobile Daten oder eine langsame Verbindung? Sie können jetzt abbrechen und sich später verbinden: Einstellungen → Gemeinsame Bibliothek → Google Drive.",
+    "driveMadeKept": "„{name}“ bleibt leer in Ihrem Google Drive, bis Sie sich damit verbinden (Einstellungen → Gemeinsame Bibliothek → Google Drive).",
     "sharedJoinTitle": "„{name}“ beitreten",
     "sharedJoinDownloadBody": "Dabei werden etwa {size} heruntergeladen ({n} Titel).",
     "sharedJoinUploadBody": "Dabei werden etwa {size} ({n} Titel) an die gemeinsame Bibliothek gesendet.",
@@ -13485,6 +13495,8 @@ const STRINGS = {
     "sharedSizeDown": "下载约 {size}。",
     "sharedSizeUpDown": "发送约 {up}，下载约 {down}。",
     "sharedSizeHint": "正在使用移动数据或网络较慢？可以现在取消，稍后再加入。",
+    "driveMadeSizeHint": "“{name}”已在你的 Google Drive 上建好。在使用移动数据或网速慢？你可以现在取消，以后再连接：设置 → 共享曲库 → Google Drive。",
+    "driveMadeKept": "“{name}”会留在你的 Google Drive 上（空的），直到你连接它（设置 → 共享曲库 → Google Drive）。",
     "sharedJoinTitle": "加入“{name}”",
     "sharedJoinDownloadBody": "将下载约 {size}（{n} 首曲目）。",
     "sharedJoinUploadBody": "将向共享资料库发送约 {size}（{n} 首曲目）。",
@@ -15311,6 +15323,8 @@ const STRINGS = {
     "sharedSizeDown": "tải về khoảng {size}.",
     "sharedSizeUpDown": "gửi khoảng {up} và tải về khoảng {down}.",
     "sharedSizeHint": "Đang dùng dữ liệu di động hoặc mạng chậm? Bạn có thể hủy bây giờ và tham gia sau.",
+    "driveMadeSizeHint": "“{name}” đã được tạo trên Google Drive của bạn. Đang dùng dữ liệu di động hoặc mạng chậm? Bạn có thể huỷ bây giờ và kết nối sau: Cài đặt → Thư viện dùng chung → Google Drive.",
+    "driveMadeKept": "“{name}” vẫn ở trên Google Drive của bạn, còn trống, cho tới khi bạn kết nối (Cài đặt → Thư viện dùng chung → Google Drive).",
     "sharedJoinTitle": "Tham gia “{name}”",
     "sharedJoinDownloadBody": "Sẽ tải về khoảng {size} ({n} bản).",
     "sharedJoinUploadBody": "Sẽ gửi khoảng {size} ({n} bản) lên thư viện dùng chung.",
@@ -17137,6 +17151,8 @@ const STRINGS = {
     "sharedSizeDown": "κατεβάζει περίπου {size}.",
     "sharedSizeUpDown": "στέλνει περίπου {up} και κατεβάζει περίπου {down}.",
     "sharedSizeHint": "Με δεδομένα κινητής ή αργή σύνδεση; Μπορείτε να ακυρώσετε τώρα και να συμμετάσχετε αργότερα.",
+    "driveMadeSizeHint": "Η «{name}» δημιουργήθηκε στο Google Drive σας. Με δεδομένα κινητής ή αργή σύνδεση; Μπορείτε να ακυρώσετε τώρα και να συνδεθείτε αργότερα: Ρυθμίσεις → Κοινόχρηστη βιβλιοθήκη → Google Drive.",
+    "driveMadeKept": "Η «{name}» μένει στο Google Drive σας, άδεια, μέχρι να συνδεθείτε (Ρυθμίσεις → Κοινόχρηστη βιβλιοθήκη → Google Drive).",
     "sharedJoinTitle": "Συμμετοχή στο «{name}»",
     "sharedJoinDownloadBody": "Θα κατέβουν περίπου {size} ({n} κομμάτια).",
     "sharedJoinUploadBody": "Θα σταλούν περίπου {size} ({n} κομμάτια) στην κοινή βιβλιοθήκη.",
@@ -18963,6 +18979,8 @@ const STRINGS = {
     "sharedSizeDown": "scarica circa {size}.",
     "sharedSizeUpDown": "invia circa {up} e scarica circa {down}.",
     "sharedSizeHint": "Con dati mobili o una connessione lenta? Puoi annullare ora e unirti più tardi.",
+    "driveMadeSizeHint": "«{name}» è creata sul tuo Google Drive. Con dati mobili o una connessione lenta? Puoi annullare ora e collegarti più tardi: Impostazioni → Libreria condivisa → Google Drive.",
+    "driveMadeKept": "«{name}» resta sul tuo Google Drive, vuota, finché non ti colleghi (Impostazioni → Libreria condivisa → Google Drive).",
     "sharedJoinTitle": "Unisciti a “{name}”",
     "sharedJoinDownloadBody": "Verranno scaricati circa {size} ({n} brani).",
     "sharedJoinUploadBody": "Verranno inviati circa {size} ({n} brani) alla libreria condivisa.",
@@ -42821,12 +42839,12 @@ async function openDriveChooser(res, intent){
     showChoice();
     document.getElementById("drName").value = currentLibraryName() === t("libDefaultName") ? "" : currentLibraryName();
     document.getElementById("drDevice").value = intent.device || root.settings.sharedLastDevice || "";
-    const join = async (folderId)=>{
+    const join = async (folderId, justMade)=>{
       const dev = document.getElementById("drDevice").value.trim(), partial = !!intent.partial;
       root.settings.sharedLastDevice = dev;
       settled = true; closeModal();
       const cfg = {kind: "gdrive", folderId, refreshToken: res.refreshToken, code: "gdrive " + folderId, url: "", account};
-      const r = await joinSharedLibrary("", "", dev, {cfg, partial});
+      const r = await joinSharedLibrary("", "", dev, {cfg, partial, justMade});
       if(r && r.error){ alert(r.error); resolve(); return r; }
       if(r && r.ok){
         if(!backupInfo.setupDone) await finishSetup();
@@ -42844,7 +42862,10 @@ async function openDriveChooser(res, intent){
       const msg = document.getElementById("drMsg");
       msg.textContent = t("driveCreating");
       let id = null;
-      try{ id = await driveCreateLibrary(temp, name); const r = await join(id); if(!(r && r.ok)) driveRemoveIfUnused(temp, id); }
+      // Cancelled at the last question (mobile data, say): the new library
+      // stays on the Drive, to connect to later (Gen Rinzin, 7 Nov 2026); one
+      // that failed goes to the trash (1.4.134).
+      try{ id = await driveCreateLibrary(temp, name); const r = await join(id, true); if(r && r.cancelled) showToast(t("driveMadeKept", {name})); else if(!(r && r.ok)) driveRemoveIfUnused(temp, id); }
       catch(err){ if(id) driveRemoveIfUnused(temp, id); msg.textContent = t("driveSignInFailed", {error: err.message || String(err)}); }
     });
   });
@@ -44078,7 +44099,8 @@ async function joinSharedLibrary(url, code, deviceName, opts){
     if(n > 0){
       const offerPartial = hasShared;
       const title = t("sharedJoinTitle", {name: remote.name || cfg.code.split(" ")[0]});
-      const hint = `<p class="settings-note">${escapeHtmlText(t("sharedSizeHint"))}</p>`;
+      // A library just made on Google Drive: it's there now, whatever comes next.
+      const hint = `<p class="settings-note">${escapeHtmlText(opts.justMade ? t("driveMadeSizeHint", {name: remote.name || ""}) : t("sharedSizeHint"))}</p>`;
       // Everything, or only what I choose: a choice, then Join.
       const ok = offerPartial
         ? await askRadio(title, hint, [
@@ -46030,16 +46052,20 @@ function renameLibrary(id, name){
   e.name = (name || "").trim();
   delete e.auto;
   writeLibraryList(reg);
-  // The desktop app: the folder's marker says the new name, so a library
-  // found again by it (desktopLibrariesAtStart) comes back under it.
-  if(STORAGE_KIND === "desktop") (async()=>{
+  desktopMarkerName(id, e.name);
+  if(id === LIBRARY_ID){ writeLibraryInfo(); updateLibrarySwitch(); }
+}
+// The desktop app: the folder's marker says the library's name, so a library
+// found again by it (desktopLibrariesAtStart) comes back under it.
+function desktopMarkerName(id, name){
+  if(STORAGE_KIND !== "desktop") return;
+  (async()=>{
     const d = await desktopLibraryDir(id, false);
     if(!d) return;
     const m = await folderLibraryMarker(d) || {format: "37player-library", id, createdAt: Date.now()};
-    m.name = e.name;
+    m.name = name;
     await writeWholeFile(d, FOLDER_MARKER, JSON.stringify(m, null, 1));
   })().catch(err=> console.warn("Writing the new name into the library's folder:", err));
-  if(id === LIBRARY_ID){ writeLibraryInfo(); updateLibrarySwitch(); }
 }
 // A library joined straight from "New library" takes the shared library's name.
 function libraryAdoptSharedName(name){
@@ -46047,6 +46073,7 @@ function libraryAdoptSharedName(name){
   if(!e || !name || (e.name && !e.auto)) return;
   e.name = name; delete e.auto;
   writeLibraryList(reg);
+  desktopMarkerName(LIBRARY_ID, name);
   writeLibraryInfo();
   updateLibrarySwitch();
 }
