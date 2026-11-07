@@ -167,6 +167,18 @@ pub fn write(root: &Path, rel: &str, bytes: &[u8]) -> Result<(), String> {
     write_replacing(&p, bytes)
 }
 
+// Adds bytes to the end of a file (made if missing), for a big file the page
+// writes in pieces: it writes them to a file of its own beside the target,
+// then renames that onto the target, so nothing is half written.
+pub fn append(root: &Path, rel: &str, bytes: &[u8]) -> Result<(), String> {
+    if rel.is_empty() { return Err("no file name".into()); }
+    let p = resolve(root, rel)?;
+    if let Some(dir) = p.parent() { fs::create_dir_all(dir).map_err(|e| e.to_string())?; }
+    resolve(root, rel)?;
+    let mut f = fs::OpenOptions::new().create(true).append(true).open(&p).map_err(|e| e.to_string())?;
+    f.write_all(bytes).map_err(|e| e.to_string())
+}
+
 // Copy or move a file, within a root or from one to another; the target's
 // folders are made. A file already at the target is refused unless replace.
 pub fn copy(from_root: &Path, from: &str, to_root: &Path, to: &str, replace: bool) -> Result<(), String> {
@@ -260,13 +272,17 @@ pub fn fs_read(app: tauri::AppHandle, root: String, path: String, start: Option<
 }
 
 // The bytes come as the request's body (no JSON); the root and path in the
-// headers "p37-root" and "p37-path", URI-encoded (headers are ASCII).
+// headers "p37-root" and "p37-path", URI-encoded (headers are ASCII). With
+// "p37-append: 1" the bytes go on the end of the file (append), else they
+// replace it whole.
 #[tauri::command]
 pub fn fs_write(app: tauri::AppHandle, request: tauri::ipc::Request<'_>) -> Result<(), String> {
     let h = |k: &str| request.headers().get(k).and_then(|v| v.to_str().ok()).map(percent_decode).ok_or_else(|| format!("no {} header", k));
     let (root, path) = (h("p37-root")?, h("p37-path")?);
+    let adding = h("p37-append").map(|v| v == "1").unwrap_or(false);
     let tauri::ipc::InvokeBody::Raw(bytes) = request.body() else { return Err("the file's bytes must be the body".into()) };
-    write(&roots(&app).get(&root)?, &path, bytes)
+    let r = roots(&app).get(&root)?;
+    if adding { append(&r, &path, bytes) } else { write(&r, &path, bytes) }
 }
 
 #[tauri::command]
@@ -386,6 +402,16 @@ mod tests {
         assert!(read(&d, "escape/secret.txt", 0, None).is_err());
         assert!(write(&d, "escape/new.txt", b"x").is_err());
         assert!(!outside.join("new.txt").exists());
+    }
+    #[test]
+    fn a_big_file_in_pieces() {
+        let d = tmp("append");
+        append(&d, "A/big.wav.p37part", b"0123").unwrap();
+        append(&d, "A/big.wav.p37part", b"4567").unwrap();
+        write(&d, "A/big.wav", b"old").unwrap();
+        rename(&d, "A/big.wav.p37part", &d, "A/big.wav", true).unwrap();
+        assert_eq!(read(&d, "A/big.wav", 0, None).unwrap(), b"01234567");
+        assert_eq!(list(&d, "A").unwrap().len(), 1);
     }
     #[test]
     fn write_read_list_stat() {

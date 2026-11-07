@@ -30,9 +30,12 @@ struct Quitting(AtomicBool);
 // What this shell can do for the page (see the page's DESKTOP_BRIDGE_NEEDED).
 // Raise it when the page may start relying on something new here:
 // 1 = closing asks first (p37-close-requested, p37_quit).
-// (The fs_* commands and p37lib:// are here from shell 1.4.175, but the page
-// doesn't use them yet; 2 once it does.)
-const BRIDGE: u32 = 1;
+// 2 = the page keeps its libraries in folders through the fs_* commands
+//     (fs_write appending with "p37-append"), plays them from p37lib://, and
+//     keeps the device's settings in device.json (p37_device_get/put). The
+//     page reads it as window.__p37Bridge, set before it runs (below), to
+//     choose its storage (2.0.000).
+const BRIDGE: u32 = 2;
 
 #[derive(serde::Serialize)]
 struct ShellInfo { version: String, bridge: u32, pages: bool, device: bool }
@@ -168,7 +171,7 @@ pub fn run() {
     // The device's settings, handed to the page before it runs.
     let device_file = pages::data_dir(&context.config().identifier).map(|d| d.join("device.json")).unwrap_or_else(|| std::path::PathBuf::from("device.json"));
     let device = Arc::new(device::Device::new(device_file));
-    let device_script = device.init_script();
+    let device_script = format!("window.__p37Bridge = {};\n{}", BRIDGE, device.init_script());
     let mut builder = tauri::Builder::default();
     #[cfg(desktop)]
     {
