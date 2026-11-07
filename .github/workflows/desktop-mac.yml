@@ -5,7 +5,15 @@
 # The shell's own tests (cargo test) run first, on each.
 name: Desktop app (test builds)
 on:
+  # A push makes a build that follows dev's pages ("d"); one started by hand
+  # can follow main's ("m"), for people other than Gen Rinzin (7 Nov 2026).
   workflow_dispatch:
+    inputs:
+      channel:
+        description: "Pages the app follows: dev (test.37player.com's) or main (37player.com's)"
+        type: choice
+        options: [dev, main]
+        default: dev
   push:
     branches: [tauri-spike]
     paths: ["desktop/**", "37-player.html", ".github/workflows/desktop-mac.yml"]
@@ -15,7 +23,7 @@ jobs:
   mac:
     runs-on: macos-latest
     # Test builds update their page from dev's (page-test; desktop/PAGE-UPDATES.md).
-    env: { P37_PAGE_CHANNEL: test }
+    env: { P37_PAGE_CHANNEL: "${{ inputs.channel == 'main' && 'latest' || 'test' }}" }
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -37,7 +45,7 @@ jobs:
         with: { name: mac, path: "37-Player-mac-test*" }
   windows:
     runs-on: windows-latest
-    env: { P37_PAGE_CHANNEL: test }
+    env: { P37_PAGE_CHANNEL: "${{ inputs.channel == 'main' && 'latest' || 'test' }}" }
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -64,7 +72,8 @@ jobs:
       - name: Publish as a pre-release
         env: { GH_TOKEN: "${{ github.token }}" }
         run: |
-          tag="desktop-test-${{ github.run_number }}"
+          n="${{ github.run_number }}${{ inputs.channel == 'main' && 'm' || 'd' }}"
+          tag="desktop-test-$n"
           # Named by the version first (Gen Rinzin, 7 Nov 2026), the build's
           # number after; the files carry the version too.
           v=$(curl -s "https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/37-player.html" | head -c 4000 | grep -o 'app-version" content="[^"]*' | head -1 | sed 's/.*content="//')
@@ -75,5 +84,5 @@ jobs:
           if [ -f 37-Player-mac-test-symbols.zip ]; then mv 37-Player-mac-test-symbols.zip "37-Player-$v-mac-symbols.zip"; syms="37-Player-$v-mac-symbols.zip"; fi
           gh release create "$tag" "37-Player-$v-mac.dmg" "37-Player-$v-windows-setup.exe" "37-Player-$v-windows.msi" $syms \
             --repo "${{ github.repository }}" --prerelease --target "${{ github.sha }}" \
-            --title "37 Player $v for computers (build ${{ github.run_number }})" \
-            --notes "Unsigned test builds of the desktop app (Tauri) from branch ${{ github.ref_name }} (desktop/SPIKE.md). Mac: right-click → Open. Windows: SmartScreen → More info → Run anyway."
+            --title "37 Player $v for computers (build $n)" \
+            --notes "The desktop app, not signed yet, from branch ${{ github.ref_name }}; its pages follow ${{ inputs.channel == 'main' && 'main (37player.com)' || 'dev (test.37player.com)' }}. Mac: right-click → Open. Windows: SmartScreen → More info → Run anyway."
