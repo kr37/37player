@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="1.4.190">
+<meta name="app-version" content="1.4.191">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -279,7 +279,7 @@
   .library-header .lib-search-input{ flex:1 1 120px; min-width:90px; }
   .lib-table-totals{ flex-wrap:wrap; row-gap:2px; border-bottom:1px solid var(--line); background:var(--bg-panel); flex-shrink:0; }
   .library-screen:not(.lib-table-mode) #libTableTotals{ display:none; }
-  /* The player is one line at the bottom of the page (1.4.168, Gen), in Browse
+  /* The player is one line at the bottom of the page (1.4.168, Gen Rinzin), in Browse
      and Table alike; the Player button hides it. The panel at the top of the
      tracks keeps only what the selection offers (Convert, Done), and goes
      when there's nothing (the count is in the Tracks heading or the bar). */
@@ -478,7 +478,7 @@
   .pending-delete{ outline:2px solid var(--rust-bright); outline-offset:-2px; background:rgba(200,80,50,0.10); border-radius:4px; }
   /* The track being deleted is playing (1.4.162): a strip at the top in the
      colours of what's playing now, with the playing bars, so it isn't read
-     past in a busy dialog (1.4.176: Gen did, deleting an album used in two
+     past in a busy dialog (1.4.176: Gen Rinzin did, deleting an album used in two
      playlists). */
   .delete-playing{ margin:0 0 12px; padding:9px 12px; border-radius:8px; display:flex; gap:9px; align-items:center;
     background:var(--now-playing-bg, rgba(127,169,139,0.19)); color:var(--now-playing-text, var(--sage)); border-left:4px solid var(--sage); }
@@ -530,7 +530,7 @@
      folders (open or closed) included. Until 1.4.133 folders had a wider gap
      above them (and playlists after a folder), which made two playlists
      above a folder look like one wrapped title; the folder lines (1.4.130)
-     now show what belongs where (Gen, 30 Oct 2026). */
+     now show what belongs where (Gen Rinzin, 30 Oct 2026). */
   #rail .folder-head .chev{ display:none; }
   #rail .folder-head, #rail .playlist-row{ line-height:1.2; padding-top:calc(5px * var(--density)); padding-bottom:calc(5px * var(--density)); }
   #rail .tree-children{ border-left:none; }
@@ -1553,10 +1553,10 @@
   .lib-preview-transport-row .tbtn-sm{ width:30px; height:30px; font-size:18px; border-radius:8px; }
   .lib-preview-transport-row .tbtn-play-sm{ width:36px; height:36px; border-radius:9px; }
 
-  /* Folder trees: no ▶ triangles (Gen: too many icons in a row; a triangle
+  /* Folder trees: no ▶ triangles (Gen Rinzin: too many icons in a row; a triangle
      also means Play). The line down from an open folder shows what's in it. */
   .folder-head .chev{ display:none; }
-  /* Dialogs and pages too (1.4.167, Gen): every other section that opens and
+  /* Dialogs and pages too (1.4.167, Gen Rinzin): every other section that opens and
      closes (an import's file lists, Feedback's sent list, Join's server
      address, File format's list…) has Settings' logs' chevron and the line
      down the left of what opens, not the browser's triangle. The trees of
@@ -2180,7 +2180,7 @@ class IdbLibraryStore {
    no lock, as each .json is replaced whole (createWritable writes aside and
    swaps it in on close). A write puts its files first and the .json last,
    so an interruption leaves the previous record as it was.
-   Readable names (1.4.174; v2, Gen: "integral"): when opts.recordingPath is
+   Readable names (1.4.174; v2, Gen Rinzin: "integral"): when opts.recordingPath is
    given (the app's own libraries), recordings are kept as
      music/<Artist>/<Album>/<NN> <Title>.<ext>   (music/ since 1.4.179)
    and playlists/ holds an .m3u8 for each playlist (syncPlaylistFiles)
@@ -2208,7 +2208,7 @@ function recordingPathPart(str, fallback){
 }
 // "music/Artist/Album/01 Title" (without the extension), from a track's
 // details. Under music/, as in the portable export, so the library folder's
-// top reads like a table of contents (Gen, 6 Nov 2026): music/, playlists/,
+// top reads like a table of contents (Gen Rinzin, 6 Nov 2026): music/, playlists/,
 // 37 Player's own files/, the marker, the README.
 function recordingPathFor(track){
   if(!track) return null;
@@ -2694,7 +2694,7 @@ async function moveLibraryToFolder(){
   let parent;
   try{ parent = await window.showDirectoryPicker({id: "37player-library", mode: "readwrite", startIn: "music"}); }
   catch(err){ if(err && err.name !== "AbortError") alert(t("folderLibFailed", {error: err.message || err.name})); return; }
-  // The folder picked may be the library's own (Gen, 6 Nov 2026: with
+  // The folder picked may be the library's own (Gen Rinzin, 6 Nov 2026: with
   // several libraries, he made an empty folder for this one first, and got
   // "Name/Name"). This library's folder, or an empty folder with its name,
   // is used as it is; another empty folder, the person says which.
@@ -19213,7 +19213,7 @@ async function storageLooksUsedBefore(){
   // that had to be created just now. Only in WebKit (Safari, the iPad), the
   // engine that hands over empty storage: Chrome lends an incognito window
   // the persistence it gave the normal profile, so a fresh incognito
-  // window looked like a lost library (Gen, 6 Nov 2026, 1.4.181).
+  // window looked like a lost library (Gen Rinzin, 6 Nov 2026, 1.4.181).
   try{ if(WEBKIT_ENGINE && dbJustCreated && navigator.storage && navigator.storage.persisted && await navigator.storage.persisted()) return true; }catch(err){}
   return false;
 }
@@ -21177,14 +21177,14 @@ const playingCtxBar = document.createElement("div");
 playingCtxBar.className = "ctx-bar ctx-playing"; playingCtxBar.setAttribute("role", "toolbar");
 function buildPlayingCtxBar(){
   // Wrap, Album, Loudness | Even out loudness: the three choices | Playback
-  // (Gen, 30 Oct 2026; a "Display:" label with the switches as icons only
+  // (Gen Rinzin, 30 Oct 2026; a "Display:" label with the switches as icons only
   // was tried in 1.4.129 and dropped: the words are wanted).
   fillCtxBar(playingCtxBar, [
     {icon: "wrap", label: t("ctxWrap"), tip: t("wrapNamesLabel"), on: ()=> !!root.settings.wrapNames, act: ()=> ctxToggleSetting("wrapNamesToggle")},
     {icon: "album", label: t("ctxAlbum"), tip: t("albumColumnLabel"), on: ()=> !!root.settings.showAlbumColumn, act: ()=> ctxToggleSetting("albumColumnToggle")},
     {icon: "loud", label: t("ctxLoudness"), tip: t("showPlayLoudTip"), on: ()=> !!root.settings.showPlayLoudness, act: ()=>{ root.settings.showPlayLoudness = !root.settings.showPlayLoudness; saveState(); renderPlayer(); }},
     "|",
-    // How it sounds (1.4.128, Gen): the three choices side by side, as
+    // How it sounds (1.4.128, Gen Rinzin): the three choices side by side, as
     // Canva's left / centre / right, after the switches about the display.
     {group: t("ctxLevelGroupLabel")},
     ctxSeg(t("ctxLevelGroup"), [
@@ -21295,7 +21295,7 @@ function libSplitNow(){
 }
 // Table's own view controls, on its totals line (the header's bar would
 // otherwise run to two rows): columns, wrapping, waveforms, width.
-// Table's lower bar (1.4.107, Gen's layout): how the table is shown (width,
+// Table's lower bar (1.4.107, Gen Rinzin's layout): how the table is shown (width,
 // wrap, columns, player, waveforms), then the selection — its count always
 // there — and what can be done with it (Undo, Redo, Edit, Copy track,
 // Delete). What's shown at all (search, chips, the totals) is in the bar above.
@@ -21358,12 +21358,12 @@ function libFocusTrackId(){
   const c = libTableLastClicked && libSelectedTracks.has(libTableLastClicked) ? libTableLastClicked : null;
   return c || (libSelectedTracks.size === 1 ? [...libSelectedTracks][0] : null);
 }
-// Library's bars (1.4.112, Gen's layout). The top bar chooses what's shown:
+// Library's bars (1.4.112, Gen Rinzin's layout). The top bar chooses what's shown:
 // Browse | Table, search, Show, and (Browse) Duplicates. In Browse each
 // column has its own bar under its heading: Artists and Albums, Edit and
 // Delete for those selected (Edit with several gives them one name);
 // Tracks, the selection's count and time, Undo, Redo | Wrap, Player,
-// Loudness | Edit, Split, Delete (Gen, 31 Oct 2026). When narrow, Undo and Redo lose their words first.
+// Loudness | Edit, Split, Delete (Gen Rinzin, 31 Oct 2026). When narrow, Undo and Redo lose their words first.
 // Table's actions are on its lower bar.
 function buildLibraryCtxActions(){
   const el = document.getElementById("libCtxActions");
@@ -24326,7 +24326,7 @@ async function rewriteFileTagsIfPossible(libraryId){
     if(!rec) return false;
     const blob = rec.blob;
     // A very big recording in WebKit's browser storage keeps the details
-    // inside it as they were (1.4.187, Gen): rewriting means reading it all
+    // inside it as they were (1.4.187, Gen Rinzin): rewriting means reading it all
     // into memory (putRewrittenAudio), and on the Mac mini a 1.3 GB WAV
     // restarted the page, then had to go to the shared library again in
     // full. The library's details (and a folder's file names) still follow;
@@ -25710,7 +25710,7 @@ const WAV_FADE_MS = 5;
 // MP3: how far each frame is turned down, in global-gain steps of 1.5 dB
 // (Infinity: silent), from the cut outwards. Just the one frame each side
 // (about 26 ms at 44.1 kHz): the one that may lean on the other part's
-// data. A ramp after it (1.4.080) only lengthened the dip (1.4.081, Gen).
+// data. A ramp after it (1.4.080) only lengthened the dip (1.4.081, Gen Rinzin).
 const MP3_FADE_STEPS = [Infinity];
 function fadeCurve(x){ x = Math.max(0, Math.min(1, x)); return 0.5 - 0.5 * Math.cos(Math.PI * x); }
 function concatBytes(a, b){ const o = new Uint8Array(a.length + b.length); o.set(a, 0); o.set(b, a.length); return o; }
@@ -26524,7 +26524,7 @@ function splitZoom(dir, aroundTime){
 // Playing: from the cursor (Play), the two seconds up to the cursor (stopping
 // on it), the two seconds after it, or one piece. The cursor goes back to
 // where it was after a "hear".
-// On an iPad (Gen, 30 Oct 2026), playing a piece a second time, the last
+// On an iPad (Gen Rinzin, 30 Oct 2026), playing a piece a second time, the last
 // one above all, did nothing, or played from the start of the track with the
 // cursor stopping at the mark: Safari seeks in its own time, and play() on an
 // element that still counts as "ended" starts again from 0. So: wait for the
@@ -26617,7 +26617,7 @@ function splitColors(){
   return {wave: v("--amber", "#D9A441"), waveOff: v("--text-faint", "#66655F"), text: v("--text", "#EDE9E0"), dim: v("--text-dim", "#9A9689"),
     line: v("--line", "#343947"), mark: splitMarkColor(), sel: v("--sage", "#7FA98B"), bg: v("--bg-panel", "#20232C"), deep: v("--bg-deep", "#181A22")};
 }
-// Marks are bright red, apart from every piece's colour (Gen, 1.4.087).
+// Marks are bright red, apart from every piece's colour (Gen Rinzin, 1.4.087).
 function splitMarkColor(){ return document.body.classList.contains("theme-light") ? "#D00000" : "#FF3333"; }
 // Each piece has a colour, as albums do in a playlist (buildAlbumColorMap):
 // the first the usual amber, then the album colours in turn; a piece left
@@ -29361,7 +29361,7 @@ function nameComboHtml(id, value){
 
 // Keep the number's normal keyboard editing but supply identical, full-height
 // up/down controls in all browsers (including touch browsers with no native arrows).
-// Silences' minutes and seconds; since 1.4.167 (Gen) also the track details'
+// Silences' minutes and seconds; since 1.4.167 (Gen Rinzin) also the track details'
 // track number and volume, which has its own minimum and step (opts.min,
 // opts.step: −30 to +30 dB in half decibels; opts.compact: as tall as the
 // text fields beside it).
@@ -30636,7 +30636,7 @@ function fmtDb(v){ return (v > 0 ? "+" : v < 0 ? "\u2212" : "") + (Math.round(Ma
      as a whole (its combined loudness), keeping its own quiet and loud parts;
    - the track's own adjustment, track.volumeDb (its details dialog), on top.
    Since 1.4.098 nothing limits turning up: past the track's loudest peak it
-   starts to distort, and the details dialog says by how much (Gen: better
+   starts to distort, and the details dialog says by how much (Gen Rinzin: better
    loud enough on small speakers, with a warning, than too quiet). Nothing
    here touches the file.
 
@@ -30672,7 +30672,7 @@ function albumLevelText(tracks){
   const uniq = [...new Set(parts)];
   return uniq.length ? uniq.join(" / ") + " dB" : null;
 }
-// An album is its name and its artist (1.4.131, Gen): two albums called
+// An album is its name and its artist (1.4.131, Gen Rinzin): two albums called
 // "Volume 1" by different artists are evened out separately. No album
 // name: no album (each such track is evened out by itself).
 function albumLevelKey(tr){ const a = (tr.album || "").trim().toLowerCase(); return a ? a + "\u0001" + (tr.artist || "").trim().toLowerCase() : ""; }
@@ -30724,7 +30724,7 @@ function fillLoudnessCell(cell, tr){
     cell.appendChild(adj);
   }
 }
-// Playing's loudness column (1.4.128, Gen): whole dB only. With Loudness on,
+// Playing's loudness column (1.4.128, Gen Rinzin): whole dB only. With Loudness on,
 // what evening out does to the track in the mode chosen (0 when it's off);
 // a track's own volume (✎) always, in bold, whether Loudness is on or not.
 function fmtDbInt(v){ const n = Math.round(v); return n > 0 ? "+" + n : n < 0 ? "\u2212" + (-n) : (v > 0 ? "+0" : v < 0 ? "\u22120" : "0"); }
@@ -31049,7 +31049,7 @@ function scheduleRecordingRenames(){
   recordingRenameTimer = setTimeout(()=> libStore.renameRecordings().then(()=> syncPlaylistFiles()).catch(err=> console.warn("Renaming recordings:", err)), 2500);
 }
 // A library kept as files has playlists/: an .m3u8 for each playlist, in its
-// folders, pointing into ../music/ (Gen, 6 Nov 2026: a courtesy for other
+// folders, pointing into ../music/ (Gen Rinzin, 6 Nov 2026: a courtesy for other
 // players; 37 Player never reads them). Written as the portable export
 // writes them (buildPlaylistEntries), tracks only: silences and stops are
 // left out. Kept in step after each change (FolderLibraryStore.keepFiles).
@@ -31085,7 +31085,7 @@ function playingTrackIdsAmong(trackIds){
   if(edPreviewTrackId && ids.has(edPreviewTrackId) && ed && !ed.paused && !out.includes(edPreviewTrackId)) out.push(edPreviewTrackId);
   return out;
 }
-// Deleting a track that's playing (Gen, 4 Nov 2026): most likely a mistake,
+// Deleting a track that's playing (Gen Rinzin, 4 Nov 2026): most likely a mistake,
 // so the confirmation says so first, and going ahead stops it. (Deletions
 // nobody here asked for, from another device or window, let it finish.)
 function confirmDeleteTracksFromLibrary(trackIds, onConfirm, rowEl){
@@ -31140,7 +31140,7 @@ function confirmDeleteTracksFromLibrary(trackIds, onConfirm, rowEl){
     modalCloseCallbacks.push(()=> rowEl.classList.remove("pending-delete"));
   }
 }
-// Deleting tracks that playlists use (Gen, 5 Nov 2026): after the first
+// Deleting tracks that playlists use (Gen Rinzin, 5 Nov 2026): after the first
 // "Delete", a second question, with two choices: the playlists and folders
 // this leaves empty (ticked), and the playlists that used the tracks but
 // still hold others (not ticked, listed). Only what this deletion empties:
@@ -31205,7 +31205,7 @@ async function deleteLibraryTracks(trackIds, opts){
   // Tracks deleted everywhere (Partial sync): the playlists and folders the
   // tidy-up takes with them go everywhere too. Left behind in the shared
   // library, a playlist still holding them kept them there, and this device
-  // took them back (Gen, 6 Nov 2026).
+  // took them back (Gen Rinzin, 6 Nov 2026).
   const pcfg = typeof sharedConfig === "function" ? sharedConfig() : null;
   if(tidied.length && pcfg && pcfg.partial && (pcfg.deleteEverywhere || []).some(id=> idSet.has(id)))
     pcfg.deleteEverywhere = [...new Set([...pcfg.deleteEverywhere, ...tidied])];
@@ -31742,7 +31742,7 @@ function renderLibraryPreviewPanel(){
   const curLabel = track ? "0:00" : "-:--";
   const durLabel = track ? fmtTime(track.duration) : "-:--";
 
-  // The player: one line at the bottom of the page (1.4.168, Gen): ⏮ ▶ ⏭,
+  // The player: one line at the bottom of the page (1.4.168, Gen Rinzin): ⏮ ▶ ⏭,
   // album · artist over the name, the time, the waveform (under them on a
   // narrow screen).
   const playerBar = document.getElementById("libPlayerBar");
@@ -33215,7 +33215,7 @@ const HELP_TOPICS = [
   {
     "id": "shared-library",
     "title": "Shared library",
-    "bodyHtml": "\u003cp>A shared library keeps the same tracks and playlists on several devices: the rooms of a Center, or your own computer, phone and tablet. A change made on any of them, such as a new playlist, a renamed track or a tweak on the iPad, reaches the others by itself within a few minutes.\u003c/p>\n\u003ch3>Joining\u003c/h3>\n\u003cp>Start from the welcome when 37 Player first opens (\u003cstrong>Yes, join a shared library\u003c/strong>), from Settings → \u003cstrong>Shared library\u003c/strong> (\u003cstrong>Join or create a shared library…\u003c/strong>), or from Settings → \u003cstrong>Library\u003c/strong> → \u003cstrong>All libraries\u003c/strong> → \u003cstrong>New library\u003c/strong>. All three ask the same two things. First, where the shared library is kept: \u003cstrong>I have a join code\u003c/strong> (on 37player.com or another server) or \u003cstrong>Google Drive\u003c/strong>. Then only what that needs. For a join code, that's the code from whoever runs your shared library and a name for this device (for example \"Temple iPad\"); then choose \u003cstrong>Next\u003c/strong>. Every step before anything happens says \u003cstrong>Next\u003c/strong>; the last one, which says how much will travel, says \u003cstrong>Do it now\u003c/strong>. A new library on a server is made by whoever runs the server, so from 37 Player you can only join one there.\u003c/p>\n\u003cp>To bring only some of the shared library to this device, choose \u003cstrong>Only what I choose\u003c/strong> at the step after the code. Nothing moves before then: that step says how much would travel either way, with the numbers for this device and the shared library, and you choose there. Partial sync can also be turned on or off later. See 'Partial sync' below.\u003c/p>\n\u003cul>\n\u003cli>\u003cstrong>A device with nothing in it yet\u003c/strong> simply receives the shared library.\u003c/li>\n\u003cli>\u003cstrong>A device that already has a library\u003c/strong> asks first. Each choice says what it removes, sends and downloads. \u003cstrong>Use the shared library here\u003c/strong> replaces what's on this device with the shared one, so anything only on this device is removed. \u003cstrong>Combine them\u003c/strong> (the suggested choice, since it loses nothing) adds this device's tracks and playlists to the shared library, which is how the first device fills an empty shared library. A recording this device imported separately (so 37 Player knows it by a different ID) is matched to the shared copy by its name, album, artist and length, so combining doesn't create duplicates. Folders and playlists work the same way: a folder or playlist with the same name in the same place becomes one with the shared one, such as the \u003cstrong>Archive\u003c/strong> folder every new library starts with. If a playlist's tracks differ, this device's version is kept beside the shared one as \"Name (device name)\", marked ⚠.\u003c/li>\n\u003c/ul>\n\u003cp>Before anything moves, 37 Player says how much joining will download or send (for example \"about 2.1 GB\"). On mobile data or a slow connection, you can cancel and join later.\u003c/p>\n\u003cp>The tracks' details and playlists arrive straight away, on every device. The audio follows in the background, shown in the bar along the bottom. A track that hasn't arrived yet is fetched the moment it's played. While anything is playing, sending and receiving pause between files so the sound stays clean, and pick up again when it stops. While the first device is still sending its audio, the others show how many files are still on their way, and pick them up as they arrive. A large library takes a while the first time; after that, only what changed travels.\u003c/p>\n\u003ch3>On Google Drive\u003c/h3>\n\u003cp>A shared library can also live in a folder of your Google Drive. Choose \u003cstrong>Google Drive\u003c/strong> where 37 Player asks where the shared library is kept, then \u003cstrong>Use Google Drive…\u003c/strong>, and sign in with Google. 37 Player then shows the 37 Player libraries in that Google Drive: choose one to join, or \u003cstrong>Make a new library on Google Drive\u003c/strong>. It appears in your Drive as a folder called \"37 Player – \" and the library's name.\u003c/p>\n\u003cul>\n\u003cli>\u003cstrong>Every device that shares it signs in with the same Google account,\u003c/strong> a Center's account, say. Sharing one Drive library between several people's own Google accounts isn't possible yet.\u003c/li>\n\u003cli>\u003cstrong>37 Player sees only what it made\u003c/strong> in that Google Drive, nothing else.\u003c/li>\n\u003cli>\u003cstrong>Everything else works the same:\u003c/strong> what's on each device, reviewing changes, receiving updates only, and leaving.\u003c/li>\n\u003cli>\u003cstrong>If Google asks you to sign in again\u003c/strong> (the sign-in was removed in your Google account, say, or the device went unused for months), the button at the top says \u003cstrong>Sign in to Google\u003c/strong>. It takes you to Settings → Shared library and \u003cstrong>Sign in to Google again\u003c/strong>.\u003c/li>\n\u003cli>\u003cstrong>Leave the folder alone in Drive:\u003c/strong> don't move or rename what's inside it. Moving the folder itself, or renaming it, is fine.\u003c/li>\n\u003cli>\u003cstrong>How full it is:\u003c/strong> Settings → Shared library shows how much of the Google Drive is used. If the Drive fills up, 37 Player says so (\"The Google Drive of … is full\") and tries again every half hour, or at \u003cstrong>Sync now\u003c/strong>.\u003c/li>\n\u003cli>\u003cstrong>Free up space…\u003c/strong>, beside it, deletes for good what the library no longer uses: its earlier versions, and audio and pictures that were replaced or belonged to deleted tracks. Choose how far back \u003cstrong>History\u003c/strong> should still reach: 1, 7 or 30 days, or \u003cstrong>Current version only\u003c/strong>, for starting fresh (a library just made and experimented with, or a Drive that's full); it says how much that frees before anything is deleted. The library as it is now is never touched, and a file another device is still sending is never one it deletes.\u003c/li>\n\u003cli>\u003cstrong>Changed your mind?\u003c/strong> If you make a new library on Google Drive and back out before anything is saved in it, its empty folders go to your Drive's trash.\u003c/li>\n\u003c/ul>\n\u003ch3>Day to day\u003c/h3>\n\u003cp>There's nothing to do. (The less used switches, the sync log and the server's version are under \u003cstrong>More\u003c/strong> in Settings → Shared library.) 37 Player checks a few seconds after every change, every few minutes while it's open, and whenever it comes back on screen. \u003cstrong>Sync now\u003c/strong> in Settings does it at once. Settings also shows when this device last checked, and whether it's \u003cstrong>up to date\u003c/strong>, still \u003cstrong>updating\u003c/strong> (downloading or sending audio), or \u003cstrong>waiting\u003c/strong> for files from other devices that haven't sent them yet.\u003c/p>\n\u003cul>\n\u003cli>\u003cstrong>Working offline\u003c/strong> is fine: everything plays from this device as always, and changes are sent the next time it's online.\u003c/li>\n\u003cli>\u003cstrong>Each device keeps its own settings\u003c/strong>: display, PIN, backups and volume aren't shared.\u003c/li>\n\u003cli>\u003cstrong>The shared library is this device's backup.\u003c/strong> Once everything on a device has reached the shared library, the \u003cstrong>Back up library\u003c/strong> button at the top reads \u003cstrong>In sync\u003c/strong>, and 37 Player stops reminding you to back up. Until then (just after a change, or while audio is being sent), it says \u003cstrong>Syncing…\u003c/strong>. Tapping \u003cstrong>In sync\u003c/strong> still lets you save a backup on this device: it opens with \u003cstrong>Up to date\u003c/strong>, then the usual backup choices.\u003c/li>\n\u003cli>\u003cstrong>If sending doesn't finish.\u003c/strong> Changes and audio made on a device are only on that device until they've been sent. If something has been waiting for more than three days (the device offline, say, or the server refusing it), the button at the top turns red and reads \u003cstrong>Sync isn't finishing\u003c/strong>, and once a day 37 Player says so when 'Edit Playlists' or 'Library' opens, with Shared library settings and backing up as the ways out.\u003c/li>\n\u003cli>\u003cstrong>Who keeps backups.\u003c/strong> A shared library still needs one device that backs it up: it protects against losing a device, but not against a mistake, because a mistake is shared too. A computer with Chrome or Edge and a backup folder (see 'Backing up') does it by itself, and every device shows when it last did, for example \"Backed up by Gen's laptop, today\" (on the button's tooltip, and in Settings → Backups and Shared library).\u003c/li>\n\u003c/ul>\n\u003ch3>History: going back\u003c/h3>\n\u003cp>Every version of the shared library from the last 30 days is kept (on Google Drive, all of them). \u003cstrong>History…\u003c/strong>, here in Settings → Shared library, compares now with any of them and brings back what you choose. See 'History and Undo'.\u003c/p>\n\u003ch3>If a device loses its library\u003c/h3>\n\u003cp>If a device's browser data is cleared, or you want to undo a mess on one device, don't restore an old backup into it: join the shared library again, and choose \u003cstrong>Use the shared library here\u003c/strong>. That brings back everything as it is now, with everyone's latest changes.\u003c/p>\n\u003cp>Restoring a backup on a device that's in a shared library offers \u003cstrong>Get the current shared library\u003c/strong> for this reason. Restoring an older backup there instead first leaves the shared library, because otherwise everything deleted since the backup was made would come back for everyone. A backup made on a device in a shared library says so when it's restored, and suggests joining that shared library instead.\u003c/p>\n\u003ch3>When two devices change the same thing\u003c/h3>\n\u003cp>37 Player compares each device's changes with the last version they both had, so most changes simply combine. A rename on one device and new artwork on another both survive, and so do two different playlists edited at the same time.\u003c/p>\n\u003cul>\n\u003cli>\u003cstrong>The same playlist's tracks changed on two devices before they synced:\u003c/strong> both versions are kept. The shared one keeps its name; the other appears beside it as \"Name (device name)\", marked ⚠. Look at both, keep the one you want, and delete the other.\u003c/li>\n\u003cli>\u003cstrong>The same detail of a track changed on both\u003c/strong> (the same track renamed differently, say): the version that reached the shared library first wins.\u003c/li>\n\u003cli>\u003cstrong>Deleted on one device but edited on another:\u003c/strong> the edited one is kept. A track still used in a playlist is never deleted.\u003c/li>\n\u003c/ul>\n\u003ch3>Two copies of one recording\u003c/h3>\n\u003cp>A track's recording can differ between this device and the shared library: when a device joins with tracks it already has, when it rejoins after leaving, or when something went wrong in between (a copy that was never sent, say). With no common history to go by, 37 Player looks at both copies, without downloading either, and decides like this:\u003c/p>\n\u003col>\n\u003cli>\u003cstrong>The same recording on both:\u003c/strong> nothing moves. This device simply takes the shared library's record of it.\u003c/li>\n\u003cli>\u003cstrong>The shared library's copy never reached the server:\u003c/strong> this device's copy is kept, and sent.\u003c/li>\n\u003cli>\u003cstrong>The server's copy is damaged:\u003c/strong> this device's copy is kept, and sent.\u003c/li>\n\u003cli>\u003cstrong>Both are good, and different:\u003c/strong> the newer one wins. Each copy carries the time it was made, from the clock of the device that made it. If the shared library's is newer, this device's older copy is kept for a day in Undo's store on this device.\u003c/li>\n\u003cli>\u003cstrong>This device's copy is missing or damaged:\u003c/strong> the shared library's is used.\u003c/li>\n\u003c/ol>\n\u003cp>Each decision is written in the sync log, naming the track. And if the shared library is ever waiting for this very device to send a copy it no longer has, this device uses its own copy of that track instead, and sends that.\u003c/p>\n\u003ch3>Tracks that haven't arrived yet\u003c/h3>\n\u003cp>A track whose audio isn't on this device yet shows its name in \u003cstrong>bold\u003c/strong>, with the reason under it:\u003c/p>\n\u003cul>\n\u003cli>\u003cstrong>\"On its way from the shared library\"\u003c/strong> means the shared library has the audio, and it's downloading. On Playing, \u003cstrong>Get them now\u003c/strong> above the list fetches a playlist's missing tracks straight away, even while something plays.\u003c/li>\n\u003cli>\u003cstrong>\"Waiting for Office laptop to send it\"\u003c/strong> means the device that added the track hasn't sent its audio yet, perhaps because it was closed too soon. It arrives once that device is open and online again.\u003c/li>\n\u003cli>\u003cstrong>\"It was to send this copy, but no longer has it\"\u003c/strong> means this device itself was the one to send it, and that copy is gone. Use \u003cstrong>Replace audio file\u003c/strong> with a good copy, or delete the track.\u003c/li>\n\u003c/ul>\n\u003cp>Big recordings are sent in pieces of 16 MB (from version 1.4.187, with a server that's been updated too). If the connection drops part-way, sending carries on from where it stopped instead of starting again, and Safari, iPads and the Mac app can send files of a gigabyte or more.\u003c/p>\n\u003cp>Playing also says above the list how many of the playlist's tracks can't play yet, so check before a session starts.\u003c/p>\n\u003cp>Pressing play on a track that's on its way fetches it at once. If it arrives within a few seconds, it plays. If not, a message says it's still coming. Press play again once it's here. It never starts by itself later, so it can't interrupt whatever you've moved on to.\u003c/p>\n\u003cp>While 37 Player is sending audio, the bar along the bottom says so. Keep it open until that finishes. Closing the window asks first. Closing a laptop's lid can't be caught, so wait for the bar to finish before you close it.\u003c/p>\n\u003ch3>Phones and tablets\u003c/h3>\n\u003cp>A phone or tablet stops 37 Player soon after its screen locks, which pauses a big first sync. On a phone or tablet, Settings → Shared library has a \u003cstrong>Keep syncing with the screen off\u003c/strong> switch, which stays as you set it. While it's on, whenever there's something to send or receive and nothing is playing, 37 Player keeps going by quietly playing silence, with the progress on the lock screen, until everything has arrived. Playing always comes first: syncing waits while a session plays and carries on by itself the moment it stops, even with the screen locked. The lock screen's pause button stops it until you next open 37 Player or play something. It's best done plugged in.\u003c/p>\n\u003cp>Sharing uses mobile data like any other connection, because a shared library only works when every device keeps it complete. The one big transfer is when a device joins, and the join screen says how much that will be before it starts.\u003c/p>\n\u003ch3>Reviewing changes before they sync\u003c/h3>\n\u003cp>To decide for yourself what comes and goes, turn on \u003cstrong>Review changes before syncing\u003c/strong> in Settings → Shared library. Nothing then changes on this device or in the shared library until you say so. 37 Player still checks, and when this device and the shared library differ, a button at the top says so, such as \u003cstrong>3 shared changes\u003c/strong>. Tap it (or \u003cstrong>Review changes…\u003c/strong> in Settings, which appears while this is on) to see the list.\u003c/p>\n\u003cp>Each row is one difference: a folder or playlist, a track, or the order of things inside a folder. The left side says what this device has, and the right side says what the shared library has. The arrow between them says which version wins:\u003c/p>\n\u003cul>\n\u003cli>\u003cstrong>→ Send:\u003c/strong> this device's version goes to the shared library.\u003c/li>\n\u003cli>\u003cstrong>← Take:\u003c/strong> the shared library's version comes here.\u003c/li>\n\u003cli>\u003cstrong>✕ Skip:\u003c/strong> leave both as they are for now. The row comes up again next time.\u003c/li>\n\u003c/ul>\n\u003cp>Tap an arrow to change it. Each row starts with a suggestion: send what changed here, take what changed in the shared library. A row changed in \u003cstrong>both\u003c/strong> places is shown in red with \u003cstrong>?\u003c/strong>, and you choose. \u003cstrong>Synchronize\u003c/strong> does what the arrows say, and it waits until every \u003cstrong>?\u003c/strong> is decided.\u003c/p>\n\u003cp>New tracks are listed under the playlist that uses them. If you take or send a playlist, its new tracks have to come along, so their arrows are locked, with a note saying which playlist needs them. Skip the playlist and they unlock.\u003c/p>\n\u003cp>If anything changes while the list is open (someone else syncs, say), Synchronize first shows the updated list, keeping your choices where nothing changed. Check it, then press Synchronize again.\u003c/p>\n\u003ch3>What's on this device\u003c/h3>\n\u003cp>\u003cstrong>What's on this device…\u003c/strong> in Settings → Shared library shows the whole shared library, with a tick on everything that's on this device and the size of each folder and playlist. The total at the top says how much of the shared library this device holds.\u003c/p>\n\u003cul>\n\u003cli>\u003cstrong>Tick\u003c/strong> a playlist or folder to bring it here; \u003cstrong>untick\u003c/strong> it to take it off this device. The shared library keeps it, and so do the other devices. A track used by two playlists stays while either is ticked.\u003c/li>\n\u003cli>\u003cstrong>Nothing changes until Apply.\u003c/strong> The bar at the bottom says what Apply will do, for example \"Brings 12 tracks (840 MB to download) · Takes 3 tracks off this device\".\u003c/li>\n\u003cli>\u003cstrong>Albums\u003c/strong>, below the playlists, list every album in the shared library. Tick one to bring its tracks here, for example to make playlists from them, without bringing any playlist. Open an album (▸) to tick single tracks, with each one's size. A track that comes with a ticked playlist shows as ticked, marked \"comes with a playlist\". An album shows as ticked when all its tracks will be here, and partly ticked when only some will.\u003c/li>\n\u003cli>\u003cstrong>Folders\u003c/strong> open and close by their arrow or their name; the box beside them ticks everything inside.\u003c/li>\n\u003cli>\u003cstrong>Cancel\u003c/strong> leaves everything as it was.\u003c/li>\n\u003c/ul>\n\u003ch3>Everything, or only what you choose\u003c/h3>\n\u003cp>Under \u003cstrong>On this device\u003c/strong> in Settings → Shared library:\u003c/p>\n\u003cul>\n\u003cli>\u003cstrong>Everything in the shared library\u003c/strong> (the usual choice): everything comes here and stays in step. A Center's playback computers and iPads, or your own phone and laptop, work this way, with nothing to think about. Unticking something in What's on this device asks first, then switches the device to the other choice.\u003c/li>\n\u003cli>\u003cstrong>Only what I choose:\u003c/strong> this device holds what's ticked in What's on this device. What it holds stays in step both ways, including new tracks added to its playlists elsewhere. Good for a small iPad, a laptop for one retreat, or helping with a few of a Center's playlists from home.\u003c/li>\n\u003cli>\u003cstrong>New playlists from other devices\u003c/strong> wait for you, marked \u003cstrong>New\u003c/strong> in What's on this device; the button at the top says how many, for example \u003cstrong>2 new in the shared library\u003c/strong>, and opens it. Looking is enough to clear the count: they stay marked \u003cstrong>New\u003c/strong> while you look, and you don't have to bring them. Turn on \u003cstrong>New playlists from other devices come here by themselves\u003c/strong> to have them arrive on their own (what you've unticked stays off).\u003c/li>\n\u003cli>\u003cstrong>Deleting asks which you mean.\u003c/strong> Deleting a folder, playlist or track offers \u003cstrong>Remove from this device\u003c/strong> (the shared library keeps it, and What's on this device can bring it back) or \u003cstrong>Delete everywhere\u003c/strong> (it's deleted from the shared library and every device). Anything that disappears from this device some other way, such as through Library cleanup, counts as removed from this device. Only \u003cstrong>Delete everywhere\u003c/strong> deletes from the shared library.\u003c/li>\n\u003cli>\u003cstrong>Tracks used by playlists that aren't on this device:\u003c/strong> after \u003cstrong>Delete everywhere\u003c/strong>, 37 Player looks in the shared library. If other playlists there use those tracks, it lists them and asks: \u003cstrong>Delete everywhere, from those playlists too\u003c/strong> (as a device holding everything would), or \u003cstrong>Keep them for those playlists\u003c/strong> (they leave this device only). If the shared library can't be reached at that moment, they're kept for those playlists, and the sync log says so.\u003c/li>\n\u003cli>\u003cstrong>Playlists the tidy-up removes\u003c/strong> along with tracks deleted everywhere (an emptied playlist, say) are deleted everywhere too.\u003c/li>\n\u003cli>\u003cstrong>Choosing Everything again\u003c/strong> brings the whole shared library here. 37 Player says how much that is first.\u003c/li>\n\u003c/ul>\n\u003cp>When joining, choose \u003cstrong>Only what I choose\u003c/strong> at the step that says how much will travel. Everything already on the device joins the shared library, and What's on this device opens so you can tick what else to bring.\u003c/p>\n\u003ch3>Receive updates only\u003c/h3>\n\u003cp>For a player nobody edits on, such as a meditation room's laptop, turn on \u003cstrong>Receive updates only\u003c/strong>. That device takes every change from the shared library and sends nothing. Anything changed on it by accident is replaced at the next sync.\u003c/p>\n\u003ch3>Leaving\u003c/h3>\n\u003cp>\u003cstrong>Leave shared library\u003c/strong> stops syncing this device. Its library stays exactly as it is now, as an ordinary library of its own.\u003c/p>\n\u003ch3>If something goes wrong\u003c/h3>\n\u003cul>\n\u003cli>\u003cstrong>Sync log:\u003c/strong> Settings → Shared library → \u003cstrong>Sync log\u003c/strong> lists what syncing did recently: each file sent or received, what it saved, and any errors, with a line every 10 minutes while 37 Player is open. It's kept on this device even if 37 Player closes or crashes, so a gap in those lines shows when it stopped. \u003cstrong>Copy all\u003c/strong> puts the whole log on the clipboard, and \u003cstrong>Share…\u003c/strong> sends it as a text file (on a computer without sharing, \u003cstrong>Save as a file\u003c/strong> saves it): both start with this device's version, browser and storage, so whoever helps you can tell where it came from. That's easier and safer than selecting lines by hand, which can leave an older copy on the clipboard.\u003c/li>\n\u003cli>\u003cstrong>Each device's logs are kept in the shared library too,\u003c/strong> sent after syncing, at most every half hour (and not in the first two minutes after opening), so a problem on one device (the iPad, say) can be looked into from another. \u003cstrong>Send feedback…\u003c/strong> (in Help, and in Settings → About) lists them.\u003c/li>\n\u003cli>\u003cstrong>Send feedback…\u003c/strong> sends a message to the author of 37 Player, with this device's logs and, from a shared library, the other devices' recent ones, each with a box to leave it out. An email address is optional, for a reply.\u003c/li>\n\u003cli>\u003cstrong>Going round in circles:\u003c/strong> if this device saves to the shared library 30 times in 2 minutes, syncing stops by itself and says so. \u003cstrong>Sync now\u003c/strong> starts it again.\u003c/li>\n\u003cli>\u003cstrong>Opening without syncing:\u003c/strong> add \u003ccode>?nosync\u003c/code> to the end of 37 Player's address (for example \u003ccode>https://37player.com/37-player.html?nosync\u003c/code>). Sharing stays off for that session, and Settings lets you leave the shared library.\u003c/li>\n\u003c/ul>"
+    "bodyHtml": "\u003cp>A shared library keeps the same tracks and playlists on several devices: the rooms of a Center, or your own computer, phone and tablet. A change made on any of them, such as a new playlist, a renamed track or a tweak on the iPad, reaches the others by itself within a few minutes.\u003c/p>\n\u003ch3>Joining\u003c/h3>\n\u003cp>Start from the welcome when 37 Player first opens (\u003cstrong>Yes, join a shared library\u003c/strong>), from Settings → \u003cstrong>Shared library\u003c/strong> (\u003cstrong>Join or create a shared library…\u003c/strong>), or from Settings → \u003cstrong>Library\u003c/strong> → \u003cstrong>All libraries\u003c/strong> → \u003cstrong>New library\u003c/strong>. All three ask the same two things. First, where the shared library is kept: \u003cstrong>I have a join code\u003c/strong> (on 37player.com or another server) or \u003cstrong>Google Drive\u003c/strong>. Then only what that needs. For a join code, that's the code from whoever runs your shared library and a name for this device (for example \"Temple iPad\"); then choose \u003cstrong>Next\u003c/strong>. Every step before anything happens says \u003cstrong>Next\u003c/strong>; the last one, which says how much will travel, says \u003cstrong>Do it now\u003c/strong>. A new library on a server is made by whoever runs the server, so from 37 Player you can only join one there.\u003c/p>\n\u003cp>To bring only some of the shared library to this device, choose \u003cstrong>Only what I choose\u003c/strong> at the step after the code. Nothing moves before then: that step says how much would travel either way, with the numbers for this device and the shared library, and you choose there. Partial sync can also be turned on or off later. See 'Partial sync' below.\u003c/p>\n\u003cul>\n\u003cli>\u003cstrong>A device with nothing in it yet\u003c/strong> simply receives the shared library.\u003c/li>\n\u003cli>\u003cstrong>A device that already has a library\u003c/strong> asks first. Each choice says what it removes, sends and downloads. \u003cstrong>Use the shared library here\u003c/strong> replaces what's on this device with the shared one, so anything only on this device is removed. \u003cstrong>Combine them\u003c/strong> (the suggested choice, since it loses nothing) adds this device's tracks and playlists to the shared library, which is how the first device fills an empty shared library. A recording this device imported separately (so 37 Player knows it by a different ID) is matched to the shared copy by its name, album, artist and length, so combining doesn't create duplicates. Folders and playlists work the same way: a folder or playlist with the same name in the same place becomes one with the shared one, such as the \u003cstrong>Archive\u003c/strong> folder every new library starts with. If a playlist's tracks differ, this device's version is kept beside the shared one as \"Name (device name)\", marked ⚠.\u003c/li>\n\u003c/ul>\n\u003cp>Before anything moves, 37 Player says how much joining will download or send (for example \"about 2.1 GB\"). On mobile data or a slow connection, you can cancel and join later.\u003c/p>\n\u003cp>The tracks' details and playlists arrive straight away, on every device. The audio follows in the background, shown in the bar along the bottom. A track that hasn't arrived yet is fetched the moment it's played. While anything is playing, sending and receiving pause between files so the sound stays clean, and pick up again when it stops. While the first device is still sending its audio, the others show how many files are still on their way, and pick them up as they arrive. A large library takes a while the first time; after that, only what changed travels.\u003c/p>\n\u003ch3>On Google Drive\u003c/h3>\n\u003cp>A shared library can also live in a folder of your Google Drive. Choose \u003cstrong>Google Drive\u003c/strong> where 37 Player asks where the shared library is kept, then \u003cstrong>Use Google Drive…\u003c/strong>, and sign in with Google. 37 Player then shows the 37 Player libraries in that Google Drive: choose one to join, or \u003cstrong>Make a new library on Google Drive\u003c/strong>. It appears in your Drive as a folder called \"37 Player – \" and the library's name.\u003c/p>\n\u003cul>\n\u003cli>\u003cstrong>Every device that shares it signs in with the same Google account,\u003c/strong> a Center's account, say. Sharing one Drive library between several people's own Google accounts isn't possible yet.\u003c/li>\n\u003cli>\u003cstrong>37 Player sees only what it made\u003c/strong> in that Google Drive, nothing else.\u003c/li>\n\u003cli>\u003cstrong>Everything else works the same:\u003c/strong> what's on each device, reviewing changes, receiving updates only, and leaving.\u003c/li>\n\u003cli>\u003cstrong>If Google asks you to sign in again\u003c/strong> (the sign-in was removed in your Google account, say, or the device went unused for months), the button at the top says \u003cstrong>Sign in to Google\u003c/strong>. It takes you to Settings → Shared library and \u003cstrong>Sign in to Google again\u003c/strong>.\u003c/li>\n\u003cli>\u003cstrong>Leave the folder alone in Drive:\u003c/strong> don't move or rename what's inside it. Moving the folder itself, or renaming it, is fine.\u003c/li>\n\u003cli>\u003cstrong>How full it is:\u003c/strong> Settings → Shared library shows how much of the Google Drive is used. If the Drive fills up, 37 Player says so (\"The Google Drive of … is full\") and tries again every half hour, or at \u003cstrong>Sync now\u003c/strong>.\u003c/li>\n\u003cli>\u003cstrong>Free up space…\u003c/strong>, beside it, deletes for good what the library no longer uses: its earlier versions, and audio and pictures that were replaced or belonged to deleted tracks. Choose how far back \u003cstrong>History\u003c/strong> should still reach: 1, 7 or 30 days, or \u003cstrong>Current version only\u003c/strong>, for starting fresh (a library just made and experimented with, or a Drive that's full); it says how much that frees before anything is deleted. The library as it is now is never touched, and a file another device is still sending is never one it deletes.\u003c/li>\n\u003cli>\u003cstrong>Changed your mind?\u003c/strong> If you make a new library on Google Drive and back out before anything is saved in it, its empty folders go to your Drive's trash.\u003c/li>\n\u003c/ul>\n\u003ch3>Day to day\u003c/h3>\n\u003cp>There's nothing to do. (The less used switches, the sync log and the server's version are under \u003cstrong>More\u003c/strong> in Settings → Shared library.) 37 Player checks a few seconds after every change, every few minutes while it's open, and whenever it comes back on screen. \u003cstrong>Sync now\u003c/strong> in Settings does it at once. Settings also shows when this device last checked, and whether it's \u003cstrong>up to date\u003c/strong>, still \u003cstrong>updating\u003c/strong> (downloading or sending audio), or \u003cstrong>waiting\u003c/strong> for files from other devices that haven't sent them yet.\u003c/p>\n\u003cul>\n\u003cli>\u003cstrong>Working offline\u003c/strong> is fine: everything plays from this device as always, and changes are sent the next time it's online.\u003c/li>\n\u003cli>\u003cstrong>Each device keeps its own settings\u003c/strong>: display, PIN, backups and volume aren't shared.\u003c/li>\n\u003cli>\u003cstrong>The shared library is this device's backup.\u003c/strong> Once everything on a device has reached the shared library, the \u003cstrong>Back up library\u003c/strong> button at the top reads \u003cstrong>In sync\u003c/strong>, and 37 Player stops reminding you to back up. Until then (just after a change, or while audio is being sent), it says \u003cstrong>Syncing…\u003c/strong>. Tapping \u003cstrong>In sync\u003c/strong> still lets you save a backup on this device: it opens with \u003cstrong>Up to date\u003c/strong>, then the usual backup choices.\u003c/li>\n\u003cli>\u003cstrong>If sending doesn't finish.\u003c/strong> Changes and audio made on a device are only on that device until they've been sent. If something has been waiting for more than three days (the device offline, say, or the server refusing it), the button at the top turns red and reads \u003cstrong>Sync isn't finishing\u003c/strong>, and once a day 37 Player says so when 'Edit Playlists' or 'Library' opens, with Shared library settings and backing up as the ways out.\u003c/li>\n\u003cli>\u003cstrong>Who keeps backups.\u003c/strong> A shared library still needs one device that backs it up: it protects against losing a device, but not against a mistake, because a mistake is shared too. A computer with Chrome or Edge and a backup folder (see 'Backing up') does it by itself, and every device shows when it last did, for example \"Backed up by Gen Rinzin's laptop, today\" (on the button's tooltip, and in Settings → Backups and Shared library).\u003c/li>\n\u003c/ul>\n\u003ch3>History: going back\u003c/h3>\n\u003cp>Every version of the shared library from the last 30 days is kept (on Google Drive, all of them). \u003cstrong>History…\u003c/strong>, here in Settings → Shared library, compares now with any of them and brings back what you choose. See 'History and Undo'.\u003c/p>\n\u003ch3>If a device loses its library\u003c/h3>\n\u003cp>If a device's browser data is cleared, or you want to undo a mess on one device, don't restore an old backup into it: join the shared library again, and choose \u003cstrong>Use the shared library here\u003c/strong>. That brings back everything as it is now, with everyone's latest changes.\u003c/p>\n\u003cp>Restoring a backup on a device that's in a shared library offers \u003cstrong>Get the current shared library\u003c/strong> for this reason. Restoring an older backup there instead first leaves the shared library, because otherwise everything deleted since the backup was made would come back for everyone. A backup made on a device in a shared library says so when it's restored, and suggests joining that shared library instead.\u003c/p>\n\u003ch3>When two devices change the same thing\u003c/h3>\n\u003cp>37 Player compares each device's changes with the last version they both had, so most changes simply combine. A rename on one device and new artwork on another both survive, and so do two different playlists edited at the same time.\u003c/p>\n\u003cul>\n\u003cli>\u003cstrong>The same playlist's tracks changed on two devices before they synced:\u003c/strong> both versions are kept. The shared one keeps its name; the other appears beside it as \"Name (device name)\", marked ⚠. Look at both, keep the one you want, and delete the other.\u003c/li>\n\u003cli>\u003cstrong>The same detail of a track changed on both\u003c/strong> (the same track renamed differently, say): the version that reached the shared library first wins.\u003c/li>\n\u003cli>\u003cstrong>Deleted on one device but edited on another:\u003c/strong> the edited one is kept. A track still used in a playlist is never deleted.\u003c/li>\n\u003c/ul>\n\u003ch3>Two copies of one recording\u003c/h3>\n\u003cp>A track's recording can differ between this device and the shared library: when a device joins with tracks it already has, when it rejoins after leaving, or when something went wrong in between (a copy that was never sent, say). With no common history to go by, 37 Player looks at both copies, without downloading either, and decides like this:\u003c/p>\n\u003col>\n\u003cli>\u003cstrong>The same recording on both:\u003c/strong> nothing moves. This device simply takes the shared library's record of it.\u003c/li>\n\u003cli>\u003cstrong>The shared library's copy never reached the server:\u003c/strong> this device's copy is kept, and sent.\u003c/li>\n\u003cli>\u003cstrong>The server's copy is damaged:\u003c/strong> this device's copy is kept, and sent.\u003c/li>\n\u003cli>\u003cstrong>Both are good, and different:\u003c/strong> the newer one wins. Each copy carries the time it was made, from the clock of the device that made it. If the shared library's is newer, this device's older copy is kept for a day in Undo's store on this device.\u003c/li>\n\u003cli>\u003cstrong>This device's copy is missing or damaged:\u003c/strong> the shared library's is used.\u003c/li>\n\u003c/ol>\n\u003cp>Each decision is written in the sync log, naming the track. And if the shared library is ever waiting for this very device to send a copy it no longer has, this device uses its own copy of that track instead, and sends that.\u003c/p>\n\u003ch3>Tracks that haven't arrived yet\u003c/h3>\n\u003cp>A track whose audio isn't on this device yet shows its name in \u003cstrong>bold\u003c/strong>, with the reason under it:\u003c/p>\n\u003cul>\n\u003cli>\u003cstrong>\"On its way from the shared library\"\u003c/strong> means the shared library has the audio, and it's downloading. On Playing, \u003cstrong>Get them now\u003c/strong> above the list fetches a playlist's missing tracks straight away, even while something plays.\u003c/li>\n\u003cli>\u003cstrong>\"Waiting for Office laptop to send it\"\u003c/strong> means the device that added the track hasn't sent its audio yet, perhaps because it was closed too soon. It arrives once that device is open and online again.\u003c/li>\n\u003cli>\u003cstrong>\"It was to send this copy, but no longer has it\"\u003c/strong> means this device itself was the one to send it, and that copy is gone. Use \u003cstrong>Replace audio file\u003c/strong> with a good copy, or delete the track.\u003c/li>\n\u003c/ul>\n\u003cp>Big recordings are sent in pieces of 16 MB (from version 1.4.187, with a server that's been updated too). If the connection drops part-way, sending carries on from where it stopped instead of starting again, and Safari, iPads and the Mac app can send files of a gigabyte or more.\u003c/p>\n\u003cp>Playing also says above the list how many of the playlist's tracks can't play yet, so check before a session starts.\u003c/p>\n\u003cp>Pressing play on a track that's on its way fetches it at once. If it arrives within a few seconds, it plays. If not, a message says it's still coming. Press play again once it's here. It never starts by itself later, so it can't interrupt whatever you've moved on to.\u003c/p>\n\u003cp>While 37 Player is sending audio, the bar along the bottom says so. Keep it open until that finishes. Closing the window asks first. Closing a laptop's lid can't be caught, so wait for the bar to finish before you close it.\u003c/p>\n\u003ch3>Phones and tablets\u003c/h3>\n\u003cp>A phone or tablet stops 37 Player soon after its screen locks, which pauses a big first sync. On a phone or tablet, Settings → Shared library has a \u003cstrong>Keep syncing with the screen off\u003c/strong> switch, which stays as you set it. While it's on, whenever there's something to send or receive and nothing is playing, 37 Player keeps going by quietly playing silence, with the progress on the lock screen, until everything has arrived. Playing always comes first: syncing waits while a session plays and carries on by itself the moment it stops, even with the screen locked. The lock screen's pause button stops it until you next open 37 Player or play something. It's best done plugged in.\u003c/p>\n\u003cp>Sharing uses mobile data like any other connection, because a shared library only works when every device keeps it complete. The one big transfer is when a device joins, and the join screen says how much that will be before it starts.\u003c/p>\n\u003ch3>Reviewing changes before they sync\u003c/h3>\n\u003cp>To decide for yourself what comes and goes, turn on \u003cstrong>Review changes before syncing\u003c/strong> in Settings → Shared library. Nothing then changes on this device or in the shared library until you say so. 37 Player still checks, and when this device and the shared library differ, a button at the top says so, such as \u003cstrong>3 shared changes\u003c/strong>. Tap it (or \u003cstrong>Review changes…\u003c/strong> in Settings, which appears while this is on) to see the list.\u003c/p>\n\u003cp>Each row is one difference: a folder or playlist, a track, or the order of things inside a folder. The left side says what this device has, and the right side says what the shared library has. The arrow between them says which version wins:\u003c/p>\n\u003cul>\n\u003cli>\u003cstrong>→ Send:\u003c/strong> this device's version goes to the shared library.\u003c/li>\n\u003cli>\u003cstrong>← Take:\u003c/strong> the shared library's version comes here.\u003c/li>\n\u003cli>\u003cstrong>✕ Skip:\u003c/strong> leave both as they are for now. The row comes up again next time.\u003c/li>\n\u003c/ul>\n\u003cp>Tap an arrow to change it. Each row starts with a suggestion: send what changed here, take what changed in the shared library. A row changed in \u003cstrong>both\u003c/strong> places is shown in red with \u003cstrong>?\u003c/strong>, and you choose. \u003cstrong>Synchronize\u003c/strong> does what the arrows say, and it waits until every \u003cstrong>?\u003c/strong> is decided.\u003c/p>\n\u003cp>New tracks are listed under the playlist that uses them. If you take or send a playlist, its new tracks have to come along, so their arrows are locked, with a note saying which playlist needs them. Skip the playlist and they unlock.\u003c/p>\n\u003cp>If anything changes while the list is open (someone else syncs, say), Synchronize first shows the updated list, keeping your choices where nothing changed. Check it, then press Synchronize again.\u003c/p>\n\u003ch3>What's on this device\u003c/h3>\n\u003cp>\u003cstrong>What's on this device…\u003c/strong> in Settings → Shared library shows the whole shared library, with a tick on everything that's on this device and the size of each folder and playlist. The total at the top says how much of the shared library this device holds.\u003c/p>\n\u003cul>\n\u003cli>\u003cstrong>Tick\u003c/strong> a playlist or folder to bring it here; \u003cstrong>untick\u003c/strong> it to take it off this device. The shared library keeps it, and so do the other devices. A track used by two playlists stays while either is ticked.\u003c/li>\n\u003cli>\u003cstrong>Nothing changes until Apply.\u003c/strong> The bar at the bottom says what Apply will do, for example \"Brings 12 tracks (840 MB to download) · Takes 3 tracks off this device\".\u003c/li>\n\u003cli>\u003cstrong>Albums\u003c/strong>, below the playlists, list every album in the shared library. Tick one to bring its tracks here, for example to make playlists from them, without bringing any playlist. Open an album (▸) to tick single tracks, with each one's size. A track that comes with a ticked playlist shows as ticked, marked \"comes with a playlist\". An album shows as ticked when all its tracks will be here, and partly ticked when only some will.\u003c/li>\n\u003cli>\u003cstrong>Folders\u003c/strong> open and close by their arrow or their name; the box beside them ticks everything inside.\u003c/li>\n\u003cli>\u003cstrong>Cancel\u003c/strong> leaves everything as it was.\u003c/li>\n\u003c/ul>\n\u003ch3>Everything, or only what you choose\u003c/h3>\n\u003cp>Under \u003cstrong>On this device\u003c/strong> in Settings → Shared library:\u003c/p>\n\u003cul>\n\u003cli>\u003cstrong>Everything in the shared library\u003c/strong> (the usual choice): everything comes here and stays in step. A Center's playback computers and iPads, or your own phone and laptop, work this way, with nothing to think about. Unticking something in What's on this device asks first, then switches the device to the other choice.\u003c/li>\n\u003cli>\u003cstrong>Only what I choose:\u003c/strong> this device holds what's ticked in What's on this device. What it holds stays in step both ways, including new tracks added to its playlists elsewhere. Good for a small iPad, a laptop for one retreat, or helping with a few of a Center's playlists from home.\u003c/li>\n\u003cli>\u003cstrong>New playlists from other devices\u003c/strong> wait for you, marked \u003cstrong>New\u003c/strong> in What's on this device; the button at the top says how many, for example \u003cstrong>2 new in the shared library\u003c/strong>, and opens it. Looking is enough to clear the count: they stay marked \u003cstrong>New\u003c/strong> while you look, and you don't have to bring them. Turn on \u003cstrong>New playlists from other devices come here by themselves\u003c/strong> to have them arrive on their own (what you've unticked stays off).\u003c/li>\n\u003cli>\u003cstrong>Deleting asks which you mean.\u003c/strong> Deleting a folder, playlist or track offers \u003cstrong>Remove from this device\u003c/strong> (the shared library keeps it, and What's on this device can bring it back) or \u003cstrong>Delete everywhere\u003c/strong> (it's deleted from the shared library and every device). Anything that disappears from this device some other way, such as through Library cleanup, counts as removed from this device. Only \u003cstrong>Delete everywhere\u003c/strong> deletes from the shared library.\u003c/li>\n\u003cli>\u003cstrong>Tracks used by playlists that aren't on this device:\u003c/strong> after \u003cstrong>Delete everywhere\u003c/strong>, 37 Player looks in the shared library. If other playlists there use those tracks, it lists them and asks: \u003cstrong>Delete everywhere, from those playlists too\u003c/strong> (as a device holding everything would), or \u003cstrong>Keep them for those playlists\u003c/strong> (they leave this device only). If the shared library can't be reached at that moment, they're kept for those playlists, and the sync log says so.\u003c/li>\n\u003cli>\u003cstrong>Playlists the tidy-up removes\u003c/strong> along with tracks deleted everywhere (an emptied playlist, say) are deleted everywhere too.\u003c/li>\n\u003cli>\u003cstrong>Choosing Everything again\u003c/strong> brings the whole shared library here. 37 Player says how much that is first.\u003c/li>\n\u003c/ul>\n\u003cp>When joining, choose \u003cstrong>Only what I choose\u003c/strong> at the step that says how much will travel. Everything already on the device joins the shared library, and What's on this device opens so you can tick what else to bring.\u003c/p>\n\u003ch3>Receive updates only\u003c/h3>\n\u003cp>For a player nobody edits on, such as a meditation room's laptop, turn on \u003cstrong>Receive updates only\u003c/strong>. That device takes every change from the shared library and sends nothing. Anything changed on it by accident is replaced at the next sync.\u003c/p>\n\u003ch3>Leaving\u003c/h3>\n\u003cp>\u003cstrong>Leave shared library\u003c/strong> stops syncing this device. Its library stays exactly as it is now, as an ordinary library of its own.\u003c/p>\n\u003ch3>If something goes wrong\u003c/h3>\n\u003cul>\n\u003cli>\u003cstrong>Sync log:\u003c/strong> Settings → Shared library → \u003cstrong>Sync log\u003c/strong> lists what syncing did recently: each file sent or received, what it saved, and any errors, with a line every 10 minutes while 37 Player is open. It's kept on this device even if 37 Player closes or crashes, so a gap in those lines shows when it stopped. \u003cstrong>Copy all\u003c/strong> puts the whole log on the clipboard, and \u003cstrong>Share…\u003c/strong> sends it as a text file (on a computer without sharing, \u003cstrong>Save as a file\u003c/strong> saves it): both start with this device's version, browser and storage, so whoever helps you can tell where it came from. That's easier and safer than selecting lines by hand, which can leave an older copy on the clipboard.\u003c/li>\n\u003cli>\u003cstrong>Each device's logs are kept in the shared library too,\u003c/strong> sent after syncing, at most every half hour (and not in the first two minutes after opening), so a problem on one device (the iPad, say) can be looked into from another. \u003cstrong>Send feedback…\u003c/strong> (in Help, and in Settings → About) lists them.\u003c/li>\n\u003cli>\u003cstrong>Send feedback…\u003c/strong> sends a message to the author of 37 Player, with this device's logs and, from a shared library, the other devices' recent ones, each with a box to leave it out. An email address is optional, for a reply.\u003c/li>\n\u003cli>\u003cstrong>Going round in circles:\u003c/strong> if this device saves to the shared library 30 times in 2 minutes, syncing stops by itself and says so. \u003cstrong>Sync now\u003c/strong> starts it again.\u003c/li>\n\u003cli>\u003cstrong>Opening without syncing:\u003c/strong> add \u003ccode>?nosync\u003c/code> to the end of 37 Player's address (for example \u003ccode>https://37player.com/37-player.html?nosync\u003c/code>). Sharing stays off for that session, and Settings lets you leave the shared library.\u003c/li>\n\u003c/ul>"
   },
   {
     "id": "libraries",
@@ -34377,7 +34377,7 @@ function confirmDelete(title, body, onOk, sync){
       closeModal();
       // Playlists in the shared library that this device doesn't hold may
       // use these tracks too: it asks, as a device with everything would
-      // show them (1.4.186, Gen). Not reachable: they're kept for them.
+      // show them (1.4.186, Gen Rinzin). Not reachable: they're kept for them.
       let purge = [];
       if(trackIds.length){
         const elsewhere = await sharedPlaylistsElsewhereUsing(cfg, trackIds);
@@ -34420,7 +34420,7 @@ function confirmDelete(title, body, onOk, sync){
    10-minute auto-revert). Display settings deliberately stay in their own
    top-bar popover, usable without the PIN. */
 const SETTINGS_SECTIONS = [
-  // Library info and Switch libraries are one page since 1.4.132 (Gen): all
+  // Library info and Switch libraries are one page since 1.4.132 (Gen Rinzin): all
   // libraries folded away at the top, then this one. "libraries" still
   // opens it, with the fold open (renderSettingsSection).
   {id:"info", key:"settingsSecLibrary"},
@@ -36480,7 +36480,7 @@ async function runFolderBackupHere(){
     // a full disk, a restore whose writes failed, or storage the browser
     // threw away while the track list came back from the shared library,
     // and each backup emptied the folder of exactly the files it was there
-    // to keep (Gen's T470, 1 Nov 2026: 2,586 of 2,587 recordings gone from
+    // to keep (Gen Rinzin's T470, 1 Nov 2026: 2,586 of 2,587 recordings gone from
     // the backup). Only a track leaving the library frees its file.
     let keptFromFolder = 0;
     for(const tr of toCheck){
@@ -36748,7 +36748,7 @@ async function downloadManualBackup(){
   let kind = "full";
   let ask = backupAskChoice;
   // A phone or tablet whose library is all in the shared library has its
-  // backup already, and a zip of a big library is a poor second: on Gen's
+  // backup already, and a zip of a big library is a poor second: on Gen Rinzin's
   // iPad a 13.8 GB one took ten minutes before Safari offered to save it,
   // and needed that much free space meanwhile. So say so, and make one
   // only on request.
@@ -37470,7 +37470,7 @@ setInterval(updateBackupIndicator, 60*1000); // a sync that stops finishing show
 
 // ---- The first run (1.4.092) ----
 // People trying 37 Player were put off by questions about libraries,
-// browsers and backups before they'd even played anything (Gen, 28 Oct
+// browsers and backups before they'd even played anything (Gen Rinzin, 28 Oct
 // 2026). So the first run asks only the language and whether to join a
 // shared library; everything about keeping a library safe waits for the
 // first import (the Heads-up, below), when there's something to keep. The
@@ -37650,7 +37650,7 @@ function openHeadsUp(purpose){
     const render = ()=>{
       const steps = headsUpSteps(env);
       // Installed already (a Home Screen app, say) where the only step left
-      // is keeping the library safe (1.4.134, Gen): no "Do these first", since
+      // is keeping the library safe (1.4.134, Gen Rinzin): no "Do these first", since
       // backing up by hand can't be done before anything is imported. Praise,
       // why a shared library is the easy way here, then the two ways.
       const installedOnly = purpose === "import" && env.standalone && !env.folder && steps.every(s=> s.id === "protect");
@@ -38598,7 +38598,7 @@ function offerNativeImportNow(meta, audioMap, artworkMap, onDone, opts){
   `);
   let audioKept = 0;
   // Tracks already here whose details or recording differ in the file, kept
-  // as they are here when the person says so (1.4.187, Gen: merging an older
+  // as they are here when the person says so (1.4.187, Gen Rinzin: merging an older
   // .37p put a renamed track's old name back).
   let mergeKeep = new Set();
   async function writeAudio(id){
@@ -39963,7 +39963,7 @@ function renderDamagedSection(){
     const fix = document.createElement("button"); fix.className = "btn ghost"; fix.textContent = t("damagedRepairBtn");
     // Repair puts back the old file Safari left inside a re-tagged one;
     // anything else (a .zip in its place, data cut short) can't be, so it
-    // says so at once instead of offering it (1.4.186, Gen).
+    // says so at once instead of offering it (1.4.186, Gen Rinzin).
     const cantRepair = ()=>{ fix.remove(); const s3 = document.createElement("div"); s3.className = "zero-used settings-note"; s3.textContent = t("damagedCantRepair", {btn: t("replaceFileBtn")}); info.appendChild(s3); };
     fix.hidden = true;
     idbGet("audio", id).then(async rec=>{ if(rec && rec.blob && await looksDoubled(rec.blob)) fix.hidden = false; else cantRepair(); }).catch(cantRepair);
@@ -40836,7 +40836,7 @@ function syncMergePartial(base, local, remote, opts){
   });
   const keepT = new Map();
   // A track deleted everywhere that the shared library keeps, because a
-  // playlist there still uses it, stays off this device (6 Nov 2026, Gen:
+  // playlist there still uses it, stays off this device (6 Nov 2026, Gen Rinzin:
   // the Mac took its deleted tracks back and downloaded them again), unless
   // one of this device's own playlists uses it (below).
   mt.forEach((f, id)=>{ if(!removed.has(id) && !del.has(id) && (lt.has(id) || bt.has(id))) keepT.set(id, f); });
@@ -40966,7 +40966,7 @@ function keeperWhen(ms){
   const days = Math.round((day(Date.now()) - day(ms)) / 86400000);
   try{ return new Intl.RelativeTimeFormat(root.settings.language || undefined, {numeric: "auto"}).format(-days, "day"); }catch(err){ return new Date(ms).toLocaleDateString(); }
 }
-// "Backed up by Gen's laptop, today" — the most recent first.
+// "Backed up by Gen Rinzin's laptop, today" — the most recent first.
 function keeperLines(){
   const k = root.backupKeepers || {};
   return Object.keys(k).sort((a, b)=> k[b] - k[a]).map(name=> t("keeperLine", {device: name, when: keeperWhen(k[name])}));
@@ -41575,7 +41575,7 @@ async function driveCreateLibrary(cfg, name){
 }
 // A library just made on Drive whose joining was cancelled (or failed)
 // before anything was saved in it: its folders go to the Drive's trash, so
-// an empty "37 Player – Name" isn't left behind (1.4.134, Gen). Anything in
+// an empty "37 Player – Name" isn't left behind (1.4.134, Gen Rinzin). Anything in
 // any of its four folders and it stays.
 async function driveRemoveIfUnused(cfg, topId){
   try{
@@ -42222,7 +42222,7 @@ async function sharedSyncOnce(opts){
     sharedSetStatus({state: "error", message: sharedFailText(err)});
   }
 }
-/* ---- Two copies of one recording (1.4.190, Gen's five cases)
+/* ---- Two copies of one recording (1.4.190, Gen Rinzin's five cases)
    Joining a shared library with tracks already here, or rejoining one, has
    no history in common to say whose change a different recording is. A
    track both have, with different recording revisions, is decided by what
@@ -42752,7 +42752,7 @@ async function sharedFetchFileOnce(cfg, kind, id){
     // A file that already starts with Safari's pattern as it comes from the
     // shared library (an MP3 with two tags in a row, which still plays) is
     // taken as it is: refusing it changed nothing and left it missing on
-    // this device for good (1.4.082, four files on Gen's iPad).
+    // this device for good (1.4.082, four files on Gen Rinzin's iPad).
     const doubledAlready = pieces && pieces.length ? await looksDoubled(pieces[0]) : false;
     const before = got.pieceKeys ? await idbGet(store, id).catch(()=> null) : null;
     syncWritingFiles = true;
@@ -44195,7 +44195,7 @@ async function fillDriveSpace(cfg){
     el.appendChild(b);
   }
 }
-/* Freeing space in a Google Drive library (1.4.141, Gen; the plan's part 1).
+/* Freeing space in a Google Drive library (1.4.141, Gen Rinzin; the plan's part 1).
    Settings → Shared library → Free up space…: choose how far back History
    should still reach (1, 7 or 30 days), see what that frees, then delete
    for good (not to Drive's trash, so the space comes back at once):
@@ -44552,7 +44552,7 @@ function showNewerVersionBanner(version){
   b.addEventListener("click", ()=> location.reload());
 }
 /* ===================== Copying to another library on this device =====================
-   (1.4.126, Gen's design) Import/Export → Copy to another library, shown only
+   (1.4.126, Gen Rinzin's design) Import/Export → Copy to another library, shown only
    when there's more than one library: the same "what" list as Export, and a
    library to copy into ("Choose a library…" every time, so nothing goes to
    the wrong one by habit).
@@ -44573,7 +44573,7 @@ function showNewerVersionBanner(version){
      there, and no window ever writes another library's library record.
    - Nothing stays linked: it's a one-time copy. */
 const INCOMING_KEY = "incomingCopies";
-// Interruptions (1.4.129, Gen): while a copy runs, a refresh or closing the
+// Interruptions (1.4.129, Gen Rinzin): while a copy runs, a refresh or closing the
 // window asks first (beforeunload), and switching libraries says, in words,
 // that the copy would stop (switchLibrary). If the page goes anyway (a
 // crash, a closed laptop), the other library tidies up: before writing any
@@ -45405,7 +45405,7 @@ function openFilePlayer(files){
      yet (driveNotInDesktop) until there's a desktop sign-in.
    Everything here is inert in a browser. */
 const IN_DESKTOP_APP = !!window.__TAURI_INTERNALS__;
-/* Versions in the desktop app (1.4.160; Gen's choice, 5 Nov 2026). The page
+/* Versions in the desktop app (1.4.160; Gen Rinzin's choice, 5 Nov 2026). The page
    has its own version (APP_VERSION) whether on the website or in the app.
    The desktop shell (desktop/src-tauri) has the page's version as of when
    the shell itself last changed, like sync.php's SYNC_VERSION; it's also the
@@ -45440,7 +45440,7 @@ function closingWouldStop(){
   return out;
 }
 /* The page updates itself (1.4.182; desktop/PAGE-UPDATES.md). A shell
-   that says `pages` fetches newer pages Gen's GitHub job signed, once a day
+   that says `pages` fetches newer pages Gen Rinzin's GitHub job signed, once a day
    and when asked (Check for updates), and uses one from the next start; or
    at once with Update now (the window reloads into it, as on the website).
    This page tells the shell it started (p37_page_ok, from signalAppUp);
