@@ -1,7 +1,7 @@
 <?php
 /*
  * 37 Player — shared library sync server.
- * Version 1.4.198 (the 37 Player version this file was last changed for;
+ * Version 2.2.001 (the 37 Player version this file was last changed for;
  * keep it the same as SYNC_VERSION below).
  *
  * One file, plain PHP (7.4+), no database. It keeps each shared library in
@@ -81,7 +81,7 @@ const KINDS = ['audio', 'artwork', 'peaks'];
 // The 37 Player version this file was last changed for (it doesn't change
 // with every release of the app, only when this file does). Shown in the
 // app's Settings → Shared library, and by `php sync.php version`.
-const SYNC_VERSION = '1.4.198';
+const SYNC_VERSION = '2.2.001';
 
 if (PHP_SAPI === 'cli') { exit(cli($argv)); }
 
@@ -357,6 +357,12 @@ function cli($argv) {
     $cmd = $argv[1] ?? '';
     if ($cmd === 'version') { echo "sync.php " . SYNC_VERSION . "\n"; return 0; }
     if ($cmd === 'create' || $cmd === 'newcode') {
+        // The web server must own a library's files to save into it: made
+        // as someone else, every device's sync would fail (three of the
+        // droplet's libraries were, until 8 Nov 2026).
+        if (get_current_user_name() !== 'www-data' && get_current_user_name() !== '?' && !getenv('SYNC37_DATA_DIR')) {
+            fwrite(STDERR, "Run it as the web server's user, so it can save into the library: sudo -u www-data php sync.php $cmd …\n"); return 1;
+        }
         $lib = $argv[2] ?? '';
         if (!preg_match('/^[a-z0-9]{1,40}$/', $lib)) { fwrite(STDERR, "Library name: lowercase letters and digits only, e.g. ikrc\n"); return 1; }
         $dir = DATA_DIR . "/$lib";
@@ -409,7 +415,9 @@ function cli($argv) {
         foreach (scandir(DATA_DIR) ?: [] as $lib) {
             $dir = DATA_DIR . "/$lib";
             if ($lib[0] === '.' || !is_file("$dir/meta.json") || ($only !== null && $lib !== $only)) continue;
-            if (!$dry && !is_writable("$dir/state")) { fwrite(STDERR, "$lib: can't change its files as " . get_current_user_name() . " (run it as the web server's user: sudo -u www-data php sync.php …)\n"); return 1; }
+            // One the web server can't change can't take saves either: said,
+            // and the others are still cleaned up.
+            if (!$dry && !is_writable("$dir/state")) { fwrite(STDERR, "$lib: can't change its files as " . get_current_user_name() . ". If they aren't the web server's, no device can save into it: sudo chown -R www-data:www-data $dir\n"); continue; }
             cleanup_library($dir, $days, $keep, $dry);
         }
         return 0;
