@@ -100,6 +100,11 @@ The full plan and history are in the project doc `shared-library-sync.md`. In sh
 - **Upload size limit:** Apache 2.4.54+ refuses request bodies over 1 GiB by default (`LimitRequestBody`), answering 413. A 1.2 GB WAV hit it. Both sites' vhosts on the droplet have `LimitRequestBody 0` (confirmed 29 Oct 2026; see SYNC-SETUP.md). The app now stops resending a refused file until "Sync now" and says so in the status (1.3.045). A later improvement: send big files in pieces (resumable).
 - **Mobile data:** treated like any other connection, because library integrity matters more. Only the join dialog warns about the size.
 
+## Chat branch toolbar and transport controls (2.2.003, 9 Nov 2026)
+
+- Playing's context toolbar has a centered chevron to collapse/show only the option row. Transport, waveform, volume and playlist remain visible; the setting survives redraws and is kept per browser in localStorage (`37player.playingToolbarCollapsed`). Colours follow existing CSS variables, including high contrast.
+- Previous/next controls in Playing, Library and Splitter now share a platform-independent inline SVG double-triangle. Navigation behavior is unchanged. Edit Playlists previously had no skip controls in its preview player, so its pair seeks backward/forward 10 seconds within that preview track, without automatically playing it.
+
 ## Non-obvious decisions
 
 - **A backup folder never loses a file for a track that's still in the library** (1.4.150, `runFolderBackupHere`, `backupFileFor`). Before, a track went on the backup's keep list only if its audio was in IndexedDB at that moment, and every other file in `audio/` and `artwork/` was deleted, while meta.json still listed the track. So a full disk, a restore whose writes failed, or storage the browser threw away while the track list came back from the shared library made each backup empty the folder of exactly what it was there to keep. That fits Gen Rinzin's T470 (1 Nov 2026): the backup's library had 2,587 tracks and audio for 1. Now a track with no audio (or artwork) here keeps the folder's file and its `audioRevs` entry; only a track leaving the library frees its file. The playback log says how many were kept. Test: tests/bkkeep.js (fails on 1.4.149).
