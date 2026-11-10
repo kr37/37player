@@ -1635,6 +1635,16 @@
   .library-screen.lib-table-mode .lib-table tr.lt-row:hover td.c-name.lt-wave{ background:var(--wave) bottom left / 100% 100% no-repeat, var(--lib-table-hover); }
   .library-screen.lib-table-mode .lib-table tr.lt-row.selected td.c-name.lt-wave{ background:var(--wave) bottom left / 100% 100% no-repeat, linear-gradient(rgba(217,164,65,0.35),rgba(217,164,65,0.35)),var(--lib-table-row); }
   .library-screen.lib-table-mode .lib-waveform-canvas{ background:var(--bg-panel); }
+  /* Theme-aware, identical transport icons regardless of platform fonts. */
+  .transport-skip-icon{ display:block; width:19px; height:19px; flex:none; }
+  .playing-toolbar-shell{ position:relative; display:flex; flex-direction:column; flex:none; background:var(--bg-deep); }
+  .playing-toolbar-shell.collapsed{ background:transparent; }
+  .playing-toolbar-shell .ctx-playing{ border-bottom:1px solid var(--line); }
+  .playing-toolbar-shell .ctx-playing[hidden]{ display:none !important; }
+  .playing-toolbar-toggle{ align-self:center; display:inline-flex; align-items:center; justify-content:center; width:48px; height:18px; padding:0; border:1px solid var(--ctl-border, var(--line)); border-top:0; border-radius:0 0 10px 10px; background:var(--ctl-bg, var(--bg-panel-raised)); color:var(--active-bg, var(--text)); cursor:pointer; }
+  .playing-toolbar-toggle svg{ width:17px; height:17px; fill:none; stroke:currentColor; stroke-width:2.6; stroke-linecap:round; stroke-linejoin:round; }
+  .playing-toolbar-toggle:hover{ background:var(--ctl-hover-bg, var(--bg-panel)); border-color:var(--ctl-hover-border, var(--line)); }
+  .playing-toolbar-toggle:focus-visible{ outline:2px solid var(--active-bg, var(--text)); outline-offset:2px; }
 </style>
 </head>
 <body>
@@ -1832,6 +1842,8 @@
 /* ===================== Icons ===================== */
 // Playback and operator cues: inline SVGs remain sharp on phones and offline.
 // In the style of Lucide/Feather (THIRD-PARTY-NOTICES.md).
+const ICON_SKIP_BACK = `<svg class="transport-skip-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M11.5 5 3 12l8.5 7V5Zm9 0L12 12l8.5 7V5Z" fill="currentColor"/></svg>`;
+const ICON_SKIP_FORWARD = `<svg class="transport-skip-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 5 12 12l-8.5 7V5Zm9 0L21 12l-8.5 7V5Z" fill="currentColor"/></svg>`;
 const ICON_PLAYING = `<svg class="icon playing-eq" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M2 10v3M6 6v11M10 3v18M14 8v7M18 5v13M22 10v3"/></svg>`;
 const ICON_SILENCE = `<svg class="icon kind-icon silence-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>`;
 const ICON_STOP = `<svg class="icon kind-icon stop-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="1.5" fill="currentColor"/></svg>`;
@@ -22447,6 +22459,8 @@ function withPin(fn){
 }
 
 // ---- Playing ----
+let playingToolbarCollapsed = false;
+try{ playingToolbarCollapsed = localStorage.getItem("37player.playingToolbarCollapsed") === "true"; }catch(_){}
 const playingCtxBar = document.createElement("div");
 playingCtxBar.className = "ctx-bar ctx-playing"; playingCtxBar.setAttribute("role", "toolbar");
 function buildPlayingCtxBar(){
@@ -23348,7 +23362,30 @@ function renderPlayer(){
   const prevBrowsedPlId = playerEl.dataset.browsedPlaylistId || null;
 
   playerEl.innerHTML = "";
-  playerEl.appendChild(buildPlayingCtxBar());
+  const toolbarShell = document.createElement("div");
+  toolbarShell.className = "playing-toolbar-shell";
+  toolbarShell.appendChild(buildPlayingCtxBar());
+  const toolbarToggle = document.createElement("button");
+  toolbarToggle.type = "button";
+  toolbarToggle.className = "playing-toolbar-toggle";
+  function updateToolbar(){
+    playingCtxBar.hidden = playingToolbarCollapsed;
+    toolbarShell.classList.toggle("collapsed", playingToolbarCollapsed);
+    toolbarToggle.setAttribute("aria-expanded", String(!playingToolbarCollapsed));
+    toolbarToggle.setAttribute("aria-label", playingToolbarCollapsed ? "Show Playing toolbar" : "Hide Playing toolbar");
+    toolbarToggle.title = toolbarToggle.getAttribute("aria-label");
+    toolbarToggle.innerHTML = playingToolbarCollapsed
+      ? '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>'
+      : '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 15 6-6 6 6"/></svg>';
+  }
+  toolbarToggle.addEventListener("click", ()=>{
+    playingToolbarCollapsed = !playingToolbarCollapsed;
+    try{ localStorage.setItem("37player.playingToolbarCollapsed", String(playingToolbarCollapsed)); }catch(_){}
+    updateToolbar();
+  });
+  toolbarShell.appendChild(toolbarToggle);
+  updateToolbar();
+  playerEl.appendChild(toolbarShell);
   const playingCtx = findPlayingContext();               // {playlist, item} of what's actually playing, or null
   const browsedPl = viewedPlaylist();                     // the playlist currently selected in the sidebar, or null
   // True whenever something is actually queued AND you're looking at a
@@ -23383,8 +23420,8 @@ function renderPlayer(){
         <div class="stop-sub">Playback is halted here. Tap below when it's time to continue.</div>
         <button class="btn primary stop-continue" id="btnContinue">▶ Continue playing</button>
         <div class="transport-mini">
-          <button id="btnPrev" title="Previous">⏮</button>
-          <button id="btnNext" title="Skip ahead">⏭</button>
+          <button id="btnPrev" title="Previous">${ICON_SKIP_BACK}</button>
+          <button id="btnNext" title="Skip ahead">${ICON_SKIP_FORWARD}</button>
         </div>
       </div>`;
   } else if(curItem){
@@ -23392,9 +23429,9 @@ function renderPlayer(){
     fixed.innerHTML = `
       <div class="now-playing-top">
         <div class="transport-inline">
-          <button class="tbtn-sm" id="btnPrev" title="Previous">⏮</button>
+          <button class="tbtn-sm" id="btnPrev" title="Previous">${ICON_SKIP_BACK}</button>
           <button class="tbtn-play-sm" id="btnPlay" title="Play/Pause">▶</button>
-          <button class="tbtn-sm" id="btnNext" title="Next">⏭</button>
+          <button class="tbtn-sm" id="btnNext" title="Next">${ICON_SKIP_FORWARD}</button>
         </div>
         <div class="now-playing-heading">
           <div style="display:flex; align-items:center; gap:6px; min-width:0;">
@@ -27645,13 +27682,13 @@ async function openSplitter(track, opts){
         <div class="sp-canvas-wrap"><canvas id="spZoom" class="sp-zoom" tabindex="0"></canvas><div class="sp-tip" id="spTip"></div><div class="sp-fine-note" id="spFineNote"></div></div>
       </div>
       <div class="sp-transport">
-        ${btn("spPrevMark", "⏮", t("splitPrevMark"))}
+        ${btn("spPrevMark", ICON_SKIP_BACK, t("splitPrevMark"))}
         ${btn("spBack100", "−100 ms", t("splitNudgeBack", {ms: 100}), "sp-nudge")}
         ${btn("spBack10", "−10 ms", t("splitNudgeBack", {ms: 10}), "sp-nudge")}
         <button class="tbtn-play-sm" type="button" id="spPlay" title="${escapeHtmlText(t("splitPlayTitle"))}">▶</button>
         ${btn("spFwd10", "+10 ms", t("splitNudgeFwd", {ms: 10}), "sp-nudge")}
         ${btn("spFwd100", "+100 ms", t("splitNudgeFwd", {ms: 100}), "sp-nudge")}
-        ${btn("spNextMark", "⏭", t("splitNextMark"))}
+        ${btn("spNextMark", ICON_SKIP_FORWARD, t("splitNextMark"))}
         <span class="sp-time" id="spTime"></span>
         <span class="sp-gap"></span>
         ${btn("spHearTo", "◁| " + escapeHtmlText(t("splitHearTo")), t("splitHearToTitle"))}
@@ -33052,9 +33089,9 @@ function renderLibraryPreviewPanel(){
   const playerBar = document.getElementById("libPlayerBar");
   playerBar.innerHTML = `
       <div class="lib-preview-transport-row transport-inline">
-        <button class="tbtn-sm" id="libBtnPrev" title="${t('previous')}" ${track?"":"disabled"}>⏮</button>
+        <button class="tbtn-sm" id="libBtnPrev" title="${t('previous')}" ${track?"":"disabled"}>${ICON_SKIP_BACK}</button>
         <button class="tbtn-play-sm" id="libBtnPlay" title="${t('playPause')}" ${track?"":"disabled"}>▶</button>
-        <button class="tbtn-sm" id="libBtnNext" title="${t('next')}" ${track?"":"disabled"}>⏭</button>
+        <button class="tbtn-sm" id="libBtnNext" title="${t('next')}" ${track?"":"disabled"}>${ICON_SKIP_FORWARD}</button>
       </div>
       <div class="ed-preview-text"><div class="ed-preview-album"></div><div class="lib-preview-title"></div></div>
       <span class="ed-preview-time"><span id="libTimeCur">${curLabel}</span> / <span id="libTimeDur">${durLabel}</span></span>

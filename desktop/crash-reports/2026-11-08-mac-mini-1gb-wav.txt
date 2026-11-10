@@ -1,0 +1,515 @@
+-------------------------------------
+Translated Report (Full Report Below)
+-------------------------------------
+
+Process:               player37-desktop [31259]
+Path:                  /Applications/37 Player.app/Contents/MacOS/player37-desktop
+Identifier:            com.player37.app
+Version:               2.2.0 (2.2.0)
+Code Type:             X86-64 (Native)
+Parent Process:        launchd [1]
+User ID:               502
+
+Date/Time:             2026-11-08 20:23:59.5491 -0500
+OS Version:            macOS 12.7.6 (21H1320)
+Report Version:        12
+Anonymous UUID:        A1C0D1A1-1324-F41C-62DE-7776FF9CB480
+
+Sleep/Wake UUID:       BA7EC022-7330-4125-BF67-CC9B512F10F5
+
+Time Awake Since Boot: 210000 seconds
+Time Since Wake:       42654 seconds
+
+System Integrity Protection: enabled
+
+Crashed Thread:        12
+
+Exception Type:        EXC_CRASH (SIGABRT)
+Exception Codes:       0x0000000000000000, 0x0000000000000000
+Exception Note:        EXC_CORPSE_NOTIFY
+
+Application Specific Information:
+abort() called
+
+
+Thread 0:: main Dispatch queue: com.apple.main-thread
+0   libsystem_kernel.dylib        	    0x7ff80d78437a read + 10
+1   player37-desktop              	       0x10c84bc30 0x10c790000 + 769072
+2   player37-desktop              	       0x10ca4ecbf 0x10c790000 + 2878655
+3   player37-desktop              	       0x10ca4b609 0x10c790000 + 2864649
+4   player37-desktop              	       0x10ca39a8b 0x10c790000 + 2792075
+5   player37-desktop              	       0x10c8ced6c 0x10c790000 + 1305964
+6   player37-desktop              	       0x10c8d488b 0x10c790000 + 1329291
+7   player37-desktop              	       0x10c8d28a5 0x10c790000 + 1321125
+8   player37-desktop              	       0x10c8c69ac 0x10c790000 + 1272236
+9   player37-desktop              	       0x10cc46c45 0x10c790000 + 4942917
+10  WebKit                        	    0x7ff912298f69 WebKit::WebURLSchemeHandlerCocoa::platformStartTask(WebKit::WebPageProxy&, WebKit::WebURLSchemeTask&) + 79
+11  WebKit                        	    0x7ff91243eec3 WebKit::WebURLSchemeHandler::startTask(WebKit::WebPageProxy&, WebKit::WebProcessProxy&, WTF::ObjectIdentifier<WebCore::PageIdentifierType>, WebKit::URLSchemeTaskParameters&&, WTF::CompletionHandler<void (WebCore::ResourceResponse const&, WebCore::ResourceError const&, WTF::Vector<unsigned char, 0ul, WTF::CrashOnOverflow, 16ul, WTF::FastMalloc> const&)>&&) + 1613
+12  WebKit                        	    0x7ff91243e840 WebKit::WebPageProxy::startURLSchemeTaskShared(WTF::Ref<WebKit::WebProcessProxy, WTF::RawPtrTraits<WebKit::WebProcessProxy> >&&, WTF::ObjectIdentifier<WebCore::PageIdentifierType>, WebKit::URLSchemeTaskParameters&&) + 122
+13  WebKit                        	    0x7ff91243e7a7 WebKit::WebPageProxy::startURLSchemeTask(WebKit::URLSchemeTaskParameters&&) + 39
+14  WebKit                        	    0x7ff91279358d WebKit::WebPageProxy::didReceiveMessage(IPC::Connection&, IPC::Decoder&) + 95643
+15  WebKit                        	    0x7ff91224562d IPC::MessageReceiverMap::dispatchMessage(IPC::Connection&, IPC::Decoder&) + 367
+16  WebKit                        	    0x7ff912454551 WebKit::WebProcessProxy::didReceiveMessage(IPC::Connection&, IPC::Decoder&) + 31
+17  WebKit                        	    0x7ff912234605 IPC::Connection::dispatchMessage(std::__1::unique_ptr<IPC::Decoder, std::__1::default_delete<IPC::Decoder> >) + 221
+18  WebKit                        	    0x7ff912233fb3 IPC::Connection::dispatchIncomingMessages() + 479
+19  JavaScriptCore                	    0x7ff8261a14df WTF::RunLoop::performWork() + 431
+20  JavaScriptCore                	    0x7ff8261a1fca WTF::RunLoop::performWork(void*) + 26
+21  CoreFoundation                	    0x7ff80d8870ab __CFRUNLOOP_IS_CALLING_OUT_TO_A_SOURCE0_PERFORM_FUNCTION__ + 17
+22  CoreFoundation                	    0x7ff80d887013 __CFRunLoopDoSource0 + 180
+23  CoreFoundation                	    0x7ff80d886d8d __CFRunLoopDoSources0 + 242
+24  CoreFoundation                	    0x7ff80d8857a8 __CFRunLoopRun + 892
+25  CoreFoundation                	    0x7ff80d884d6c CFRunLoopRunSpecific + 562
+26  HIToolbox                     	    0x7ff8165375e6 RunCurrentEventLoopInMode + 292
+27  HIToolbox                     	    0x7ff81653734a ReceiveNextEventCommon + 594
+28  HIToolbox                     	    0x7ff8165370e5 _BlockUntilNextEventMatchingListInModeWithFilter + 70
+29  AppKit                        	    0x7ff8102c3aa9 _DPSNextEvent + 927
+30  AppKit                        	    0x7ff8102c2166 -[NSApplication(NSEvent) _nextEventMatchingEventMask:untilDate:inMode:dequeue:] + 1394
+31  AppKit                        	    0x7ff8102b4818 -[NSApplication run] + 586
+32  player37-desktop              	       0x10c89db01 0x10c790000 + 1104641
+33  player37-desktop              	       0x10c89a0e4 0x10c790000 + 1089764
+34  player37-desktop              	       0x10c790e19 0x10c790000 + 3609
+35  player37-desktop              	       0x10c790e06 0x10c790000 + 3590
+36  player37-desktop              	       0x10c79113c 0x10c790000 + 4412
+37  dyld                          	       0x11473052e start + 462
+
+Thread 1:: tokio-rt-worker
+0   libsystem_kernel.dylib        	    0x7ff80d7863aa __psynch_cvwait + 10
+1   libsystem_pthread.dylib       	    0x7ff80d7c0a6f _pthread_cond_wait + 1249
+2   player37-desktop              	       0x10cbe1e1b 0x10c790000 + 4529691
+3   player37-desktop              	       0x10cbe0a6f 0x10c790000 + 4524655
+4   player37-desktop              	       0x10cbd94bd 0x10c790000 + 4494525
+5   player37-desktop              	       0x10cbdd5d1 0x10c790000 + 4511185
+6   player37-desktop              	       0x10cb45bb5 0x10c790000 + 3890101
+7   libsystem_pthread.dylib       	    0x7ff80d7c04e1 _pthread_start + 125
+8   libsystem_pthread.dylib       	    0x7ff80d7bbf6b thread_start + 15
+
+Thread 2:: tokio-rt-worker
+0   libsystem_kernel.dylib        	    0x7ff80d7863aa __psynch_cvwait + 10
+1   libsystem_pthread.dylib       	    0x7ff80d7c0a6f _pthread_cond_wait + 1249
+2   player37-desktop              	       0x10cbe1e1b 0x10c790000 + 4529691
+3   player37-desktop              	       0x10cbe0a6f 0x10c790000 + 4524655
+4   player37-desktop              	       0x10cbd94bd 0x10c790000 + 4494525
+5   player37-desktop              	       0x10cbdd5d1 0x10c790000 + 4511185
+6   player37-desktop              	       0x10cb45bb5 0x10c790000 + 3890101
+7   libsystem_pthread.dylib       	    0x7ff80d7c04e1 _pthread_start + 125
+8   libsystem_pthread.dylib       	    0x7ff80d7bbf6b thread_start + 15
+
+Thread 3:: tokio-rt-worker
+0   libsystem_kernel.dylib        	    0x7ff80d78830e kevent + 10
+1   player37-desktop              	       0x10cbe3110 0x10c790000 + 4534544
+2   player37-desktop              	       0x10cbe1c56 0x10c790000 + 4529238
+3   player37-desktop              	       0x10cbe0a6f 0x10c790000 + 4524655
+4   player37-desktop              	       0x10cbd94bd 0x10c790000 + 4494525
+5   player37-desktop              	       0x10cbdd5d1 0x10c790000 + 4511185
+6   player37-desktop              	       0x10cb45bb5 0x10c790000 + 3890101
+7   libsystem_pthread.dylib       	    0x7ff80d7c04e1 _pthread_start + 125
+8   libsystem_pthread.dylib       	    0x7ff80d7bbf6b thread_start + 15
+
+Thread 4:: tokio-rt-worker
+0   libsystem_kernel.dylib        	    0x7ff80d7863aa __psynch_cvwait + 10
+1   libsystem_pthread.dylib       	    0x7ff80d7c0a6f _pthread_cond_wait + 1249
+2   player37-desktop              	       0x10cbe1e1b 0x10c790000 + 4529691
+3   player37-desktop              	       0x10cbe0a6f 0x10c790000 + 4524655
+4   player37-desktop              	       0x10cbd94bd 0x10c790000 + 4494525
+5   player37-desktop              	       0x10cbdd5d1 0x10c790000 + 4511185
+6   player37-desktop              	       0x10cb45bb5 0x10c790000 + 3890101
+7   libsystem_pthread.dylib       	    0x7ff80d7c04e1 _pthread_start + 125
+8   libsystem_pthread.dylib       	    0x7ff80d7bbf6b thread_start + 15
+
+Thread 5:: com.apple.coreanimation.render-server
+0   libsystem_kernel.dylib        	    0x7ff80d78393a mach_msg_trap + 10
+1   libsystem_kernel.dylib        	    0x7ff80d783ca8 mach_msg + 56
+2   QuartzCore                    	    0x7ff81497f943 CA::Render::Server::server_thread(void*) + 534
+3   QuartzCore                    	    0x7ff81497f722 thread_fun(void*) + 25
+4   libsystem_pthread.dylib       	    0x7ff80d7c04e1 _pthread_start + 125
+5   libsystem_pthread.dylib       	    0x7ff80d7bbf6b thread_start + 15
+
+Thread 6:
+0   libsystem_kernel.dylib        	    0x7ff80d78627e __semwait_signal + 10
+1   libsystem_c.dylib             	    0x7ff80d69a853 nanosleep + 196
+2   player37-desktop              	       0x10c87cf8c 0x10c790000 + 970636
+3   player37-desktop              	       0x10c87ccd9 0x10c790000 + 969945
+4   player37-desktop              	       0x10ca371f8 0x10c790000 + 2781688
+5   player37-desktop              	       0x10ca371c9 0x10c790000 + 2781641
+6   player37-desktop              	       0x10ca371bb 0x10c790000 + 2781627
+7   player37-desktop              	       0x10ca37187 0x10c790000 + 2781575
+8   player37-desktop              	       0x10cb45bb5 0x10c790000 + 3890101
+9   libsystem_pthread.dylib       	    0x7ff80d7c04e1 _pthread_start + 125
+10  libsystem_pthread.dylib       	    0x7ff80d7bbf6b thread_start + 15
+
+Thread 7:: com.apple.NSEventThread
+0   libsystem_kernel.dylib        	    0x7ff80d78393a mach_msg_trap + 10
+1   libsystem_kernel.dylib        	    0x7ff80d783ca8 mach_msg + 56
+2   CoreFoundation                	    0x7ff80d88729d __CFRunLoopServiceMachPort + 319
+3   CoreFoundation                	    0x7ff80d885928 __CFRunLoopRun + 1276
+4   CoreFoundation                	    0x7ff80d884d6c CFRunLoopRunSpecific + 562
+5   AppKit                        	    0x7ff810431572 _NSEventThread + 132
+6   libsystem_pthread.dylib       	    0x7ff80d7c04e1 _pthread_start + 125
+7   libsystem_pthread.dylib       	    0x7ff80d7bbf6b thread_start + 15
+
+Thread 8:: JavaScriptCore libpas scavenger
+0   libsystem_kernel.dylib        	    0x7ff80d7863aa __psynch_cvwait + 10
+1   libsystem_pthread.dylib       	    0x7ff80d7c0a6f _pthread_cond_wait + 1249
+2   JavaScriptCore                	    0x7ff82623f00b scavenger_thread_main + 1627
+3   libsystem_pthread.dylib       	    0x7ff80d7c04e1 _pthread_start + 125
+4   libsystem_pthread.dylib       	    0x7ff80d7bbf6b thread_start + 15
+
+Thread 9:
+0   libsystem_pthread.dylib       	    0x7ff80d7bbf48 start_wqthread + 0
+
+Thread 10:
+0   libsystem_pthread.dylib       	    0x7ff80d7bbf48 start_wqthread + 0
+
+Thread 11:
+0   libsystem_pthread.dylib       	    0x7ff80d7bbf48 start_wqthread + 0
+
+Thread 12 Crashed:
+0   libsystem_kernel.dylib        	    0x7ff80d789fce __pthread_kill + 10
+1   libsystem_pthread.dylib       	    0x7ff80d7c01ff pthread_kill + 263
+2   libsystem_c.dylib             	    0x7ff80d70bd14 abort + 123
+3   player37-desktop              	       0x10cca7119 0x10c790000 + 5337369
+4   player37-desktop              	       0x10cca2b39 0x10c790000 + 5319481
+5   player37-desktop              	       0x10cb2011e 0x10c790000 + 3735838
+6   player37-desktop              	       0x10cb44672 0x10c790000 + 3884658
+7   player37-desktop              	       0x10cb445f9 0x10c790000 + 3884537
+8   player37-desktop              	       0x10cb44b04 0x10c790000 + 3885828
+9   player37-desktop              	       0x10cc9122c 0x10c790000 + 5247532
+10  player37-desktop              	       0x10cc911fe 0x10c790000 + 5247486
+11  player37-desktop              	       0x10cc9123c 0x10c790000 + 5247548
+12  player37-desktop              	       0x10cc49aae 0x10c790000 + 4954798
+13  player37-desktop              	       0x10cc8fa92 0x10c790000 + 5241490
+14  player37-desktop              	       0x10cc495d8 0x10c790000 + 4953560
+15  player37-desktop              	       0x10cc48713 0x10c790000 + 4949779
+16  player37-desktop              	       0x10c8c6a1c 0x10c790000 + 1272348
+17  player37-desktop              	       0x10c847d0e 0x10c790000 + 752910
+18  player37-desktop              	       0x10ca6445a 0x10c790000 + 2966618
+19  player37-desktop              	       0x10cb45bb5 0x10c790000 + 3890101
+20  libsystem_pthread.dylib       	    0x7ff80d7c04e1 _pthread_start + 125
+21  libsystem_pthread.dylib       	    0x7ff80d7bbf6b thread_start + 15
+
+Thread 13:: CVDisplayLink
+0   libsystem_kernel.dylib        	    0x7ff80d7863aa __psynch_cvwait + 10
+1   libsystem_pthread.dylib       	    0x7ff80d7c0aa4 _pthread_cond_wait + 1302
+2   CoreVideo                     	    0x7ff815067e60 CVDisplayLink::waitUntil(unsigned long long) + 370
+3   CoreVideo                     	    0x7ff815066ddc CVDisplayLink::runIOThread() + 526
+4   libsystem_pthread.dylib       	    0x7ff80d7c04e1 _pthread_start + 125
+5   libsystem_pthread.dylib       	    0x7ff80d7bbf6b thread_start + 15
+
+
+Thread 12 crashed with X86 Thread State (64-bit):
+  rax: 0x0000000000000000  rbx: 0x000070000636c000  rcx: 0x000070000636b528  rdx: 0x0000000000000000
+  rdi: 0x0000000000003f1b  rsi: 0x0000000000000006  rbp: 0x000070000636b550  rsp: 0x000070000636b528
+   r8: 0x0000000000000000   r9: 0x0000000000000001  r10: 0x0000000000000000  r11: 0x0000000000000246
+  r12: 0x0000000000003f1b  r13: 0x00007f7c9c71b9a0  r14: 0x0000000000000006  r15: 0x0000000000000016
+  rip: 0x00007ff80d789fce  rfl: 0x0000000000000246  cr2: 0x0000000000000000
+  
+Logical CPU:     0
+Error Code:      0x02000148 
+Trap Number:     133
+
+
+Binary Images:
+    0x7ff80d782000 -     0x7ff80d7b9fff libsystem_kernel.dylib (*) <2fe67e94-4a5e-3506-9e02-502f7270f7ef> /usr/lib/system/libsystem_kernel.dylib
+       0x10c790000 -        0x10d700fff com.player37.app (2.2.0) <e56f64f8-d4b3-3096-b1ba-507bad9dda97> /Applications/37 Player.app/Contents/MacOS/player37-desktop
+    0x7ff911ea3000 -     0x7ff91292efff com.apple.WebKit (17613) <1b02dd84-76a1-3a50-ac85-1f60bd894c3c> /System/Library/Frameworks/WebKit.framework/Versions/A/WebKit
+    0x7ff825fd8000 -     0x7ff8275ebfff com.apple.JavaScriptCore (17613) <9bd5e2cc-0c81-3944-84b0-4be54a33fa40> /System/Library/Frameworks/JavaScriptCore.framework/Versions/A/JavaScriptCore
+    0x7ff80d807000 -     0x7ff80dd09fff com.apple.CoreFoundation (6.9) <fdd28505-5456-3c40-a5ba-7890b064db39> /System/Library/Frameworks/CoreFoundation.framework/Versions/A/CoreFoundation
+    0x7ff816509000 -     0x7ff8167fcfff com.apple.HIToolbox (2.1.1) <913d3d2e-4e4c-3907-98fe-8f4abd551297> /System/Library/Frameworks/Carbon.framework/Versions/A/Frameworks/HIToolbox.framework/Versions/A/HIToolbox
+    0x7ff810285000 -     0x7ff811114fff com.apple.AppKit (6.9) <5dd484cf-ed6a-3633-b42e-6518aeecd5b9> /System/Library/Frameworks/AppKit.framework/Versions/C/AppKit
+       0x11472b000 -        0x114796fff dyld (*) <eea022bb-a6ab-3cd1-8ac1-54ce8cfd3333> /usr/lib/dyld
+    0x7ff80d7ba000 -     0x7ff80d7c5fff libsystem_pthread.dylib (*) <5a5f7316-85b7-315e-baf3-76211ee65604> /usr/lib/system/libsystem_pthread.dylib
+    0x7ff814938000 -     0x7ff814c4afff com.apple.QuartzCore (1.11) <5ca19b57-9c18-302f-a989-bb743cd76e00> /System/Library/Frameworks/QuartzCore.framework/Versions/A/QuartzCore
+    0x7ff80d68a000 -     0x7ff80d712fff libsystem_c.dylib (*) <202d7260-ea46-3956-a471-19c9bcf45274> /usr/lib/system/libsystem_c.dylib
+    0x7ff815065000 -     0x7ff8150b6fff com.apple.CoreVideo (1.8) <fe89c8c7-c939-3115-afdb-7a6190835819> /System/Library/Frameworks/CoreVideo.framework/Versions/A/CoreVideo
+
+External Modification Summary:
+  Calls made by other processes targeting this process:
+    task_for_pid: 0
+    thread_create: 0
+    thread_set_state: 0
+  Calls made by this process:
+    task_for_pid: 0
+    thread_create: 0
+    thread_set_state: 0
+  Calls made by all processes on this machine:
+    task_for_pid: 0
+    thread_create: 0
+    thread_set_state: 0
+
+VM Region Summary:
+ReadOnly portion of Libraries: Total=1.1G resident=0K(0%) swapped_out_or_unallocated=1.1G(100%)
+Writable regions: Total=1.8G written=0K(0%) resident=0K(0%) swapped_out=0K(0%) unallocated=1.8G(100%)
+
+                                VIRTUAL   REGION 
+REGION TYPE                        SIZE    COUNT (non-coalesced) 
+===========                     =======  ======= 
+Accelerate framework               512K        4 
+Activity Tracing                   256K        1 
+CG backing stores                  720K        4 
+CG image                            36K        6 
+ColorSync                          216K       25 
+CoreAnimation                     4680K       11 
+CoreGraphics                        16K        3 
+CoreUI image data                  612K       10 
+Foundation                          16K        1 
+IOKit                             7940K        1 
+JS JIT generated code              1.0G        3 
+Kernel Alloc Once                    8K        1 
+MALLOC                           204.0M       47 
+MALLOC guard page                   32K        7 
+MALLOC_NANO (reserved)           384.0M        1         reserved VM address space (unallocated)
+STACK GUARD                         52K       13 
+Stack                             24.1M       14 
+Stack Guard                       56.0M        1 
+VM_ALLOCATE                         80K       18 
+VM_ALLOCATE (reserved)             896K        7         reserved VM address space (unallocated)
+WebKit Malloc                    192.0M        5 
+__CTF                               756        1 
+__DATA                            29.4M      499 
+__DATA_CONST                      30.5M      328 
+__DATA_DIRTY                      1613K      209 
+__FONT_DATA                          4K        1 
+__GLSLBUILTINS                    5176K        1 
+__LINKEDIT                       646.2M       10 
+__OBJC_RO                         82.9M        1 
+__OBJC_RW                         3200K        2 
+__TEXT                           518.8M      515 
+__UNICODE                          592K        1 
+dyld private memory               1024K        1 
+mapped file                      159.1M       20 
+shared memory                      788K       18 
+===========                     =======  ======= 
+TOTAL                              3.3G     1790 
+TOTAL, minus reserved VM space     2.9G     1790 
+
+
+
+-----------
+Full Report
+-----------
+
+{"app_name":"player37-desktop","timestamp":"2026-11-08 20:25:05.00 -0500","app_version":"2.2.0","slice_uuid":"e56f64f8-d4b3-3096-b1ba-507bad9dda97","build_version":"2.2.0","platform":1,"bundleID":"com.player37.app","share_with_app_devs":0,"is_first_party":0,"bug_type":"309","os_version":"macOS 12.7.6 (21H1320)","incident_id":"33106AC3-756C-49FB-B1E1-1471B711658A","name":"player37-desktop"}
+{
+  "uptime" : 210000,
+  "procLaunch" : "2026-11-08 20:20:25.2793 -0500",
+  "procRole" : "Foreground",
+  "version" : 2,
+  "userID" : 502,
+  "deployVersion" : 210,
+  "modelCode" : "Macmini7,1",
+  "procStartAbsTime" : 211454026701138,
+  "coalitionID" : 7548,
+  "osVersion" : {
+    "train" : "macOS 12.7.6",
+    "build" : "21H1320",
+    "releaseType" : "User"
+  },
+  "captureTime" : "2026-11-08 20:23:59.5491 -0500",
+  "incident" : "33106AC3-756C-49FB-B1E1-1471B711658A",
+  "bug_type" : "309",
+  "pid" : 31259,
+  "procExitAbsTime" : 211667140732784,
+  "cpuType" : "X86-64",
+  "procName" : "player37-desktop",
+  "procPath" : "\/Applications\/37 Player.app\/Contents\/MacOS\/player37-desktop",
+  "bundleInfo" : {"CFBundleShortVersionString":"2.2.0","CFBundleVersion":"2.2.0","CFBundleIdentifier":"com.player37.app"},
+  "storeInfo" : {"deviceIdentifierForVendor":"3ABB8CEA-9ECF-577D-BE8D-2CC351D54FCF","thirdParty":true},
+  "parentProc" : "launchd",
+  "parentPid" : 1,
+  "coalitionName" : "com.player37.app",
+  "crashReporterKey" : "A1C0D1A1-1324-F41C-62DE-7776FF9CB480",
+  "wakeTime" : 42654,
+  "sleepWakeUUID" : "BA7EC022-7330-4125-BF67-CC9B512F10F5",
+  "sip" : "enabled",
+  "isCorpse" : 1,
+  "exception" : {"codes":"0x0000000000000000, 0x0000000000000000","rawCodes":[0,0],"type":"EXC_CRASH","signal":"SIGABRT"},
+  "asi" : {"libsystem_c.dylib":["abort() called"]},
+  "extMods" : {"caller":{"thread_create":0,"thread_set_state":0,"task_for_pid":0},"system":{"thread_create":0,"thread_set_state":0,"task_for_pid":0},"targeted":{"thread_create":0,"thread_set_state":0,"task_for_pid":0},"warnings":0},
+  "faultingThread" : 12,
+  "threads" : [{"id":1739554,"name":"main","queue":"com.apple.main-thread","frames":[{"imageOffset":9082,"symbol":"read","symbolLocation":10,"imageIndex":0},{"imageOffset":769072,"imageIndex":1},{"imageOffset":2878655,"imageIndex":1},{"imageOffset":2864649,"imageIndex":1},{"imageOffset":2792075,"imageIndex":1},{"imageOffset":1305964,"imageIndex":1},{"imageOffset":1329291,"imageIndex":1},{"imageOffset":1321125,"imageIndex":1},{"imageOffset":1272236,"imageIndex":1},{"imageOffset":4942917,"imageIndex":1},{"imageOffset":4153193,"symbol":"WebKit::WebURLSchemeHandlerCocoa::platformStartTask(WebKit::WebPageProxy&, WebKit::WebURLSchemeTask&)","symbolLocation":79,"imageIndex":2},{"imageOffset":5881539,"symbol":"WebKit::WebURLSchemeHandler::startTask(WebKit::WebPageProxy&, WebKit::WebProcessProxy&, WTF::ObjectIdentifier<WebCore::PageIdentifierType>, WebKit::URLSchemeTaskParameters&&, WTF::CompletionHandler<void (WebCore::ResourceResponse const&, WebCore::ResourceError const&, WTF::Vector<unsigned char, 0ul, WTF::CrashOnOverflow, 16ul, WTF::FastMalloc> const&)>&&)","symbolLocation":1613,"imageIndex":2},{"imageOffset":5879872,"symbol":"WebKit::WebPageProxy::startURLSchemeTaskShared(WTF::Ref<WebKit::WebProcessProxy, WTF::RawPtrTraits<WebKit::WebProcessProxy> >&&, WTF::ObjectIdentifier<WebCore::PageIdentifierType>, WebKit::URLSchemeTaskParameters&&)","symbolLocation":122,"imageIndex":2},{"imageOffset":5879719,"symbol":"WebKit::WebPageProxy::startURLSchemeTask(WebKit::URLSchemeTaskParameters&&)","symbolLocation":39,"imageIndex":2},{"imageOffset":9373069,"symbol":"WebKit::WebPageProxy::didReceiveMessage(IPC::Connection&, IPC::Decoder&)","symbolLocation":95643,"imageIndex":2},{"imageOffset":3810861,"symbol":"IPC::MessageReceiverMap::dispatchMessage(IPC::Connection&, IPC::Decoder&)","symbolLocation":367,"imageIndex":2},{"imageOffset":5969233,"symbol":"WebKit::WebProcessProxy::didReceiveMessage(IPC::Connection&, IPC::Decoder&)","symbolLocation":31,"imageIndex":2},{"imageOffset":3741189,"symbol":"IPC::Connection::dispatchMessage(std::__1::unique_ptr<IPC::Decoder, std::__1::default_delete<IPC::Decoder> >)","symbolLocation":221,"imageIndex":2},{"imageOffset":3739571,"symbol":"IPC::Connection::dispatchIncomingMessages()","symbolLocation":479,"imageIndex":2},{"imageOffset":1873119,"symbol":"WTF::RunLoop::performWork()","symbolLocation":431,"imageIndex":3},{"imageOffset":1875914,"symbol":"WTF::RunLoop::performWork(void*)","symbolLocation":26,"imageIndex":3},{"imageOffset":524459,"symbol":"__CFRUNLOOP_IS_CALLING_OUT_TO_A_SOURCE0_PERFORM_FUNCTION__","symbolLocation":17,"imageIndex":4},{"imageOffset":524307,"symbol":"__CFRunLoopDoSource0","symbolLocation":180,"imageIndex":4},{"imageOffset":523661,"symbol":"__CFRunLoopDoSources0","symbolLocation":242,"imageIndex":4},{"imageOffset":518056,"symbol":"__CFRunLoopRun","symbolLocation":892,"imageIndex":4},{"imageOffset":515436,"symbol":"CFRunLoopRunSpecific","symbolLocation":562,"imageIndex":4},{"imageOffset":189926,"symbol":"RunCurrentEventLoopInMode","symbolLocation":292,"imageIndex":5},{"imageOffset":189258,"symbol":"ReceiveNextEventCommon","symbolLocation":594,"imageIndex":5},{"imageOffset":188645,"symbol":"_BlockUntilNextEventMatchingListInModeWithFilter","symbolLocation":70,"imageIndex":5},{"imageOffset":256681,"symbol":"_DPSNextEvent","symbolLocation":927,"imageIndex":6},{"imageOffset":250214,"symbol":"-[NSApplication(NSEvent) _nextEventMatchingEventMask:untilDate:inMode:dequeue:]","symbolLocation":1394,"imageIndex":6},{"imageOffset":194584,"symbol":"-[NSApplication run]","symbolLocation":586,"imageIndex":6},{"imageOffset":1104641,"imageIndex":1},{"imageOffset":1089764,"imageIndex":1},{"imageOffset":3609,"imageIndex":1},{"imageOffset":3590,"imageIndex":1},{"imageOffset":4412,"imageIndex":1},{"imageOffset":21806,"symbol":"start","symbolLocation":462,"imageIndex":7}]},{"id":1739618,"name":"tokio-rt-worker","frames":[{"imageOffset":17322,"symbol":"__psynch_cvwait","symbolLocation":10,"imageIndex":0},{"imageOffset":27247,"symbol":"_pthread_cond_wait","symbolLocation":1249,"imageIndex":8},{"imageOffset":4529691,"imageIndex":1},{"imageOffset":4524655,"imageIndex":1},{"imageOffset":4494525,"imageIndex":1},{"imageOffset":4511185,"imageIndex":1},{"imageOffset":3890101,"imageIndex":1},{"imageOffset":25825,"symbol":"_pthread_start","symbolLocation":125,"imageIndex":8},{"imageOffset":8043,"symbol":"thread_start","symbolLocation":15,"imageIndex":8}]},{"id":1739619,"name":"tokio-rt-worker","frames":[{"imageOffset":17322,"symbol":"__psynch_cvwait","symbolLocation":10,"imageIndex":0},{"imageOffset":27247,"symbol":"_pthread_cond_wait","symbolLocation":1249,"imageIndex":8},{"imageOffset":4529691,"imageIndex":1},{"imageOffset":4524655,"imageIndex":1},{"imageOffset":4494525,"imageIndex":1},{"imageOffset":4511185,"imageIndex":1},{"imageOffset":3890101,"imageIndex":1},{"imageOffset":25825,"symbol":"_pthread_start","symbolLocation":125,"imageIndex":8},{"imageOffset":8043,"symbol":"thread_start","symbolLocation":15,"imageIndex":8}]},{"id":1739620,"name":"tokio-rt-worker","frames":[{"imageOffset":25358,"symbol":"kevent","symbolLocation":10,"imageIndex":0},{"imageOffset":4534544,"imageIndex":1},{"imageOffset":4529238,"imageIndex":1},{"imageOffset":4524655,"imageIndex":1},{"imageOffset":4494525,"imageIndex":1},{"imageOffset":4511185,"imageIndex":1},{"imageOffset":3890101,"imageIndex":1},{"imageOffset":25825,"symbol":"_pthread_start","symbolLocation":125,"imageIndex":8},{"imageOffset":8043,"symbol":"thread_start","symbolLocation":15,"imageIndex":8}]},{"id":1739621,"name":"tokio-rt-worker","frames":[{"imageOffset":17322,"symbol":"__psynch_cvwait","symbolLocation":10,"imageIndex":0},{"imageOffset":27247,"symbol":"_pthread_cond_wait","symbolLocation":1249,"imageIndex":8},{"imageOffset":4529691,"imageIndex":1},{"imageOffset":4524655,"imageIndex":1},{"imageOffset":4494525,"imageIndex":1},{"imageOffset":4511185,"imageIndex":1},{"imageOffset":3890101,"imageIndex":1},{"imageOffset":25825,"symbol":"_pthread_start","symbolLocation":125,"imageIndex":8},{"imageOffset":8043,"symbol":"thread_start","symbolLocation":15,"imageIndex":8}]},{"id":1739642,"name":"com.apple.coreanimation.render-server","frames":[{"imageOffset":6458,"symbol":"mach_msg_trap","symbolLocation":10,"imageIndex":0},{"imageOffset":7336,"symbol":"mach_msg","symbolLocation":56,"imageIndex":0},{"imageOffset":293187,"symbol":"CA::Render::Server::server_thread(void*)","symbolLocation":534,"imageIndex":9},{"imageOffset":292642,"symbol":"thread_fun(void*)","symbolLocation":25,"imageIndex":9},{"imageOffset":25825,"symbol":"_pthread_start","symbolLocation":125,"imageIndex":8},{"imageOffset":8043,"symbol":"thread_start","symbolLocation":15,"imageIndex":8}]},{"id":1739654,"frames":[{"imageOffset":17022,"symbol":"__semwait_signal","symbolLocation":10,"imageIndex":0},{"imageOffset":67667,"symbol":"nanosleep","symbolLocation":196,"imageIndex":10},{"imageOffset":970636,"imageIndex":1},{"imageOffset":969945,"imageIndex":1},{"imageOffset":2781688,"imageIndex":1},{"imageOffset":2781641,"imageIndex":1},{"imageOffset":2781627,"imageIndex":1},{"imageOffset":2781575,"imageIndex":1},{"imageOffset":3890101,"imageIndex":1},{"imageOffset":25825,"symbol":"_pthread_start","symbolLocation":125,"imageIndex":8},{"imageOffset":8043,"symbol":"thread_start","symbolLocation":15,"imageIndex":8}]},{"id":1739660,"name":"com.apple.NSEventThread","frames":[{"imageOffset":6458,"symbol":"mach_msg_trap","symbolLocation":10,"imageIndex":0},{"imageOffset":7336,"symbol":"mach_msg","symbolLocation":56,"imageIndex":0},{"imageOffset":524957,"symbol":"__CFRunLoopServiceMachPort","symbolLocation":319,"imageIndex":4},{"imageOffset":518440,"symbol":"__CFRunLoopRun","symbolLocation":1276,"imageIndex":4},{"imageOffset":515436,"symbol":"CFRunLoopRunSpecific","symbolLocation":562,"imageIndex":4},{"imageOffset":1754482,"symbol":"_NSEventThread","symbolLocation":132,"imageIndex":6},{"imageOffset":25825,"symbol":"_pthread_start","symbolLocation":125,"imageIndex":8},{"imageOffset":8043,"symbol":"thread_start","symbolLocation":15,"imageIndex":8}]},{"id":1741488,"name":"JavaScriptCore libpas scavenger","frames":[{"imageOffset":17322,"symbol":"__psynch_cvwait","symbolLocation":10,"imageIndex":0},{"imageOffset":27247,"symbol":"_pthread_cond_wait","symbolLocation":1249,"imageIndex":8},{"imageOffset":2519051,"symbol":"scavenger_thread_main","symbolLocation":1627,"imageIndex":3},{"imageOffset":25825,"symbol":"_pthread_start","symbolLocation":125,"imageIndex":8},{"imageOffset":8043,"symbol":"thread_start","symbolLocation":15,"imageIndex":8}]},{"id":1741549,"frames":[{"imageOffset":8008,"symbol":"start_wqthread","symbolLocation":0,"imageIndex":8}]},{"id":1741696,"frames":[{"imageOffset":8008,"symbol":"start_wqthread","symbolLocation":0,"imageIndex":8}]},{"id":1741820,"frames":[{"imageOffset":8008,"symbol":"start_wqthread","symbolLocation":0,"imageIndex":8}]},{"triggered":true,"id":1742166,"threadState":{"r13":{"value":140173177371040},"rax":{"value":0},"rflags":{"value":582},"cpu":{"value":0},"r14":{"value":6},"rsi":{"value":6},"r8":{"value":0},"cr2":{"value":0},"rdx":{"value":0},"r10":{"value":0},"r9":{"value":1},"r15":{"value":22},"rbx":{"value":123145406562304},"trap":{"value":133},"err":{"value":33554760},"r11":{"value":582},"rip":{"value":140703354625998,"matchesCrashFrame":1},"rbp":{"value":123145406559568},"rsp":{"value":123145406559528},"r12":{"value":16155},"rcx":{"value":123145406559528},"flavor":"x86_THREAD_STATE","rdi":{"value":16155}},"frames":[{"imageOffset":32718,"symbol":"__pthread_kill","symbolLocation":10,"imageIndex":0},{"imageOffset":25087,"symbol":"pthread_kill","symbolLocation":263,"imageIndex":8},{"imageOffset":531732,"symbol":"abort","symbolLocation":123,"imageIndex":10},{"imageOffset":5337369,"imageIndex":1},{"imageOffset":5319481,"imageIndex":1},{"imageOffset":3735838,"imageIndex":1},{"imageOffset":3884658,"imageIndex":1},{"imageOffset":3884537,"imageIndex":1},{"imageOffset":3885828,"imageIndex":1},{"imageOffset":5247532,"imageIndex":1},{"imageOffset":5247486,"imageIndex":1},{"imageOffset":5247548,"imageIndex":1},{"imageOffset":4954798,"imageIndex":1},{"imageOffset":5241490,"imageIndex":1},{"imageOffset":4953560,"imageIndex":1},{"imageOffset":4949779,"imageIndex":1},{"imageOffset":1272348,"imageIndex":1},{"imageOffset":752910,"imageIndex":1},{"imageOffset":2966618,"imageIndex":1},{"imageOffset":3890101,"imageIndex":1},{"imageOffset":25825,"symbol":"_pthread_start","symbolLocation":125,"imageIndex":8},{"imageOffset":8043,"symbol":"thread_start","symbolLocation":15,"imageIndex":8}]},{"id":1742170,"name":"CVDisplayLink","frames":[{"imageOffset":17322,"symbol":"__psynch_cvwait","symbolLocation":10,"imageIndex":0},{"imageOffset":27300,"symbol":"_pthread_cond_wait","symbolLocation":1302,"imageIndex":8},{"imageOffset":11872,"symbol":"CVDisplayLink::waitUntil(unsigned long long)","symbolLocation":370,"imageIndex":11},{"imageOffset":7644,"symbol":"CVDisplayLink::runIOThread()","symbolLocation":526,"imageIndex":11},{"imageOffset":25825,"symbol":"_pthread_start","symbolLocation":125,"imageIndex":8},{"imageOffset":8043,"symbol":"thread_start","symbolLocation":15,"imageIndex":8}]}],
+  "usedImages" : [
+  {
+    "source" : "P",
+    "arch" : "x86_64",
+    "base" : 140703354593280,
+    "size" : 229376,
+    "uuid" : "2fe67e94-4a5e-3506-9e02-502f7270f7ef",
+    "path" : "\/usr\/lib\/system\/libsystem_kernel.dylib",
+    "name" : "libsystem_kernel.dylib"
+  },
+  {
+    "source" : "P",
+    "arch" : "x86_64",
+    "base" : 4504223744,
+    "CFBundleShortVersionString" : "2.2.0",
+    "CFBundleIdentifier" : "com.player37.app",
+    "size" : 16191488,
+    "uuid" : "e56f64f8-d4b3-3096-b1ba-507bad9dda97",
+    "path" : "\/Applications\/37 Player.app\/Contents\/MacOS\/player37-desktop",
+    "name" : "player37-desktop",
+    "CFBundleVersion" : "2.2.0"
+  },
+  {
+    "source" : "P",
+    "arch" : "x86_64",
+    "base" : 140707724144640,
+    "CFBundleShortVersionString" : "17613",
+    "CFBundleIdentifier" : "com.apple.WebKit",
+    "size" : 11059200,
+    "uuid" : "1b02dd84-76a1-3a50-ac85-1f60bd894c3c",
+    "path" : "\/System\/Library\/Frameworks\/WebKit.framework\/Versions\/A\/WebKit",
+    "name" : "WebKit",
+    "CFBundleVersion" : "17613.3.9.1.16"
+  },
+  {
+    "source" : "P",
+    "arch" : "x86_64",
+    "base" : 140703765987328,
+    "CFBundleShortVersionString" : "17613",
+    "CFBundleIdentifier" : "com.apple.JavaScriptCore",
+    "size" : 23150592,
+    "uuid" : "9bd5e2cc-0c81-3944-84b0-4be54a33fa40",
+    "path" : "\/System\/Library\/Frameworks\/JavaScriptCore.framework\/Versions\/A\/JavaScriptCore",
+    "name" : "JavaScriptCore",
+    "CFBundleVersion" : "17613.3.9.1.16"
+  },
+  {
+    "source" : "P",
+    "arch" : "x86_64h",
+    "base" : 140703355138048,
+    "CFBundleShortVersionString" : "6.9",
+    "CFBundleIdentifier" : "com.apple.CoreFoundation",
+    "size" : 5255168,
+    "uuid" : "fdd28505-5456-3c40-a5ba-7890b064db39",
+    "path" : "\/System\/Library\/Frameworks\/CoreFoundation.framework\/Versions\/A\/CoreFoundation",
+    "name" : "CoreFoundation",
+    "CFBundleVersion" : "1866"
+  },
+  {
+    "source" : "P",
+    "arch" : "x86_64",
+    "base" : 140703502995456,
+    "CFBundleShortVersionString" : "2.1.1",
+    "CFBundleIdentifier" : "com.apple.HIToolbox",
+    "size" : 3096576,
+    "uuid" : "913d3d2e-4e4c-3907-98fe-8f4abd551297",
+    "path" : "\/System\/Library\/Frameworks\/Carbon.framework\/Versions\/A\/Frameworks\/HIToolbox.framework\/Versions\/A\/HIToolbox",
+    "name" : "HIToolbox"
+  },
+  {
+    "source" : "P",
+    "arch" : "x86_64",
+    "base" : 140703399694336,
+    "CFBundleShortVersionString" : "6.9",
+    "CFBundleIdentifier" : "com.apple.AppKit",
+    "size" : 15269888,
+    "uuid" : "5dd484cf-ed6a-3633-b42e-6518aeecd5b9",
+    "path" : "\/System\/Library\/Frameworks\/AppKit.framework\/Versions\/C\/AppKit",
+    "name" : "AppKit",
+    "CFBundleVersion" : "2113.65.150"
+  },
+  {
+    "source" : "P",
+    "arch" : "x86_64",
+    "base" : 4638027776,
+    "size" : 442368,
+    "uuid" : "eea022bb-a6ab-3cd1-8ac1-54ce8cfd3333",
+    "path" : "\/usr\/lib\/dyld",
+    "name" : "dyld"
+  },
+  {
+    "source" : "P",
+    "arch" : "x86_64",
+    "base" : 140703354822656,
+    "size" : 49152,
+    "uuid" : "5a5f7316-85b7-315e-baf3-76211ee65604",
+    "path" : "\/usr\/lib\/system\/libsystem_pthread.dylib",
+    "name" : "libsystem_pthread.dylib"
+  },
+  {
+    "source" : "P",
+    "arch" : "x86_64",
+    "base" : 140703473827840,
+    "CFBundleShortVersionString" : "1.11",
+    "CFBundleIdentifier" : "com.apple.QuartzCore",
+    "size" : 3223552,
+    "uuid" : "5ca19b57-9c18-302f-a989-bb743cd76e00",
+    "path" : "\/System\/Library\/Frameworks\/QuartzCore.framework\/Versions\/A\/QuartzCore",
+    "name" : "QuartzCore",
+    "CFBundleVersion" : "964.39"
+  },
+  {
+    "source" : "P",
+    "arch" : "x86_64",
+    "base" : 140703353577472,
+    "size" : 561152,
+    "uuid" : "202d7260-ea46-3956-a471-19c9bcf45274",
+    "path" : "\/usr\/lib\/system\/libsystem_c.dylib",
+    "name" : "libsystem_c.dylib"
+  },
+  {
+    "source" : "P",
+    "arch" : "x86_64",
+    "base" : 140703481352192,
+    "CFBundleShortVersionString" : "1.8",
+    "CFBundleIdentifier" : "com.apple.CoreVideo",
+    "size" : 335872,
+    "uuid" : "fe89c8c7-c939-3115-afdb-7a6190835819",
+    "path" : "\/System\/Library\/Frameworks\/CoreVideo.framework\/Versions\/A\/CoreVideo",
+    "name" : "CoreVideo",
+    "CFBundleVersion" : "480.1"
+  }
+],
+  "sharedCache" : {
+  "base" : 140703351562240,
+  "size" : 19331678208,
+  "uuid" : "246818c3-4b9f-3462-bcaf-fdf71975e5fe"
+},
+  "vmSummary" : "ReadOnly portion of Libraries: Total=1.1G resident=0K(0%) swapped_out_or_unallocated=1.1G(100%)\nWritable regions: Total=1.8G written=0K(0%) resident=0K(0%) swapped_out=0K(0%) unallocated=1.8G(100%)\n\n                                VIRTUAL   REGION \nREGION TYPE                        SIZE    COUNT (non-coalesced) \n===========                     =======  ======= \nAccelerate framework               512K        4 \nActivity Tracing                   256K        1 \nCG backing stores                  720K        4 \nCG image                            36K        6 \nColorSync                          216K       25 \nCoreAnimation                     4680K       11 \nCoreGraphics                        16K        3 \nCoreUI image data                  612K       10 \nFoundation                          16K        1 \nIOKit                             7940K        1 \nJS JIT generated code              1.0G        3 \nKernel Alloc Once                    8K        1 \nMALLOC                           204.0M       47 \nMALLOC guard page                   32K        7 \nMALLOC_NANO (reserved)           384.0M        1         reserved VM address space (unallocated)\nSTACK GUARD                         52K       13 \nStack                             24.1M       14 \nStack Guard                       56.0M        1 \nVM_ALLOCATE                         80K       18 \nVM_ALLOCATE (reserved)             896K        7         reserved VM address space (unallocated)\nWebKit Malloc                    192.0M        5 \n__CTF                               756        1 \n__DATA                            29.4M      499 \n__DATA_CONST                      30.5M      328 \n__DATA_DIRTY                      1613K      209 \n__FONT_DATA                          4K        1 \n__GLSLBUILTINS                    5176K        1 \n__LINKEDIT                       646.2M       10 \n__OBJC_RO                         82.9M        1 \n__OBJC_RW                         3200K        2 \n__TEXT                           518.8M      515 \n__UNICODE                          592K        1 \ndyld private memory               1024K        1 \nmapped file                      159.1M       20 \nshared memory                      788K       18 \n===========                     =======  ======= \nTOTAL                              3.3G     1790 \nTOTAL, minus reserved VM space     2.9G     1790 \n",
+  "legacyInfo" : {
+  "threadTriggered" : {
+
+  }
+},
+  "trialInfo" : {
+  "rollouts" : [
+    {
+      "rolloutId" : "5fb4245a1bbfe8005e33a1e1",
+      "factorPackIds" : {
+
+      },
+      "deploymentId" : 240000021
+    },
+    {
+      "rolloutId" : "6112dda2fc54bc3389840642",
+      "factorPackIds" : {
+        "SIRI_DICTATION_ASSETS" : "620aec83b02b354d3afd2f50"
+      },
+      "deploymentId" : 240000145
+    }
+  ],
+  "experiments" : [
+
+  ]
+}
+}
+
+Model: Macmini7,1, BootROM 483.0.0.0.0, 2 processors, Dual-Core Intel Core i5, 2.6 GHz, 8 GB, SMC 2.24f32
+Graphics: Intel Iris, Intel Iris, Built-In
+Display: HP 27ea, 1920 x 1080 (1080p FHD - Full High Definition), Main, MirrorOff, Online
+Memory Module: BANK 0/DIMM0, 4 GB, DDR3, 1600 MHz, 0x80AD, 0x483943434E4E4E424C54414C41522D4E5444
+Memory Module: BANK 1/DIMM0, 4 GB, DDR3, 1600 MHz, 0x80AD, 0x483943434E4E4E424C54414C41522D4E5444
+AirPort: spairport_wireless_card_type_wifi (0x14E4, 0x13B), Broadcom BCM43xx 1.0 (7.77.111.1 AirPortDriverBrcmNIC-1710.4)
+AirPort: 
+Bluetooth: Version (null), 0 services, 0 devices, 0 incoming serial ports
+Network Service: Wi-Fi, AirPort, en1
+Serial ATA Device: APPLE HDD HTS541010A9E662, 1 TB
+USB Device: USB30Bus
+USB Device: USB 2.0 Hub
+USB Device: USB 2.0 Hub
+USB Device: HD Camera
+USB Device: IR Receiver
+USB Device: BRCM20702 Hub
+USB Device: Bluetooth USB Host Controller
+USB Device: USB Audio CODEC
+Thunderbolt Bus: Mac mini, Apple Inc., 26.1
