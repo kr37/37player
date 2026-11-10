@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.2.005">
+<meta name="app-version" content="2.2.006">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -543,6 +543,13 @@
   .plov-backdrop{ position:absolute; left:0; right:0; bottom:0; z-index:30; background:rgba(0,0,0,0.30); display:flex; padding:4px 16px 16px; }
   .plov-panel{ flex:1; min-height:0; display:flex; flex-direction:column; background:var(--bg-panel); border:1px solid var(--line); border-radius:var(--radius, 10px); box-shadow:0 10px 36px rgba(0,0,0,0.45); overflow:hidden; }
   .plov-head{ display:flex; align-items:flex-start; gap:10px; padding:12px 14px 6px; }
+  .plov-actions{ display:flex; align-items:center; flex-wrap:wrap; gap:8px 12px; padding:0 14px 4px; }
+  .plov-browsing{ font-size:12px; font-weight:600; color:var(--text-dim); margin-bottom:3px; }
+  .plov-status, .plov-play-hint{ font-size:12.5px; color:var(--text-dim); padding:0 14px 4px; }
+  .plov-status:empty, .plov-play-hint:empty{ display:none; }
+  .plov-play.btn{ min-height:44px; flex-shrink:0; }
+  .plov-close.btn{ min-height:44px; }
+  @media(max-width:600px){ .plov-player{ flex-wrap:wrap; } .plov-track{ flex-basis:100%; } }
   .plov-titles{ flex:1; min-width:0; }
   .plov-title{ font-family:var(--font-display); font-size:22px; overflow-wrap:anywhere; }
   .plov-title.clickable{ cursor:pointer; user-select:none; border-radius:6px; }
@@ -3903,6 +3910,13 @@ const STRINGS = {
     "deleteTidyGo": "Delete",
     "deleteUsedInNone": "Not used in any playlist.",
     "deleteTracksBodyOne": "This removes it from the library and from every playlist that uses it. You can undo this with ↶.",
+    "plovBrowsing": "Browsing",
+    "plovUse": "Use this playlist",
+    "plovReadyHint": "Ready at the first track. Does not start playback.",
+    "plovPlayingStatus": "Playback stays with {name} until you switch.",
+    "plovActiveStatus": "{name} is still the active playlist.",
+    "plovPlayHere": "Play from here",
+    "plovReplaces": "Replaces current playback.",
     "plovPlayTooltip": "Start playing this — from the point marked on the waveform",
     "plovTitleTooltip": "Click: make this the active playlist, ready at its first track. Double-click: start playing it.",
     "plovSwitchTitle": "Stop what's playing?",
@@ -21299,21 +21313,30 @@ function renderPlaylistOverlay(){
   wrap.id = "plOverlayWrap";
   wrap.className = "plov-backdrop";
   wrap.style.top = top + "px";
+  const active = findPlayingContext();
+  const live = (!audioEl.paused && !audioEl.ended) || silenceState.active;
+  const status = active ? t(live ? "plovPlayingStatus" : "plovActiveStatus", {name: active.playlist.name}) : "";
   const count = items.length===1 ? t("itemCountOne") : t("itemCountMany", {n: items.length});
   wrap.innerHTML = `
-    <div class="plov-panel" role="dialog" aria-modal="false">
+    <div class="plov-panel" role="dialog" aria-modal="false" aria-labelledby="plovTitle">
       <div class="plov-head">
-        <div class="plov-titles"><div class="plov-title"></div><div class="plov-meta">${count} · ${fmtTimeLong(totalDurationOf(pl.items))}</div></div>
-        <button class="plov-close" type="button" title="${t("closeBtn")}">✕</button>
+        <div class="plov-titles"><div class="plov-browsing">${escapeHtmlText(t("plovBrowsing"))}</div><div class="plov-title" id="plovTitle"></div><div class="plov-meta">${count} · ${fmtTimeLong(totalDurationOf(pl.items))}</div></div>
+        <button class="btn ghost plov-close" type="button">${escapeHtmlText(t("closeBtn"))} ×</button>
       </div>
+      <div class="plov-actions">
+        <button class="btn primary plov-use" type="button" ${items.length ? "" : "disabled"}>${escapeHtmlText(t("plovUse"))}</button>
+        <span class="plov-meta">${escapeHtmlText(t("plovReadyHint"))}</span>
+      </div>
+      <div class="plov-status">${escapeHtmlText(status)}</div>
       <div class="plov-player">
-        <button class="tbtn-play-sm plov-play" type="button" title="${t("plovPlayTooltip")}">▶</button>
+        <button class="btn primary plov-play" type="button" title="${escapeHtmlText(t("plovPlayTooltip"))}" ${target ? "" : "disabled"}><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg> ${escapeHtmlText(t("plovPlayHere"))}</button>
         <div class="plov-track">
           <div class="plov-track-name"></div>
           <div class="plov-wave-wrap"><canvas class="plov-wave" width="900" height="56"></canvas><div class="waveform-hover-time plov-hover-time"></div></div>
           <div class="time-row"><span class="plov-start"></span><span class="plov-dur"></span></div>
         </div>
       </div>
+      <div class="plov-play-hint">${live ? escapeHtmlText(t("plovReplaces")) : ""}</div>
       <div class="plov-scroll"><div class="tracklist plov-list"></div></div>
     </div>`;
   const titleEl = wrap.querySelector(".plov-title");
@@ -21367,6 +21390,7 @@ function renderPlaylistOverlay(){
   });
   canvas.addEventListener("mouseleave", ()=>{ hoverEl.style.display = "none"; });
   wrap.querySelector(".plov-play").addEventListener("click", ()=>{ if(target) startFromOverlay(target.id, target.kind==="track" ? overlayPl.startRatio : 0); });
+  wrap.querySelector(".plov-use").addEventListener("click", overlayQueuePlaylist);
   wrap.querySelector(".plov-close").addEventListener("click", closePlaylistOverlay);
   wrap.addEventListener("mousedown", (e)=>{ if(e.target===wrap) closePlaylistOverlay(); });
 
