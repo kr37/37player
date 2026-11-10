@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.2.004">
+<meta name="app-version" content="2.2.005">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -1195,7 +1195,11 @@
   .delete-used ul{ margin:4px 0 0 0; padding-left:20px; }
   .lib-row .lloud{ color:var(--text-dim); font-size:13px; flex-shrink:0; min-width:6.2em; text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }
   .lib-row .lloud .ladj{ color:var(--amber); margin-left:4px; }
-  #levelModeControl button{ white-space:nowrap; }
+  .playing-level{ display:inline-flex; align-items:center; gap:7px; color:var(--text-dim); font-size:13px; white-space:nowrap; }
+  .playing-level-face{ position:relative; display:inline-flex; align-items:center; gap:8px; min-height:32px; padding:0 8px; border:1px solid var(--ctl-border, var(--line)); border-radius:8px; background:var(--ctl-bg, var(--bg-panel-raised)); color:var(--text); }
+  .playing-level-face select{ position:absolute; inset:0; width:100%; height:100%; opacity:0; cursor:pointer; }
+  .playing-level-face:focus-within{ outline:2px solid var(--amber); outline-offset:2px; }
+  @media (pointer:coarse){ .playing-level-face{ min-height:44px; } }
   .edit-volume-row{ display:flex; gap:14px; align-items:flex-start; margin-top:4px; }
   .edit-volume-row input[type=number]{ width:100% !important; }
   .edit-volume-note{ font-size:12.5px; padding-top:22px; line-height:1.45; }
@@ -5368,6 +5372,7 @@ const STRINGS = {
     "ctxLevelGroupLabel": "Even out loudness:",
     "libSwitchBusyCopying": "copying to “{name}”: it would stop, and nothing half-copied is left there (copy again afterwards);",
     "ctxLevelAlbum": "By album",
+    "ctxLevelAlbumRecommended": "By album (recommended)",
     "ctxLevelAlbumTip": "Even out loudness album by album (recommended): each album keeps its own ups and downs",
     "ctxLevelOff": "Off",
     "ctxLevelOffTip": "Don't even out loudness (each track's own volume still applies)",
@@ -22463,8 +22468,41 @@ let playingToolbarCollapsed = false;
 try{ playingToolbarCollapsed = localStorage.getItem("37player.playingToolbarCollapsed") === "true"; }catch(_){}
 const playingCtxBar = document.createElement("div");
 playingCtxBar.className = "ctx-bar ctx-playing"; playingCtxBar.setAttribute("role", "toolbar");
+// Native select handles keyboard and touch; the visible face stays compact.
+function playingLevelControl(){
+  const label = document.createElement("label");
+  label.className = "playing-level";
+  const caption = document.createElement("span");
+  caption.textContent = t("ctxLoudness");
+  const face = document.createElement("span");
+  face.className = "playing-level-face";
+  const value = document.createElement("span");
+  value.setAttribute("aria-hidden", "true");
+  face.append(value);
+  face.insertAdjacentHTML("beforeend", '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>');
+  const select = document.createElement("select");
+  select.id = "playingLevelMode";
+  select.setAttribute("aria-label", t("ctxLevelGroup"));
+  const choices = [
+    ["album", "ctxLevelAlbum", "ctxLevelAlbumRecommended", "ctxLevelAlbumTip"],
+    ["off", "ctxLevelOff", "ctxLevelOff", "ctxLevelOffTip"],
+    ["track", "ctxLevelTrack", "ctxLevelTrack", "ctxLevelTrackTip"]
+  ];
+  choices.forEach(([id, short, full])=> select.add(new Option(t(full), id)));
+  const update = ()=>{
+    const choice = choices.find(c=> c[0] === levelMode()) || choices[1];
+    select.value = choice[0];
+    value.textContent = t(choice[1]);
+    label.title = t(choice[3]);
+  };
+  select.addEventListener("change", ()=>{ setLevelMode(select.value); update(); });
+  face.append(select);
+  label.append(caption, face);
+  update();
+  return label;
+}
 function buildPlayingCtxBar(){
-  // Wrap, Album, Loudness | Even out loudness: the three choices | Playback
+  // Display switches | Loudness picker | Playback
   // (Gen Rinzin, 30 Oct 2026; a "Display:" label with the switches as icons only
   // was tried in 1.4.129 and dropped: the words are wanted).
   fillCtxBar(playingCtxBar, [
@@ -22472,14 +22510,7 @@ function buildPlayingCtxBar(){
     {icon: "album", label: t("ctxAlbum"), tip: t("albumColumnLabel"), on: ()=> !!root.settings.showAlbumColumn, act: ()=> ctxToggleSetting("albumColumnToggle")},
     {icon: "loud", label: t("ctxLoudness"), tip: t("showPlayLoudTip"), on: ()=> !!root.settings.showPlayLoudness, act: ()=>{ root.settings.showPlayLoudness = !root.settings.showPlayLoudness; saveState(); renderPlayer(); }},
     "|",
-    // How it sounds (1.4.128, Gen Rinzin): the three choices side by side, as
-    // Canva's left / centre / right, after the switches about the display.
-    {group: t("ctxLevelGroupLabel")},
-    ctxSeg(t("ctxLevelGroup"), [
-      {value: "album", icon: "album", label: t("ctxLevelAlbum"), tip: t("ctxLevelAlbumTip")},
-      {value: "off", icon: "levelOff", label: t("ctxLevelOff"), tip: t("ctxLevelOffTip")},
-      {value: "track", icon: "note", label: t("ctxLevelTrack"), tip: t("ctxLevelTrackTip")},
-    ], levelMode, setLevelMode),
+    playingLevelControl(),
     "|",
     {icon: "sliders", label: t("ctxPlayback"), tip: t("ctxPlaybackTip"), lock: ()=> !!root.settings.pin && Date.now() >= pinUnlockedUntil,
       act: ()=> withPin(()=>{ openSettingsPage(); goToSettingsSection("playback"); })}
