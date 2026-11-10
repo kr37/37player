@@ -1637,12 +1637,9 @@
   .library-screen.lib-table-mode .lib-waveform-canvas{ background:var(--bg-panel); }
   /* Theme-aware, identical transport icons regardless of platform fonts. */
   .transport-skip-icon{ display:block; width:19px; height:19px; flex:none; }
-  .ed-preview-transport{ display:inline-flex; align-items:center; gap:5px; flex-shrink:0; }
-  .ed-preview-transport .tbtn-sm{ display:inline-flex; align-items:center; justify-content:center; width:32px; height:32px; padding:0; border:1px solid var(--transport-border, var(--line)); border-radius:8px; background:var(--ctl-bg, var(--bg-panel-raised)); color:var(--text); cursor:pointer; }
-  .ed-preview-transport .tbtn-sm:disabled{ opacity:.45; cursor:default; }
-  .ed-preview-transport .tbtn-sm:hover:not(:disabled){ background:var(--ctl-hover-bg, var(--bg-panel)); border-color:var(--ctl-hover-border, var(--line)); }
-  .playing-toolbar-shell{ position:relative; display:flex; flex-direction:column; flex:none; border-bottom:1px solid var(--line); background:var(--bg-deep); }
-  .playing-toolbar-shell .ctx-playing{ border-bottom:0; }
+  .playing-toolbar-shell{ position:relative; display:flex; flex-direction:column; flex:none; background:var(--bg-deep); }
+  .playing-toolbar-shell.collapsed{ background:transparent; }
+  .playing-toolbar-shell .ctx-playing{ border-bottom:1px solid var(--line); }
   .playing-toolbar-shell .ctx-playing[hidden]{ display:none !important; }
   .playing-toolbar-toggle{ align-self:center; display:inline-flex; align-items:center; justify-content:center; width:48px; height:18px; padding:0; border:1px solid var(--ctl-border, var(--line)); border-top:0; border-radius:0 0 10px 10px; background:var(--ctl-bg, var(--bg-panel-raised)); color:var(--active-bg, var(--text)); cursor:pointer; }
   .playing-toolbar-toggle svg{ width:17px; height:17px; fill:none; stroke:currentColor; stroke-width:2.6; stroke-linecap:round; stroke-linejoin:round; }
@@ -1798,11 +1795,7 @@
   </div>
   <div class="ed-preview-bar" id="edPreviewBar" style="display:none;">
     <div class="ed-preview-text"><div class="ed-preview-album" id="edPreviewAlbum"></div><div class="ed-preview-title" id="edPreviewTitle"></div></div>
-    <div class="ed-preview-transport">
-      <button class="tbtn-sm" id="edPreviewBack" type="button" title="Back 10 seconds" aria-label="Back 10 seconds" disabled><svg class="transport-skip-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M11.5 5 3 12l8.5 7V5Zm9 0L12 12l8.5 7V5Z" fill="currentColor"/></svg></button>
-      <button class="tbtn-play-sm" id="edPreviewPlay" disabled>▶</button>
-      <button class="tbtn-sm" id="edPreviewForward" type="button" title="Forward 10 seconds" aria-label="Forward 10 seconds" disabled><svg class="transport-skip-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 5 12 12l-8.5 7V5Zm9 0L21 12l-8.5 7V5Z" fill="currentColor"/></svg></button>
-    </div>
+    <button class="tbtn-play-sm" id="edPreviewPlay" disabled>▶</button>
     <span class="ed-preview-time" id="edPreviewTime">-:-- / -:--</span>
     <div class="ed-preview-wave-wrap"><canvas id="edPreviewWave" class="ed-preview-wave"></canvas><div class="waveform-hover-time" id="edPreviewHoverTime"></div></div>
   </div>
@@ -33568,8 +33561,6 @@ function renderEditorPreviewBar(){
   document.getElementById("edPreviewTitle").textContent = tr ? tr.name : "";
   const btn = document.getElementById("edPreviewPlay");
   btn.disabled = !tr;
-  document.getElementById("edPreviewBack").disabled = !tr;
-  document.getElementById("edPreviewForward").disabled = !tr;
   setPlayGlyph(btn, !!(loaded && !a.paused));
   const dur = (loaded && a.duration) ? a.duration : (tr ? tr.duration : 0);
   document.getElementById("edPreviewTime").textContent = tr ? fmtTime(loaded ? a.currentTime : 0) + " / " + fmtTime(dur) : "-:-- / -:--";
@@ -33616,14 +33607,6 @@ async function ensureEditorPreviewSource(){
 }
 (function(){
   const a = edPreviewEl();
-  async function seekPreview(delta){
-    if(!edPreviewTrackId) return;
-    const el = await ensureEditorPreviewSource();
-    el.currentTime = Math.max(0, Math.min(el.duration || 0, el.currentTime + delta));
-    renderEditorPreviewBar();
-  }
-  document.getElementById("edPreviewBack").addEventListener("click", ()=> seekPreview(-10));
-  document.getElementById("edPreviewForward").addEventListener("click", ()=> seekPreview(10));
   document.getElementById("edPreviewPlay").addEventListener("click", async ()=>{
     if(!edPreviewTrackId) return;
     const el = await ensureEditorPreviewSource();
