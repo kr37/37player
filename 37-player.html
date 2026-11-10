@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.2.006">
+<meta name="app-version" content="2.2.007">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -543,7 +543,23 @@
   .plov-backdrop{ position:absolute; left:0; right:0; bottom:0; z-index:30; background:rgba(0,0,0,0.30); display:flex; padding:4px 16px 16px; }
   .plov-panel{ flex:1; min-height:0; display:flex; flex-direction:column; background:var(--bg-panel); border:1px solid var(--line); border-radius:var(--radius, 10px); box-shadow:0 10px 36px rgba(0,0,0,0.45); overflow:hidden; }
   .plov-head{ display:flex; align-items:flex-start; gap:10px; padding:12px 14px 6px; }
-  .plov-actions{ display:flex; align-items:center; flex-wrap:wrap; gap:8px 12px; padding:0 14px 4px; }
+  .plov-actions{ display:flex; flex-direction:column; align-items:flex-start; gap:2px; max-width:240px; }
+  .plov-actions .plov-meta{ margin:0; }
+  .plov-play-action{ flex-shrink:0; max-width:180px; }
+  .plov-play-action .plov-play-hint{ padding:3px 0 0; font-size:12px; }
+  .plov-head{ flex-wrap:wrap; padding-top:8px; }
+  .plov-close{ margin-left:auto; }
+  .plov-head .plov-titles{ flex-basis:180px; }
+  .plov-panel > .plov-head, .plov-panel > .plov-status, .plov-panel > .plov-player{ flex-shrink:0; }
+  @media(max-width:600px){ .plov-head .plov-actions{ order:3; max-width:none; flex-basis:100%; flex-direction:row; align-items:center; gap:8px; } }
+  @media(max-height:850px){
+    .player.browsing-playlist .now-playing-fixed{ padding-top:6px; padding-bottom:2px; }
+    .player.browsing-playlist .now-playing-top{ margin-bottom:6px; }
+    .player.browsing-playlist .waveform-wrap{ margin-bottom:4px; }
+    .player.browsing-playlist canvas#waveform{ height:48px; }
+    .player.browsing-playlist .plov-wave{ height:36px; }
+    .player.browsing-playlist .plov-player{ padding-bottom:5px; }
+  }
   .plov-browsing{ font-size:12px; font-weight:600; color:var(--text-dim); margin-bottom:3px; }
   .plov-status, .plov-play-hint{ font-size:12.5px; color:var(--text-dim); padding:0 14px 4px; }
   .plov-status:empty, .plov-play-hint:empty{ display:none; }
@@ -21262,7 +21278,8 @@ function openPlaylistOverlay(plId){
 function closePlaylistOverlay(){
   if(!overlayPl) return;
   overlayPl = null; overlayPending = null;
-  const o = document.getElementById("plOverlayWrap"); if(o) o.remove();
+  playerEl.classList.remove("browsing-playlist");
+  const o = document.getElementById("plOverlayWrap"); if(o){ if(o.anchorObserver) o.anchorObserver.disconnect(); o.remove(); }
   renderRail();
 }
 function overlayItemLabel(it){
@@ -21298,11 +21315,12 @@ function drawOverlayWave(canvas, item){
   ctx.fillRect(Math.max(0, x-1.5), 0, 3, h);
 }
 function renderPlaylistOverlay(){
+  playerEl.classList.toggle("browsing-playlist", !!overlayPl && appMode === "playing");
   const old = document.getElementById("plOverlayWrap");
-  if(old){ const sc = old.querySelector(".plov-scroll"); if(sc && overlayPl) overlayPl.scrollTop = sc.scrollTop; old.remove(); }
+  if(old){ if(old.anchorObserver) old.anchorObserver.disconnect(); const sc = old.querySelector(".plov-scroll"); if(sc && overlayPl) overlayPl.scrollTop = sc.scrollTop; old.remove(); }
   if(!overlayPl || appMode!=="playing") return;
   const f = findNode(overlayPl.id);
-  if(!f || f.node.kind!=="playlist"){ overlayPl = null; return; }
+  if(!f || f.node.kind!=="playlist"){ overlayPl = null; playerEl.classList.remove("browsing-playlist"); return; }
   const pl = f.node, items = sortedItems(pl);
   if(overlayPl.selectedId && !items.some(i=> i.id===overlayPl.selectedId)) overlayPl.selectedId = null;
   const target = overlayTarget(pl);
@@ -21320,23 +21338,23 @@ function renderPlaylistOverlay(){
   wrap.innerHTML = `
     <div class="plov-panel" role="dialog" aria-modal="false" aria-labelledby="plovTitle">
       <div class="plov-head">
-        <div class="plov-titles"><div class="plov-browsing">${escapeHtmlText(t("plovBrowsing"))}</div><div class="plov-title" id="plovTitle"></div><div class="plov-meta">${count} · ${fmtTimeLong(totalDurationOf(pl.items))}</div></div>
+        <div class="plov-titles"><div class="plov-title" id="plovTitle"></div><div class="plov-meta">${escapeHtmlText(t("plovBrowsing"))} · ${count} · ${fmtTimeLong(totalDurationOf(pl.items))}</div></div>
+        <div class="plov-actions">
+          <button class="btn primary plov-use" type="button" ${items.length ? "" : "disabled"}>${escapeHtmlText(t("plovUse"))}</button>
+          <span class="plov-meta">${escapeHtmlText(t("plovReadyHint"))}</span>
+        </div>
         <button class="btn ghost plov-close" type="button">${escapeHtmlText(t("closeBtn"))} ×</button>
-      </div>
-      <div class="plov-actions">
-        <button class="btn primary plov-use" type="button" ${items.length ? "" : "disabled"}>${escapeHtmlText(t("plovUse"))}</button>
-        <span class="plov-meta">${escapeHtmlText(t("plovReadyHint"))}</span>
       </div>
       <div class="plov-status">${escapeHtmlText(status)}</div>
       <div class="plov-player">
-        <button class="btn primary plov-play" type="button" title="${escapeHtmlText(t("plovPlayTooltip"))}" ${target ? "" : "disabled"}><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg> ${escapeHtmlText(t("plovPlayHere"))}</button>
+        <div class="plov-play-action"><button class="btn primary plov-play" type="button" title="${escapeHtmlText(t("plovPlayTooltip"))}" ${target ? "" : "disabled"}><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg> ${escapeHtmlText(t("plovPlayHere"))}</button>
+          <div class="plov-play-hint">${live ? escapeHtmlText(t("plovReplaces")) : ""}</div></div>
         <div class="plov-track">
           <div class="plov-track-name"></div>
           <div class="plov-wave-wrap"><canvas class="plov-wave" width="900" height="56"></canvas><div class="waveform-hover-time plov-hover-time"></div></div>
           <div class="time-row"><span class="plov-start"></span><span class="plov-dur"></span></div>
         </div>
       </div>
-      <div class="plov-play-hint">${live ? escapeHtmlText(t("plovReplaces")) : ""}</div>
       <div class="plov-scroll"><div class="tracklist plov-list"></div></div>
     </div>`;
   const titleEl = wrap.querySelector(".plov-title");
@@ -21428,6 +21446,14 @@ function renderPlaylistOverlay(){
     list.appendChild(row);
   });
   playerEl.appendChild(wrap);
+  // Keep the overlay below the live player when height-dependent styling changes.
+  if(anchor && typeof ResizeObserver !== "undefined"){
+    wrap.anchorObserver = new ResizeObserver(()=>{
+      if(!wrap.isConnected){ wrap.anchorObserver.disconnect(); return; }
+      wrap.style.top = (anchor.offsetTop + anchor.offsetHeight + 2) + "px";
+    });
+    wrap.anchorObserver.observe(anchor);
+  }
   const sc = wrap.querySelector(".plov-scroll");
   if(overlayPl.scrollTop) sc.scrollTop = overlayPl.scrollTop;
 }
