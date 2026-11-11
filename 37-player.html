@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.2.015">
+<meta name="app-version" content="2.2.016">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -39198,6 +39198,15 @@ function updateBackupIndicator(){
 document.getElementById("btnBackup").addEventListener("click", ()=>{
   if(sharedConfig() && sharedConfig().kind === "gdrive" && driveNeedsSignIn) return openSharedSettings();
   if(!backupInfo.handle && syncStuck()) return openSyncStuckDialog();
+  // A library kept in a folder (the desktop app's, or Chrome's) has no
+  // backups to make here: the button shows where it is (Settings → Library,
+  // with the folder and Show), or how its syncing stands. It used to open
+  // "Back up library", after seconds of adding up sizes (the Mac mini, 11 Nov 2026).
+  if(libraryIsFolder()){
+    const open = ()=> setTimeout(()=>{ closeHelpPage(); settingsSection = sharedConfig() ? "shared" : "info"; if(settingsPageOpen()) renderSettingsPage(); else openSettingsPage(); }, 0);
+    if(appMode === "editing" || appMode === "library") open(); else requestAppMode("editing", open);
+    return;
+  }
   performUserBackup();
 });
 setInterval(updateBackupIndicator, 60*1000); // a sync that stops finishing shows after days
