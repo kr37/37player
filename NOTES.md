@@ -107,6 +107,8 @@ The full plan and history are in the project doc `shared-library-sync.md`. In sh
 
 ## Non-obvious decisions
 
+- **Translated Playing controls** (2.2.008): the album recommendation and all new browsing/switching labels and explanations are supplied in Spanish, French, Portuguese, German, Chinese, Vietnamese, Greek and Italian, rather than falling back to English.
+
 - **More room for browsed tracks** (2.2.007, Gen Rinzin): overlay title/count and Use this playlist share a header, Browsing joins the count, and the replacement hint sits under Play from here. On viewports up to 850px high, browsing also reduces live-player padding and waveform height while keeping its transport, names, volume and seekbar. Closing restores normal sizing. The overlay follows changes in the live header height. Touch targets stay full-sized; the track list gets the recovered space.
 
 - **Explicit actions while browsing another playlist** (2.2.006, Gen Rinzin): the Playing overlay is labelled Browsing and names the playlist that remains active. Use this playlist makes the browsed playlist active at its first item without starting it (the existing confirmation still protects ongoing playback). Play from here starts the selected item at the waveform cursor, with a replacement warning during playback. Close is labelled. Title click/double-click, row double-click, Enter, Escape and outside-click shortcuts remain unchanged. The aim is to expose the two decisions without introducing a separate queue or requiring users to discover gestures.
