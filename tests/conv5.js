@@ -96,14 +96,21 @@ const closeSettings = p=> p.evaluate(()=> document.querySelector('#settingsClose
   await A.evaluate(()=> document.querySelector('#cleanupConvertNote details summary').click()); await sleep(300);
   const rows = await A.evaluate(()=> [...document.querySelectorAll('#cleanupConvertNote table tr')].map(r=> [...r.cells].map(c=> c.innerText.trim())));
   console.log('list:', JSON.stringify(rows));
-  ok(rows.length === 2 && rows[0].join('|') === 'Track|Type|Size|Sample rate|Bit rate|Channels' && rows[1][1] === 'WAV' && /(KB|MB)$/.test(rows[1][2]) && /kHz$/.test(rows[1][3]) && /kbps$/.test(rows[1][4]) && /^(mono|stereo)$/.test(rows[1][5]), 'opened: name, type, size, sample rate, bit rate and channels of each');
+  ok(rows.length === 2 && rows[0].join('|') === 'Track|Type|Size|Sample rate|Bit rate|Channels' && rows[1][1] === 'WAV' && /(KB|MB)$/.test(rows[1][2]) && /kHz$/.test(rows[1][3]) && /kbps$/.test(rows[1][4]) && /^(mono|stereo)$/.test(rows[1][5]), 'opened: name (with a box to tick), type, size, sample rate, bit rate and channels of each');
+  // Convert selected (2.2.015): nothing ticked, it's off; ticking one turns it on with the count.
+  const pickState = ()=> A.evaluate(()=>{ const b = document.getElementById('cleanupConvertSelected'); return b ? b.textContent + (b.disabled ? ' off' : ' on') : null; });
+  ok(await pickState() === 'Convert selected (0) off', 'Convert selected is off while nothing is ticked (' + await pickState() + ')');
+  await A.evaluate(()=> document.querySelector('#cleanupConvertNote td input.fmt-pick').click()); await sleep(150);
+  ok(await pickState() === 'Convert selected (1) on' && await A.evaluate(()=> document.getElementById('fmtPickAll').checked), 'ticking a track turns it on, with the count (' + await pickState() + ')');
+  await A.evaluate(()=> document.getElementById('fmtPickAll').click()); await sleep(150);
+  ok(await pickState() === 'Convert selected (0) off', 'the heading\'s box unticks them all');
   await A.evaluate(()=> document.getElementById('cleanupConvert').scrollIntoView({block: 'start'})); await sleep(200);
   await A.screenshot({path: 'shots/conv5-format-list.png'});
   await A.evaluate(()=> [...document.querySelectorAll('#cleanupConvertNote th')].find(th=> th.textContent === 'Size').click()); await sleep(200);
   ok(await A.evaluate(()=> document.querySelector('#cleanupConvertNote th[data-sorted]')?.textContent) === 'Size', 'a click on a column sorts by it');
   // the converter crashes on the first try (as ffmpeg.wasm did on the 39th of 40 WAVs): tried again with a fresh one
   await A.evaluate(()=>{ window.__crashNext(); document.getElementById('missingAudioNote').__mark = 1; });
-  await clickText(A, '#cleanupConvertNote button', '^Convert them now$'); await sleep(500);
+  await clickText(A, '#cleanupConvertNote button', '^Convert all 1$'); await sleep(500);
   await clickText(A, '.modal button', '^Convert them now$');
   let during = '';
   for(let k = 0; k < 40 && !during; k++){ const x = await A.evaluate(()=> document.getElementById('cleanupConvertNote')?.innerText || ''); if(/Converting now/.test(x)) during = x; else await sleep(150); }

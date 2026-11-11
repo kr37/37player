@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.2.014">
+<meta name="app-version" content="2.2.015">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -929,6 +929,8 @@
   .fmt-list td{ padding:5px 10px; border-bottom:1px solid var(--line); vertical-align:top; }
   .fmt-list tr:last-child td{ border-bottom:none; }
   .fmt-list td.num{ text-align:right; white-space:nowrap; font-variant-numeric:tabular-nums; }
+  .fmt-list input.fmt-pick{ margin:2px 8px 0 0; cursor:pointer; width:auto; flex:none; vertical-align:-2px; }
+  .fmt-list label.fmt-pick-row{ display:flex; align-items:flex-start; margin:0; font:inherit; color:inherit; cursor:pointer; }
   .fmt-list th.num{ text-align:right; }
   .fmt-list .fmt-album{ color:var(--text-dim); font-size:12.5px; }
   .fmt-list td:first-child{ overflow-wrap:anywhere; min-width:140px; }
@@ -5645,6 +5647,7 @@ const STRINGS = {
     "discardOriginalsBtn": "Discard them",
     "convertBtn": "Convert",
     "convertAllBtn": "Convert all {n}",
+    "convertSelectedBtn": "Convert selected ({n})",
     "convertThemNowBtn": "Convert them now",
     "convertItNowBtn": "Convert it now",
     "convertLaterBtn": "Later",
@@ -7507,6 +7510,7 @@ const STRINGS = {
     "discardOriginalsBtn": "Descartarlos",
     "convertBtn": "Convertir",
     "convertAllBtn": "Convertir las {n}",
+    "convertSelectedBtn": "Convertir las seleccionadas ({n})",
     "convertThemNowBtn": "Convertirlas ahora",
     "convertItNowBtn": "Convertirla ahora",
     "convertLaterBtn": "Más tarde",
@@ -9369,6 +9373,7 @@ const STRINGS = {
     "discardOriginalsBtn": "Les supprimer",
     "convertBtn": "Convertir",
     "convertAllBtn": "Tout convertir ({n})",
+    "convertSelectedBtn": "Convertir la sélection ({n})",
     "convertThemNowBtn": "Les convertir maintenant",
     "convertItNowBtn": "La convertir maintenant",
     "convertLaterBtn": "Plus tard",
@@ -11231,6 +11236,7 @@ const STRINGS = {
     "discardOriginalsBtn": "Descartá-los",
     "convertBtn": "Converter",
     "convertAllBtn": "Converter as {n}",
+    "convertSelectedBtn": "Converter as selecionadas ({n})",
     "convertThemNowBtn": "Convertê-las agora",
     "convertItNowBtn": "Convertê-la agora",
     "convertLaterBtn": "Mais tarde",
@@ -13093,6 +13099,7 @@ const STRINGS = {
     "discardOriginalsBtn": "Verwerfen",
     "convertBtn": "Umwandeln",
     "convertAllBtn": "Alle {n} umwandeln",
+    "convertSelectedBtn": "Ausgewählte umwandeln ({n})",
     "convertThemNowBtn": "Jetzt umwandeln",
     "convertItNowBtn": "Jetzt umwandeln",
     "convertLaterBtn": "Später",
@@ -14955,6 +14962,7 @@ const STRINGS = {
     "discardOriginalsBtn": "丢弃它们",
     "convertBtn": "转换",
     "convertAllBtn": "全部转换（{n}）",
+    "convertSelectedBtn": "转换所选（{n}）",
     "convertThemNowBtn": "立即转换",
     "convertItNowBtn": "立即转换",
     "convertLaterBtn": "稍后",
@@ -16817,6 +16825,7 @@ const STRINGS = {
     "discardOriginalsBtn": "Bỏ chúng",
     "convertBtn": "Chuyển đổi",
     "convertAllBtn": "Chuyển đổi cả {n}",
+    "convertSelectedBtn": "Chuyển đổi mục đã chọn ({n})",
     "convertThemNowBtn": "Chuyển đổi ngay",
     "convertItNowBtn": "Chuyển đổi ngay",
     "convertLaterBtn": "Để sau",
@@ -18679,6 +18688,7 @@ const STRINGS = {
     "discardOriginalsBtn": "Απόρριψή τους",
     "convertBtn": "Μετατροπή",
     "convertAllBtn": "Μετατροπή και των {n}",
+    "convertSelectedBtn": "Μετατροπή επιλεγμένων ({n})",
     "convertThemNowBtn": "Μετατροπή τώρα",
     "convertItNowBtn": "Μετατροπή τώρα",
     "convertLaterBtn": "Αργότερα",
@@ -20541,6 +20551,7 @@ const STRINGS = {
     "discardOriginalsBtn": "Scartali",
     "convertBtn": "Converti",
     "convertAllBtn": "Converti tutte ({n})",
+    "convertSelectedBtn": "Converti i selezionati ({n})",
     "convertThemNowBtn": "Convertile ora",
     "convertItNowBtn": "Convertila ora",
     "convertLaterBtn": "Più tardi",
@@ -41583,6 +41594,7 @@ function renderAllSettings(body){
 }
 // Library cleanup → Convert to the preferred format: what File format's
 // settings would convert, the button, and the tracks themselves.
+const cleanupConvertSel = new Set(); // the tracks ticked in Library cleanup's list of files to convert
 function renderCleanupConvert(){
   const el = document.getElementById("cleanupConvertNote"); if(!el) return;
   const p = formatPolicy(), target = preferredFormat(p), list = policyMatchesHere(p).filter(tr=> !convertQueue.includes(tr.id));
@@ -41602,16 +41614,24 @@ function renderCleanupConvert(){
   el.appendChild(change);
   const bigOnes = list.filter(tr=> trackIsBigFile(tr)).length;
   if(bigOnes){ const bn = document.createElement("p"); bn.className = "settings-note"; bn.id = "cleanupBigNote"; bn.textContent = t(bigOnes === 1 ? "cleanupBigNoteOne" : "cleanupBigNote", {n: bigOnes, size: fmtBytes(BIG_FILE_BYTES)}); el.appendChild(bn); }
-  const row = document.createElement("div");
-  const b = document.createElement("button"); b.className = "btn primary"; b.style.marginTop = "8px"; b.textContent = t("fmtEffectBtn");
+  // Convert selected (the ones ticked in the list below) and Convert all:
+  // big files are best converted one at a time (2.2.015).
+  const ids = new Set(list.map(tr=> tr.id));
+  [...cleanupConvertSel].forEach(id=>{ if(!ids.has(id)) cleanupConvertSel.delete(id); });
+  const row = document.createElement("div"); row.style.cssText = "display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;";
+  const bs = document.createElement("button"); bs.className = "btn primary"; bs.id = "cleanupConvertSelected";
+  const selLabel = ()=>{ bs.textContent = t("convertSelectedBtn", {n: cleanupConvertSel.size}); bs.disabled = !cleanupConvertSel.size; };
+  selLabel();
+  bs.addEventListener("click", async ()=>{ await convertTracks([...cleanupConvertSel]); renderCleanupConvert(); }); // (ticked on purpose: no "are you sure"; big files still get their warning)
+  const b = document.createElement("button"); b.className = "btn ghost"; b.id = "cleanupConvertAll"; b.textContent = t("convertAllBtn", {n: list.length});
   b.addEventListener("click", async ()=>{
     const go = await askChoice(t("fmtConvertConfirmTitle", {n: list.length}), `<p>${t("fmtConvertConfirmBody", {format: escapeHtmlText(formatLabel(target))})}</p>`, [
       {label: t("fmtEffectBtn"), value: "go", kind: "primary"}, {label: t("cancel"), value: null}]);
     if(go === "go"){ await convertTracks(list.map(tr=> tr.id)); renderCleanupConvert(); }
   });
-  row.appendChild(b);
+  row.appendChild(bs); row.appendChild(b);
   el.appendChild(row);
-  el.appendChild(fmtEffectList(list));
+  el.appendChild(fmtEffectList(list, {sel: cleanupConvertSel, onChange: selLabel, open: bigOnes > 0}));
 }
 // Library cleanup → Damaged files.
 // Library cleanup → "Show in Table" (1.4.112): the Library's Table, showing
@@ -41708,9 +41728,12 @@ function goToSettingsSection(id, anchorId){
 // the list is as long as it is, inside the page's own scrolling (a box
 // within a scrolling page kept catching the mouse wheel).
 let fmtListState = {open: false, key: "name", up: true};
-function fmtEffectList(list){
+// pick ({sel: a Set of track ids, onChange, open}): a box to tick in front of
+// each row, and one in the heading for all or none (Library cleanup: Gen Rinzin,
+// 11 Nov 2026, there was no way to convert big files one at a time).
+function fmtEffectList(list, pick){
   const d = document.createElement("details");
-  d.className = "fmt-list"; d.open = fmtListState.open;
+  d.className = "fmt-list"; d.open = fmtListState.open || !!(pick && pick.open);
   d.addEventListener("toggle", ()=>{ fmtListState.open = d.open; });
   const kbpsOf = tr=> tr.fileSize && tr.duration ? tr.fileSize * 8 / tr.duration / 1000 : null;
   const cols = [
@@ -41733,15 +41756,39 @@ function fmtEffectList(list){
     const rows = list.slice().sort((a, b)=>{ const x = col.val(a), y = col.val(b); const r = col.text ? byText.compare(x, y) : x < y ? -1 : x > y ? 1 : 0; return fmtListState.up ? r : -r; });
     table.innerHTML = "";
     const head = table.insertRow();
-    cols.forEach(c=>{
+    cols.forEach((c, ci)=>{
       const th = document.createElement("th"); th.textContent = c.label; if(c.num) th.className = "num";
+      // The box for all or none sits in the first heading, before its name
+      // (a column of its own took 140px: the browser shares spare width out).
+      if(pick && ci === 0){
+        const all = document.createElement("input"); all.type = "checkbox"; all.id = "fmtPickAll"; all.className = "fmt-pick";
+        all.checked = list.length > 0 && list.every(tr=> pick.sel.has(tr.id));
+        all.indeterminate = !all.checked && list.some(tr=> pick.sel.has(tr.id));
+        all.addEventListener("click", (e)=>{ e.stopPropagation(); list.forEach(tr=>{ if(all.checked) pick.sel.add(tr.id); else pick.sel.delete(tr.id); }); render(); pick.onChange(); });
+        th.insertBefore(all, th.firstChild);
+      }
       if(c.key === fmtListState.key) th.dataset.sorted = fmtListState.up ? "up" : "down";
       th.addEventListener("click", ()=>{ if(fmtListState.key === c.key) fmtListState.up = !fmtListState.up; else { fmtListState.key = c.key; fmtListState.up = !c.num; } render(); });
       head.appendChild(th);
     });
     rows.forEach(tr=>{
       const row = table.insertRow();
-      const name = row.insertCell();
+      let name = row.insertCell();
+      if(pick){
+        const lab = document.createElement("label"); lab.className = "fmt-pick-row";
+        lab.style.cssText = "display:flex; align-items:flex-start; margin:0; cursor:pointer;"; // (in the element: Settings' own rules for labels and inputs outrank a class)
+        const cb = document.createElement("input"); cb.type = "checkbox"; cb.className = "fmt-pick"; cb.dataset.id = tr.id; cb.checked = pick.sel.has(tr.id);
+        cb.style.cssText = "display:inline-block; width:auto; flex:none; margin:2px 8px 0 0;";
+        cb.addEventListener("change", ()=>{
+          if(cb.checked) pick.sel.add(tr.id); else pick.sel.delete(tr.id);
+          const all = document.getElementById("fmtPickAll");
+          if(all){ all.checked = list.every(x=> pick.sel.has(x.id)); all.indeterminate = !all.checked && list.some(x=> pick.sel.has(x.id)); }
+          pick.onChange();
+        });
+        const text = document.createElement("div");
+        lab.appendChild(cb); lab.appendChild(text); name.appendChild(lab);
+        name = text; // (the name and album go beside the box; a click on them ticks it)
+      }
       const n = document.createElement("div"); n.textContent = tr.name || tr.filename || ""; name.appendChild(n);
       // The album says most (in a Center's library the artist is often the
       // same throughout), so it comes first.
@@ -42621,6 +42668,7 @@ const SHARED_OFF = /[?&]nosync\b/.test(location.search);
 // as the library's fingerprint at the moment the shared library held all of
 // it, audio included; any change here afterwards needs sending again first.
 let sharedSyncedFp = null, sharedCoveredFp;
+let sharedNotCoveredWhy = null; // the last reason logged (sharedUploadInBackgroundHere)
 async function sharedLoadCovered(){
   if(sharedCoveredFp !== undefined) return;
   try{ const r = await idbGet("state", "sharedCovered"); sharedCoveredFp = r && r.fingerprint || null; }catch(err){ sharedCoveredFp = null; }
@@ -44326,7 +44374,21 @@ async function sharedUploadInBackgroundHere(cfg){
   sharedUploading = true;
   try{
     const base = await sharedLoadBase();
-    if(base && base.doc){ await sharedUploadFiles(cfg, base.doc); if(sharedConfig() && !sharedTooBigNames.size && !convertQueue.length && !convertSoon.size) sharedNoteCovered(); }
+    if(base && base.doc){
+      await sharedUploadFiles(cfg, base.doc);
+      if(sharedConfig()){
+        // Why this library isn't yet counted as all in the shared library
+        // ("In sync"), said once in the sync log each time the reason changes
+        // (2.2.015: the Mac mini's top bar didn't say In sync after
+        // everything had gone up, and nothing recorded why).
+        const why = sharedTooBigNames.size ? "a file was refused as too big to send"
+          : (convertQueue.length || convertSoon.size) ? "files are waiting to be converted"
+          : !sharedSyncedFp ? "no sync round has finished since opening"
+          : libraryFingerprint() !== sharedSyncedFp ? "the library changed while files were going up (the next round looks again)" : "";
+        if(!why) sharedNoteCovered();
+        if(why !== sharedNotCoveredWhy){ sharedNotCoveredWhy = why; sharedLog(why ? "not yet counted as all in the shared library: " + why : "everything here is in the shared library"); }
+      }
+    }
   }catch(err){
     console.warn("Shared library upload paused:", err);
     if(err && err.driveFull){ sharedDriveFullAt = Date.now(); sharedDriveFullSaid = false; sharedSetStatus({state: "error", message: sharedFailText(err)}); }
