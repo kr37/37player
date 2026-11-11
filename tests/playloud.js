@@ -30,23 +30,25 @@ const clickText = (p, sel, src) => p.evaluate((sel, src)=>{ const re=new RegExp(
   const bar = ()=> p.evaluate(()=> [...document.querySelectorAll('.ctx-bar .tb-btn, .ctx-bar .tb-sep')].filter(e=> e.offsetParent !== null).map(e=> e.classList.contains('tb-sep') ? '|' : e.textContent.trim() + (e.classList.contains('on') ? '*' : '')).join(' '));
   await clickText(p, '.tab, button', '^Playing$'); await sleep(300);
   let txt = await bar();
-  ok(/Wrap.*Album.*Loudness.*\|.*By album.*Off\*.*By track.*\|.*Playback/.test(txt), 'the bar: display switches, a line, By album / Off / By track (Off on), a line, Playback: ' + txt);
+  ok(/Wrap.*Album.*Loudness.*\|.*Playback/.test(txt), 'the bar: display switches, a line, Playback: ' + txt);
+  const pick = v=> p.evaluate(v=>{ const s = document.getElementById('playingLevelMode'); s.value = v; s.dispatchEvent(new Event('change')); }, v);
+  ok(await p.evaluate(()=>{ const s = document.getElementById('playingLevelMode'); return s && s.value === 'off' && [...s.options].map(o=> o.value).join() === 'album,off,track'; }), 'Loudness is a dropdown: By album / Off / By track, Off chosen (2.2.005)');
   ok(!(await p.evaluate(()=> document.querySelector('#playingTrackList .tloud'))), 'nothing in the rows while Loudness is off and no track has its own volume');
 
-  await clickText(p, '.ctx-bar .tb-btn', '^By track$'); await sleep(300);
+  await pick('track'); await sleep(300);
   ok(await p.evaluate(()=> window.__dbg.getRoot().settings.levelMode) === 'track', 'By track turns evening out on, track by track');
   await clickText(p, '.ctx-bar .tb-btn', '^Loudness$'); await sleep(300);
   let cell = await p.evaluate(()=>{ const c = document.querySelector('#playingTrackList .tloud'); return c ? {text: c.textContent, title: c.title} : null; });
   const want = Math.round(-18 - L), wantTxt = want > 0 ? '+' + want : want < 0 ? '−' + (-want) : '0';
   ok(cell && cell.text === wantTxt, 'Loudness shows the track\'s adjustment in whole dB: ' + JSON.stringify(cell) + ' (want ' + wantTxt + ')');
-  await clickText(p, '.ctx-bar .tb-btn', '^Off$'); await sleep(300);
+  await pick('off'); await sleep(300);
   cell = await p.evaluate(()=> document.querySelector('#playingTrackList .tloud')?.textContent);
   ok(cell === '0', 'Off: 0 (' + cell + ')');
   ok(await p.evaluate(()=> window.__dbg.getRoot().settings.levelKind) === 'track', 'Off remembers the kind for Settings');
 
   // the track's own volume: bold, shown with Loudness off too
   await p.evaluate(async()=>{ const r = window.__dbg.getRoot(); r.library[0].volumeDb = -2.4; await window.__dbg.saveState(); });
-  await clickText(p, '.ctx-bar .tb-btn', '^By album$'); await sleep(300);
+  await pick('album'); await sleep(300);
   cell = await p.evaluate(()=>{ const c = document.querySelector('#playingTrackList .tloud'); return c ? {even: c.querySelector('.tl-even')?.textContent, own: c.querySelector('b.tl-own')?.textContent} : null; });
   ok(cell && cell.even === wantTxt && cell.own === '−2', 'By album with a track\'s own volume: the evening-out part and the own part in bold: ' + JSON.stringify(cell));
   await p.screenshot({path: 'shots/playloud.png'});

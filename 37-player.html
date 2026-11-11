@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.2.003">
+<meta name="app-version" content="2.2.009">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -543,6 +543,29 @@
   .plov-backdrop{ position:absolute; left:0; right:0; bottom:0; z-index:30; background:rgba(0,0,0,0.30); display:flex; padding:4px 16px 16px; }
   .plov-panel{ flex:1; min-height:0; display:flex; flex-direction:column; background:var(--bg-panel); border:1px solid var(--line); border-radius:var(--radius, 10px); box-shadow:0 10px 36px rgba(0,0,0,0.45); overflow:hidden; }
   .plov-head{ display:flex; align-items:flex-start; gap:10px; padding:12px 14px 6px; }
+  .plov-actions{ display:flex; flex-direction:column; align-items:flex-start; gap:2px; max-width:240px; }
+  .plov-actions .plov-meta{ margin:0; }
+  .plov-play-action{ flex-shrink:0; max-width:180px; }
+  .plov-play-action .plov-play-hint{ padding:3px 0 0; font-size:12px; }
+  .plov-head{ flex-wrap:wrap; padding-top:8px; }
+  .plov-close{ margin-left:auto; }
+  .plov-head .plov-titles{ flex-basis:180px; }
+  .plov-panel > .plov-head, .plov-panel > .plov-status, .plov-panel > .plov-player{ flex-shrink:0; }
+  @media(max-width:600px){ .plov-head .plov-actions{ order:3; max-width:none; flex-basis:100%; flex-direction:row; align-items:center; gap:8px; } }
+  @media(max-height:850px){
+    .player.browsing-playlist .now-playing-fixed{ padding-top:6px; padding-bottom:2px; }
+    .player.browsing-playlist .now-playing-top{ margin-bottom:6px; }
+    .player.browsing-playlist .waveform-wrap{ margin-bottom:4px; }
+    .player.browsing-playlist canvas#waveform{ height:48px; }
+    .player.browsing-playlist .plov-wave{ height:36px; }
+    .player.browsing-playlist .plov-player{ padding-bottom:5px; }
+  }
+  .plov-browsing{ font-size:12px; font-weight:600; color:var(--text-dim); margin-bottom:3px; }
+  .plov-status, .plov-play-hint{ font-size:12.5px; color:var(--text-dim); padding:0 14px 4px; }
+  .plov-status:empty, .plov-play-hint:empty{ display:none; }
+  .plov-play.btn{ min-height:44px; flex-shrink:0; }
+  .plov-close.btn{ min-height:44px; }
+  @media(max-width:600px){ .plov-player{ flex-wrap:wrap; } .plov-track{ flex-basis:100%; } }
   .plov-titles{ flex:1; min-width:0; }
   .plov-title{ font-family:var(--font-display); font-size:22px; overflow-wrap:anywhere; }
   .plov-title.clickable{ cursor:pointer; user-select:none; border-radius:6px; }
@@ -1195,7 +1218,11 @@
   .delete-used ul{ margin:4px 0 0 0; padding-left:20px; }
   .lib-row .lloud{ color:var(--text-dim); font-size:13px; flex-shrink:0; min-width:6.2em; text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }
   .lib-row .lloud .ladj{ color:var(--amber); margin-left:4px; }
-  #levelModeControl button{ white-space:nowrap; }
+  .playing-level{ display:inline-flex; align-items:center; gap:7px; color:var(--text-dim); font-size:13px; white-space:nowrap; }
+  .playing-level-face{ position:relative; display:inline-flex; align-items:center; gap:8px; min-height:32px; padding:0 8px; border:1px solid var(--ctl-border, var(--line)); border-radius:8px; background:var(--ctl-bg, var(--bg-panel-raised)); color:var(--text); }
+  .playing-level-face select{ position:absolute; inset:0; width:100%; height:100%; opacity:0; cursor:pointer; }
+  .playing-level-face:focus-within{ outline:2px solid var(--amber); outline-offset:2px; }
+  @media (pointer:coarse){ .playing-level-face{ min-height:44px; } }
   .edit-volume-row{ display:flex; gap:14px; align-items:flex-start; margin-top:4px; }
   .edit-volume-row input[type=number]{ width:100% !important; }
   .edit-volume-note{ font-size:12.5px; padding-top:22px; line-height:1.45; }
@@ -1635,6 +1662,16 @@
   .library-screen.lib-table-mode .lib-table tr.lt-row:hover td.c-name.lt-wave{ background:var(--wave) bottom left / 100% 100% no-repeat, var(--lib-table-hover); }
   .library-screen.lib-table-mode .lib-table tr.lt-row.selected td.c-name.lt-wave{ background:var(--wave) bottom left / 100% 100% no-repeat, linear-gradient(rgba(217,164,65,0.35),rgba(217,164,65,0.35)),var(--lib-table-row); }
   .library-screen.lib-table-mode .lib-waveform-canvas{ background:var(--bg-panel); }
+  /* Theme-aware, identical transport icons regardless of platform fonts. */
+  .transport-skip-icon{ display:block; width:19px; height:19px; flex:none; }
+  .playing-toolbar-shell{ position:relative; display:flex; flex-direction:column; flex:none; background:var(--bg-deep); }
+  .playing-toolbar-shell.collapsed{ background:transparent; }
+  .playing-toolbar-shell .ctx-playing{ border-bottom:1px solid var(--line); }
+  .playing-toolbar-shell .ctx-playing[hidden]{ display:none !important; }
+  .playing-toolbar-toggle{ align-self:center; display:inline-flex; align-items:center; justify-content:center; width:48px; height:18px; padding:0; border:1px solid var(--ctl-border, var(--line)); border-top:0; border-radius:0 0 10px 10px; background:var(--ctl-bg, var(--bg-panel-raised)); color:var(--active-bg, var(--text)); cursor:pointer; }
+  .playing-toolbar-toggle svg{ width:17px; height:17px; fill:none; stroke:currentColor; stroke-width:2.6; stroke-linecap:round; stroke-linejoin:round; }
+  .playing-toolbar-toggle:hover{ background:var(--ctl-hover-bg, var(--bg-panel)); border-color:var(--ctl-hover-border, var(--line)); }
+  .playing-toolbar-toggle:focus-visible{ outline:2px solid var(--active-bg, var(--text)); outline-offset:2px; }
 </style>
 </head>
 <body>
@@ -1832,6 +1869,8 @@
 /* ===================== Icons ===================== */
 // Playback and operator cues: inline SVGs remain sharp on phones and offline.
 // In the style of Lucide/Feather (THIRD-PARTY-NOTICES.md).
+const ICON_SKIP_BACK = `<svg class="transport-skip-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h2.5v14H5V5Zm15 0L9 12l11 7V5Z" fill="currentColor"/></svg>`;
+const ICON_SKIP_FORWARD = `<svg class="transport-skip-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M16.5 5H19v14h-2.5V5ZM4 5l11 7-11 7V5Z" fill="currentColor"/></svg>`;
 const ICON_PLAYING = `<svg class="icon playing-eq" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M2 10v3M6 6v11M10 3v18M14 8v7M18 5v13M22 10v3"/></svg>`;
 const ICON_SILENCE = `<svg class="icon kind-icon silence-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>`;
 const ICON_STOP = `<svg class="icon kind-icon stop-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="1.5" fill="currentColor"/></svg>`;
@@ -3900,6 +3939,15 @@ const STRINGS = {
     "deleteTidyGo": "Delete",
     "deleteUsedInNone": "Not used in any playlist.",
     "deleteTracksBodyOne": "This removes it from the library and from every playlist that uses it. You can undo this with ↶.",
+    "plovBrowsing": "Browsing",
+    "plovUse": "Use this playlist",
+    "plovReadyHint": "Ready at the first track. Does not start playback.",
+    "plovPlayingStatus": "Playback stays with {name} until you switch.",
+    "plovActiveStatus": "{name} is still the active playlist.",
+    "plovPlayHere": "Play from here",
+    "plovReplaces": "Replaces current playback.",
+    "playingToolbarShow": "Show the toolbar",
+    "playingToolbarHide": "Hide the toolbar",
     "plovPlayTooltip": "Start playing this — from the point marked on the waveform",
     "plovTitleTooltip": "Click: make this the active playlist, ready at its first track. Double-click: start playing it.",
     "plovSwitchTitle": "Stop what's playing?",
@@ -5369,6 +5417,7 @@ const STRINGS = {
     "ctxLevelGroupLabel": "Even out loudness:",
     "libSwitchBusyCopying": "copying to “{name}”: it would stop, and nothing half-copied is left there (copy again afterwards);",
     "ctxLevelAlbum": "By album",
+    "ctxLevelAlbumRecommended": "By album (recommended)",
     "ctxLevelAlbumTip": "Even out loudness album by album (recommended): each album keeps its own ups and downs",
     "ctxLevelOff": "Off",
     "ctxLevelOffTip": "Don't even out loudness (each track's own volume still applies)",
@@ -5609,6 +5658,16 @@ const STRINGS = {
     "manualFirstBackupBody": "This saves a full backup of your library as a file. Keep it — and all your later backup files — together in one folder, such as \"37 Player backups\" in your Music folder.",
   },
   "es": {
+    "plovBrowsing": "Explorando",
+    "plovUse": "Usar esta lista",
+    "plovReadyHint": "Lista en la primera pista. No inicia la reproducción.",
+    "plovPlayingStatus": "La reproducción sigue en {name} hasta que cambies de lista.",
+    "plovActiveStatus": "{name} sigue siendo la lista activa.",
+    "plovPlayHere": "Reproducir desde aquí",
+    "plovReplaces": "Sustituye la reproducción actual.",
+    "playingToolbarShow": "Mostrar la barra de herramientas",
+    "playingToolbarHide": "Ocultar la barra de herramientas",
+    "ctxLevelAlbumRecommended": "Por álbum (recomendado)",
     "deletePlayingNow": "Esta pista, “{name}”, está sonando ahora mismo. Borrarla la detiene.",
     "infoRunningDesktop": "el almacenamiento propio de la aplicación de escritorio (IndexedDB)",
     "infoAppLabel": "37 Player",
@@ -7451,6 +7510,16 @@ const STRINGS = {
     "manualFirstBackupBody": "Esto guarda una copia completa de tu biblioteca en un archivo. Guárdalo, junto con todas tus copias posteriores, en una misma carpeta, como \"37 Player backups\" dentro de tu carpeta Música.",
   },
   "fr": {
+    "plovBrowsing": "Consultation",
+    "plovUse": "Utiliser cette playlist",
+    "plovReadyHint": "Prête au premier morceau. Ne lance pas la lecture.",
+    "plovPlayingStatus": "La lecture reste sur {name} jusqu’à ce que vous changiez de playlist.",
+    "plovActiveStatus": "{name} reste la playlist active.",
+    "plovPlayHere": "Lire à partir d’ici",
+    "plovReplaces": "Remplace la lecture en cours.",
+    "playingToolbarShow": "Afficher la barre d’outils",
+    "playingToolbarHide": "Masquer la barre d’outils",
+    "ctxLevelAlbumRecommended": "Par album (recommandé)",
     "deletePlayingNow": "Cette piste, « {name} », est en lecture en ce moment. La supprimer l'arrête.",
     "infoRunningDesktop": "le stockage propre à l'application de bureau (IndexedDB)",
     "infoAppLabel": "37 Player",
@@ -9293,6 +9362,16 @@ const STRINGS = {
     "manualFirstBackupBody": "Cela enregistre une sauvegarde complète de votre bibliothèque dans un fichier. Gardez-le — ainsi que toutes vos sauvegardes suivantes — dans un même dossier, par exemple « 37 Player backups » dans votre dossier Musique.",
   },
   "pt": {
+    "plovBrowsing": "A explorar",
+    "plovUse": "Usar esta lista",
+    "plovReadyHint": "Pronta na primeira faixa. Não inicia a reprodução.",
+    "plovPlayingStatus": "A reprodução continua em {name} até mudar de lista.",
+    "plovActiveStatus": "{name} continua a ser a lista ativa.",
+    "plovPlayHere": "Reproduzir daqui",
+    "plovReplaces": "Substitui a reprodução atual.",
+    "playingToolbarShow": "Mostrar a barra de ferramentas",
+    "playingToolbarHide": "Ocultar a barra de ferramentas",
+    "ctxLevelAlbumRecommended": "Por álbum (recomendado)",
     "deletePlayingNow": "Esta faixa, “{name}”, está tocando agora. Apagá-la faz a reprodução parar.",
     "infoRunningDesktop": "o armazenamento próprio do aplicativo de computador (IndexedDB)",
     "infoAppLabel": "37 Player",
@@ -11135,6 +11214,16 @@ const STRINGS = {
     "manualFirstBackupBody": "Isto salva um backup completo da sua biblioteca num arquivo. Guarde-o — e todos os backups seguintes — numa mesma pasta, como \"37 Player backups\" na sua pasta Música.",
   },
   "de": {
+    "plovBrowsing": "Durchsehen",
+    "plovUse": "Diese Playlist verwenden",
+    "plovReadyHint": "Beim ersten Titel bereit. Startet keine Wiedergabe.",
+    "plovPlayingStatus": "Die Wiedergabe bleibt bei {name}, bis du wechselst.",
+    "plovActiveStatus": "{name} ist weiterhin die aktive Playlist.",
+    "plovPlayHere": "Ab hier abspielen",
+    "plovReplaces": "Ersetzt die laufende Wiedergabe.",
+    "playingToolbarShow": "Werkzeugleiste einblenden",
+    "playingToolbarHide": "Werkzeugleiste ausblenden",
+    "ctxLevelAlbumRecommended": "Pro Album (empfohlen)",
     "deletePlayingNow": "Dieser Titel, „{name}“, spielt gerade. Beim Löschen wird er angehalten.",
     "infoRunningDesktop": "dem eigenen Speicher der Desktop-App (IndexedDB)",
     "infoAppLabel": "37 Player",
@@ -12977,6 +13066,16 @@ const STRINGS = {
     "manualFirstBackupBody": "Damit wird eine vollständige Sicherung Ihrer Bibliothek als Datei gespeichert. Bewahren Sie sie – und alle späteren Sicherungen – zusammen in einem Ordner auf, etwa „37 Player backups“ in Ihrem Musik-Ordner.",
   },
   "zh": {
+    "plovBrowsing": "正在浏览",
+    "plovUse": "使用此播放列表",
+    "plovReadyHint": "停在第一首，等待播放。不会开始播放。",
+    "plovPlayingStatus": "切换前将继续播放 {name}。",
+    "plovActiveStatus": "{name} 仍是当前播放列表。",
+    "plovPlayHere": "从此处播放",
+    "plovReplaces": "替换当前播放内容。",
+    "playingToolbarShow": "显示工具栏",
+    "playingToolbarHide": "隐藏工具栏",
+    "ctxLevelAlbumRecommended": "按专辑（推荐）",
     "deletePlayingNow": "这首曲目“{name}”正在播放。删除它会停止播放。",
     "infoRunningDesktop": "桌面应用自己的存储空间（IndexedDB）",
     "infoAppLabel": "37 Player",
@@ -14819,6 +14918,16 @@ const STRINGS = {
     "manualFirstBackupBody": "这会将曲库的完整备份保存为一个文件。请把它和之后的所有备份文件放在同一个文件夹中，例如“音乐”文件夹里的“37 Player backups”。",
   },
   "vi": {
+    "plovBrowsing": "Đang xem",
+    "plovUse": "Dùng danh sách này",
+    "plovReadyHint": "Sẵn sàng ở bài đầu tiên. Không bắt đầu phát.",
+    "plovPlayingStatus": "Tiếp tục phát {name} cho đến khi bạn chuyển danh sách.",
+    "plovActiveStatus": "{name} vẫn là danh sách phát đang dùng.",
+    "plovPlayHere": "Phát từ đây",
+    "plovReplaces": "Thay thế nội dung đang phát.",
+    "playingToolbarShow": "Hiện thanh công cụ",
+    "playingToolbarHide": "Ẩn thanh công cụ",
+    "ctxLevelAlbumRecommended": "Theo album (khuyên dùng)",
     "deletePlayingNow": "Bản nhạc này, “{name}”, đang phát. Xóa nó sẽ dừng phát.",
     "infoRunningDesktop": "bộ nhớ riêng của ứng dụng máy tính (IndexedDB)",
     "infoAppLabel": "37 Player",
@@ -16661,6 +16770,16 @@ const STRINGS = {
     "manualFirstBackupBody": "Thao tác này lưu bản sao lưu đầy đủ của thư viện thành một tệp. Hãy giữ nó — cùng mọi bản sao lưu sau này — trong cùng một thư mục, ví dụ \"37 Player backups\" trong thư mục Nhạc.",
   },
   "el": {
+    "plovBrowsing": "Περιήγηση",
+    "plovUse": "Χρήση αυτής της λίστας",
+    "plovReadyHint": "Έτοιμη στο πρώτο κομμάτι. Δεν ξεκινά η αναπαραγωγή.",
+    "plovPlayingStatus": "Η αναπαραγωγή παραμένει στη λίστα {name} μέχρι να αλλάξετε λίστα.",
+    "plovActiveStatus": "Η λίστα {name} παραμένει ενεργή.",
+    "plovPlayHere": "Αναπαραγωγή από εδώ",
+    "plovReplaces": "Αντικαθιστά την τρέχουσα αναπαραγωγή.",
+    "playingToolbarShow": "Εμφάνιση γραμμής εργαλείων",
+    "playingToolbarHide": "Απόκρυψη γραμμής εργαλείων",
+    "ctxLevelAlbumRecommended": "Ανά άλμπουμ (προτείνεται)",
     "deletePlayingNow": "Αυτό το κομμάτι, «{name}», παίζει αυτή τη στιγμή. Η διαγραφή του το σταματά.",
     "infoRunningDesktop": "τον δικό αποθηκευτικό χώρο της εφαρμογής υπολογιστή (IndexedDB)",
     "infoAppLabel": "37 Player",
@@ -18503,6 +18622,16 @@ const STRINGS = {
     "manualFirstBackupBody": "Αυτό αποθηκεύει ένα πλήρες αντίγραφο της βιβλιοθήκης σας σε αρχείο. Κρατήστε το — μαζί με όλα τα επόμενα αντίγραφα — στον ίδιο φάκελο, π.χ. «37 Player backups» μέσα στον φάκελο Μουσική.",
   },
   "it": {
+    "plovBrowsing": "Esplorazione",
+    "plovUse": "Usa questa playlist",
+    "plovReadyHint": "Pronta al primo brano. Non avvia la riproduzione.",
+    "plovPlayingStatus": "La riproduzione resta su {name} finché non cambi playlist.",
+    "plovActiveStatus": "{name} è ancora la playlist attiva.",
+    "plovPlayHere": "Riproduci da qui",
+    "plovReplaces": "Sostituisce la riproduzione in corso.",
+    "playingToolbarShow": "Mostra la barra degli strumenti",
+    "playingToolbarHide": "Nascondi la barra degli strumenti",
+    "ctxLevelAlbumRecommended": "Per album (consigliato)",
     "deletePlayingNow": "Questo brano, “{name}”, sta suonando adesso. Eliminarlo lo ferma.",
     "infoRunningDesktop": "lo spazio di archiviazione dell'app per computer (IndexedDB)",
     "infoAppLabel": "37 Player",
@@ -21244,7 +21373,8 @@ function openPlaylistOverlay(plId){
 function closePlaylistOverlay(){
   if(!overlayPl) return;
   overlayPl = null; overlayPending = null;
-  const o = document.getElementById("plOverlayWrap"); if(o) o.remove();
+  playerEl.classList.remove("browsing-playlist");
+  const o = document.getElementById("plOverlayWrap"); if(o){ if(o.anchorObserver) o.anchorObserver.disconnect(); o.remove(); }
   renderRail();
 }
 function overlayItemLabel(it){
@@ -21280,11 +21410,12 @@ function drawOverlayWave(canvas, item){
   ctx.fillRect(Math.max(0, x-1.5), 0, 3, h);
 }
 function renderPlaylistOverlay(){
+  playerEl.classList.toggle("browsing-playlist", !!overlayPl && appMode === "playing");
   const old = document.getElementById("plOverlayWrap");
-  if(old){ const sc = old.querySelector(".plov-scroll"); if(sc && overlayPl) overlayPl.scrollTop = sc.scrollTop; old.remove(); }
+  if(old){ if(old.anchorObserver) old.anchorObserver.disconnect(); const sc = old.querySelector(".plov-scroll"); if(sc && overlayPl) overlayPl.scrollTop = sc.scrollTop; old.remove(); }
   if(!overlayPl || appMode!=="playing") return;
   const f = findNode(overlayPl.id);
-  if(!f || f.node.kind!=="playlist"){ overlayPl = null; return; }
+  if(!f || f.node.kind!=="playlist"){ overlayPl = null; playerEl.classList.remove("browsing-playlist"); return; }
   const pl = f.node, items = sortedItems(pl);
   if(overlayPl.selectedId && !items.some(i=> i.id===overlayPl.selectedId)) overlayPl.selectedId = null;
   const target = overlayTarget(pl);
@@ -21295,15 +21426,24 @@ function renderPlaylistOverlay(){
   wrap.id = "plOverlayWrap";
   wrap.className = "plov-backdrop";
   wrap.style.top = top + "px";
+  const active = findPlayingContext();
+  const live = (!audioEl.paused && !audioEl.ended) || silenceState.active;
+  const status = active ? t(live ? "plovPlayingStatus" : "plovActiveStatus", {name: active.playlist.name}) : "";
   const count = items.length===1 ? t("itemCountOne") : t("itemCountMany", {n: items.length});
   wrap.innerHTML = `
-    <div class="plov-panel" role="dialog" aria-modal="false">
+    <div class="plov-panel" role="dialog" aria-modal="false" aria-labelledby="plovTitle">
       <div class="plov-head">
-        <div class="plov-titles"><div class="plov-title"></div><div class="plov-meta">${count} · ${fmtTimeLong(totalDurationOf(pl.items))}</div></div>
-        <button class="plov-close" type="button" title="${t("closeBtn")}">✕</button>
+        <div class="plov-titles"><div class="plov-title" id="plovTitle"></div><div class="plov-meta">${escapeHtmlText(t("plovBrowsing"))} · ${count} · ${fmtTimeLong(totalDurationOf(pl.items))}</div></div>
+        <div class="plov-actions">
+          <button class="btn primary plov-use" type="button" ${items.length ? "" : "disabled"}>${escapeHtmlText(t("plovUse"))}</button>
+          <span class="plov-meta">${escapeHtmlText(t("plovReadyHint"))}</span>
+        </div>
+        <button class="btn ghost plov-close" type="button">${escapeHtmlText(t("closeBtn"))} ×</button>
       </div>
+      <div class="plov-status">${escapeHtmlText(status)}</div>
       <div class="plov-player">
-        <button class="tbtn-play-sm plov-play" type="button" title="${t("plovPlayTooltip")}">▶</button>
+        <div class="plov-play-action"><button class="btn primary plov-play" type="button" title="${escapeHtmlText(t("plovPlayTooltip"))}" ${target ? "" : "disabled"}><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg> ${escapeHtmlText(t("plovPlayHere"))}</button>
+          <div class="plov-play-hint">${live ? escapeHtmlText(t("plovReplaces")) : ""}</div></div>
         <div class="plov-track">
           <div class="plov-track-name"></div>
           <div class="plov-wave-wrap"><canvas class="plov-wave" width="900" height="56"></canvas><div class="waveform-hover-time plov-hover-time"></div></div>
@@ -21363,6 +21503,7 @@ function renderPlaylistOverlay(){
   });
   canvas.addEventListener("mouseleave", ()=>{ hoverEl.style.display = "none"; });
   wrap.querySelector(".plov-play").addEventListener("click", ()=>{ if(target) startFromOverlay(target.id, target.kind==="track" ? overlayPl.startRatio : 0); });
+  wrap.querySelector(".plov-use").addEventListener("click", overlayQueuePlaylist);
   wrap.querySelector(".plov-close").addEventListener("click", closePlaylistOverlay);
   wrap.addEventListener("mousedown", (e)=>{ if(e.target===wrap) closePlaylistOverlay(); });
 
@@ -21400,6 +21541,14 @@ function renderPlaylistOverlay(){
     list.appendChild(row);
   });
   playerEl.appendChild(wrap);
+  // Keep the overlay below the live player when height-dependent styling changes.
+  if(anchor && typeof ResizeObserver !== "undefined"){
+    wrap.anchorObserver = new ResizeObserver(()=>{
+      if(!wrap.isConnected){ wrap.anchorObserver.disconnect(); return; }
+      wrap.style.top = (anchor.offsetTop + anchor.offsetHeight + 2) + "px";
+    });
+    wrap.anchorObserver.observe(anchor);
+  }
   const sc = wrap.querySelector(".plov-scroll");
   if(overlayPl.scrollTop) sc.scrollTop = overlayPl.scrollTop;
 }
@@ -22460,10 +22609,45 @@ function withPin(fn){
 }
 
 // ---- Playing ----
+let playingToolbarCollapsed = false;
+try{ playingToolbarCollapsed = localStorage.getItem("37player.playingToolbarCollapsed") === "true"; }catch(_){}
 const playingCtxBar = document.createElement("div");
 playingCtxBar.className = "ctx-bar ctx-playing"; playingCtxBar.setAttribute("role", "toolbar");
+// Native select handles keyboard and touch; the visible face stays compact.
+function playingLevelControl(){
+  const label = document.createElement("label");
+  label.className = "playing-level";
+  const caption = document.createElement("span");
+  caption.textContent = t("ctxLoudness");
+  const face = document.createElement("span");
+  face.className = "playing-level-face";
+  const value = document.createElement("span");
+  value.setAttribute("aria-hidden", "true");
+  face.append(value);
+  face.insertAdjacentHTML("beforeend", '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>');
+  const select = document.createElement("select");
+  select.id = "playingLevelMode";
+  select.setAttribute("aria-label", t("ctxLevelGroup"));
+  const choices = [
+    ["album", "ctxLevelAlbum", "ctxLevelAlbumRecommended", "ctxLevelAlbumTip"],
+    ["off", "ctxLevelOff", "ctxLevelOff", "ctxLevelOffTip"],
+    ["track", "ctxLevelTrack", "ctxLevelTrack", "ctxLevelTrackTip"]
+  ];
+  choices.forEach(([id, short, full])=> select.add(new Option(t(full), id)));
+  const update = ()=>{
+    const choice = choices.find(c=> c[0] === levelMode()) || choices[1];
+    select.value = choice[0];
+    value.textContent = t(choice[1]);
+    label.title = t(choice[3]);
+  };
+  select.addEventListener("change", ()=>{ setLevelMode(select.value); update(); });
+  face.append(select);
+  label.append(caption, face);
+  update();
+  return label;
+}
 function buildPlayingCtxBar(){
-  // Wrap, Album, Loudness | Even out loudness: the three choices | Playback
+  // Display switches | Loudness picker | Playback
   // (Gen Rinzin, 30 Oct 2026; a "Display:" label with the switches as icons only
   // was tried in 1.4.129 and dropped: the words are wanted).
   fillCtxBar(playingCtxBar, [
@@ -22471,14 +22655,7 @@ function buildPlayingCtxBar(){
     {icon: "album", label: t("ctxAlbum"), tip: t("albumColumnLabel"), on: ()=> !!root.settings.showAlbumColumn, act: ()=> ctxToggleSetting("albumColumnToggle")},
     {icon: "loud", label: t("ctxLoudness"), tip: t("showPlayLoudTip"), on: ()=> !!root.settings.showPlayLoudness, act: ()=>{ root.settings.showPlayLoudness = !root.settings.showPlayLoudness; saveState(); renderPlayer(); }},
     "|",
-    // How it sounds (1.4.128, Gen Rinzin): the three choices side by side, as
-    // Canva's left / centre / right, after the switches about the display.
-    {group: t("ctxLevelGroupLabel")},
-    ctxSeg(t("ctxLevelGroup"), [
-      {value: "album", icon: "album", label: t("ctxLevelAlbum"), tip: t("ctxLevelAlbumTip")},
-      {value: "off", icon: "levelOff", label: t("ctxLevelOff"), tip: t("ctxLevelOffTip")},
-      {value: "track", icon: "note", label: t("ctxLevelTrack"), tip: t("ctxLevelTrackTip")},
-    ], levelMode, setLevelMode),
+    playingLevelControl(),
     "|",
     {icon: "sliders", label: t("ctxPlayback"), tip: t("ctxPlaybackTip"), lock: ()=> !!root.settings.pin && Date.now() >= pinUnlockedUntil,
       act: ()=> withPin(()=>{ openSettingsPage(); goToSettingsSection("playback"); })}
@@ -23361,7 +23538,30 @@ function renderPlayer(){
   const prevBrowsedPlId = playerEl.dataset.browsedPlaylistId || null;
 
   playerEl.innerHTML = "";
-  playerEl.appendChild(buildPlayingCtxBar());
+  const toolbarShell = document.createElement("div");
+  toolbarShell.className = "playing-toolbar-shell";
+  toolbarShell.appendChild(buildPlayingCtxBar());
+  const toolbarToggle = document.createElement("button");
+  toolbarToggle.type = "button";
+  toolbarToggle.className = "playing-toolbar-toggle";
+  function updateToolbar(){
+    playingCtxBar.hidden = playingToolbarCollapsed;
+    toolbarShell.classList.toggle("collapsed", playingToolbarCollapsed);
+    toolbarToggle.setAttribute("aria-expanded", String(!playingToolbarCollapsed));
+    toolbarToggle.setAttribute("aria-label", t(playingToolbarCollapsed ? "playingToolbarShow" : "playingToolbarHide"));
+    toolbarToggle.title = toolbarToggle.getAttribute("aria-label");
+    toolbarToggle.innerHTML = playingToolbarCollapsed
+      ? '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>'
+      : '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 15 6-6 6 6"/></svg>';
+  }
+  toolbarToggle.addEventListener("click", ()=>{
+    playingToolbarCollapsed = !playingToolbarCollapsed;
+    try{ localStorage.setItem("37player.playingToolbarCollapsed", String(playingToolbarCollapsed)); }catch(_){}
+    updateToolbar();
+  });
+  toolbarShell.appendChild(toolbarToggle);
+  updateToolbar();
+  playerEl.appendChild(toolbarShell);
   const playingCtx = findPlayingContext();               // {playlist, item} of what's actually playing, or null
   const browsedPl = viewedPlaylist();                     // the playlist currently selected in the sidebar, or null
   // True whenever something is actually queued AND you're looking at a
@@ -23396,8 +23596,8 @@ function renderPlayer(){
         <div class="stop-sub">Playback is halted here. Tap below when it's time to continue.</div>
         <button class="btn primary stop-continue" id="btnContinue">▶ Continue playing</button>
         <div class="transport-mini">
-          <button id="btnPrev" title="Previous">⏮</button>
-          <button id="btnNext" title="Skip ahead">⏭</button>
+          <button id="btnPrev" title="Previous">${ICON_SKIP_BACK}</button>
+          <button id="btnNext" title="Skip ahead">${ICON_SKIP_FORWARD}</button>
         </div>
       </div>`;
   } else if(curItem){
@@ -23405,9 +23605,9 @@ function renderPlayer(){
     fixed.innerHTML = `
       <div class="now-playing-top">
         <div class="transport-inline">
-          <button class="tbtn-sm" id="btnPrev" title="Previous">⏮</button>
+          <button class="tbtn-sm" id="btnPrev" title="Previous">${ICON_SKIP_BACK}</button>
           <button class="tbtn-play-sm" id="btnPlay" title="Play/Pause">▶</button>
-          <button class="tbtn-sm" id="btnNext" title="Next">⏭</button>
+          <button class="tbtn-sm" id="btnNext" title="Next">${ICON_SKIP_FORWARD}</button>
         </div>
         <div class="now-playing-heading">
           <div style="display:flex; align-items:center; gap:6px; min-width:0;">
@@ -27658,13 +27858,13 @@ async function openSplitter(track, opts){
         <div class="sp-canvas-wrap"><canvas id="spZoom" class="sp-zoom" tabindex="0"></canvas><div class="sp-tip" id="spTip"></div><div class="sp-fine-note" id="spFineNote"></div></div>
       </div>
       <div class="sp-transport">
-        ${btn("spPrevMark", "⏮", t("splitPrevMark"))}
+        ${btn("spPrevMark", ICON_SKIP_BACK, t("splitPrevMark"))}
         ${btn("spBack100", "−100 ms", t("splitNudgeBack", {ms: 100}), "sp-nudge")}
         ${btn("spBack10", "−10 ms", t("splitNudgeBack", {ms: 10}), "sp-nudge")}
         <button class="tbtn-play-sm" type="button" id="spPlay" title="${escapeHtmlText(t("splitPlayTitle"))}">▶</button>
         ${btn("spFwd10", "+10 ms", t("splitNudgeFwd", {ms: 10}), "sp-nudge")}
         ${btn("spFwd100", "+100 ms", t("splitNudgeFwd", {ms: 100}), "sp-nudge")}
-        ${btn("spNextMark", "⏭", t("splitNextMark"))}
+        ${btn("spNextMark", ICON_SKIP_FORWARD, t("splitNextMark"))}
         <span class="sp-time" id="spTime"></span>
         <span class="sp-gap"></span>
         ${btn("spHearTo", "◁| " + escapeHtmlText(t("splitHearTo")), t("splitHearToTitle"))}
@@ -33065,9 +33265,9 @@ function renderLibraryPreviewPanel(){
   const playerBar = document.getElementById("libPlayerBar");
   playerBar.innerHTML = `
       <div class="lib-preview-transport-row transport-inline">
-        <button class="tbtn-sm" id="libBtnPrev" title="${t('previous')}" ${track?"":"disabled"}>⏮</button>
+        <button class="tbtn-sm" id="libBtnPrev" title="${t('previous')}" ${track?"":"disabled"}>${ICON_SKIP_BACK}</button>
         <button class="tbtn-play-sm" id="libBtnPlay" title="${t('playPause')}" ${track?"":"disabled"}>▶</button>
-        <button class="tbtn-sm" id="libBtnNext" title="${t('next')}" ${track?"":"disabled"}>⏭</button>
+        <button class="tbtn-sm" id="libBtnNext" title="${t('next')}" ${track?"":"disabled"}>${ICON_SKIP_FORWARD}</button>
       </div>
       <div class="ed-preview-text"><div class="ed-preview-album"></div><div class="lib-preview-title"></div></div>
       <span class="ed-preview-time"><span id="libTimeCur">${curLabel}</span> / <span id="libTimeDur">${durLabel}</span></span>
