@@ -37,9 +37,10 @@
   const pathDir = async (p, create)=>{ try{ let d = await top(); for(const x of parts(p)) d = await d.getDirectoryHandle(x, {create: !!create}); return d; }catch(e){ return null; } };
   const markerOf = async (d)=>{ try{ const m = JSON.parse(await (await (await d.getFileHandle('37 Player library.json')).getFile()).text()); return m && m.format === '37player-library' && /^[A-Za-z0-9_-]{1,40}$/.test(m.id) ? {id: m.id, name: m.name || ''} : null; }catch(e){ return null; } };
   const folderName = (n)=> (n || '').replace(/[\/\\:*?"<>|]/g, '-').trim() || 'My library';
-  window.__fakeShellCalls = [];
+  window.__fakeShellCalls = []; window.__fakeShellPaths = [];
   const invoke = async (cmd, args, opts)=>{
     window.__fakeShellCalls.push(cmd);
+    window.__fakeShellPaths.push(cmd + ' ' + ((args && (args.path || args.from)) || '')); // which file, for tests that count reads of one file
     args = args || {};
     switch(cmd){
       case 'p37_shell_info': return {version: '2.0.000', bridge: 2, pages: false, device: true};

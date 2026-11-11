@@ -48,9 +48,13 @@ const clickText = (p, sel, src) => p.evaluate((sel, src)=>{ const re=new RegExp(
     out.same1 = (await hash(rec.blob)) === want;
     out.left1 = await leftovers();
     // The same file under another name: the shell copies it.
-    window.__fakeShellCalls.length = 0;
+    // (Reads of this recording only: 37 Player's own small files may be read
+    // meanwhile, its record of the library's own values, say.)
+    window.__fakeShellPaths.length = 0;
     await idbPut('audio', {id: 'dbt3', blob: rec.blob});
-    out.copyCalls = window.__fakeShellCalls.filter(c=> c === 'fs_copy' || c === 'fs_read').join(',');
+    out.copyCalls = window.__fakeShellPaths.filter(c=> /^fs_copy /.test(c) || (/^fs_read /.test(c) && /dbt1|dbt3/.test(c))).map(c=> c.split(' ')[0]).join(',');
+    out.otherReads = window.__fakeShellPaths.filter(c=> /^fs_read /.test(c)).join(' ; ');
+    out.allPaths = window.__fakeShellPaths.slice(0, 12).join(' ; ');
     out.same3 = (await hash((await idbGet('audio', 'dbt3')).blob)) === want;
     // Header + a stretch + a tail, as the splitter makes a piece.
     const a = 1000, z = N - 5000;
@@ -74,11 +78,12 @@ const clickText = (p, sel, src) => p.evaluate((sel, src)=>{ const re=new RegExp(
     out.left3 = await leftovers();
     return out;
   });
+  if(process.env.SHOWPATHS) console.log(r.allPaths);
   const MB8 = 8 * 1048576;
   ok(r.biggest1 > 0 && r.biggest1 <= MB8, 'a 20 MB recording reaches the shell in pieces of at most 8 MB (biggest ' + r.biggest1 + ')');
   ok(r.isDisk && r.whole && r.size1 === 20 * 1048576 && r.same1, 'it comes back read where it lies, whole, with the same bytes (' + [r.isDisk, r.whole, r.size1, r.same1] + ')');
   ok(!r.left1.length, 'nothing half written is left (' + r.left1 + ')');
-  ok(r.copyCalls === 'fs_copy' && r.same3, 'the same file under another name is copied by the shell, not read through the page (' + r.copyCalls + ')');
+  ok(r.copyCalls === 'fs_copy' && r.same3, 'the same file under another name is copied by the shell, not read through the page (' + r.copyCalls + (r.otherReads ? '; read meanwhile: ' + r.otherReads : '') + ')');
   ok(r.biggest2 > 0 && r.biggest2 <= MB8 && r.size2 === r.want2 && r.same2, 'a piece made from a stretch of it (header, stretch, tail) is written in pieces and reads back right (' + [r.biggest2, r.size2, r.want2, r.same2] + ')');
   ok(!r.left2.length, 'and leaves nothing half written (' + r.left2 + ')');
   ok(r.partSize === 1000, 'a part of a file plays as its own bytes (' + r.partSize + ')');

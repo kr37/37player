@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.2.010">
+<meta name="app-version" content="2.2.011">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -43049,7 +43049,7 @@ function driveResponse(body, status, headers){
 }
 // One file into a folder: small ones in one request, big ones resumable,
 // in pieces, so a dropped connection only costs the piece it was on.
-async function driveUpload(cfg, folder, name, blob, mime, appProperties){
+async function driveUpload(cfg, folder, name, blob, mime, appProperties, onProgress){
   const meta = {name, parents: [folder], mimeType: mime || "application/octet-stream"};
   if(appProperties) meta.appProperties = appProperties;
   if(blob.size <= GDRIVE_SIMPLE_MAX){
@@ -43080,6 +43080,7 @@ async function driveUpload(cfg, folder, name, blob, mime, appProperties){
     if(res.status !== 308) throw await driveError(res, "Drive upload ");
     const range = res.headers.get("Range");
     offset = range ? parseInt(range.split("-")[1], 10) + 1 : end;
+    if(onProgress) onProgress(offset, blob.size);
   }
   throw new Error("Drive upload didn't finish");
 }
@@ -43272,7 +43273,7 @@ async function driveFetch(cfg, params, init){
         if(!r.ok) return driveResponse({error: "replace " + r.status}, r.status);
         return driveResponse({stored: true});
       }
-      const made = await driveUpload(cfg, folder, params.name, blob);
+      const made = await driveUpload(cfg, folder, params.name, blob, undefined, undefined, init.onProgress); // (onProgress: ours, how much of a big file has gone)
       if(!driveNames.has(folder)) driveNames.set(folder, new Map());
       driveNames.get(folder).set(params.name, {id: made.id, size: blob.size});
       return driveResponse({stored: true});
@@ -43659,7 +43660,7 @@ function sharedSetStatus(patch){
   if(sharedStatus.transfer){
     const tr = sharedStatus.transfer;
     setActiveOperationProgress(sharedStatus.paused ? t(sharedStatus.paused === "review" ? "sharedBarPausedReview" : "sharedBarPaused")
-      : tr.kind === "up" ? t("sharedBarUploading", {done: workingOn(tr.done, tr.total), total: tr.total}) + " " + t("sharedBarKeepOpen")
+      : tr.kind === "up" ? t("sharedBarUploading", {done: workingOn(tr.done, tr.total), total: tr.total}) + (tr.part && tr.part.total ? " (" + fmtBytes(tr.part.have) + " / " + fmtBytes(tr.part.total) + ")" : "") + " " + t("sharedBarKeepOpen")
       : t("sharedBarDownloading", {done: workingOn(tr.done, tr.total), total: tr.total}), null, "shared");
   } else clearActiveOperation("shared");
 }
@@ -44201,9 +44202,12 @@ async function sharedUploadFiles(cfg, doc){
     }
     const tr = j.kind === "peaks" ? null : findLibraryTrack(j.id);
     if(tr) sharedLog("sending " + (j.kind === "artwork" ? "artwork of " : "") + "“" + (tr.name || j.id) + "” (#" + j.id.slice(0, 4) + ", " + (body.size / 1e6).toFixed(1) + " MB)");
+    // A big file goes in pieces: the status bar says how much of it has gone
+    // (2.2.011, Gen Rinzin: "sending 1 of 1" for an hour says nothing).
+    const partDone = (have, total)=> sharedSetStatus({transfer: {kind: "up", done, total: fileJobs, part: {have, total}}});
     if(j.kind === "audio" && body.size >= SHARED_PIECE_UP_MIN && sharedPiecesUpOk(cfg)){
       let lastLog = 0;
-      const how = await sharedSendInPieces(cfg, j, body, (have, total)=>{ if(have - lastLog >= 256 * 1048576){ lastLog = have; sharedLog("sent " + fmtBytes(have) + " of " + fmtBytes(total) + " of “" + ((tr && tr.name) || j.id) + "”"); } });
+      const how = await sharedSendInPieces(cfg, j, body, (have, total)=>{ partDone(have, total); if(have - lastLog >= 256 * 1048576){ lastLog = have; sharedLog("sent " + fmtBytes(have) + " of " + fmtBytes(total) + " of “" + ((tr && tr.name) || j.id) + "”"); } });
       if(how === "too-big"){
         sharedTooBig.add(j.name); sharedTooBigNames.add((tr && tr.name) || j.id);
         sharedLog("the server refused a piece of “" + ((tr && tr.name) || j.id) + "”; not sending it again until “Sync now”");
@@ -44213,7 +44217,9 @@ async function sharedUploadFiles(cfg, doc){
       if(!sharedConfig()) stop = true;
       return;
     }
-    const r = await sharedFetch(cfg, Object.assign({op: "file", kind: j.kind, name: j.name}, j.replace ? {replace: "1"} : {}), {method: "PUT", body});
+    const init = {method: "PUT", body};
+    if(cfg.kind === "gdrive" && j.kind === "audio" && body.size >= SHARED_PIECE_UP_MIN) init.onProgress = partDone; // (Google Drive's own pieces)
+    const r = await sharedFetch(cfg, Object.assign({op: "file", kind: j.kind, name: j.name}, j.replace ? {replace: "1"} : {}), init);
     if(r.status === 413 && j.kind !== "peaks"){
       sharedTooBig.add(j.name);
       sharedLog("the server refused “" + ((tr && tr.name) || j.id) + "” (" + (body.size / 1e6).toFixed(0) + " MB) as too big for its upload limit; not sending it again until “Sync now”");
@@ -46277,7 +46283,7 @@ function renderSharedStatusInto(){
     + (busy ? t("sharedStateUpdating") : arriving ? t(arriving === 1 ? "sharedStateWaitingOne" : "sharedStateWaiting", {n: arriving}) : t("sharedStateUpToDate"));
   else s = t("sharedNeverSynced");
   if(cfg.reviewMode && sharedStatus.reviewCount) s += " " + t(sharedStatus.reviewCount === 1 ? "rvWaitingOne" : "rvWaitingMany", {n: sharedStatus.reviewCount});
-  if(sharedStatus.transfer) s += " " + t(sharedStatus.transfer.kind === "up" ? "sharedUploading" : "sharedDownloading", {done: workingOn(sharedStatus.transfer.done, sharedStatus.transfer.total), total: sharedStatus.transfer.total});
+  if(sharedStatus.transfer) s += " " + t(sharedStatus.transfer.kind === "up" ? "sharedUploading" : "sharedDownloading", {done: workingOn(sharedStatus.transfer.done, sharedStatus.transfer.total), total: sharedStatus.transfer.total}) + (sharedStatus.transfer.kind === "up" && sharedStatus.transfer.part && sharedStatus.transfer.part.total ? " (" + fmtBytes(sharedStatus.transfer.part.have) + " / " + fmtBytes(sharedStatus.transfer.part.total) + ")" : "");
   if(sharedStatus.paused) s += " " + t(sharedStatus.paused === "review" ? "sharedPausedReview" : "sharedPausedPlaying");
   if(sharedTooBigNames.size) s += " " + t("sharedTooBigNote", {names: [...sharedTooBigNames].join(", ")});
   if(arriving && busy) s += " " + t(arriving === 1 ? "sharedStillArrivingOne" : "sharedStillArriving", {n: arriving});
@@ -47299,10 +47305,15 @@ if(IN_DESKTOP_APP && window.__TAURI__ && window.__TAURI__.event && window.__TAUR
   showDesktopStartNote();
   await ensureLibraryFolder(); // a library kept in a folder: the folder first, with permission
   const storageWatch = setTimeout(openStorageNotResponding, 8000);
+  // How long starting took, and where (2.2.011): the Mac mini's window stayed
+  // blank white for about 20 s. Seconds since the page began to load.
+  const startAt = {began: performance.now()};
   await libStore.open();
+  startAt.open = performance.now();
   if(STORAGE_KIND === "desktop") setTimeout(()=> tidyPlaces().catch(err=> console.warn("Tidying the folders used in place:", err)), 4000);
   if(STORAGE_KIND === "desktop"){ const back = await libraryMirrorRestore(); if(back.length) setTimeout(()=> playLog("this library's own values came back from its folder (" + back.join(", ") + "): the app's browser storage had been emptied"), 2000); }
   await loadState();
+  startAt.read = performance.now();
   undoInit();
   clearTimeout(storageWatch);
   if(document.getElementById("storageStuckTry")){ delete backdrop.dataset.busy; closeModal(); }
@@ -47342,6 +47353,7 @@ if(IN_DESKTOP_APP && window.__TAURI__ && window.__TAURI__.event && window.__TAUR
   updateBackupIndicator();
   updateMovedIndicator();
   signalAppUp();
+  { const sec = v=> (v / 1000).toFixed(1); playLog("started: the page ran " + sec(startAt.began) + " s after it began to load, the library's storage opened at " + sec(startAt.open) + " s, the library was read at " + sec(startAt.read) + " s (" + root.library.length + " tracks), the screen drawn at " + sec(performance.now()) + " s"); }
   if(libraryNotLoaded){ openLibraryNotLoaded(); checkForAppUpdate(); return; } // nothing else: no welcome, no files opened with it, no syncing
   if(libraryUnreadable) openLibraryRecovery();
   else if(recoveredFromSpareAt) showSpareRecoveryNotice();

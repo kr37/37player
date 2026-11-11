@@ -5,7 +5,8 @@
 // they lie, "big" set to 8 MB, against the fake Google (fake-google.js):
 //  - a real Blob of a disk file is made piece by piece (8 MB at most at a time);
 //  - a 20 MB disk file goes to a Google Drive library in 1 MB pieces, each
-//    read from the disk as it's sent, and arrives with the same bytes;
+//    read from the disk as it's sent, and arrives with the same bytes; how
+//    much has gone is reported after each piece (the status bar's figure);
 //  - writing a track's details never reads a big file, or one with no writer;
 //  - a big file isn't converted by itself (after an import, or carried over
 //    a restart); asked for, it gets a warning first, and Cancel leaves it.
@@ -60,7 +61,9 @@ const modal = p=> p.evaluate(()=> document.getElementById('modalBackdrop')?.clas
     // To a Google Drive library.
     biggest = 0;
     const cfg = {kind: 'gdrive', folderId, refreshToken: 'r', code: 'gdrive ' + folderId, url: ''};
-    const res = await sharedFetch(cfg, {op: 'file', kind: 'audio', name: 'big1-r1.wav'}, {method: 'PUT', body: rec.blob});
+    const steps = [];
+    const res = await sharedFetch(cfg, {op: 'file', kind: 'audio', name: 'big1-r1.wav'}, {method: 'PUT', body: rec.blob, onProgress: (have, total)=> steps.push(have + '/' + total)});
+    out.steps = steps;
     out.sent = res.ok ? await res.json() : {status: res.status};
     out.sendBiggest = biggest;
     // Its details: a file over the line is left as it is, unread.
@@ -76,6 +79,7 @@ const modal = p=> p.evaluate(()=> document.getElementById('modalBackdrop')?.clas
   ok(r.rbBiggest > 0 && r.rbBiggest <= 8 * MB, 'made piece by piece: at most 8 MB read at once (biggest ' + r.rbBiggest + ')');
   ok(r.sent && r.sent.stored === true, 'the file is sent to the Google Drive library (' + JSON.stringify(r.sent) + ')');
   ok(r.sendBiggest > 0 && r.sendBiggest <= MB, 'each piece read from the disk as it is sent: at most 1 MB at once, never the whole file (biggest ' + r.sendBiggest + ')');
+  ok(r.steps.length === 19 && r.steps[0] === MB + '/' + 20 * MB && r.steps[18] === 19 * MB + '/' + 20 * MB, 'and how much has gone is reported after each piece, for the status bar (' + r.steps.length + ': ' + r.steps[0] + ' … ' + r.steps[18] + ')');
   const up = [...g.files.values()].find(f=> f.name === 'big1-r1.wav');
   const chunks = g.uploads.filter(x=> x.kind === 'chunk' && x.name === 'big1-r1.wav');
   ok(chunks.length === 20 && chunks.every(c=> c.size === MB), 'it went up in 20 pieces of 1 MB (' + chunks.length + ')');
