@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.2.002">
+<meta name="app-version" content="2.2.003">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -3424,10 +3424,23 @@ class DiskBlob {
     if(d.whole && this.inPlace) d.inPlace = true; // (a file used in place, whole: still a reference)
     return d;
   }
+  // Read in pieces of DISK_READ_PIECE: one request for a whole big file
+  // made the shell hold it twice and, before shell 2.2.1, froze the window
+  // while a slow disk read it (Gen Rinzin's Mac mini, 8 Nov 2026).
   async arrayBuffer(){
     if(!this.size) return new ArrayBuffer(0);
-    const r = await desktopInvoke("fs_read", {root: this.p37root, path: this.p37path, start: this.start, end: this.start + this.size});
-    return r instanceof ArrayBuffer ? r : (r && r.buffer) ? r.buffer.slice(r.byteOffset, r.byteOffset + r.byteLength) : new Uint8Array(r).buffer;
+    const piece = async (a, b)=>{
+      const r = await desktopInvoke("fs_read", {root: this.p37root, path: this.p37path, start: this.start + a, end: this.start + b});
+      return r instanceof ArrayBuffer ? new Uint8Array(r) : (r && r.buffer) ? new Uint8Array(r.buffer, r.byteOffset, r.byteLength) : new Uint8Array(r);
+    };
+    if(this.size <= DISK_READ_PIECE) return (await piece(0, this.size)).slice().buffer;
+    const out = new Uint8Array(this.size);
+    for(let at = 0; at < this.size; at += DISK_READ_PIECE){
+      const b = await piece(at, Math.min(at + DISK_READ_PIECE, this.size));
+      if(b.byteLength !== Math.min(DISK_READ_PIECE, this.size - at)) throw new Error("the file changed while it was read");
+      out.set(b, at);
+    }
+    return out.buffer;
   }
   async text(){ return new TextDecoder().decode(await this.arrayBuffer()); }
   async bytes(){ return new Uint8Array(await this.arrayBuffer()); }
@@ -40747,8 +40760,8 @@ async function readZipEntriesFromFile(file, onProgress){
     // Windows) usually squeezes them ("deflate"), and they're unpacked here.
     if(method === 0){ webkitSlices.add(raw); entries.push({name, blob: raw}); }
     else if(method === 8){
-      if(typeof DecompressionStream === "undefined") throw new Error(t("zipCompressedUnsupported"));
-      entries.push({name, blob: await new Response(raw.stream().pipeThrough(new DecompressionStream("deflate-raw"))).blob()});
+      if(typeof DecompressionStream === "undefined") entries.push({name, blob: new Blob([inflateRawBytes(new Uint8Array(await raw.arrayBuffer()))])});
+      else entries.push({name, blob: await new Response(raw.stream().pipeThrough(new DecompressionStream("deflate-raw"))).blob()});
     }
     else throw new Error(t("zipCompressedUnsupported"));
     if(onProgress){ onProgress(i+1, entryInfos.length); await new Promise(r=> setTimeout(r,0)); }
@@ -42744,9 +42757,99 @@ async function driveGz(text){
   if(typeof CompressionStream !== "function") return null;
   try{ return await new Response(new Blob([text]).stream().pipeThrough(new CompressionStream("gzip"))).blob(); }catch(err){ return null; }
 }
+// Without DecompressionStream (WebKit before Safari 16.4, as in the desktop
+// app on macOS 12), every existing Drive library's state couldn't be read:
+// joining one went quietly back to the Shared library page (Gen Rinzin's
+// Mac mini, 8 Nov 2026; a new, empty library worked).
 async function driveGunzip(blob){
+  if(typeof DecompressionStream !== "function") return new TextDecoder().decode(gunzipBytes(new Uint8Array(await blob.arrayBuffer())));
   return await new Response(blob.stream().pipeThrough(new DecompressionStream("gzip"))).text();
 }
+// Raw DEFLATE (RFC 1951), for WebKit without DecompressionStream (Safari
+// before 16.4: the desktop app on macOS 12, Gen Rinzin's Mac mini). Slow
+// beside the browser's own, but only used where that's missing.
+function inflateRawBytes(src){
+  let pos = 0, bit = 0, out = new Uint8Array(Math.max(1024, src.length * 4)), n = 0;
+  const need = k=>{ if(n + k > out.length){ let m = out.length * 2; while(m < n + k) m *= 2; const o = new Uint8Array(m); o.set(out.subarray(0, n)); out = o; } };
+  const bits = k=>{ let v = 0; for(let i = 0; i < k; i++){ if(pos >= src.length) throw new Error("inflate: ran out of data"); v |= ((src[pos] >> bit) & 1) << i; if(++bit === 8){ bit = 0; pos++; } } return v; };
+  // A Huffman table from code lengths: counts per length and symbols in order.
+  const table = lens=>{
+    const count = new Uint16Array(16), offs = new Uint16Array(16), sym = new Uint16Array(lens.length);
+    for(const l of lens) count[l]++;
+    count[0] = 0;
+    for(let i = 1; i < 16; i++) offs[i] = offs[i - 1] + count[i - 1];
+    lens.forEach((l, s)=>{ if(l) sym[offs[l]++] = s; });
+    return {count, sym};
+  };
+  const decode = h=>{
+    let code = 0, first = 0, index = 0;
+    for(let len = 1; len < 16; len++){
+      code |= bits(1);
+      const c = h.count[len];
+      if(code - c < first) return h.sym[index + (code - first)];
+      index += c; first += c; first <<= 1; code <<= 1;
+    }
+    throw new Error("inflate: bad code");
+  };
+  const LB = [3,4,5,6,7,8,9,10,11,13,15,17,19,23,27,31,35,43,51,59,67,83,99,115,131,163,195,227,258];
+  const LX = [0,0,0,0,0,0,0,0,1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4,5,5,5,5,0];
+  const DB = [1,2,3,4,5,7,9,13,17,25,33,49,65,97,129,193,257,385,513,769,1025,1537,2049,3073,4097,6145,8193,12289,16385,24577];
+  const DX = [0,0,0,0,1,1,2,2,3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,11,11,12,12,13,13];
+  let fixedL = null, fixedD = null;
+  for(;;){
+    const last = bits(1), type = bits(2);
+    if(type === 0){
+      if(bit){ bit = 0; pos++; }
+      if(pos + 4 > src.length) throw new Error("inflate: ran out of data");
+      const len = src[pos] | (src[pos + 1] << 8); pos += 4;
+      if(pos + len > src.length) throw new Error("inflate: ran out of data");
+      need(len); out.set(src.subarray(pos, pos + len), n); n += len; pos += len;
+    } else if(type === 1 || type === 2){
+      let L, D;
+      if(type === 1){
+        if(!fixedL){ const l = new Array(288); for(let i = 0; i < 288; i++) l[i] = i < 144 ? 8 : i < 256 ? 9 : i < 280 ? 7 : 8; fixedL = table(l); fixedD = table(new Array(30).fill(5)); }
+        L = fixedL; D = fixedD;
+      } else {
+        const hl = bits(5) + 257, hd = bits(5) + 1, hc = bits(4) + 4;
+        const ORD = [16,17,18,0,8,7,9,6,10,5,11,4,12,3,13,2,14,1,15], cl = new Array(19).fill(0);
+        for(let i = 0; i < hc; i++) cl[ORD[i]] = bits(3);
+        const C = table(cl), lens = [];
+        while(lens.length < hl + hd){
+          const s = decode(C);
+          if(s < 16) lens.push(s);
+          else if(s === 16){ if(!lens.length) throw new Error("inflate: bad lengths"); const p = lens[lens.length - 1]; for(let r = 3 + bits(2); r--;) lens.push(p); }
+          else if(s === 17){ for(let r = 3 + bits(3); r--;) lens.push(0); }
+          else { for(let r = 11 + bits(7); r--;) lens.push(0); }
+        }
+        L = table(lens.slice(0, hl)); D = table(lens.slice(hl, hl + hd));
+      }
+      for(;;){
+        const s = decode(L);
+        if(s < 256){ need(1); out[n++] = s; }
+        else if(s === 256) break;
+        else {
+          const i = s - 257; if(i >= 29) throw new Error("inflate: bad length");
+          const len = LB[i] + bits(LX[i]), d = decode(D); if(d >= 30) throw new Error("inflate: bad distance");
+          const dist = DB[d] + bits(DX[d]); if(dist > n) throw new Error("inflate: bad distance");
+          need(len); for(let k = 0; k < len; k++){ out[n] = out[n - dist]; n++; }
+        }
+      }
+    } else throw new Error("inflate: bad block");
+    if(last) break;
+  }
+  return out.slice(0, n);
+}
+// The bytes of a gzip file (RFC 1952; one member, as CompressionStream makes).
+function gunzipBytes(src){
+  if(src.length < 18 || src[0] !== 0x1f || src[1] !== 0x8b || src[2] !== 8) throw new Error("gzip: not a gzip file");
+  const flg = src[3]; let p = 10;
+  if(flg & 4) p += 2 + (src[p] | (src[p + 1] << 8));
+  if(flg & 8) while(src[p++]);
+  if(flg & 16) while(src[p++]);
+  if(flg & 2) p += 2;
+  return inflateRawBytes(src.subarray(p));
+}
+
 // sync.php's requests, answered from the Drive folder.
 async function driveFetch(cfg, params, init){
   const lib = await driveLibrary(cfg);
