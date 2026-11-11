@@ -245,7 +245,7 @@ pub fn other_drive(p: &Path) -> bool {
     s.starts_with("/Volumes/") || s.starts_with("/media/") || s.starts_with("/run/media/") || s.starts_with("/mnt/")
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn fs_root_info(app: tauri::AppHandle, id: String) -> Result<RootInfo, String> {
     let p = roots(&app).get(&id)?;
     Ok(RootInfo { present: p.is_dir(), other_drive: other_drive(&p), path: p.to_string_lossy().into_owned() })
@@ -253,7 +253,7 @@ pub fn fs_root_info(app: tauri::AppHandle, id: String) -> Result<RootInfo, Strin
 
 // Opens one of the folders on the list in Finder, Explorer or the like
 // (Settings → Library → Library folder → Show).
-#[tauri::command]
+#[tauri::command(async)]
 pub fn fs_root_show(app: tauri::AppHandle, id: String) -> Result<(), String> {
     let p = roots(&app).get(&id)?;
     if !p.is_dir() { return Err("the folder isn't there".into()); }
@@ -288,7 +288,7 @@ pub fn places_to_restore(lib: &Path, lib_id: &str) -> Vec<(String, PathBuf)> {
     out
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn fs_places_restore(app: tauri::AppHandle, id: String) -> Result<u32, String> {
     let Some(lib_id) = id.strip_prefix("lib-") else { return Err("only a library's folder".into()) };
     let r = roots(&app);
@@ -316,7 +316,7 @@ pub fn only_empty(p: &Path) -> bool {
 }
 
 // Is it empty (dry), or remove it if it is; and forget it.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn fs_remove_if_empty(app: tauri::AppHandle, id: String, dry: bool) -> Result<bool, String> {
     if !id.starts_with("in-") { return Err("only a folder used in place".into()); }
     let r = roots(&app);
@@ -344,7 +344,7 @@ pub fn renamed_path(cur: &Path, name: &str) -> Option<PathBuf> {
     Some(p)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn fs_root_rename(app: tauri::AppHandle, id: String, name: String) -> Result<String, String> {
     if !id.starts_with("lib-") { return Err("only a library's folder".into()); }
     let r = roots(&app);
@@ -414,7 +414,7 @@ pub fn fs_place_default(app: tauri::AppHandle) -> Result<String, String> {
 // The library folders in the libraries' place, each put on the list as
 // "lib-<id>" unless it's there already and its folder still is (the app's
 // own data folder lost or emptied, a folder moved within the place).
-#[tauri::command]
+#[tauri::command(async)]
 pub fn fs_find_libraries(app: tauri::AppHandle) -> Result<Vec<Found>, String> {
     let found = find_libraries(&place(&app)?);
     let r = roots(&app);
@@ -468,13 +468,13 @@ pub async fn fs_root_choose(app: tauri::AppHandle, id: String, title: String) ->
 #[tauri::command]
 pub fn fs_root_forget(app: tauri::AppHandle, id: String) -> Result<(), String> { roots(&app).forget(&id) }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn fs_list(app: tauri::AppHandle, root: String, path: String) -> Result<Vec<Entry>, String> { list(&roots(&app).get(&root)?, &path) }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn fs_stat(app: tauri::AppHandle, root: String, path: String) -> Result<Option<Entry>, String> { stat(&roots(&app).get(&root)?, &path) }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn fs_read(app: tauri::AppHandle, root: String, path: String, start: Option<u64>, end: Option<u64>) -> Result<tauri::ipc::Response, String> {
     Ok(tauri::ipc::Response::new(read(&roots(&app).get(&root)?, &path, start.unwrap_or(0), end)?))
 }
@@ -483,7 +483,7 @@ pub fn fs_read(app: tauri::AppHandle, root: String, path: String, start: Option<
 // headers "p37-root" and "p37-path", URI-encoded (headers are ASCII). With
 // "p37-append: 1" the bytes go on the end of the file (append), else they
 // replace it whole.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn fs_write(app: tauri::AppHandle, request: tauri::ipc::Request<'_>) -> Result<(), String> {
     let h = |k: &str| request.headers().get(k).and_then(|v| v.to_str().ok()).map(percent_decode).ok_or_else(|| format!("no {} header", k));
     let (root, path) = (h("p37-root")?, h("p37-path")?);
@@ -493,24 +493,24 @@ pub fn fs_write(app: tauri::AppHandle, request: tauri::ipc::Request<'_>) -> Resu
     if adding { append(&r, &path, bytes) } else { write(&r, &path, bytes) }
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn fs_copy(app: tauri::AppHandle, root: String, from: String, to_root: Option<String>, to: String, replace: Option<bool>) -> Result<(), String> {
     let r = roots(&app);
     copy(&r.get(&root)?, &from, &r.get(to_root.as_deref().unwrap_or(&root))?, &to, replace.unwrap_or(false))
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn fs_rename(app: tauri::AppHandle, root: String, from: String, to_root: Option<String>, to: String, replace: Option<bool>) -> Result<(), String> {
     let r = roots(&app);
     rename(&r.get(&root)?, &from, &r.get(to_root.as_deref().unwrap_or(&root))?, &to, replace.unwrap_or(false))
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn fs_remove(app: tauri::AppHandle, root: String, path: String, recursive: Option<bool>) -> Result<bool, String> {
     remove(&roots(&app).get(&root)?, &path, recursive.unwrap_or(false))
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn fs_mkdir(app: tauri::AppHandle, root: String, path: String) -> Result<(), String> { mkdir(&roots(&app).get(&root)?, &path) }
 
 pub fn percent_decode(s: &str) -> String {
