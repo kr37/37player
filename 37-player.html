@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.2.009">
+<meta name="app-version" content="2.2.010">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -3451,6 +3451,12 @@ class DesktopDirHandle {
 const placeOffline = new Set();
 const DISK_BLOB_MIN = window.__diskBlobMin != null ? window.__diskBlobMin : 32 * 1048576;
 const DISK_READ_PIECE = 8 * 1048576;
+// A big file (2.2.010, Gen Rinzin, 11 Nov 2026): above this, nothing that
+// needs the whole file in memory happens by itself. It isn't converted
+// automatically (only when asked, with a warning), and its details aren't
+// written into it. The converter holds its input whole, so a 2.7 GB WAV
+// made an 8 GB Mac crawl (8 Nov 2026).
+const BIG_FILE_BYTES = window.__bigFileBytes || 500 * 1048576;
 class DiskBlob {
   constructor(root, path, size, type, name, lastModified, start){ this.p37root = root; this.p37path = path; this.size = size; this.type = type || ""; this.name = name || ""; this.lastModified = lastModified || 0; this.start = start || 0; }
   slice(a, b, type){
@@ -3513,7 +3519,22 @@ function isBlobLike(v){ return v instanceof Blob || v instanceof DiskBlob || v i
 // The pieces to write, a JoinedBlob opened up.
 function blobParts(list){ const out = []; for(const p of list){ if(p instanceof JoinedBlob) out.push(...p.parts); else out.push(p); } return out; }
 // A real Blob for something that may be a DiskBlob: read whole (memory!).
-async function realBlob(b, type){ return isDiskBlob(b) ? new Blob([await b.arrayBuffer()], {type: type || b.type}) : b; }
+// Piece by piece, each piece a Blob of its own at once (2.2.010): reading
+// into one buffer the size of the file and then copying that into a Blob
+// held a big file twice (a 2.7 GB WAV: 5.48 GB in the page, Gen Rinzin's
+// 8 GB Mac mini, 11 Nov 2026, and the whole Mac swapping).
+async function realBlob(b, type){
+  if(!isDiskBlob(b)) return b;
+  if(b.size <= DISK_READ_PIECE) return new Blob([await b.arrayBuffer()], {type: type || b.type});
+  const parts = [];
+  for(let at = 0; at < b.size; at += DISK_READ_PIECE){
+    const n = Math.min(DISK_READ_PIECE, b.size - at);
+    const piece = await b.slice(at, at + n).arrayBuffer();
+    if(piece.byteLength !== n) throw new Error("the file changed while it was read");
+    parts.push(new Blob([piece]));
+  }
+  return new Blob(parts, {type: type || b.type});
+}
 const DISK_TYPES = {mp3: "audio/mpeg", m4a: "audio/mp4", mp4: "audio/mp4", aac: "audio/aac", wav: "audio/wav", flac: "audio/flac", ogg: "audio/ogg", oga: "audio/ogg", opus: "audio/ogg", webm: "audio/webm", aif: "audio/aiff", aiff: "audio/aiff", wma: "audio/x-ms-wma", jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png", gif: "image/gif", webp: "image/webp"};
 // A playable address for a track's audio: a DiskBlob's own (the shell
 // serves it with Range, so the player streams and seeks from disk), else an
@@ -5634,6 +5655,14 @@ const STRINGS = {
     "converterDownloadFailed": "The converter couldn't be downloaded ({msg}). Check the internet connection and try again.",
     "convertProgress": "Converting {done} of {total}: {name}",
     "convertWaiting": "{n} to convert once nothing is playing",
+    "convertBigTitle": "{n} of these files are big",
+    "convertBigTitleOne": "This file is big",
+    "convertBigBody": "Converting a file this big (up to {size} here) needs about as much of this device's memory as the file's size, and can take a long time. With little memory to spare, everything may slow down or stop responding until it's done. Close other apps first. Starting playback sets the conversion aside.",
+    "convertBigGoBtn": "Convert them anyway",
+    "convertBigGoBtnOne": "Convert it anyway",
+    "convertBigSkipBtn": "Convert only the smaller ones",
+    "cleanupBigNote": "{n} of them are over {size}: those are only converted when you ask here, never by themselves.",
+    "cleanupBigNoteOne": "One of them is over {size}: it's only converted when you ask here, never by itself.",
     "convertNoAudioHere": "its audio isn't on this device yet",
     "convertFailedTitle": "Some tracks couldn't be converted",
     "convertFailedBody": "{n} tracks couldn't be converted. They stay as they were; Library cleanup can try again.",
@@ -7486,6 +7515,14 @@ const STRINGS = {
     "converterDownloadFailed": "No se pudo descargar el conversor ({msg}). Comprueba la conexión a internet y vuelve a intentarlo.",
     "convertProgress": "Convirtiendo {done} de {total}: {name}",
     "convertWaiting": "{n} por convertir cuando no se esté reproduciendo nada",
+    "convertBigTitle": "{n} de estos archivos son grandes",
+    "convertBigTitleOne": "Este archivo es grande",
+    "convertBigBody": "Convertir un archivo tan grande (aquí, hasta {size}) necesita más o menos tanta memoria de este dispositivo como ocupa el archivo, y puede tardar mucho. Con poca memoria libre, todo puede ir lento o dejar de responder hasta que termine. Cierre antes las demás aplicaciones. Si empieza la reproducción, la conversión se deja para después.",
+    "convertBigGoBtn": "Convertirlos de todos modos",
+    "convertBigGoBtnOne": "Convertirlo de todos modos",
+    "convertBigSkipBtn": "Convertir solo los más pequeños",
+    "cleanupBigNote": "{n} de ellas pasan de {size}: esas solo se convierten cuando usted lo pide aquí, nunca por sí solas.",
+    "cleanupBigNoteOne": "Una de ellas pasa de {size}: solo se convierte cuando usted lo pide aquí, nunca por sí sola.",
     "convertNoAudioHere": "su audio todavía no está en este dispositivo",
     "convertFailedTitle": "Algunas pistas no se pudieron convertir",
     "convertFailedBody": "No se pudieron convertir {n} pistas. Quedan como estaban; Limpieza de la biblioteca puede intentarlo de nuevo.",
@@ -9338,6 +9375,14 @@ const STRINGS = {
     "converterDownloadFailed": "Le convertisseur n'a pas pu être téléchargé ({msg}). Vérifiez la connexion internet et réessayez.",
     "convertProgress": "Conversion {done} sur {total} : {name}",
     "convertWaiting": "{n} à convertir quand plus rien ne joue",
+    "convertBigTitle": "{n} de ces fichiers sont volumineux",
+    "convertBigTitleOne": "Ce fichier est volumineux",
+    "convertBigBody": "Convertir un fichier aussi volumineux (ici, jusqu'à {size}) demande à peu près autant de mémoire de cet appareil que la taille du fichier, et peut prendre longtemps. Avec peu de mémoire disponible, tout peut ralentir ou ne plus répondre jusqu'à la fin. Fermez d'abord les autres applications. Lancer la lecture met la conversion de côté.",
+    "convertBigGoBtn": "Les convertir quand même",
+    "convertBigGoBtnOne": "Le convertir quand même",
+    "convertBigSkipBtn": "Ne convertir que les plus petits",
+    "cleanupBigNote": "{n} d'entre elles dépassent {size} : celles-là ne sont converties que lorsque vous le demandez ici, jamais d'elles-mêmes.",
+    "cleanupBigNoteOne": "L'une d'elles dépasse {size} : elle n'est convertie que lorsque vous le demandez ici, jamais d'elle-même.",
     "convertNoAudioHere": "son audio n'est pas encore sur cet appareil",
     "convertFailedTitle": "Certaines pistes n'ont pas pu être converties",
     "convertFailedBody": "{n} pistes n'ont pas pu être converties. Elles restent telles quelles ; Nettoyage de la bibliothèque peut réessayer.",
@@ -11190,6 +11235,14 @@ const STRINGS = {
     "converterDownloadFailed": "Não foi possível baixar o conversor ({msg}). Verifique a conexão com a internet e tente de novo.",
     "convertProgress": "Convertendo {done} de {total}: {name}",
     "convertWaiting": "{n} para converter quando nada estiver tocando",
+    "convertBigTitle": "{n} destes arquivos são grandes",
+    "convertBigTitleOne": "Este arquivo é grande",
+    "convertBigBody": "Converter um arquivo tão grande (aqui, até {size}) precisa de mais ou menos tanta memória deste dispositivo quanto o tamanho do arquivo, e pode demorar muito. Com pouca memória livre, tudo pode ficar lento ou parar de responder até terminar. Feche antes os outros aplicativos. Iniciar a reprodução deixa a conversão para depois.",
+    "convertBigGoBtn": "Converter mesmo assim",
+    "convertBigGoBtnOne": "Converter mesmo assim",
+    "convertBigSkipBtn": "Converter só os menores",
+    "cleanupBigNote": "{n} delas passam de {size}: essas só são convertidas quando você pede aqui, nunca sozinhas.",
+    "cleanupBigNoteOne": "Uma delas passa de {size}: só é convertida quando você pede aqui, nunca sozinha.",
     "convertNoAudioHere": "o áudio ainda não está neste dispositivo",
     "convertFailedTitle": "Algumas faixas não puderam ser convertidas",
     "convertFailedBody": "Não foi possível converter {n} faixas. Ficam como estavam; Limpeza da biblioteca pode tentar de novo.",
@@ -13042,6 +13095,14 @@ const STRINGS = {
     "converterDownloadFailed": "Der Konverter konnte nicht heruntergeladen werden ({msg}). Prüfen Sie die Internetverbindung und versuchen Sie es erneut.",
     "convertProgress": "Umwandeln {done} von {total}: {name}",
     "convertWaiting": "{n} zum Umwandeln, sobald nichts mehr abgespielt wird",
+    "convertBigTitle": "{n} dieser Dateien sind groß",
+    "convertBigTitleOne": "Diese Datei ist groß",
+    "convertBigBody": "Eine so große Datei umzuwandeln (hier bis zu {size}) braucht etwa so viel Arbeitsspeicher dieses Geräts, wie die Datei groß ist, und kann lange dauern. Bei wenig freiem Speicher kann alles langsam werden oder nicht mehr reagieren, bis es fertig ist. Schließen Sie vorher andere Programme. Wird etwas abgespielt, wird die Umwandlung zurückgestellt.",
+    "convertBigGoBtn": "Trotzdem umwandeln",
+    "convertBigGoBtnOne": "Trotzdem umwandeln",
+    "convertBigSkipBtn": "Nur die kleineren umwandeln",
+    "cleanupBigNote": "{n} davon sind größer als {size}: Diese werden nur umgewandelt, wenn Sie es hier verlangen, nie von selbst.",
+    "cleanupBigNoteOne": "Eine davon ist größer als {size}: Sie wird nur umgewandelt, wenn Sie es hier verlangen, nie von selbst.",
     "convertNoAudioHere": "das Audio ist noch nicht auf diesem Gerät",
     "convertFailedTitle": "Manche Titel ließen sich nicht umwandeln",
     "convertFailedBody": "{n} Titel konnten nicht umgewandelt werden. Sie bleiben, wie sie waren; Bibliothek aufräumen kann es erneut versuchen.",
@@ -14894,6 +14955,14 @@ const STRINGS = {
     "converterDownloadFailed": "无法下载转换器（{msg}）。请检查网络连接后重试。",
     "convertProgress": "正在转换第 {done} 首，共 {total} 首：{name}",
     "convertWaiting": "还有 {n} 首，等没有播放时转换",
+    "convertBigTitle": "其中 {n} 个文件很大",
+    "convertBigTitleOne": "这个文件很大",
+    "convertBigBody": "转换这么大的文件（这里最大 {size}）需要占用本设备与文件大小差不多的内存，而且可能要很长时间。可用内存不多时，在转换完成之前一切都可能变慢或没有反应。请先关闭其他应用。开始播放会把转换搁置。",
+    "convertBigGoBtn": "仍然转换",
+    "convertBigGoBtnOne": "仍然转换",
+    "convertBigSkipBtn": "只转换较小的",
+    "cleanupBigNote": "其中 {n} 首超过 {size}：这些只有在您在这里要求时才会转换，不会自动转换。",
+    "cleanupBigNoteOne": "其中 1 首超过 {size}：只有在您在这里要求时才会转换，不会自动转换。",
     "convertNoAudioHere": "其音频尚未到达此设备",
     "convertFailedTitle": "部分曲目无法转换",
     "convertFailedBody": "有 {n} 首曲目无法转换。它们保持原样；可在 曲库整理 中重试。",
@@ -16746,6 +16815,14 @@ const STRINGS = {
     "converterDownloadFailed": "Không tải được bộ chuyển đổi ({msg}). Hãy kiểm tra kết nối internet rồi thử lại.",
     "convertProgress": "Đang chuyển đổi {done} / {total}: {name}",
     "convertWaiting": "{n} bài sẽ chuyển đổi khi không có gì đang phát",
+    "convertBigTitle": "{n} tệp trong số này rất lớn",
+    "convertBigTitleOne": "Tệp này rất lớn",
+    "convertBigBody": "Chuyển đổi một tệp lớn như vậy (ở đây lên tới {size}) cần lượng bộ nhớ của thiết bị này gần bằng kích thước của tệp, và có thể mất nhiều thời gian. Khi còn ít bộ nhớ trống, mọi thứ có thể chậm lại hoặc ngừng phản hồi cho đến khi xong. Hãy đóng các ứng dụng khác trước. Bắt đầu phát sẽ tạm gác việc chuyển đổi.",
+    "convertBigGoBtn": "Vẫn chuyển đổi",
+    "convertBigGoBtnOne": "Vẫn chuyển đổi",
+    "convertBigSkipBtn": "Chỉ chuyển đổi các tệp nhỏ hơn",
+    "cleanupBigNote": "{n} bài trong số đó lớn hơn {size}: chúng chỉ được chuyển đổi khi bạn yêu cầu ở đây, không bao giờ tự động.",
+    "cleanupBigNoteOne": "Một bài trong số đó lớn hơn {size}: nó chỉ được chuyển đổi khi bạn yêu cầu ở đây, không bao giờ tự động.",
     "convertNoAudioHere": "âm thanh của bài chưa có trên thiết bị này",
     "convertFailedTitle": "Một số bài không chuyển đổi được",
     "convertFailedBody": "Không chuyển đổi được {n} bản nhạc. Chúng giữ nguyên; Dọn dẹp thư viện có thể thử lại.",
@@ -18598,6 +18675,14 @@ const STRINGS = {
     "converterDownloadFailed": "Δεν ήταν δυνατή η λήψη του μετατροπέα ({msg}). Ελέγξτε τη σύνδεση στο διαδίκτυο και δοκιμάστε ξανά.",
     "convertProgress": "Μετατροπή {done} από {total}: {name}",
     "convertWaiting": "{n} για μετατροπή μόλις δεν παίζει τίποτα",
+    "convertBigTitle": "{n} από αυτά τα αρχεία είναι μεγάλα",
+    "convertBigTitleOne": "Αυτό το αρχείο είναι μεγάλο",
+    "convertBigBody": "Η μετατροπή ενός τόσο μεγάλου αρχείου (εδώ έως {size}) χρειάζεται περίπου τόση μνήμη αυτής της συσκευής όσο το μέγεθος του αρχείου, και μπορεί να πάρει πολύ χρόνο. Με λίγη ελεύθερη μνήμη, όλα μπορεί να επιβραδυνθούν ή να μην ανταποκρίνονται μέχρι να τελειώσει. Κλείστε πρώτα τις άλλες εφαρμογές. Αν ξεκινήσει αναπαραγωγή, η μετατροπή μπαίνει σε αναμονή.",
+    "convertBigGoBtn": "Μετατροπή παρ' όλα αυτά",
+    "convertBigGoBtnOne": "Μετατροπή παρ' όλα αυτά",
+    "convertBigSkipBtn": "Μετατροπή μόνο των μικρότερων",
+    "cleanupBigNote": "{n} από αυτά ξεπερνούν τα {size}: αυτά μετατρέπονται μόνο όταν το ζητήσετε εδώ, ποτέ από μόνα τους.",
+    "cleanupBigNoteOne": "Ένα από αυτά ξεπερνά τα {size}: μετατρέπεται μόνο όταν το ζητήσετε εδώ, ποτέ από μόνο του.",
     "convertNoAudioHere": "ο ήχος του δεν είναι ακόμη σε αυτή τη συσκευή",
     "convertFailedTitle": "Ορισμένα κομμάτια δεν μετατράπηκαν",
     "convertFailedBody": "{n} κομμάτια δεν μπόρεσαν να μετατραπούν. Μένουν όπως ήταν· η Τακτοποίηση βιβλιοθήκης μπορεί να ξαναδοκιμάσει.",
@@ -20450,6 +20535,14 @@ const STRINGS = {
     "converterDownloadFailed": "Non è stato possibile scaricare il convertitore ({msg}). Controlla la connessione a internet e riprova.",
     "convertProgress": "Conversione {done} di {total}: {name}",
     "convertWaiting": "{n} da convertire quando non c'è niente in riproduzione",
+    "convertBigTitle": "{n} di questi file sono grandi",
+    "convertBigTitleOne": "Questo file è grande",
+    "convertBigBody": "Convertire un file così grande (qui fino a {size}) richiede all'incirca tanta memoria di questo dispositivo quanto la dimensione del file, e può richiedere molto tempo. Con poca memoria libera, tutto può rallentare o non rispondere finché non ha finito. Chiuda prima le altre applicazioni. Avviare la riproduzione mette da parte la conversione.",
+    "convertBigGoBtn": "Convertili comunque",
+    "convertBigGoBtnOne": "Convertilo comunque",
+    "convertBigSkipBtn": "Converti solo i più piccoli",
+    "cleanupBigNote": "{n} di esse superano {size}: quelle vengono convertite solo quando lo chiede qui, mai da sole.",
+    "cleanupBigNoteOne": "Una di esse supera {size}: viene convertita solo quando lo chiede qui, mai da sola.",
     "convertNoAudioHere": "il suo audio non è ancora su questo dispositivo",
     "convertFailedTitle": "Alcune tracce non sono state convertite",
     "convertFailedBody": "Non è stato possibile convertire {n} tracce. Restano com'erano; Pulizia libreria può riprovare.",
@@ -25653,9 +25746,12 @@ async function snapshotLegacyTagTracks(){
 // file it was made from — for Standardize's re-encoded files.
 async function blobWithCurrentTags(track, blob, opts){
   opts = opts || {};
-  blob = await realBlob(blob); // (the desktop app's big files: read whole to write the details in)
+  // The format first, from the file's first bytes: a file with no writer,
+  // or too big to rewrite in memory, is never read whole to find that out.
   const fmt = await sniffAudioFormat(blob, track.filename);
   if(!TAG_WRITABLE_KINDS.has(fmt.kind)) return {blob, fmt, written: false};
+  if(isDiskBlob(blob) && blob.size > BIG_FILE_BYTES) return {blob, fmt, written: false, tooBig: true};
+  blob = await realBlob(blob); // (the desktop app's big files: read whole to write the details in)
   let typed = blob.type ? blob : new Blob([blob], {type: fmt.mime});
   // A file damaged by the pre-1.1.089 writer is repaired first — rewriting
   // its tags would erase the sign that identifies the damage (see repairDamagedMp4).
@@ -26752,9 +26848,31 @@ function trackCanBeConverted(tr){
   if(!tr || tr.needsConvert === NEEDS_CONVERT_PLAYLIST) return false;
   return !!tr.needsConvert || !(tr.duration > 0) || trackMatchesPolicy(tr);
 }
+// A file too big to convert without being asked (BIG_FILE_BYTES).
+function trackIsBigFile(tr){ return !!tr && (tr.fileSize || 0) > BIG_FILE_BYTES; }
 // Asks to download the converter first when it isn't here, then queues.
-async function convertTracks(ids){
+// opts.auto: started by 37 Player itself (after an import, a split): big
+// files are left as they are. Asked for by a person, big files get a
+// warning first, with the choice to leave them out. The big ones a person
+// agreed to are remembered for this session (convertBigOk), since a queue
+// carried over a restart never converts a big file by itself.
+const convertBigOk = new Set();
+async function convertTracks(ids, opts){
   ids = ids.filter(id=> trackCanBeConverted(findLibraryTrack(id)) && !convertQueue.includes(id));
+  const big = ids.filter(id=> trackIsBigFile(findLibraryTrack(id)));
+  if(big.length && opts && opts.auto) ids = ids.filter(id=> !big.includes(id));
+  else if(big.length){
+    const trs = big.map(id=> findLibraryTrack(id));
+    const largest = trs.reduce((a, b)=> (b.fileSize || 0) > (a.fileSize || 0) ? b : a);
+    const list = trs.slice(0, 8).map(tr=> `<li>${escapeHtmlText((tr.name || tr.filename || "") + " (" + fmtBytes(tr.fileSize || 0) + ")")}</li>`).join("") + (trs.length > 8 ? `<li>…</li>` : "");
+    const btns = [{label: t(big.length === 1 ? "convertBigGoBtnOne" : "convertBigGoBtn"), value: "go", kind: "primary"}];
+    if(big.length < ids.length) btns.push({label: t("convertBigSkipBtn"), value: "skip"});
+    btns.push({label: t("cancel"), value: null});
+    const c = await askChoice(t(big.length === 1 ? "convertBigTitleOne" : "convertBigTitle", {n: big.length}), `<p>${escapeHtmlText(t("convertBigBody", {size: fmtBytes(largest.fileSize || 0)}))}</p><ul class="delete-list">${list}</ul>`, btns);
+    if(!c) return;
+    if(c === "skip") ids = ids.filter(id=> !big.includes(id));
+    else big.forEach(id=> convertBigOk.add(id));
+  }
   if(!ids.length) return;
   if(!(await converterStored()) && !(await ensureConverter())){
     const ok = await askToDownloadConverter(); // couldn't fetch it quietly: say so, and let them try
@@ -26773,19 +26891,25 @@ function convertQueueSave(){
   if(convertQueue.length) idbPut("state", {key: "convertQueue", value: {ids: convertQueue.slice(), total: convertTotal, done: convertDone}}).catch(()=>{});
   else idbDelete("state", "convertQueue").catch(()=>{});
 }
+// A minute after opening, not six seconds (2.2.010, Gen Rinzin): nothing
+// heavy right at the start, so Settings can be reached first.
+const CONVERT_RESUME_AFTER_MS = window.__convertResumeMs || 60000;
 function scheduleConvertResume(){
   setTimeout(async ()=>{
     let rec = null;
     try{ rec = await idbGet("state", "convertQueue"); }catch(err){}
     const v = rec && rec.value;
     if(!v || !Array.isArray(v.ids) || convertRunning) return;
-    const ids = v.ids.filter(id=> trackCanBeConverted(findLibraryTrack(id)) && !convertQueue.includes(id));
+    // Never a big file by itself: one that was being converted when the app
+    // had to be force-quit would start again at every opening (the Mac
+    // mini, 8 Nov 2026). It's still listed in Library cleanup, to ask again.
+    const ids = v.ids.filter(id=> trackCanBeConverted(findLibraryTrack(id)) && !trackIsBigFile(findLibraryTrack(id)) && !convertQueue.includes(id));
     if(!ids.length){ idbDelete("state", "convertQueue").catch(()=>{}); return; }
     if(!(await converterStored()) && !(await ensureConverter())) return; // try again next start
     convertQueue.push(...ids);
     convertDone = Math.max(0, (v.total || ids.length) - ids.length); convertTotal = convertDone + ids.length;
     runConvertQueue();
-  }, 6000);
+  }, CONVERT_RESUME_AFTER_MS);
 }
 function askToDownloadConverter(){
   return new Promise(resolve=>{
@@ -26838,7 +26962,7 @@ async function runConvertQueue(){
       }
       const id = convertQueue[0];
       const tr = findLibraryTrack(id);
-      if(!trackCanBeConverted(tr)){ convertQueue.shift(); convertDone++; continue; }
+      if(!trackCanBeConverted(tr) || (trackIsBigFile(tr) && !convertBigOk.has(id))){ convertQueue.shift(); convertDone++; continue; }
       const name = tr.name || tr.filename || "";
       setActiveOperationProgress(convertBarText(name, null), stopConverting);
       let rec = null;
@@ -26968,7 +27092,7 @@ async function convertAfterImport(names, importedIds){
   ids.forEach(id=> convertSoon.add(id));
   try{
     if(!(await ensureConverter())){ if(names.length) showUnplayableFilesWarning(names); return; }
-    await convertTracks(ids);
+    await convertTracks(ids, {auto: true});
   } finally {
     ids.forEach(id=> convertSoon.delete(id)); // queued by now (convertQueue holds them), or not to be
   }
@@ -27612,7 +27736,7 @@ async function splitTrackInto(sourceTrack, cuts, pieces, opts){
   // import would convert is converted now.
   if(!encoded && !opts.noConverter){
     const later = tracks.filter(tr=> trackMatchesPolicy(tr)).map(tr=> tr.id);
-    if(later.length) convertTracks(later);
+    if(later.length) convertTracks(later, {auto: true});
   }
   let j = 0;
   return pieces.map(p=> p ? tracks[j++] : null);
@@ -34733,7 +34857,7 @@ const HELP_TOPICS = [
   {
     "id": "itunes-music-app",
     "title": "iTunes / Music.app",
-    "bodyHtml": "\u003cp>How 37 Player works alongside Music.app on a Mac and iTunes on Windows: bringing a library in, taking one back out, and why standardizing matters there.\u003c/p>\n\u003ch3>Importing\u003c/h3>\n\u003cp>37 Player can bring in a whole Music.app or iTunes library in one go — the audio, and every playlist inside its playlist folders.\u003c/p>\n\u003cp>\u003cstrong>1. Export the library file.\u003c/strong> In Music.app (or iTunes), choose \u003cstrong>File → Library → Export Library…\u003c/strong> and save the file into the folder that holds your music:\u003c/p>\n\u003cul>\n\u003cli>\u003cstrong>Music.app:\u003c/strong> the \u003cstrong>Media\u003c/strong> folder, usually in your Music folder under \u003cstrong>Music → Media\u003c/strong>.\u003c/li>\n\u003cli>\u003cstrong>iTunes on Windows:\u003c/strong> the \u003cstrong>iTunes Media\u003c/strong> folder, usually in your Music folder under \u003cstrong>iTunes → iTunes Media\u003c/strong>.\u003c/li>\n\u003c/ul>\n\u003cp>Keep the name it suggests (Library.xml). That one file lists every playlist and where each of its tracks is.\u003c/p>\n\u003cp>\u003cstrong>2. Import the folder.\u003c/strong> In 37 Player, open 'Import / Export', choose \u003cstrong>Import a folder…\u003c/strong>, and pick that same folder. 37 Player reads the library file along with the audio, and the usual review appears: how many tracks are new, and which playlist entries couldn't be found. Choose \u003cstrong>Import\u003c/strong>, and the playlists appear in 'Edit Playlists' in the same folders they had in Music.app.\u003c/p>\n\u003cp>Good to know:\u003c/p>\n\u003cul>\n\u003cli>\u003cstrong>Everything in the folder is imported\u003c/strong>, not just the tracks your playlists use. To bring in less, pick a smaller folder (one artist, say) — playlists still come in, with anything outside that folder listed as missing.\u003c/li>\n\u003cli>\u003cstrong>Apple's own lists\u003c/strong> (Library, Music, Downloaded and the like) are left out. A smart playlist comes in as the tracks it held when you exported — it doesn't keep updating.\u003c/li>\n\u003cli>\u003cstrong>A track that can't be found\u003c/strong> — never downloaded (streamed from Apple Music, or left in the cloud), or outside the folder you picked — leaves a \u003cstrong>Stop\u003c/strong> in its place in the playlist, named \"MISSING TRACK: title — album\", so playback halts right there instead of quietly skipping it, and the playlist is flagged. Once the track is in the library, put it in where the Stop is, and remove the Stop.\u003c/li>\n\u003cli>\u003cstrong>AIFF files\u003c/strong> (.aif), common in older iTunes libraries, come in as WAV, since most browsers can't play AIFF. The sound is identical, and the name, artist, album and artwork come along.\u003c/li>\n\u003cli>\u003cstrong>Older iTunes Store purchases\u003c/strong> protected against copying (.m4p files) can't be played in a browser.\u003c/li>\n\u003cli>\u003cstrong>Files a browser can't play\u003c/strong> — Windows Media Audio (.wma), Apple Lossless (ALAC, inside an .m4a) outside Safari, compressed AIFF and a few others — are converted to MP3 as they come in, so they play everywhere and keep their place in the playlists. 37 Player then asks whether to keep the originals too, for a later export (a portable export takes the original), showing how much room they take; Settings → Library cleanup can discard them later. Converting needs 37 Player's converter, which it fetches by itself (about 26 MB, once) and keeps, so it works offline afterwards; it waits while anything is playing. Without the converter (no internet the first time, say), such files come in marked \"Can't be played\", with \u003cstrong>Convert them now\u003c/strong> for later.\u003c/li>\n\u003cli>\u003cstrong>Your music doesn't have to be organized the way Music.app keeps it.\u003c/strong> Tracks are found by their folder names and file name, and if a file has moved, by its name and size.\u003c/li>\n\u003cli>\u003cstrong>Single playlists\u003c/strong> work too: a playlist exported on its own (\u003cstrong>File → Library → Export Playlist…\u003c/strong>, as an .m3u file), or an .m3u, .m3u8 or .xspf (VLC) from another player. Put it in the music folder and import the folder. ('Importing playlists' explains where playlists end up.)\u003c/li>\n\u003c/ul>\n\u003ch3>Exporting\u003c/h3>\n\u003cp>To take a library from 37 Player into Music.app or iTunes, use 'Import / Export' → Export and choose \u003cstrong>Portable\u003c/strong>. It unpacks into a \u003cstrong>music\u003c/strong> folder (artist / album / tracks) and a \u003cstrong>playlists\u003c/strong> folder of .m3u8 files.\u003c/p>\n\u003cul>\n\u003cli>\u003cstrong>The audio:\u003c/strong> in Music.app, choose \u003cstrong>File → Import…\u003c/strong> and pick the \u003cstrong>music\u003c/strong> folder.\u003c/li>\n\u003cli>\u003cstrong>The playlists:\u003c/strong> choose \u003cstrong>File → Library → Import Playlist…\u003c/strong> and pick each .m3u8 file. Music.app doesn't recreate folders from these, so a playlist lands at the top level; drag it into a playlist folder afterwards if you want one.\u003c/li>\n\u003c/ul>\n\u003cp>Every track keeps its name, artist, album, track number and artwork, since 37 Player writes those into the files themselves.\u003c/p>\n\u003cp>Volume adjustments made in 37 Player, and its evening out, don't come along: they aren't written into the files as ReplayGain tags, so Music.app plays each file at its own level. Music.app's own \u003cstrong>Sound Check\u003c/strong> (in its Playback settings) evens tracks out in a similar way.\u003c/p>\n\u003ch3>Why standardize for Music.app and iTunes\u003c/h3>\n\u003cp>Music.app and iTunes play one track straight into the next — but only smoothly when the two are alike. When the next track is a different file type (MP3 after AAC), or has a different sample rate (44.1 kHz after 48 kHz, say) or a different number of channels (mono after stereo), the player has to reset its audio output between them, and you hear a click, dropout, short gap, or worse.\u003c/p>\n\u003cp>37 Player itself doesn't have this problem, so there's no need to change the library for it. Instead, when exporting with \u003cstrong>Portable\u003c/strong>, tick \u003cstrong>Convert to the preferred format\u003c/strong>: every file in the export comes out alike, and the library stays as it is. For a stricter match, set the preferred format (Settings → \u003cstrong>File format\u003c/strong>) to \u003cstrong>Best for Apple\u003c/strong> (AAC, 44.1 kHz, stereo), or choose your own under Custom.\u003c/p>\n\u003ch3>The library's file format\u003c/h3>\n\u003cp>Settings → \u003cstrong>File format\u003c/strong> sets one \u003cstrong>preferred format\u003c/strong> for the library — Standard (MP3 192k, recommended), Best for Apple, Very small, Lossless (FLAC, not recommended: much larger, with no difference you can hear), or Custom — and which files are converted to it:\u003c/p>\n\u003cul>\n\u003cli>\u003cstrong>Don't touch my files:\u003c/strong> nothing is changed. A file this browser can't play still gets a playable copy, and its original is kept too.\u003c/li>\n\u003cli>\u003cstrong>Reduce uncompressed audio\u003c/strong> (recommended): WAV and AIFF files are converted as they come in.\u003c/li>\n\u003cli>\u003cstrong>Choose the rules:\u003c/strong> uncompressed audio, a bitrate above a limit, a sample rate or channel count other than the preferred format's, or less widely playable types (Opus, Ogg, WebM).\u003c/li>\n\u003c/ul>\n\u003cp>The page says what the settings would mean for the library as it is (\"12 tracks would be converted…\"). Converting them is in Settings → \u003cstrong>Library cleanup\u003c/strong> → Convert to the preferred format, with \u003cstrong>Convert them now\u003c/strong> and the list of those tracks (name, album, type, size, sample rate, bit rate, channels). In a shared library these settings belong to the library, so a change on one device applies on all of them, and a file about to be converted is never sent before its converted version is ready.\u003c/p>\n\u003cp>Videos (a recorded teaching, say) can come in too: 37 Player asks whether to take their sound as audio tracks. The video itself isn't kept.\u003c/p>"
+    "bodyHtml": "\u003cp>How 37 Player works alongside Music.app on a Mac and iTunes on Windows: bringing a library in, taking one back out, and why standardizing matters there.\u003c/p>\n\u003ch3>Importing\u003c/h3>\n\u003cp>37 Player can bring in a whole Music.app or iTunes library in one go — the audio, and every playlist inside its playlist folders.\u003c/p>\n\u003cp>\u003cstrong>1. Export the library file.\u003c/strong> In Music.app (or iTunes), choose \u003cstrong>File → Library → Export Library…\u003c/strong> and save the file into the folder that holds your music:\u003c/p>\n\u003cul>\n\u003cli>\u003cstrong>Music.app:\u003c/strong> the \u003cstrong>Media\u003c/strong> folder, usually in your Music folder under \u003cstrong>Music → Media\u003c/strong>.\u003c/li>\n\u003cli>\u003cstrong>iTunes on Windows:\u003c/strong> the \u003cstrong>iTunes Media\u003c/strong> folder, usually in your Music folder under \u003cstrong>iTunes → iTunes Media\u003c/strong>.\u003c/li>\n\u003c/ul>\n\u003cp>Keep the name it suggests (Library.xml). That one file lists every playlist and where each of its tracks is.\u003c/p>\n\u003cp>\u003cstrong>2. Import the folder.\u003c/strong> In 37 Player, open 'Import / Export', choose \u003cstrong>Import a folder…\u003c/strong>, and pick that same folder. 37 Player reads the library file along with the audio, and the usual review appears: how many tracks are new, and which playlist entries couldn't be found. Choose \u003cstrong>Import\u003c/strong>, and the playlists appear in 'Edit Playlists' in the same folders they had in Music.app.\u003c/p>\n\u003cp>Good to know:\u003c/p>\n\u003cul>\n\u003cli>\u003cstrong>Everything in the folder is imported\u003c/strong>, not just the tracks your playlists use. To bring in less, pick a smaller folder (one artist, say) — playlists still come in, with anything outside that folder listed as missing.\u003c/li>\n\u003cli>\u003cstrong>Apple's own lists\u003c/strong> (Library, Music, Downloaded and the like) are left out. A smart playlist comes in as the tracks it held when you exported — it doesn't keep updating.\u003c/li>\n\u003cli>\u003cstrong>A track that can't be found\u003c/strong> — never downloaded (streamed from Apple Music, or left in the cloud), or outside the folder you picked — leaves a \u003cstrong>Stop\u003c/strong> in its place in the playlist, named \"MISSING TRACK: title — album\", so playback halts right there instead of quietly skipping it, and the playlist is flagged. Once the track is in the library, put it in where the Stop is, and remove the Stop.\u003c/li>\n\u003cli>\u003cstrong>AIFF files\u003c/strong> (.aif), common in older iTunes libraries, come in as WAV, since most browsers can't play AIFF. The sound is identical, and the name, artist, album and artwork come along.\u003c/li>\n\u003cli>\u003cstrong>Older iTunes Store purchases\u003c/strong> protected against copying (.m4p files) can't be played in a browser.\u003c/li>\n\u003cli>\u003cstrong>Files a browser can't play\u003c/strong> — Windows Media Audio (.wma), Apple Lossless (ALAC, inside an .m4a) outside Safari, compressed AIFF and a few others — are converted to MP3 as they come in, so they play everywhere and keep their place in the playlists. 37 Player then asks whether to keep the originals too, for a later export (a portable export takes the original), showing how much room they take; Settings → Library cleanup can discard them later. Converting needs 37 Player's converter, which it fetches by itself (about 26 MB, once) and keeps, so it works offline afterwards; it waits while anything is playing. Without the converter (no internet the first time, say), such files come in marked \"Can't be played\", with \u003cstrong>Convert them now\u003c/strong> for later. A file over 500 MB is never converted by itself, since converting needs about as much memory as the file's size: Settings → Library cleanup offers it, with a warning first.\u003c/li>\n\u003cli>\u003cstrong>Your music doesn't have to be organized the way Music.app keeps it.\u003c/strong> Tracks are found by their folder names and file name, and if a file has moved, by its name and size.\u003c/li>\n\u003cli>\u003cstrong>Single playlists\u003c/strong> work too: a playlist exported on its own (\u003cstrong>File → Library → Export Playlist…\u003c/strong>, as an .m3u file), or an .m3u, .m3u8 or .xspf (VLC) from another player. Put it in the music folder and import the folder. ('Importing playlists' explains where playlists end up.)\u003c/li>\n\u003c/ul>\n\u003ch3>Exporting\u003c/h3>\n\u003cp>To take a library from 37 Player into Music.app or iTunes, use 'Import / Export' → Export and choose \u003cstrong>Portable\u003c/strong>. It unpacks into a \u003cstrong>music\u003c/strong> folder (artist / album / tracks) and a \u003cstrong>playlists\u003c/strong> folder of .m3u8 files.\u003c/p>\n\u003cul>\n\u003cli>\u003cstrong>The audio:\u003c/strong> in Music.app, choose \u003cstrong>File → Import…\u003c/strong> and pick the \u003cstrong>music\u003c/strong> folder.\u003c/li>\n\u003cli>\u003cstrong>The playlists:\u003c/strong> choose \u003cstrong>File → Library → Import Playlist…\u003c/strong> and pick each .m3u8 file. Music.app doesn't recreate folders from these, so a playlist lands at the top level; drag it into a playlist folder afterwards if you want one.\u003c/li>\n\u003c/ul>\n\u003cp>Every track keeps its name, artist, album, track number and artwork, since 37 Player writes those into the files themselves.\u003c/p>\n\u003cp>Volume adjustments made in 37 Player, and its evening out, don't come along: they aren't written into the files as ReplayGain tags, so Music.app plays each file at its own level. Music.app's own \u003cstrong>Sound Check\u003c/strong> (in its Playback settings) evens tracks out in a similar way.\u003c/p>\n\u003ch3>Why standardize for Music.app and iTunes\u003c/h3>\n\u003cp>Music.app and iTunes play one track straight into the next — but only smoothly when the two are alike. When the next track is a different file type (MP3 after AAC), or has a different sample rate (44.1 kHz after 48 kHz, say) or a different number of channels (mono after stereo), the player has to reset its audio output between them, and you hear a click, dropout, short gap, or worse.\u003c/p>\n\u003cp>37 Player itself doesn't have this problem, so there's no need to change the library for it. Instead, when exporting with \u003cstrong>Portable\u003c/strong>, tick \u003cstrong>Convert to the preferred format\u003c/strong>: every file in the export comes out alike, and the library stays as it is. For a stricter match, set the preferred format (Settings → \u003cstrong>File format\u003c/strong>) to \u003cstrong>Best for Apple\u003c/strong> (AAC, 44.1 kHz, stereo), or choose your own under Custom.\u003c/p>\n\u003ch3>The library's file format\u003c/h3>\n\u003cp>Settings → \u003cstrong>File format\u003c/strong> sets one \u003cstrong>preferred format\u003c/strong> for the library — Standard (MP3 192k, recommended), Best for Apple, Very small, Lossless (FLAC, not recommended: much larger, with no difference you can hear), or Custom — and which files are converted to it:\u003c/p>\n\u003cul>\n\u003cli>\u003cstrong>Don't touch my files:\u003c/strong> nothing is changed. A file this browser can't play still gets a playable copy, and its original is kept too.\u003c/li>\n\u003cli>\u003cstrong>Reduce uncompressed audio\u003c/strong> (recommended): WAV and AIFF files are converted as they come in.\u003c/li>\n\u003cli>\u003cstrong>Choose the rules:\u003c/strong> uncompressed audio, a bitrate above a limit, a sample rate or channel count other than the preferred format's, or less widely playable types (Opus, Ogg, WebM).\u003c/li>\n\u003c/ul>\n\u003cp>The page says what the settings would mean for the library as it is (\"12 tracks would be converted…\"). Converting them is in Settings → \u003cstrong>Library cleanup\u003c/strong> → Convert to the preferred format, with \u003cstrong>Convert them now\u003c/strong> and the list of those tracks (name, album, type, size, sample rate, bit rate, channels). In a shared library these settings belong to the library, so a change on one device applies on all of them, and a file about to be converted is never sent before its converted version is ready.\u003c/p>\n\u003cp>Videos (a recorded teaching, say) can come in too: 37 Player asks whether to take their sound as audio tracks. The video itself isn't kept.\u003c/p>"
   },
   {
     "id": "importing-playlists",
@@ -41449,6 +41573,8 @@ function renderCleanupConvert(){
   const from = list.reduce((n, tr)=> n + (tr.fileSize || 0), 0), to = list.reduce((n, tr)=> n + estimatedSizeAfter(tr, target), 0);
   el.appendChild(document.createTextNode(t("fmtEffectSome", {n: list.length, format: formatLabel(target), from: fmtBytes(from), to: fmtBytes(to)}) + " "));
   el.appendChild(change);
+  const bigOnes = list.filter(tr=> trackIsBigFile(tr)).length;
+  if(bigOnes){ const bn = document.createElement("p"); bn.className = "settings-note"; bn.id = "cleanupBigNote"; bn.textContent = t(bigOnes === 1 ? "cleanupBigNoteOne" : "cleanupBigNote", {n: bigOnes, size: fmtBytes(BIG_FILE_BYTES)}); el.appendChild(bn); }
   const row = document.createElement("div");
   const b = document.createElement("button"); b.className = "btn primary"; b.style.marginTop = "8px"; b.textContent = t("fmtEffectBtn");
   b.addEventListener("click", async ()=>{
@@ -42746,8 +42872,11 @@ function sharedUrl(cfg, params){
 async function sharedFetch(cfg, params, init){
   // A file of the desktop app's read where it lies goes as real bytes (whole
   // files are sent only below 48 MB; bigger ones go in 16 MB pieces).
-  if(init && isDiskBlob(init.body)) init = Object.assign({}, init, {body: await realBlob(init.body)});
+  // Google Drive first: its big files go up a piece at a time, each read
+  // from the disk as it's sent (driveUpload). Reading the file whole here
+  // first (until 2.2.010) put all of a 2.7 GB WAV in memory, twice.
   if(cfg.kind === "gdrive") return driveFetch(cfg, params, init || {});
+  if(init && isDiskBlob(init.body)) init = Object.assign({}, init, {body: await realBlob(init.body)});
   init = init || {};
   // URL-encoded: a passphrase may use any language's letters, and headers carry only plain ASCII.
   init.headers = Object.assign({"X-Library": encodeURIComponent(cfg.code.trim())}, init.headers || {});
@@ -42924,6 +43053,7 @@ async function driveUpload(cfg, folder, name, blob, mime, appProperties){
   const meta = {name, parents: [folder], mimeType: mime || "application/octet-stream"};
   if(appProperties) meta.appProperties = appProperties;
   if(blob.size <= GDRIVE_SIMPLE_MAX){
+    blob = await realBlob(blob); // (small; the pieces below are read as each is sent)
     const boundary = "p37" + Math.random().toString(36).slice(2);
     const body = new Blob(["--" + boundary + "\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n" + JSON.stringify(meta) + "\r\n--" + boundary + "\r\nContent-Type: " + meta.mimeType + "\r\n\r\n", blob, "\r\n--" + boundary + "--"]);
     return driveJson(cfg, "/upload/drive/v3/files?uploadType=multipart&fields=id,createdTime,size", {method: "POST", headers: {"Content-Type": "multipart/related; boundary=" + boundary}, body});
@@ -43136,7 +43266,7 @@ async function driveFetch(cfg, params, init){
       const f = await driveFindFile(cfg, folder, params.name);
       const replace = params.kind === "peaks" && params.replace === "1";
       if(f && !replace) return driveResponse({stored: false, exists: true});
-      const blob = init.body instanceof Blob ? init.body : new Blob([init.body]);
+      const blob = isDiskBlob(init.body) || init.body instanceof Blob ? init.body : new Blob([init.body]); // (a file on disk stays there: sent in pieces)
       if(f && replace){
         const r = await driveCall(cfg, "/upload/drive/v3/files/" + encodeURIComponent(f.id) + "?uploadType=media", {method: "PATCH", headers: {"Content-Type": "application/json"}, body: blob});
         if(!r.ok) return driveResponse({error: "replace " + r.status}, r.status);
