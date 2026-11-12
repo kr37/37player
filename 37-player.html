@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.2.016">
+<meta name="app-version" content="2.2.017">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -42678,6 +42678,8 @@ const SHARED_OFF = /[?&]nosync\b/.test(location.search);
 // it, audio included; any change here afterwards needs sending again first.
 let sharedSyncedFp = null, sharedCoveredFp;
 let sharedNotCoveredWhy = null; // the last reason logged (sharedUploadInBackgroundHere)
+let sharedUnreadable = new Set(); // tracks whose audio the last send pass couldn't read here
+const sharedUnreadableSaid = new Set(); // …and the ones already said in the log this session
 async function sharedLoadCovered(){
   if(sharedCoveredFp !== undefined) return;
   try{ const r = await idbGet("state", "sharedCovered"); sharedCoveredFp = r && r.fingerprint || null; }catch(err){ sharedCoveredFp = null; }
@@ -44254,7 +44256,8 @@ async function sharedUploadFiles(cfg, doc){
       jobs.push({kind: "artwork", name: sharedArtName(t), id: t.id});
   });
   const fileJobs = jobs.filter(j=> j.kind !== "peaks").length;
-  if(fileJobs) sharedLog("sending " + fileJobs + " files");
+  const unreadable = new Set(); // audio this pass couldn't read (see sendOne)
+  if(fileJobs && !jobs.every(j=> j.kind === "peaks" || sharedUnreadable.has(j.id))) sharedLog("sending " + fileJobs + " files"); // (not said again each round for files that can't be read)
   // A few at a time: each file costs a request or two of waiting (Google
   // Drive is slow to make each new file, a second or more), so one at a time
   // left most of a connection idle, above all for small files and artwork.
@@ -44271,8 +44274,25 @@ async function sharedUploadFiles(cfg, doc){
       if(!tr || isStandInPeaks(tr.peaks)) return; // never share a flat stand-in; a real one is sent when it's made
       body = JSON.stringify(tr.peaks);
     } else {
-      const rec = await idbGet(j.kind === "audio" ? "audio" : "artwork", j.id);
-      if(!rec || !rec.blob) return;
+      const rec = await idbGet(j.kind === "audio" ? "audio" : "artwork", j.id).catch(()=> null);
+      // A file this device should hold but can't read (a folder used in
+      // place that the system won't let the app into, a drive unplugged):
+      // said in the log, once, and the library isn't counted as all in the
+      // shared library. It used to be passed over in silence: Gen Palden's
+      // MacBook logged "sending 15 files" 117 times in two days and sent
+      // none (2.2.002, 10–11 Nov 2026).
+      if(!rec || !rec.blob){
+        if(j.kind === "audio"){
+          unreadable.add(j.id);
+          if(!sharedUnreadableSaid.has(j.id)){
+            sharedUnreadableSaid.add(j.id);
+            const ut = findLibraryTrack(j.id);
+            sharedLog("can't send “" + ((ut && ut.name) || j.id) + "”: its file can't be read on this device");
+          }
+        }
+        done++;
+        return;
+      }
       body = rec.blob;
       // Never send a damaged file to everyone (Safari is where they've come
       // from, so it's checked there; reading it through costs little memory).
@@ -44323,6 +44343,7 @@ async function sharedUploadFiles(cfg, doc){
     }
   };
   await Promise.all(Array.from({length: Math.min(SHARED_UPLOADS_AT_ONCE, jobs.length)}, worker));
+  sharedUnreadable = unreadable;
   if(failed) throw failed;
   if(sharedStatus.transfer && sharedStatus.transfer.kind === "up") sharedSetStatus({transfer: null});
 }
@@ -44390,7 +44411,8 @@ async function sharedUploadInBackgroundHere(cfg){
         // ("In sync"), said once in the sync log each time the reason changes
         // (2.2.015: the Mac mini's top bar didn't say In sync after
         // everything had gone up, and nothing recorded why).
-        const why = sharedTooBigNames.size ? "a file was refused as too big to send"
+        const why = sharedUnreadable.size ? sharedUnreadable.size + " recordings can't be read on this device, so they haven't been sent"
+          : sharedTooBigNames.size ? "a file was refused as too big to send"
           : (convertQueue.length || convertSoon.size) ? "files are waiting to be converted"
           : !sharedSyncedFp ? "no sync round has finished since opening"
           : libraryFingerprint() !== sharedSyncedFp ? "the library changed while files were going up (the next round looks again)" : "";
