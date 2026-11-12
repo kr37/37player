@@ -9,6 +9,8 @@ In Settings → **Library**, open **All libraries** and choose **New library…*
 - **Start empty:** a new, empty library. Fill it as usual, with Import / Export.
 - **Join a shared library:** enter the join code and this device's name, and the new library joins straight away. Leave the name empty and it takes the shared library's own name, such as "IKRC Library".
 
+In Chrome or Edge on a computer it also asks **where the library should be kept**. **In a folder** is chosen already: the library is ordinary files in a folder you choose, backed up with the rest of the computer, and 37 Player makes no second copy of it. **In this browser's storage** keeps it inside the browser, as before.
+
 Joining a shared library from a library that already has tracks asks first whether to make a new library for it instead. That's usually the right choice: joining with an existing library would add all its tracks and playlists to the shared library, for everyone in it to see.
 
 ### Switching

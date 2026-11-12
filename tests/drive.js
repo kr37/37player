@@ -199,7 +199,7 @@ const openShared = async p=>{ await p.evaluate(()=>{ window.__dbg.setMode('editi
     // ---- C: Switch libraries → New library → Join a shared library → Google Drive…
     const C = await device(b, 'C'); await settle(C);
     await C.evaluate(()=> window.__lib.newDialog()); await sleep(400);
-    await C.evaluate(()=>{ window.__dbg.getRoot().settings.sharedLastDevice = 'Laptop'; document.querySelector('input[name=libNewHow][value=join]').click(); });
+    await C.evaluate(()=>{ window.__dbg.getRoot().settings.sharedLastDevice = 'Laptop'; document.querySelector('input[name=libNewHow][value=join]').click(); document.querySelector('input[name=libNewWhere][value=browser]')?.click(); });
     ok(await C.evaluate(()=> document.getElementById('libNewGo').textContent) === 'Next' && await C.evaluate(()=> document.getElementById('libNewNameBox').style.display === 'none'), 'New library → Join a shared library: Continue, no name to give');
     await C.evaluate(()=> document.getElementById('libNewGo').click()); await sleep(300);
     ok(await C.evaluate(()=> !!document.querySelector('input[name=sjWhere][value=gdrive]')), 'it opens the same dialog, offering Google Drive');
