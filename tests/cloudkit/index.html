@@ -52,7 +52,7 @@
 
   <section>
     <h2>2. Run the test</h2>
-    <p class="dim">Saves a 16 MB piece and reads it back, then saves a small library record three times, the last over an older version, which iCloud should refuse.</p>
+    <p class="dim">Saves a record with no file, then 1 KB files and a 16 MB piece, through CloudKit JS and by plain web calls, reading each back; then saves a small library record three times, the last over an older version, which iCloud should refuse. Every request is listed in the results.</p>
     <div class="row">
       <button class="primary" id="run" disabled>Run the test</button>
       <button id="big45" disabled>Also try 45 MB</button>
@@ -82,11 +82,30 @@ function log(msg, cls){
   line.textContent = ((Date.now() - t0) / 1000).toFixed(1).padStart(6) + "s  " + msg;
   logEl.appendChild(line); logEl.scrollTop = logEl.scrollHeight;
 }
+function where(u){ try{ const x = new URL(u, location.href); return x.host + x.pathname.replace(/^(.{70}).+$/, "$1…"); }catch(e){ return String(u).slice(0, 80); } }
+{
+  const realFetch = window.fetch.bind(window);
+  window.fetch = function(input, init){
+    const url = typeof input === "string" ? input : input.url, m = ((init && init.method) || (input && input.method) || "GET").toUpperCase(), t = Date.now();
+    log("  → " + m + " " + where(url));
+    return realFetch(input, init).then(r=>{ log("  ← " + r.status + " (" + (Date.now() - t) + " ms) " + where(url), r.ok ? null : "bad"); return r; },
+      e=>{ log("  ✗ " + m + " " + where(url) + ": no answer (" + (e && e.message) + "; a refused cross-site request looks like this)", "bad"); throw e; });
+  };
+  const open = XMLHttpRequest.prototype.open, send = XMLHttpRequest.prototype.send;
+  XMLHttpRequest.prototype.open = function(m, url){ this.__p37 = {m: String(m).toUpperCase(), url: url}; return open.apply(this, arguments); };
+  XMLHttpRequest.prototype.send = function(body){
+    const info = this.__p37 || {m: "?", url: "?"}, t = Date.now();
+    const size = body && (body.size || body.length || body.byteLength);
+    log("  → " + info.m + " " + where(info.url) + (size ? " (" + size + " bytes)" : "") + " [XHR]");
+    this.addEventListener("loadend", ()=>{ log(this.status ? "  ← " + this.status + " (" + (Date.now() - t) + " ms) " + where(info.url) : "  ✗ " + info.m + " " + where(info.url) + ": no answer (" + (Date.now() - t) + " ms; a refused cross-site request looks like this)", this.status >= 200 && this.status < 300 ? null : "bad"); });
+    return send.apply(this, arguments);
+  };
+}
 function standalone(){ return matchMedia("(display-mode: standalone)").matches || navigator.standalone === true; }
 function describeError(e){
   if(!e) return "unknown error";
   const parts = [e.ckErrorCode, e.serverErrorCode, e.reason || e.message].filter(Boolean);
-  return parts.length ? [...new Set(parts)].join(" · ") : String(e);
+  return (parts.length ? [...new Set(parts)].join(" · ") : String(e)).replace(/\s+/g, " ").slice(0, 300);
 }
 // A response with errors in it, as an exception, so one catch handles both kinds of failure.
 function check(resp, what){
@@ -149,15 +168,10 @@ async function ensureZone(){
   log("test zone ready (" + (Date.now() - t) + " ms)");
 }
 
-async function piece(bytes, label){
-  const run = Date.now().toString(36), name = "piece-" + run;
-  const blob = randomBlob(bytes), want = await sha256(blob);
-  log(label + ": saving " + (bytes / MB) + " MB…");
-  let t = Date.now();
-  const saved = check(await db.saveRecords([{recordType: "P37Piece", recordName: name, fields: {data: {value: blob}}}], {zoneID: ZONE}), "saving the piece");
-  const up = Date.now() - t;
-  log(label + ": saved in " + (up / 1000).toFixed(1) + " s (" + mbps(bytes, up) + "), change tag " + saved.records[0].recordChangeTag, "ok");
-  t = Date.now();
+// The data as CloudKit JS is given it: a Blob, or a File (a Blob with a name).
+function asForm(blob, form){ return form === "File" ? new File([blob], "piece.bin", {type: "application/octet-stream"}) : blob; }
+async function readBack(name, bytes, want, label){
+  const t = Date.now();
   const got = check(await db.fetchRecords([name], {zoneID: ZONE}), "fetching the piece").records[0];
   const asset = got.fields && got.fields.data && got.fields.data.value;
   if(!asset || !asset.downloadURL) throw new Error("the fetched record has no download address");
@@ -165,22 +179,79 @@ async function piece(bytes, label){
   if(!res.ok) throw new Error("download: HTTP " + res.status);
   const back = await res.blob(), down = Date.now() - t;
   const same = back.size === bytes && await sha256(back) === want;
-  log(label + ": read back " + (back.size / MB).toFixed(1) + " MB in " + (down / 1000).toFixed(1) + " s (" + mbps(back.size, down) + "): " + (same ? "the same bytes" : "DIFFERENT bytes"), same ? "ok" : "bad");
+  log(label + ": read back " + sizeText(back.size) + " in " + (down / 1000).toFixed(1) + " s (" + mbps(back.size, down) + "): " + (same ? "the same bytes" : "DIFFERENT bytes"), same ? "ok" : "bad");
+  return same;
+}
+function sizeText(bytes){ return bytes >= MB ? (bytes / MB).toFixed(bytes % MB ? 1 : 0) + " MB" : Math.round(bytes / 1024) + " KB"; }
+
+// Through CloudKit JS: saveRecords with the data in the asset field.
+async function piece(bytes, label, form){
+  const name = "piece-" + Date.now().toString(36);
+  const blob = randomBlob(bytes), want = await sha256(blob);
+  log(label + ": saving " + sizeText(bytes) + " through CloudKit JS, as a " + form + "…");
+  const t = Date.now();
+  const saved = check(await db.saveRecords([{recordType: "P37Piece", recordName: name, fields: {data: {value: asForm(blob, form)}}}], {zoneID: ZONE}), "saving the piece");
+  const up = Date.now() - t;
+  log(label + ": saved in " + (up / 1000).toFixed(1) + " s (" + mbps(bytes, up) + ")", "ok");
+  return await readBack(name, bytes, want, label);
 }
 
+// Without CloudKit JS's help, as Apple's web services reference describes:
+// ask for an upload address, send the data there, then save the record
+// with what came back. Needs the sign-in's token, which CloudKit JS keeps
+// in a cookie (persist: true).
+function webAuthToken(){
+  for(const c of document.cookie.split(";")){
+    const i = c.indexOf("="); if(i < 0) continue;
+    const k = c.slice(0, i).trim();
+    if(k.indexOf(CONTAINER) >= 0) return decodeURIComponent(c.slice(i + 1));
+  }
+  return null;
+}
+const REST = "https://api.apple-cloudkit.com/database/1/" + CONTAINER + "/development/private/";
+async function rest(op, body){
+  const tok = webAuthToken();
+  if(!tok) throw new Error("no sign-in token in this page's cookies (" + (document.cookie.split(";").map(c=> c.split("=")[0].trim()).filter(Boolean).join(", ") || "none") + ")");
+  const r = await fetch(REST + op + "?ckAPIToken=" + TOKEN + "&ckWebAuthToken=" + encodeURIComponent(tok), {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(body)});
+  const text = await r.text(); let j = null; try{ j = JSON.parse(text); }catch(e){}
+  if(!r.ok || !j) throw new Error(op + ": HTTP " + r.status + " " + text.slice(0, 200));
+  return j;
+}
+async function rawPiece(bytes, label){
+  const name = "raw-" + Date.now().toString(36);
+  const blob = randomBlob(bytes), want = await sha256(blob);
+  log(label + ": saving " + sizeText(bytes) + " by plain web calls…");
+  const t = Date.now();
+  const tokens = await rest("assets/upload", {zoneID: ZONE, tokens: [{recordType: "P37Piece", recordName: name, fieldName: "data"}]});
+  const url = tokens.tokens && tokens.tokens[0] && tokens.tokens[0].url;
+  if(!url) throw new Error("assets/upload gave no address: " + JSON.stringify(tokens).slice(0, 200));
+  log(label + ": upload address from " + new URL(url).host);
+  const up = await fetch(url, {method: "POST", body: blob});
+  const upText = await up.text(); let upJson = null; try{ upJson = JSON.parse(upText); }catch(e){}
+  if(!up.ok || !upJson || !upJson.singleFile) throw new Error("upload: HTTP " + up.status + " " + upText.slice(0, 200));
+  const mod = await rest("records/modify", {zoneID: ZONE, operations: [{operationType: "create", record: {recordType: "P37Piece", recordName: name, fields: {data: {value: upJson.singleFile}}}}]});
+  const rec = mod.records && mod.records[0];
+  if(!rec || rec.serverErrorCode) throw new Error("records/modify: " + JSON.stringify(rec || mod).slice(0, 200));
+  const ms = Date.now() - t;
+  log(label + ": saved in " + (ms / 1000).toFixed(1) + " s (" + mbps(bytes, ms) + ")", "ok");
+  return await readBack(name, bytes, want, label);
+}
+
+// The change tag check, with no file in the record (so it doesn't depend
+// on uploads working).
 async function stateRecords(){
   const name = "state-" + Date.now().toString(36);
-  const body = n=> gz(JSON.stringify({version: n, library: Array.from({length: 400}, (_, i)=> ({id: "t" + i, name: "Track " + i}))}));
+  const fields = n=> ({version: {value: n}, note: {value: "version " + n}});
   let t = Date.now();
-  const r1 = check(await db.saveRecords([{recordType: "P37State", recordName: name, fields: {version: {value: 1}, body: {value: await body(1)}}}], {zoneID: ZONE}), "saving state 1").records[0];
-  log("state version 1 saved (" + (Date.now() - t) + " ms), tag " + r1.recordChangeTag, "ok");
+  const r1 = check(await db.saveRecords([{recordType: "P37State", recordName: name, fields: fields(1)}], {zoneID: ZONE}), "saving state 1").records[0];
+  log("state version 1 saved (" + (Date.now() - t) + " ms)", "ok");
   t = Date.now();
-  const r2 = check(await db.saveRecords([{recordType: "P37State", recordName: name, recordChangeTag: r1.recordChangeTag, fields: {version: {value: 2}, body: {value: await body(2)}}}], {zoneID: ZONE}), "saving state 2").records[0];
-  log("state version 2 saved over version 1 (" + (Date.now() - t) + " ms), tag " + r2.recordChangeTag, "ok");
+  const r2 = check(await db.saveRecords([{recordType: "P37State", recordName: name, recordChangeTag: r1.recordChangeTag, fields: fields(2)}], {zoneID: ZONE}), "saving state 2").records[0];
+  log("state version 2 saved over version 1 (" + (Date.now() - t) + " ms)", "ok");
   // Version 3 from a device that only saw version 1: must be refused.
   let refused = null;
   try{
-    const r3 = await db.saveRecords([{recordType: "P37State", recordName: name, recordChangeTag: r1.recordChangeTag, fields: {version: {value: 3}, body: {value: await body(3)}}}], {zoneID: ZONE});
+    const r3 = await db.saveRecords([{recordType: "P37State", recordName: name, recordChangeTag: r1.recordChangeTag, fields: fields(3)}], {zoneID: ZONE});
     if(r3.hasErrors) refused = r3.errors[0];
   }catch(e){ refused = e; }
   if(refused) log("a save over the older version was refused, as it should be: " + describeError(refused), "ok");
@@ -190,21 +261,35 @@ async function stateRecords(){
   log("the record now holds version " + v + (v === 2 ? ", as it should" : ""), v === 2 ? "ok" : "bad");
 }
 
+async function step(label, fn){
+  try{ return await fn(); }
+  catch(e){ log(label + " FAILED: " + describeError(e), "bad"); return false; }
+}
+let goodForm = null, rawWorks = null;
 async function runAll(){
   setButtons(false);
   log("— the test —");
-  try{
-    await ensureZone();
-    await piece(16 * MB, "16 MB piece");
-    await stateRecords();
-    log("— done —", "ok");
-  }catch(e){ log("FAILED: " + describeError(e), "bad"); }
+  if(await step("the test zone", ensureZone) === false){ setButtons(true); return; }
+  await step("a record with no file", async ()=>{
+    const t = Date.now();
+    check(await db.saveRecords([{recordType: "P37Note", recordName: "note-" + Date.now().toString(36), fields: {text: {value: "hello"}}}], {zoneID: ZONE}), "saving a note");
+    log("a record with no file saved (" + (Date.now() - t) + " ms)", "ok");
+  });
+  for(const form of ["Blob", "File"]){
+    if(await step("1 KB as a " + form, ()=> piece(1024, "1 KB (" + form + ")", form))){ goodForm = goodForm || form; }
+  }
+  await step("16 MB", ()=> piece(16 * MB, "16 MB piece", goodForm || "File"));
+  rawWorks = await step("1 KB by plain web calls", ()=> rawPiece(1024, "1 KB (plain)"));
+  if(rawWorks) await step("16 MB by plain web calls", ()=> rawPiece(16 * MB, "16 MB (plain)"));
+  await step("the version check", stateRecords);
+  log("— done —");
   setButtons(true);
 }
 async function runBig(mb){
   setButtons(false);
-  try{ await ensureZone(); await piece(mb * MB, mb + " MB piece"); }
-  catch(e){ log(mb + " MB piece FAILED: " + describeError(e), "bad"); }
+  await step("the test zone", ensureZone);
+  const viaJs = await step(mb + " MB", ()=> piece(mb * MB, mb + " MB piece", goodForm || "File"));
+  if(!viaJs && rawWorks !== false) await step(mb + " MB by plain web calls", ()=> rawPiece(mb * MB, mb + " MB (plain)"));
   setButtons(true);
 }
 async function clean(){
