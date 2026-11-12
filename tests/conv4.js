@@ -40,6 +40,16 @@ const clickText = (p, sel, src) => p.evaluate((sel, src)=>{ const re=new RegExp(
   console.log('B while A plays:', JSON.stringify(s1));
   ok(!(await A.evaluate(()=> window.__st().paused)), 'A is playing');
   ok(s1.queue.length === 1 && !s1.worker && /once nothing is playing/.test(s1.bar || ''), 'B waits, saying so, because A is playing');
+  // The converting line has Settings and Help after Stop (2.2.038, Gen Rinzin).
+  const btns = await B.evaluate(()=> [...document.querySelectorAll('#globalOperationBar .op-part button')].map(b=> b.textContent.trim()));
+  ok(btns.join(',') === 'Stop,Settings,Help', 'the converting line has Stop, Settings and Help (' + btns.join(', ') + ')');
+  await B.evaluate(()=> [...document.querySelectorAll('#globalOperationBar .op-part button')].find(b=> b.textContent.trim() === 'Settings').click()); await sleep(500);
+  const sec = await B.evaluate(()=> ({open: !!document.getElementById('settingsPage'), active: document.querySelector('#settingsNav .active')?.textContent || ''}));
+  ok(sec.open && /File format/.test(sec.active), 'Settings opens on File format (' + JSON.stringify(sec) + ')');
+  await B.evaluate(()=> [...document.querySelectorAll('#globalOperationBar .op-part button')].find(b=> b.textContent.trim() === 'Help').click()); await sleep(500);
+  const help = await B.evaluate(()=> ({settings: !!document.getElementById('settingsPage'), help: !!document.getElementById('helpPage'), topic: document.querySelector('#helpPage .playlist-row.active')?.textContent || ''}));
+  ok(!help.settings && help.help && /iTunes/.test(help.topic), 'Help opens on the topic about converting, in place of Settings (' + JSON.stringify(help) + ')');
+  await B.evaluate(()=> document.getElementById('helpPage') && document.querySelector('#helpPage .settings-close, #helpPage #helpClose')?.click()); await sleep(300);
   await A.evaluate(()=>{ window.__pause(); });
   for(let k=0; k<120; k++){ const s = await B.evaluate(()=> window.__conv.state()); if(!s.running && !s.queue.length) break; await sleep(250); }
   const talk = await B.evaluate((id)=> window.__dbg.getRoot().library.find(t=> t.id === id), ids.talk);

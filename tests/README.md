@@ -126,6 +126,8 @@ By hand: `./serve.sh` in one terminal (servers on ports 8861 and 8870), then
 | id3read | An import reads an MP3's details however it's tagged: ID3v2.2, v2.3, v2.4 with frame flags, an extended header, unsynchronised, UTF-16, album artist only, and ID3v1 for what's missing |
 | savefast | Saving a big library is quick (2,000 tracks: nothing changed in a few ms), and its checks still work: a new waveform is a change, a stale window is refused, a library saved by an older version (no rootRev; root.json with its revision last) is read as before |
 | analyzebar | A folder import's looking-through, clicked away, goes on in the status bar; the bar brings it back; a dialog opened meanwhile isn't closed, and the review waits for it; Stop in the bar or the dialog imports nothing |
+| pldetails | Playlist details: a notes box of a few lines, with the name field's background, and Enter in the name saves |
+| volume | The Playing volume is kept per device (a reload doesn't put it back to full) and squared (half way is -6 dB) |
 
 ## The converter test page (tests/convert/)
 

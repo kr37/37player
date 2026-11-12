@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.2.037">
+<meta name="app-version" content="2.2.038">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -21825,7 +21825,7 @@ function scheduleSpareLibrary(value, rev){
 // kept once per device (localStorage) and laid over whichever library's own
 // settings are open, so switching library never changes the language, the
 // look, or how playback behaves with the screen off.
-const DEVICE_SETTING_KEYS = ["language", "theme", "uiScale", "moreContrast", "density", "wrapNames", "showAlbumColumn", "showTrackWaveforms", "showLoudness", "showPlayLoudness", "columnWidths", "narrowColumnWidths", "keepScreenOn", "stopLockScreen", "showEdPreviewBar", "standardizeOnlyWhenIdle", "updateUrl", "librariesUrl", "sharedLastDevice", "sharedLastUrl", "feedbackReply"];
+const DEVICE_SETTING_KEYS = ["volume", "language", "theme", "uiScale", "moreContrast", "density", "wrapNames", "showAlbumColumn", "showTrackWaveforms", "showLoudness", "showPlayLoudness", "columnWidths", "narrowColumnWidths", "keepScreenOn", "stopLockScreen", "showEdPreviewBar", "standardizeOnlyWhenIdle", "updateUrl", "librariesUrl", "sharedLastDevice", "sharedLastUrl", "feedbackReply"];
 function readDeviceSettings(){ try{ const v = JSON.parse(localStorage.getItem(DEVICE_SETTINGS_KEY) || "null"); return v && typeof v === "object" ? v : null; }catch(err){ return null; } }
 function applyDeviceSettings(settings){
   const dev = readDeviceSettings();
@@ -27083,7 +27083,7 @@ function setActiveOperationProgress(text, stop, key, opts){
   const prev = activeOps.get(key);
   const dialog = pendingOperationDialog || (prev && prev.dialog) || null;
   pendingOperationDialog = null;
-  activeOps.set(key, {text, stop, dialog, stopping: !!(prev && prev.stopping), waiting: !!(opts && opts.waiting)});
+  activeOps.set(key, {text, stop, dialog, stopping: !!(prev && prev.stopping), waiting: !!(opts && opts.waiting), links: (opts && opts.links) || (prev && prev.links) || null});
   activeOperation = [...activeOps.values()].filter(o=> !o.waiting).pop() || null;
   renderOperationBar();
 }
@@ -27131,6 +27131,14 @@ function renderOperationBar(){
       });
       part.appendChild(btn);
     }
+    // More buttons after Stop (opts.links: [{label, fn}]), e.g. converting's
+    // Settings and Help (2.2.038, Gen Rinzin).
+    (op.links || []).forEach(l=>{
+      const b = document.createElement("button");
+      b.className = "btn ghost"; b.type = "button"; b.textContent = l.label;
+      b.addEventListener("click", (e)=>{ e.stopPropagation(); l.fn(); });
+      part.appendChild(b);
+    });
     bar.appendChild(part);
   });
 }
@@ -27975,7 +27983,7 @@ async function runConvertQueue(){
     while(convertQueue.length && !convertStopped){
       // Never alongside playback.
       if(convertShouldWait()){
-        setActiveOperationProgress(t("convertWaiting", {n: convertQueue.length}), stopConverting);
+        setActiveOperationProgress(t("convertWaiting", {n: convertQueue.length}), stopConverting, undefined, {links: convertBarLinks()});
         await new Promise(r=> setTimeout(r, 1500));
         continue;
       }
@@ -27983,7 +27991,7 @@ async function runConvertQueue(){
       const tr = findLibraryTrack(id);
       if(!trackCanBeConverted(tr) || (trackIsBigFile(tr) && !convertBigOk.has(id))){ convertQueue.shift(); convertDone++; continue; }
       const name = tr.name || tr.filename || "";
-      setActiveOperationProgress(convertBarText(name, null), stopConverting);
+      setActiveOperationProgress(convertBarText(name, null), stopConverting, undefined, {links: convertBarLinks()});
       let rec = null;
       try{ rec = await idbGet("audio", id); }catch(err){}
       if(!rec || !rec.blob || !rec.blob.size){ convertQueue.shift(); convertDone++; convertFailures.push({name, reason: t(placeOfTrack(id) ? "convertPlaceGone" : "convertNoAudioHere")}); continue; }
@@ -27991,7 +27999,7 @@ async function runConvertQueue(){
       const watch = setInterval(()=>{ if(convertShouldWait()) converterStop(); }, 1000);
       try{
         const wasBig = trackIsBigFile(tr);
-        const out = await converterConvert(rec.blob, tr.filename, (f)=> setActiveOperationProgress(convertBarText(name, f), stopConverting));
+        const out = await converterConvert(rec.blob, tr.filename, (f)=> setActiveOperationProgress(convertBarText(name, f), stopConverting, undefined, {links: convertBarLinks()}));
         clearInterval(watch);
         await applyConvertedAudio(id, out.blob, rec.blob, out.kind);
         convertQueue.shift(); convertDone++;
@@ -28029,6 +28037,15 @@ async function runConvertQueue(){
     if(kept.length && formatPolicy().when !== "untouched") whenNoModal(()=> showKeepOriginals(kept, failures)); // "Don't touch my files": kept, no question
     else if(failures.length) whenNoModal(()=> showConvertFailures(failures));
   }
+}
+// Converting's line in the status bar: Settings (File format, where the
+// preferred format is chosen) and Help (where converting is explained),
+// after Stop (2.2.038, Gen Rinzin).
+function convertBarLinks(){
+  return [
+    {label: t("settingsTitle"), fn: ()=>{ closeHelpPage(); openSettingsPage(); goToSettingsSection("standardization"); }},
+    {label: t("tabHelp"), fn: ()=>{ if(settingsPageOpen()) closeSettingsPage(); closeHelpPage(); selectedHelpTopicId = "itunes-music-app"; openHelpPage(); }},
+  ];
 }
 function stopConverting(){
   convertStopped = true;
@@ -33342,11 +33359,16 @@ function fmtDb(v){ return (v > 0 ? "+" : v < 0 ? "\u2212" : "") + (Math.round(Ma
    once the context is already running; until then the track simply plays
    without the boost (or with what the volume slider has room for). */
 const LEVEL_REFERENCE_LUFS = -18;
-let mainVolume = 1; // the Playing volume slider (0..1)
+// The Playing volume slider (0..1). Kept per device with the theme and the
+// like (2.2.038; Gen Rinzin: a page update put it back to full, since it
+// wasn't kept anywhere and every reload started at 1).
+let mainVolume = (()=>{ const d = readDeviceSettings(), v = d && d.volume; return typeof v === "number" && v >= 0 && v <= 1 ? v : 1; })();
 // The slider's position isn't the gain: hearing goes by ratios, so a straight
-// line felt unchanged until the bottom 40%. Cubing it is the usual stand-in for
-// a dB taper (0.9 is about -3 dB, 0.6 about -13 dB, 0.3 about -31 dB), and 0 is still silence.
-function mainVolumeGain(){ return mainVolume * mainVolume * mainVolume; }
+// line felt unchanged until the bottom 40%. Squared (2.2.038): cubed, the
+// bottom half went silent too soon (Gen Rinzin; half way was -18 dB, a
+// quarter -36 dB). Squared, three quarters is about -2.5 dB, half way -6 dB,
+// a quarter -12 dB, a tenth -20 dB, and 0 is still silence.
+function mainVolumeGain(){ return mainVolume * mainVolume; }
 let levelCtx = null;
 const levelGains = new WeakMap(); // element → its gain node, once routed
 function levelMode(){ return (root.settings && root.settings.levelMode) || "off"; }
@@ -33506,10 +33528,15 @@ function applyLevel(el, trackId, atStart){
 function refreshAllLevels(){
   [audioEl, ...levelPreviewEls()].forEach(el=>{ if(el && el._levelTrack) applyLevel(el, el._levelTrack, false); });
 }
+let volumeSaveTimer = null;
 function setMainVolume(v){
   mainVolume = Math.min(1, Math.max(0, v));
   if(audioEl._levelTrack) applyLevel(audioEl, audioEl._levelTrack, false);
   else audioEl.volume = mainVolumeGain();
+  // Kept for this device a moment after the slider stops (mainVolume, above).
+  if(root && root.settings) root.settings.volume = mainVolume;
+  clearTimeout(volumeSaveTimer);
+  volumeSaveTimer = setTimeout(()=>{ if(root && root.settings) saveDeviceSettings(root.settings); }, 400);
 }
 
 function standardizeProblemLabel(category, track){
@@ -37009,7 +37036,7 @@ function openPlaylistDetails(playlist){
       <label id="pdNotesLabel" for="pdNotes"></label>
       <button class="btn ghost" id="pdDismissBtn" style="display:none; font-size:12.5px; padding:3px 10px;"></button>
     </div>
-    <textarea id="pdNotes" rows="20" style="width:100%; min-height:420px; resize:vertical; font-family:inherit; font-size:14px; line-height:1.5; padding:10px 12px; border-radius:8px; border:1px solid var(--line); background:var(--bg-panel-raised); color:var(--text);"></textarea>
+    <textarea id="pdNotes" rows="6" style="width:100%; min-height:120px; resize:vertical; font-family:inherit; font-size:14px; line-height:1.5; padding:10px 12px; border-radius:8px; border:1px solid var(--line); background:var(--bg-deep); color:var(--text);"></textarea>
     <div class="modal-actions">
       <button class="btn ghost" data-close>${t("cancel")}</button>
       <button class="btn primary" id="pdSaveBtn">${t("save")}</button>
@@ -37038,6 +37065,8 @@ function openPlaylistDetails(playlist){
     saveState();
   });
   nameInp.focus(); nameInp.select();
+  // Enter in the name saves (2.2.038, Gen Rinzin); in the notes it's a new line.
+  nameInp.addEventListener("keydown", (e)=>{ if(e.key === "Enter" && !e.isComposing){ e.preventDefault(); document.getElementById("pdSaveBtn").click(); } });
   document.getElementById("pdSaveBtn").addEventListener("click", ()=>{
     const newName = nameInp.value.trim();
     const newNotes = notesInp.value;

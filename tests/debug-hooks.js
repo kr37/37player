@@ -155,3 +155,5 @@ window.__disk = {kind: ()=> STORAGE_KIND, idbPut, idbGet, DiskBlob, JoinedBlob, 
 window.__sil = {mp3: buildSilentMp3Bytes, entries: buildPlaceholderEntries, recognize: recognizePlaceholder, tags: parseAudioTags}; // silencemp3.js
 window.__big = {realBlob, sharedFetch, blobWithCurrentTags, convertTracks, trackIsBigFile, scheduleConvertResume, bigBytes: ()=> BIG_FILE_BYTES, queue: ()=> convertQueue.slice()}; // bigfile.js
 window.__rejoin = {idbDelete, storedAudioIds, absent: ()=> [...sharedAudioAbsent], revs: ()=> root.library.map(t=> [t.id.slice(0,6), t.audioRev, t.fileSize])}; // rejoin.js
+// the Playing volume (volume.js)
+window.__vol = {set: (v)=> setMainVolume(v), get: ()=> mainVolume, gain: ()=> mainVolumeGain()};
