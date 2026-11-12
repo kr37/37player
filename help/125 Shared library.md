@@ -136,7 +136,7 @@ For a player nobody edits on, such as a meditation room's laptop, turn on **Rece
 
 ### Leaving
 
-**Leave shared library** stops syncing this device. Its library stays exactly as it is now, as an ordinary library of its own.
+**Leave shared library** stops syncing this device. Its library stays as it is now, as an ordinary library of its own, except for tracks whose recordings never arrived on this device (it left while they were still coming, or they weren't chosen for it): those are removed, since they couldn't be played. 37 Player says how many before you leave, then asks about the playlists that used them: ones left with no tracks can be removed or kept empty, and ones left with some missing can have those tracks taken out, or be removed.
 
 ### If something goes wrong
 
