@@ -1,0 +1,216 @@
+panic(cpu 2 caller 0xffffff801ef8099f): userspace watchdog timeout: no successful checkins from WindowServer in 120 seconds
+service: logd, total successful checkins since wake (12010 seconds ago): 1202, last successful checkin: 0 seconds ago
+service: WindowServer, total successful checkins since wake (12010 seconds ago): 1189, last successful checkin: 120 seconds ago
+service: opendirectoryd, total successful checkins since wake (12010 seconds ago): 1202, last successful checkin: 0 seconds ago
+
+Panicked task 0xffffff94f584aa20: 4 threads: pid 115: watchdogd
+Backtrace (CPU 2), panicked thread: 0xffffff8b5a86e000, Frame : Return Address
+0xffffffe57c4b3690 : 0xffffff801ba79a3d 
+0xffffffe57c4b36e0 : 0xffffff801bbdcd26 
+0xffffffe57c4b3720 : 0xffffff801bbcc093 
+0xffffffe57c4b3770 : 0xffffff801ba19a90 
+0xffffffe57c4b3790 : 0xffffff801ba79e0d 
+0xffffffe57c4b38b0 : 0xffffff801ba795c6 
+0xffffffe57c4b3910 : 0xffffff801c314b33 
+0xffffffe57c4b3a00 : 0xffffff801ef8099f 
+0xffffffe57c4b3a10 : 0xffffff801ef805f2 
+0xffffffe57c4b3a30 : 0xffffff801ef7f971 
+0xffffffe57c4b3b60 : 0xffffff801c28323c 
+0xffffffe57c4b3cc0 : 0xffffff801bb82a46 
+0xffffffe57c4b3dd0 : 0xffffff801ba544cb 
+0xffffffe57c4b3e60 : 0xffffff801ba6ae49 
+0xffffffe57c4b3ef0 : 0xffffff801bbaed5a 
+0xffffffe57c4b3fa0 : 0xffffff801ba1a276 
+      Kernel Extensions in backtrace:
+         com.apple.driver.watchdog(1.0)[F0AE4794-0AD0-3919-ABFE-101DD2816E55]@0xffffff801ef7e000->0xffffff801ef80fff
+
+Process name corresponding to current thread (0xffffff8b5a86e000): watchdogd
+
+Mac OS version:
+21H1320
+
+Kernel version:
+Darwin Kernel Version 21.6.0: Mon Jun 24 00:56:10 PDT 2024; root:xnu-8020.240.18.709.2~1/RELEASE_X86_64
+Kernel UUID: AAF3C70C-3331-335A-96FB-D338CFE178F0
+KernelCache slide: 0x000000001b800000
+KernelCache base:  0xffffff801ba00000
+Kernel slide:      0x000000001b810000
+Kernel text base:  0xffffff801ba10000
+__HIB  text base: 0xffffff801b900000
+System model name: Macmini7,1 (Mac-35C5E08120C7EEAF)
+System shutdown begun: NO
+Panic diags file available: YES (0x0)
+Hibernation exit count: 0
+
+System uptime in nanoseconds: 315502825840223
+Last Sleep:           absolute           base_tsc          base_nano
+  Uptime  : 0x00011ef2b9dc22a8
+  Sleep   : 0x0001140512ed6bb4 0x00000000158cf9d4 0x000113f83255ea2a
+  Wake    : 0x000114051f90b06a 0x0000000015804e48 0x000114051eba873a
+Compressor Info: 28% of compressed pages limit (OK) and 21% of segments limit (OK) with 7 swapfiles and OK swap space
+Zone info:
+  Zone map: 0xffffff8028666000 - 0xffffffa028666000
+  . PGZ   : 0xffffff8028666000 - 0xffffff8029667000
+  . VM    : 0xffffff8029667000 - 0xffffff84f60cd000
+  . RO    : 0xffffff84f60cd000 - 0xffffff868f999000
+  . GEN0  : 0xffffff868f999000 - 0xffffff8b5c3ff000
+  . GEN1  : 0xffffff8b5c3ff000 - 0xffffff9028e65000
+  . GEN2  : 0xffffff9028e65000 - 0xffffff94f58cb000
+  . GEN3  : 0xffffff94f58cb000 - 0xffffff99c2332000
+  . DATA  : 0xffffff99c2332000 - 0xffffffa028666000
+  Metadata: 0xffffffffdcfee000 - 0xfffffffffcfee000
+  Bitmaps : 0xfffffffffcfee000 - 0xfffffffffffee000
+
+last started kext at 129942983306: >driverkit.serial	6.0.0 (addr 0xffffff7fb4cae000, size 28672)
+last stopped kext at 122478763497381: >IOPlatformPluginLegacy	1.0.0 (addr 0xffffff7fb4baa000, size 36864)
+loaded kexts:
+>!AUpstreamUserClient	3.6.9
+>!AMCCSControl	1.16
+>AudioAUUC	1.70
+>AGPM	129
+>X86PlatformShim	1.0.0
+>!APlatformEnabler	2.7.0d0
+@filesystems.autofs	3.0
+>!AHDA	340.2
+>eficheck	1
+>!ALPC	3.1
+>!A!IHD5000Graphics	18.0.8
+>!AGraphicsDevicePolicy	6.5.7
+@AGDCPluginDisplayMetrics	6.5.7
+>pmtelemetry	1
+|IOUserEthernet	1.0.1
+>usb.!UUserHCI	1
+>!AHV	1
+>!ADiskImages2	126.141.2
+>!A!IFramebufferAzul	18.0.8
+>!A!ISlowAdaptiveClocking	4.0.0
+>!AThunderboltIP	4.0.3
+>!AIR!C	361
+>!AFileSystemDriver	3.0.1
+@filesystems.tmpfs	1
+@filesystems.lifs	1
+@filesystems.hfs.kext	583.100.10
+@BootCache	40
+@!AFSCompression.!AFSCompressionTypeZlib	1.0.0
+@!AFSCompression.!AFSCompressionTypeDataless	1.0.0d1
+@filesystems.apfs	1934.141.2
+@private.KextAudit	1.0
+>!AAHCIPort	351.100.4
+>AirPort.BrcmNIC	1400.1.1
+>!ASDXC	3.2.1
+|!ABCM5701Ethernet	11.0.0
+>!AACPIButtons	6.1
+>!ARTC	2.0.1
+>!AHPET	1.8
+>!ASMBIOS	2.1
+>!AACPIEC	6.1
+>!AAPIC	1.7
+@!ASystemPolicy	2.0.0
+@nke.applicationfirewall	402
+|IOKitRegistryCompatibility	1
+|EndpointSecurity	1
+@Dont_Steal_Mac_OS_X	7.0.0
+@kec.!AEncryptedArchive	1
+>driverkit.serial	6.0.0
+|IOSerial!F	11
+>!ASMBus!C	1.0.18d1
+@kext.triggers	1.0
+>DspFuncLib	340.2
+@kext.OSvKernDSPLib	529
+>!AGraphicsControl	6.5.7
+|IONDRVSupport	597
+>!AHDA!C	340.2
+|IOHDA!F	340.2
+|IO!BSerialManager	9.0.0
+|IO!BPacketLogger	9.0.0
+|IO!BHost!CUSBTransport	9.0.0
+|IO!BHost!CUARTTransport	9.0.0
+|IO!BHost!CTransport	9.0.0
+>IO!BHost!CPCIeTransport	9.0.0
+|IOAVB!F	1040.6
+@plugin.IOgPTPPlugin	1040.3
+|IOEthernetAVB!C	1.1.0
+|CSR!BHost!CUSBTransport	9.0.0
+|Broadcom!BHost!CUSBTransport	9.0.0
+|Broadcom!B20703USBTransport	9.0.0
+>!AIPAppender	1.0
+|IOAccelerator!F2	462.9
+@!AGPUWrangler	6.5.7
+@!AGraphicsDeviceControl	6.5.7
+|IOGraphics!F	597
+|IOSlowAdaptiveClocking!F	1.0.0
+>!AThunderboltDPOutAdapter	8.5.1
+>!UAudio	416.2
+|IOAudio!F	340.2
+@vecLib.kext	1.2.0
+>!AAudioClockLibs	140.1
+>X86PlatformPlugin	1.0.0
+>IOPlatformPlugin!F	6.0.0d8
+>usb.IOUSBHostHIDDevice	1.2
+>usb.cdc	5.0.0
+>usb.networking	5.0.0
+>usb.!UHostCompositeDevice	1.2
+>usb.!UHub	1.2
+>!AThunderboltDPInAdapter	8.5.1
+>!AThunderboltDPAdapter!F	8.5.1
+>!AThunderboltPCIDownAdapter	4.1.1
+>!ABSDKextStarter	3
+|IOSurface	302.15
+@filesystems.hfs.encodings.kext	1
+>!AXsanScheme	3
+|IOAHCIBlock!S	333.140.2
+>!AThunderboltNHI	7.2.81
+|IOThunderbolt!F	9.3.3
+>usb.!UHostPacketFilter	1.0
+|IOUSB!F	900.4.2
+|IOAHCI!F	297
+>!A!ILpssGspi	3.0.60
+|IO80211!FLegacy	1200.12.2b1
+|IOSkywalk!F	1.0
+>corecapture	1.0.4
+>mDNSOffloadUserClient	1.0.1b8
+>usb.!UXHCIPCI	1.2
+>usb.!UXHCI	1.2
+>!AEFINVRAM	2.1
+>!AEFIRuntime	2.1
+|IOSMBus!F	1.1
+|IOHID!F	2.0.0
+|IOTimeSync!F	1040.3
+|IONetworking!F	3.4
+>DiskImages	493.0.0
+|IO!B!F	9.0.0
+|IOReport!F	47
+$quarantine	4
+$sandbox	300.0
+@kext.!AMatch	1.0.0d1
+|CoreAnalytics!F	1
+>!ASSE	1.0
+>!AKeyStore	2
+>!UTDM	533.120.2
+|IOUSBMass!SDriver	210.120.3
+|IOSCSIBlockCommandsDevice	456.140.3
+|IO!S!F	2.1
+|IOSCSIArchitectureModel!F	456.140.3
+>!AMobileFileIntegrity	1.0.5
+$!AImage4	4.2.0
+@kext.CoreTrust	1
+>!AFDEKeyStore	28.30
+>!AEffaceable!S	1.0
+>!ACredentialManager	1.0
+>KernelRelayHost	1
+|IOUSBHost!F	1.2
+>!UHostMergeProperties	1.2
+>usb.!UCommon	1.0
+>!ABusPower!C	1.0
+>!ASEPManager	1.0.1
+>IOSlaveProcessor	1
+>!AACPIPlatform	6.1
+>!ASMC	3.1.9
+|IOPCI!F	2.9
+|IOACPI!F	1.4
+>watchdog	1
+@kec.pthread	1
+@kec.Libm	1
+@kec.corecrypto	12.0
+
+

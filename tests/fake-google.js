@@ -1,7 +1,7 @@
 // A fake Google, for tests only: just enough of Drive API v3, the OAuth
 // sign-in page and the token endpoint for 37 Player's Google Drive libraries.
 //   const g = require('./fake-google'); const srv = g.start(8872);
-//   srv.files (Map), srv.expireAccess(), srv.revokeRefresh()
+//   srv.files (Map), srv.expireAccess(), srv.revokeRefresh(), srv.grant(token)
 //   Accounts: sign-in picks login_hint, else srv.account; srv.forceAccount
 //   overrides both (someone picking another account). srv.lastAuth: the
 //   sign-in page's query.
@@ -103,6 +103,7 @@ function start(port){
   srv.files = files; srv.calls = []; srv.uploads = [];
   // Everything made so far, made `ms` earlier (the tidy-up's cutoffs, drive.js).
   srv.ageAll = (ms)=>{ for(const f of files.values()) f.createdTime = new Date(Date.parse(f.createdTime) - ms).toISOString(); };
+  srv.grant = (token)=> access.add(token); // a test's own access token (bigfile.js)
   srv.expireAccess = ()=> access.clear();
   srv.revokeRefresh = ()=>{ refresh.clear(); access.clear(); };
   srv.listen(port, '127.0.0.1');
