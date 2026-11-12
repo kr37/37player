@@ -33,8 +33,15 @@ const waitIdle = async (p)=>{ for(let k=0;k<200;k++){ const s = await p.evaluate
   await sleep(2500);
   console.log('review:', JSON.stringify((await A.evaluate(()=> document.querySelector('.modal')?.innerText || '')).slice(0, 300)));
   await A.evaluate(()=>{ const b=[...document.querySelectorAll('.modal .btn.primary')].pop(); b && b.click(); }); await sleep(3500);
-  const summary = await A.evaluate(()=> [...document.querySelectorAll('.modal')].map(m=>m.innerText).join(' || '));
+  let summary = await A.evaluate(()=> [...document.querySelectorAll('.modal')].map(m=>m.innerText).join(' || '));
   console.log('after import:', JSON.stringify(summary.slice(0, 400)));
+  // Since 2.2.028 the files that can't be played are named next, once
+  // "Import finished" is closed (dialogs that open by themselves wait their turn).
+  if(!/talk\.wma/.test(summary)){
+    await A.evaluate(()=> document.querySelector('.modal [data-close]')?.click());
+    for(let k=0; k<40 && !/talk\.wma/.test(summary); k++){ await sleep(250); summary = await A.evaluate(()=> [...document.querySelectorAll('.modal')].map(m=>m.innerText).join(' || ')); }
+    console.log('then:', JSON.stringify(summary.slice(0, 300)));
+  }
   ok(/talk\.wma/.test(summary), 'the summary names talk.wma');
   await A.evaluate(()=> document.querySelectorAll('.modal [data-close], .modal .btn.primary').forEach(b=>b.click())); await sleep(500);
   const st = await A.evaluate(()=>{ const r = window.__dbg.getRoot(); const pl = (function f(n){ for(const x of n){ if(x.kind==='playlist') return x; if(x.children){ const y=f(x.children); if(y) return y; } } })(r.tree);

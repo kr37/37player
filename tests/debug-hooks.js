@@ -28,6 +28,7 @@ if(window.__welcomeOn !== true) window.__autoTry = true;
 // The join dialog as the old welcome's "Yes, join or create one" opened it
 // (now in Install's steps): share.js, drive.js.
 window.__joinFromWelcome = ()=>{ setupJoinStep(setupEnvironment()); };
+window.openSetupGuideForTest = ()=>{ openSetupGuide(); };
 // A track's recording taken away, as if it never arrived (leave.js).
 window.__dropAudio = (id)=> libStore.del("audio", [id]);
 // playback

@@ -14,7 +14,7 @@ const WIN_CHROME = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36
 const MAC_SAFARI = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Safari/605.1.15';
 const LINUX_FF = 'Mozilla/5.0 (X11; Linux x86_64; rv:140.0) Gecko/20100101 Firefox/140.0';
 const LINUX_CHROME = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36';
-async function open(b, name, {ua, noFolder, touch, standalone, hash, welcome = true} = {}){
+async function open(b, name, {ua, noFolder, touch, standalone, hash, welcome = true, canBecomeApp} = {}){
   const p = await (await b.createBrowserContext()).newPage();
   await p.setViewport({width: 1200, height: 900, hasTouch: !!touch, isMobile: !!touch});
   if(ua) await p.setUserAgent(ua);
@@ -22,10 +22,13 @@ async function open(b, name, {ua, noFolder, touch, standalone, hash, welcome = t
     if(o.noFolder) delete window.showDirectoryPicker;
     if(o.touch) Object.defineProperty(navigator, 'maxTouchPoints', {get: ()=> 5});
     if(o.standalone){ Object.defineProperty(navigator, 'standalone', {get: ()=> true}); const mm = window.matchMedia.bind(window); window.matchMedia = q=> /display-mode: standalone/.test(q) ? {matches: true, addEventListener(){}, removeEventListener(){}} : mm(q); }
+    // A tab that can become the installed app later, as Chrome's Install does
+    // (the same page moved into the app's window, not reloaded).
+    if(o.canBecomeApp){ window.__isApp = false; window.__dmListeners = []; const mm = window.matchMedia.bind(window); window.matchMedia = q=> /display-mode: standalone/.test(q) ? {get matches(){ return window.__isApp; }, addEventListener(t, f){ window.__dmListeners.push(f); }, removeEventListener(){}} : mm(q); }
     window.__noAutoConverter = true;
     if(o.welcome) window.__welcomeOn = true;
     window.__headsUpOn = true; window.__noDailyPrompt = true; // the trial's end is asked like the Heads-up
-  }, {noFolder, touch, standalone, welcome});
+  }, {noFolder, touch, standalone, welcome, canBecomeApp});
   p.on('pageerror', e=> console.log(name, 'PAGE ERROR:', e.message));
   p.on('dialog', d=> d.dismiss());
   await p.goto(APP + (hash || ''), {waitUntil: 'networkidle0'}); await sleep(700);
@@ -142,6 +145,25 @@ const importOne = async (p)=>{
   m = await waitModal(p, /Install 37 Player/);
   const choose = await p.evaluate(()=> !!document.querySelector('.modal [data-act="folder"]'));
   ok(/Keep the library in a folder/.test(m) && !/once 37 Player is installed/.test(m) && choose && !/Install 37 Player as an app/.test(m), 'Linux, installed: the folder step, with Choose where… (' + short(m) + ')');
+  await clickText(p, '.modal button', '^Close$');
+  await p.browserContext().close();
+
+  // ---- Linux, Chrome: installing moves this very tab into the app's window
+  // (2.2.030): the open guide and the top bar follow without a reload.
+  p = await open(b, 'becomesapp', {ua: LINUX_CHROME, canBecomeApp: true});
+  await p.screenshot({path: 'shots/setup-welcome.png'});
+  await clickText(p, '.modal button', '^Install$');
+  m = await waitModal(p, /Install 37 Player/);
+  ok(/Install 37 Player as an app/.test(m) && await p.evaluate(()=> getComputedStyle(document.getElementById('btnInstall')).display !== 'none'), 'in the tab: the Install step, and Install in the top bar');
+  await p.evaluate(()=>{ window.__isApp = true; window.__dmListeners.forEach(f=> f({matches: true})); }); await sleep(400);
+  m = await modal(p);
+  ok(!/Install 37 Player as an app/.test(m) && /Keep the library in a folder/.test(m) && await p.evaluate(()=> !!document.querySelector('.modal [data-act="folder"]')), 'now the app\'s window: the guide redraws without the Install step, the folder step can be done (' + short(m) + ')');
+  ok(await p.evaluate(()=> getComputedStyle(document.getElementById('btnInstall')).display) === 'none', 'and Install leaves the top bar');
+  await clickText(p, '.modal button', '^Close$');
+  await p.evaluate(async()=>{ const r = window.__dbg.getRoot(); r.settings.sharedLibrary = {url: 'x', code: 'demo', deviceName: 'T', libraryName: 'Rinzin\'s library', installs: [localStorage.getItem('37player.install')]}; });
+  await p.evaluate(()=>{ window.openSetupGuideForTest(); }); await sleep(500);
+  ok(await p.evaluate(()=> getComputedStyle(document.querySelector('.heads-up-step.done .step-n')).fontWeight) >= 700, 'a done step\'s ✓ is bold');
+  await p.screenshot({path: 'shots/setup-done.png'});
   await clickText(p, '.modal button', '^Close$');
   await p.browserContext().close();
 

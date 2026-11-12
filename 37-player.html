@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.2.029">
+<meta name="app-version" content="2.2.030">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -1009,16 +1009,17 @@
   .modal.heads-up .heads-up-title{ font-family:var(--font-display); font-size:30px; font-weight:normal; margin:0 0 8px; }
   .heads-up-steps{ display:flex; flex-direction:column; gap:12px; margin:6px 0 18px; }
   .heads-up-step{ display:flex; gap:12px; align-items:flex-start; padding:12px 14px; border:1px solid var(--line); border-radius:10px; background:var(--bg-panel); }
-  .heads-up-step.done{ opacity:0.7; }
+  .heads-up-step.done .heads-up-text{ opacity:0.75; } /* (not the Step box: its ✓ stays clear) */
   /* "Step 1" in an unfilled, rounded box (2.2.026, Gen Rinzin: a dark
      number on the amber circle was nearly unreadable, and didn't say it was a step). */
   .heads-up-num{ flex-shrink:0; min-width:46px; padding:4px 6px 5px; border:1.5px solid var(--text-dim); border-radius:8px; background:transparent; color:var(--text); display:flex; flex-direction:column; align-items:center; line-height:1.15; }
   .heads-up-num .step-word{ font-size:11px; color:var(--text-dim); }
   .heads-up-num .step-n{ font-size:17px; font-weight:700; }
   .heads-up-step.done .heads-up-num{ border-color:var(--sage); }
-  .heads-up-step.done .heads-up-num .step-n{ color:var(--sage); }
+  /* A done step's ✓: as dark and bold as the text, a little larger (2.2.030, Gen Rinzin: the green ✓ was hard to see). */
+  .heads-up-step.done .heads-up-num .step-n{ color:var(--text); font-weight:800; font-size:20px; line-height:1; }
   .heads-up-text{ flex:1; min-width:0; }
-  .modal .heads-up-text p{ margin:0 0 8px; color:var(--text); }
+  .modal .heads-up-text p{ margin:0 0 8px; color:var(--text); font-size:15px; line-height:1.5; }
   .heads-up-text .setup-steps{ margin:4px 0 0; padding-left:20px; font-size:14px; }
   .heads-up-btns{ display:flex; flex-wrap:wrap; gap:8px; margin-top:4px; }
   .heads-up-btns .btn.ghost{ border:1px solid var(--line); background:var(--bg-panel-raised); }
@@ -1157,6 +1158,11 @@
   .modal p{ font-size:14px; color:var(--text-dim); line-height:1.5; margin:0 0 16px 0; }
   /* Explanatory dialogs (setup wizard, backup choices): these are read, not
      glanced at, so a point larger and in the full-strength text color. */
+  /* A question's buttons (2.2.030, Gen Rinzin): one column, as wide as the
+     widest button rather than the whole dialog, at the right. */
+  .modal-actions.ask-buttons{ display:grid; grid-template-columns:minmax(0, max-content); justify-content:end; gap:8px; }
+  .modal-actions.ask-buttons .btn{ white-space:normal; }
+  .modal-actions.ask-buttons .btn.ghost{ border-color:var(--line); } /* each choice visibly a button */
   .modal .ask-body p{ font-size:15.5px; color:var(--text); line-height:1.55; margin:0 0 14px 0; }
   .modal input[type=text], .modal input[type=password], .modal input[type=number], .modal select,
   .settings-page input[type=text]{
@@ -39671,7 +39677,7 @@ function askChoice(title, bodyHtml, buttons){
   return new Promise(resolve=>{
     openModal(`
       <h3></h3><div class="ask-body">${bodyHtml}</div>
-      <div class="modal-actions" style="flex-direction:column; align-items:stretch; gap:8px;" id="askButtons"></div>
+      <div class="modal-actions ask-buttons" id="askButtons"></div>
     `, "wide");
     document.querySelector(".modal h3").textContent = title;
     const wrap = document.getElementById("askButtons");
@@ -40567,11 +40573,23 @@ function updateInstallButton(){
   b.style.display = !IN_DESKTOP_APP && !setupEnvironment().standalone ? "" : "none";
 }
 document.getElementById("btnInstall").addEventListener("click", (e)=>{ e.currentTarget.blur(); openSetupGuide(); });
-window.addEventListener("appinstalled", ()=> setTimeout(updateInstallButton, 500));
+// Chrome and Edge install by moving this very tab into the app's own window,
+// without reloading it (Gen Rinzin, 12 Nov: the guide still offered to
+// install, and Install stayed in the top bar): so follow the display mode.
+function setupDisplayModeChanged(){
+  updateInstallButton();
+  if(setupGuideRedraw && document.querySelector(".modal.heads-up .heads-up-steps")) setupGuideRedraw();
+}
+window.addEventListener("appinstalled", ()=> setTimeout(setupDisplayModeChanged, 500));
+["standalone", "fullscreen", "minimal-ui", "window-controls-overlay"].forEach(m=>{
+  try{ window.matchMedia("(display-mode: " + m + ")").addEventListener("change", setupDisplayModeChanged); }catch(err){}
+});
 // ---- The guide. Resolves when it's closed.
+let setupGuideRedraw = null; // while the guide is open
 function openSetupGuide(opts){
   opts = opts || {};
-  const env = setupEnvironment(), os = deviceOs();
+  let env = setupEnvironment();
+  const os = deviceOs();
   const notes = {};
   let chromeWay = false, noDrive = false;
   const P = x=> `<p>${x}</p>`;
@@ -40625,6 +40643,9 @@ function openSetupGuide(opts){
       return out;
     };
     const render = ()=>{
+      env = setupEnvironment(); // the window may have become the installed app meanwhile
+      if(env.standalone){ try{ localStorage.removeItem(SETUP_CONTINUE_KEY); }catch(err){} }
+      setupGuideRedraw = render;
       const list = steps().filter(Boolean);
       const rows = list.map((s, i)=> `<div class="heads-up-step${s.done ? " done" : ""}" data-step="${s.id}">${stepBox(s.done ? "✓" : i + 1)}<div class="heads-up-text">${s.html}${notes[s.id] ? `<p class="settings-note">${notes[s.id]}</p>` : ""}${(s.btns || []).length ? `<div class="heads-up-btns">${s.btns.map(b=> b.act === "download"
           ? `<a class="btn primary" href="${desktopDownloadUrl(os)}" data-act="download">${escapeHtmlText(b.label)}</a>`
@@ -40672,7 +40693,7 @@ function openSetupGuide(opts){
         }
         if(act === "export"){ closeModal(); await exportScope({type: "library"}, "library"); settled = false; return whenNoModal(render); }
       }));
-      modalCloseCallbacks.push(()=> setTimeout(()=>{ if(!settled && !backdrop.classList.contains("show")){ settled = true; resolve(); } }, 0));
+      modalCloseCallbacks.push(()=>{ if(setupGuideRedraw === render) setupGuideRedraw = null; setTimeout(()=>{ if(!settled && !backdrop.classList.contains("show")){ settled = true; resolve(); } }, 0); });
     };
     render();
   });

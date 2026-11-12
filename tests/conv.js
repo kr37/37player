@@ -30,7 +30,9 @@ const clickText = (p, sel, src) => p.evaluate((sel, src)=>{ const re=new RegExp(
   });
   for(let k=0; k<100 && !(await p.evaluate(()=>window.__importDone)); k++) await sleep(200);
   ok(await p.evaluate(()=>window.__importDone) === true, 'import finished');
-  const modal = await p.evaluate(()=> document.querySelector('.modal')?.innerText || '');
+  // Since 2.2.028 the warning waits its turn (no dialog for a moment) before it opens.
+  let modal = '';
+  for(let k=0; k<40 && !/can't be played here/.test(modal); k++){ await sleep(250); modal = await p.evaluate(()=> document.getElementById('modalBackdrop')?.classList.contains('show') ? (document.querySelector('.modal')?.innerText || '') : ''); }
   console.log('summary:', JSON.stringify(modal));
   ok(/can't be played here/.test(modal), 'the summary says some files can\'t be played here');
   ok(/talk\.wma \(Windows Media Audio \(WMA\)\)/.test(modal), 'the summary names the WMA file and its format');
