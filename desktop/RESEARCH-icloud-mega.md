@@ -136,3 +136,35 @@ test.37player.com and opens it on each device in turn: Windows in Chrome,
 the Mac in Safari, the iPad in Safari, then the iPad as a Home Screen app.
 The desktop app's sign-in through the browser needs a second token, with a
 sign-in callback address; that comes after, if the browser results are good.
+
+## The test's results (12 Nov 2026, the HP in Chrome): put aside
+
+- **Works:** sign-in (a pop-up window from idmsa.apple.com, "Sign in to
+  iCloud.com.player37"; the session was kept for the next visit), making the
+  zone, records with no file, and the change tag check: a save over an
+  older version was refused ("CONFLICT · client oplock error updating
+  record"), and the record kept version 2.
+- **A web page can't make record types or fields**, even in Development:
+  "could not find record_type with name 'P37Note'", "Field note not found
+  in P37State". They have to be made in the console.
+- **Uploads fail, every time, in every form.** `assets/upload` on
+  api.apple-cloudkit.com answers, but the upload itself goes to
+  `cws.icloud-content.com/…/singleFileUpload`, which answers no CORS
+  preflight ("No 'Access-Control-Allow-Origin' header is present"). Data
+  sent with no content type, or as text/plain, needs no preflight: the
+  16 MB went in 6 to 7 s, but the answer, which holds the receipt the
+  record needs, can't be read either. This happened through CloudKit JS
+  (as Blob, File, untyped and text/plain) and by plain calls, and with the
+  token's Allowed Origins set to test.37player.com and then to any domain.
+- **It isn't only us:** Bear's web app (web.bear.app, also CloudKit JS) has
+  the same error on the same address for attachments, reported in the Bear
+  community forum around mid-2026 ("something changed in the way Apple
+  manages CORS permissions"). It's Apple's side, and it has lasted months.
+
+**So: put aside.** From a web page, iCloud can hold a library's records but
+not its audio. The desktop app could upload from its shell (no CORS outside
+the web view), but the iPads and phones that iCloud would suit best couldn't.
+Worth looking again only if Apple fixes the uploads; a run of
+`tests/cloudkit/` shows it in a minute. The container `iCloud.com.player37`
+and its development token stay; the test's zone can be deleted from the
+page.
