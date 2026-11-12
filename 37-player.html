@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.2.027">
+<meta name="app-version" content="2.2.028">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -5198,6 +5198,7 @@ const STRINGS = {
     "importOutOfSpaceBody": "This browser ran out of room for the library, so the import stopped after {n} of {total} files and no playlists were made. A private (incognito) window gets only a little room; a normal window, or more free disk space, gives much more.",
     "importFailedUnexpected": "The import stopped because of an error: {msg}",
     "operationStopping": "Stopping…",
+    "dialogWaitingNote": "{what}: waiting until the open dialog is closed",
     "importStoppingAfterFile": "Stopping once this file is done…",
     "importStoppedTitle": "Import stopped",
     "importStoppedAfter": "Stopped after {done} of {total} files.",
@@ -7136,6 +7137,7 @@ const STRINGS = {
     "importOutOfSpaceBody": "Este navegador se quedó sin espacio para la biblioteca, así que la importación se detuvo tras {n} de {total} archivos y no se crearon listas. Una ventana privada (incógnito) tiene poco espacio; una ventana normal, o más espacio libre en el disco, da mucho más.",
     "importFailedUnexpected": "La importación se detuvo por un error: {msg}",
     "operationStopping": "Deteniendo…",
+    "dialogWaitingNote": "{what}: esperando a que se cierre el diálogo abierto",
     "importStoppingAfterFile": "Se detendrá al terminar este archivo…",
     "importStoppedTitle": "Importación detenida",
     "importStoppedAfter": "Detenida tras {done} de {total} archivos.",
@@ -9073,6 +9075,7 @@ const STRINGS = {
     "importOutOfSpaceBody": "Ce navigateur n'a plus eu de place pour la bibliothèque : l'importation s'est arrêtée après {n} fichiers sur {total} et aucune playlist n'a été créée. Une fenêtre privée a peu de place ; une fenêtre normale, ou plus d'espace libre sur le disque, en donne bien plus.",
     "importFailedUnexpected": "L'importation s'est arrêtée à cause d'une erreur : {msg}",
     "operationStopping": "Arrêt…",
+    "dialogWaitingNote": "{what} : en attente de la fermeture de la fenêtre ouverte",
     "importStoppingAfterFile": "Arrêt dès que ce fichier est terminé…",
     "importStoppedTitle": "Importation arrêtée",
     "importStoppedAfter": "Arrêtée après {done} fichiers sur {total}.",
@@ -11010,6 +11013,7 @@ const STRINGS = {
     "importOutOfSpaceBody": "Este navegador ficou sem espaço para a biblioteca, então a importação parou após {n} de {total} arquivos e nenhuma lista foi criada. Uma janela privada (anônima) tem pouco espaço; uma janela normal, ou mais espaço livre no disco, dá muito mais.",
     "importFailedUnexpected": "A importação parou por causa de um erro: {msg}",
     "operationStopping": "Parando…",
+    "dialogWaitingNote": "{what}: à espera que a janela aberta seja fechada",
     "importStoppingAfterFile": "Vai parar quando este arquivo terminar…",
     "importStoppedTitle": "Importação parada",
     "importStoppedAfter": "Parada após {done} de {total} arquivos.",
@@ -12947,6 +12951,7 @@ const STRINGS = {
     "importOutOfSpaceBody": "Diesem Browser ist der Platz für die Bibliothek ausgegangen: Der Import hielt nach {n} von {total} Dateien an, und es wurden keine Playlists angelegt. Ein privates (Inkognito-)Fenster bekommt nur wenig Platz; ein normales Fenster oder mehr freier Speicher auf dem Datenträger viel mehr.",
     "importFailedUnexpected": "Der Import wurde wegen eines Fehlers angehalten: {msg}",
     "operationStopping": "Wird angehalten…",
+    "dialogWaitingNote": "{what}: wartet, bis das offene Fenster geschlossen ist",
     "importStoppingAfterFile": "Hält an, sobald diese Datei fertig ist…",
     "importStoppedTitle": "Import angehalten",
     "importStoppedAfter": "Angehalten nach {done} von {total} Dateien.",
@@ -14884,6 +14889,7 @@ const STRINGS = {
     "importOutOfSpaceBody": "这个浏览器已没有空间存放资料库，所以导入在 {total} 个文件中的第 {n} 个后停止，也没有创建播放列表。隐身（无痕）窗口只有很少的空间；普通窗口或更多的磁盘可用空间会多得多。",
     "importFailedUnexpected": "导入因出错而停止：{msg}",
     "operationStopping": "正在停止…",
+    "dialogWaitingNote": "{what}：等待当前打开的对话框关闭",
     "importStoppingAfterFile": "这个文件完成后停止…",
     "importStoppedTitle": "导入已停止",
     "importStoppedAfter": "在 {total} 个文件中的第 {done} 个后停止。",
@@ -16821,6 +16827,7 @@ const STRINGS = {
     "importOutOfSpaceBody": "Trình duyệt này đã hết chỗ cho thư viện nên việc nhập dừng sau {n} trên {total} tệp và không tạo danh sách phát nào. Cửa sổ ẩn danh chỉ có ít chỗ; cửa sổ thường, hoặc thêm dung lượng trống trên ổ đĩa, cho nhiều hơn nhiều.",
     "importFailedUnexpected": "Việc nhập đã dừng vì một lỗi: {msg}",
     "operationStopping": "Đang dừng…",
+    "dialogWaitingNote": "{what}: đang chờ đóng hộp thoại đang mở",
     "importStoppingAfterFile": "Sẽ dừng khi xong tệp này…",
     "importStoppedTitle": "Đã dừng nhập",
     "importStoppedAfter": "Đã dừng sau {done} trên {total} tệp.",
@@ -18758,6 +18765,7 @@ const STRINGS = {
     "importOutOfSpaceBody": "Αυτό το πρόγραμμα περιήγησης έμεινε χωρίς χώρο για τη βιβλιοθήκη, οπότε η εισαγωγή σταμάτησε μετά από {n} από {total} αρχεία και δεν δημιουργήθηκαν λίστες. Ένα ιδιωτικό (ανώνυμο) παράθυρο έχει λίγο χώρο· ένα κανονικό, ή περισσότερος ελεύθερος χώρος στον δίσκο, δίνει πολύ περισσότερο.",
     "importFailedUnexpected": "Η εισαγωγή σταμάτησε λόγω σφάλματος: {msg}",
     "operationStopping": "Διακοπή…",
+    "dialogWaitingNote": "{what}: αναμονή να κλείσει το ανοιχτό παράθυρο",
     "importStoppingAfterFile": "Θα σταματήσει μόλις τελειώσει αυτό το αρχείο…",
     "importStoppedTitle": "Η εισαγωγή σταμάτησε",
     "importStoppedAfter": "Σταμάτησε μετά από {done} από {total} αρχεία.",
@@ -20695,6 +20703,7 @@ const STRINGS = {
     "importOutOfSpaceBody": "Questo browser ha esaurito lo spazio per la libreria, quindi l'importazione si è fermata dopo {n} file su {total} e non è stata creata nessuna playlist. Una finestra privata (in incognito) ha poco spazio; una finestra normale, o più spazio libero sul disco, ne dà molto di più.",
     "importFailedUnexpected": "L'importazione si è fermata per un errore: {msg}",
     "operationStopping": "Interruzione…",
+    "dialogWaitingNote": "{what}: in attesa che si chiuda la finestra aperta",
     "importStoppingAfterFile": "Si ferma appena finito questo file…",
     "importStoppedTitle": "Importazione interrotta",
     "importStoppedAfter": "Interrotta dopo {done} file su {total}.",
@@ -26939,18 +26948,20 @@ let pendingOperationDialog = null;
 function rememberOperationDialog(){
   pendingOperationDialog = {className: modalBody.className, nodes: Array.from(modalBody.childNodes)};
 }
-function setActiveOperationProgress(text, stop, key){
+// (opts.waiting: a dialog waiting its turn, shown in the bar but not an
+// operation: activeOperation skips it.)
+function setActiveOperationProgress(text, stop, key, opts){
   key = key || stop || "_";
   const prev = activeOps.get(key);
   const dialog = pendingOperationDialog || (prev && prev.dialog) || null;
   pendingOperationDialog = null;
-  activeOps.set(key, {text, stop, dialog, stopping: !!(prev && prev.stopping)});
-  activeOperation = [...activeOps.values()].pop();
+  activeOps.set(key, {text, stop, dialog, stopping: !!(prev && prev.stopping), waiting: !!(opts && opts.waiting)});
+  activeOperation = [...activeOps.values()].filter(o=> !o.waiting).pop() || null;
   renderOperationBar();
 }
 function clearActiveOperation(key){
-  if(key === undefined) activeOps.clear(); else activeOps.delete(key);
-  activeOperation = activeOps.size ? [...activeOps.values()].pop() : null;
+  if(key === undefined){ for(const [k, o] of [...activeOps]) if(!o.waiting) activeOps.delete(k); } else activeOps.delete(key);
+  activeOperation = [...activeOps.values()].filter(o=> !o.waiting).pop() || null;
   pendingOperationDialog = null;
   renderOperationBar();
 }
@@ -27098,7 +27109,7 @@ async function importFiles(fileList, targetPlaylist, insertAt, keepOrder){
   }
   recordLastImport(droppedIds);
   await saveState();
-  closeModal();
+  closeOwnModal("#importFilesStatus"); // never a dialog in use (2.2.028)
   clearActiveOperation(opStop);
   refreshCurrentView();
   convertAfterImport(unplayableNames, droppedIds);
@@ -27605,11 +27616,60 @@ async function converterConvert(blob, sourceName, onFraction, target){
   } finally { converterOnTime = null; }
 }
 
-// Runs fn once no dialog is open, so one question never replaces another.
-function whenNoModal(fn){
-  if(!backdrop.classList.contains("show")) return fn();
-  setTimeout(()=> whenNoModal(fn), 400);
+/* ---- Dialogs that open by themselves wait their turn (2.2.028) ----
+   Gen Rinzin: while he was working in a dialog, "Import finished" (or
+   another dialog that opens when background work ends) replaced it, and
+   what he was doing was gone. There is one dialog area, and openModal puts
+   each dialog in place of the last: right for the steps of one task, wrong
+   for a dialog nobody asked for just then. Those go through showWhenFree:
+   shown once no dialog is open and none has opened for a moment (so one
+   doesn't land between two steps of a task and get replaced by the next),
+   one at a time, in order; meanwhile the status bar says it's waiting. A
+   task's own dialog (its progress, found by ownSelector) is not in the way:
+   its summary or next question takes that dialog's place at once. And work
+   finishing closes only its own dialog (closeOwnModal), never the one in
+   use. Not a stack (the new one on top, the old one back afterwards):
+   bringing a half-finished dialog back, with its choices and any work in
+   flight, would be fragile. */
+const modalWaiting = [];
+let modalPumpTimer = null, modalFreeSince = 0;
+function modalIsOwn(ownSelector){ return backdrop.classList.contains("show") && !!ownSelector && !!modalBody.querySelector(ownSelector); }
+function closeOwnModal(ownSelector){ if(modalIsOwn(ownSelector)) closeModal(); }
+// Runs fn (which opens a dialog) in its turn; resolves with what fn returns.
+// label: what's waiting, for the status bar ("" says nothing).
+function showWhenFree(label, fn, ownSelector){
+  return new Promise(resolve=>{
+    modalWaiting.push({label, fn, own: ownSelector || null, resolve, key: "waiting:" + uid(), noted: false});
+    pumpModalQueue();
+  });
 }
+// The same without a dialog of its own to open: resolves when it's this one's
+// turn, for a function that then opens its dialog itself.
+function myModalTurn(label, ownSelector){ return showWhenFree(label, ()=>{}, ownSelector); }
+function pumpModalQueue(){
+  clearTimeout(modalPumpTimer);
+  if(!modalWaiting.length) return;
+  const job = modalWaiting[0], open = backdrop.classList.contains("show");
+  if(open && !modalIsOwn(job.own)){
+    modalFreeSince = 0;
+    if(job.label && !job.noted){ job.noted = true; setActiveOperationProgress(t("dialogWaitingNote", {what: job.label}), null, job.key, {waiting: true}); }
+    modalPumpTimer = setTimeout(pumpModalQueue, 300);
+    return;
+  }
+  if(!open){
+    if(!modalFreeSince) modalFreeSince = Date.now();
+    if(Date.now() - modalFreeSince < 600){ modalPumpTimer = setTimeout(pumpModalQueue, 150); return; }
+  }
+  modalWaiting.shift();
+  modalFreeSince = 0;
+  if(job.noted) clearActiveOperation(job.key);
+  let r;
+  try{ r = job.fn(); }catch(err){ console.error(err); }
+  Promise.resolve(r).then(job.resolve, (err)=>{ console.error(err); job.resolve(); });
+  if(modalWaiting.length) modalPumpTimer = setTimeout(pumpModalQueue, 300);
+}
+// Runs fn once no dialog is open, so one question never replaces another.
+function whenNoModal(fn){ return showWhenFree("", fn); }
 // ---- Audio from video files
 // A video (a recorded teaching, say) can come in as a track: its sound is
 // taken out with the converter, without the video ever being stored. AAC or
@@ -27934,6 +27994,9 @@ async function convertAfterImport(names, importedIds){
   }
 }
 function showConvertFailures(failures, bodyKey){
+  return showWhenFree(t(bodyKey ? "videoFailedTitle" : "convertFailedTitle"), ()=> showConvertFailuresNow(failures, bodyKey));
+}
+function showConvertFailuresNow(failures, bodyKey){
   openModal(`
     <h3>${t(bodyKey ? "videoFailedTitle" : "convertFailedTitle")}</h3>
     <p>${t(bodyKey || (failures.length === 1 ? "convertFailedBodyOne" : "convertFailedBody"), {n: failures.length})}</p>
@@ -30083,7 +30146,8 @@ async function analyzeFolderImport(audioFiles, m3u8Files, imageFiles, xmlFiles){
   // playlists of its own: then it's most likely albums or a session's tracks.
   showFolderImportReview({audioPlan, playlistPlans, folderPlans, makeFolderPlaylists: folderPlans.length > 0 && !playlistPlans.length, folderCovers: covers, artPreview, addArtwork: true});
 }
-function showFolderImportReview(analysis){
+async function showFolderImportReview(analysis){
+  await myModalTurn(t("folderImportReviewTitle"), "#analyzingFolderFile");
   const {audioPlan, playlistPlans} = analysis;
   const folderPlans = analysis.folderPlans || [];
   const newAudioCount = audioPlan.filter(p=>p.action==="import").length;
@@ -30446,10 +30510,9 @@ async function commitFolderImport(analysis){
     console.error("Folder import failed:", err);
     clearActiveOperation(analysis);
     delete backdrop.dataset.busy;
-    closeModal();
-    openModal(`<h3>${escapeHtmlText(t(isQuotaError(err) ? "importOutOfSpaceTitle" : "folderImportDoneTitle"))}</h3>
+    showWhenFree(t(isQuotaError(err) ? "importOutOfSpaceTitle" : "folderImportDoneTitle"), ()=> openModal(`<h3>${escapeHtmlText(t(isQuotaError(err) ? "importOutOfSpaceTitle" : "folderImportDoneTitle"))}</h3>
       <p>${escapeHtmlText(isQuotaError(err) ? t("importOutOfSpaceShort") : t("importFailedUnexpected", {msg: String((err && (err.message || err.name)) || err)}))}</p>
-      <div class="modal-actions"><button class="btn primary" data-close>${t("ok")}</button></div>`, "wide");
+      <div class="modal-actions"><button class="btn primary" data-close>${t("ok")}</button></div>`, "wide"), "#bulkImportStatus");
   }
 }
 async function commitFolderImportSteps(analysis){
@@ -30649,7 +30712,8 @@ async function commitFolderImportSteps(analysis){
   }
 
   await importSave();
-  closeModal();
+  const ownWasOpen = modalIsOwn("#bulkImportStatus");
+  closeOwnModal("#bulkImportStatus"); // never a dialog in use (2.2.028)
   clearActiveOperation(analysis);
   refreshCurrentView();
 
@@ -30668,11 +30732,15 @@ async function commitFolderImportSteps(analysis){
   if(failed) lines.push(t("folderImportFailedLine",{n:failed}));
   if(outOfSpace) lines.unshift(escapeHtmlText(t("importOutOfSpaceBody", {n: imported + overwritten, total: audioPlan.length})));
   else if(stopped) lines.push(t("importStoppedEarlyLine"));
-  openModal(`
+  const summaryHtml = `
     <h3>${t(outOfSpace ? "importOutOfSpaceTitle" : "folderImportDoneTitle")}</h3>
     ${lines.map(l=>`<p>${l}</p>`).join("")}
     <div class="modal-actions"><button class="btn primary" data-close>${t("ok")}</button></div>
-  `);
+  `;
+  // Its own progress dialog just closed: the summary takes its place at once.
+  // Otherwise it waits for the dialog in use.
+  if(ownWasOpen && !backdrop.classList.contains("show")) openModal(summaryHtml);
+  else showWhenFree(t(outOfSpace ? "importOutOfSpaceTitle" : "folderImportDoneTitle"), ()=> openModal(summaryHtml));
   convertAfterImport(unplayableNames, touched);
   if(folderImportVideos.length){ const v = folderImportVideos; folderImportVideos = []; whenNoModal(()=> offerVideoAudio(v, null)); }
 }
@@ -36609,6 +36677,9 @@ const modalBody = document.getElementById("modalBody");
 // trial and error.
 function showUnplayableFilesWarning(filenames){
   if(!filenames.length) return;
+  return showWhenFree(t("unplayableFilesTitle"), ()=> showUnplayableFilesWarningNow(filenames));
+}
+function showUnplayableFilesWarningNow(filenames){
   const ids = filenames.ids || [];
   openModal(`
     <h3>${t("unplayableFilesTitle")}</h3>
@@ -39658,6 +39729,7 @@ function showSpareRecoveryNotice(){
 // After a restore: audio stored here that the backup didn't know about
 // (added after it was made) can come back as tracks too.
 async function offerOrphanRebuild(){
+  await myModalTurn(t("orphanTitle"));
   let ids = [];
   try{ ids = await orphanAudioIds(); }catch(err){ return; }
   if(!ids.length) return;
@@ -47922,6 +47994,7 @@ async function copyToLibrary(scope, target){
     finished();
   }
   if(!body) return; // stopped, or failed (already said)
+  await myModalTurn(t("copyLibDoneTitle")); // not over a dialog in use (2.2.028)
   // Only now, with the copy handed over, can its library be opened.
   const name = libraryDisplayName(target);
   const choice = await askChoice(t("copyLibDoneTitle"), body, [
