@@ -241,7 +241,9 @@ async function rawPiece(bytes, label){
 // on uploads working).
 async function stateRecords(){
   const name = "state-" + Date.now().toString(36);
-  const fields = n=> ({version: {value: n}, note: {value: "version " + n}});
+  // Only the field made in the console: a web page can't add fields or
+  // record types, even in Development (12 Nov 2026, on the HP).
+  const fields = n=> ({version: {value: n}});
   let t = Date.now();
   const r1 = check(await db.saveRecords([{recordType: "P37State", recordName: name, fields: fields(1)}], {zoneID: ZONE}), "saving state 1").records[0];
   log("state version 1 saved (" + (Date.now() - t) + " ms)", "ok");
@@ -272,7 +274,7 @@ async function runAll(){
   if(await step("the test zone", ensureZone) === false){ setButtons(true); return; }
   await step("a record with no file", async ()=>{
     const t = Date.now();
-    check(await db.saveRecords([{recordType: "P37Note", recordName: "note-" + Date.now().toString(36), fields: {text: {value: "hello"}}}], {zoneID: ZONE}), "saving a note");
+    check(await db.saveRecords([{recordType: "P37State", recordName: "note-" + Date.now().toString(36), fields: {version: {value: 0}}}], {zoneID: ZONE}), "saving a record");
     log("a record with no file saved (" + (Date.now() - t) + " ms)", "ok");
   });
   for(const form of ["Blob", "File"]){
