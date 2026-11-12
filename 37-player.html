@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.2.020">
+<meta name="app-version" content="2.2.021">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -1908,7 +1908,7 @@ const LIBRARY_LIST_KEY = "37player.libraries";
    before this script runs (window.__p37Device); a value missing here, a
    wiped webview, is put back from it at once, before anything reads it.
    Every change to one of them is sent to the shell (a second later). */
-const DEVICE_MIRROR_KEYS = ["37player.libraries", "37player.device", "37player.libTable", "37player.storage", "37player.autoRestore", "37player.driveSignIn", "37player.playLog"];
+const DEVICE_MIRROR_KEYS = ["37player.libraries", "37player.device", "37player.install", "37player.libTable", "37player.storage", "37player.autoRestore", "37player.driveSignIn", "37player.playLog"];
 const deviceRestoredKeys = [];
 if(window.__TAURI_INTERNALS__ && window.__p37Device && typeof window.__p37Device === "object"){
   for(const k of DEVICE_MIRROR_KEYS){
@@ -4705,6 +4705,12 @@ const STRINGS = {
     "sharedCodeLabel": "Join code",
     "sharedDeviceLabel": "This device’s name",
     "sharedDeviceHint": "Shown on other devices when a playlist was changed on two at once, e.g. “Heart Jewel (Temple iPad)”.",
+    "sdCopyTitle": "Is this another device?",
+    "sdCopyBody": "This library is joined to the shared library “{lib}” as “{device}”, but it was last used by another copy of 37 Player: perhaps its folder was copied here from that device. If this is another device, give it a name of its own before it syncs, so the devices' messages (such as “waiting for {device} to send it”) don't mix the two up. Nothing syncs until you choose.",
+    "sdNewBtn": "Another device: use this name",
+    "sdSameBtn": "This is still “{device}”",
+    "sdNameNeeded": "Type a name for this device, different from “{device}”.",
+    "sdHeldStatus": "Not syncing until you say which device this is: press Sync now.",
     "sharedJoinBtn": "Join",
     "sharedJoining": "Connecting…",
     "sharedJoiningNamed": "Joining “{name}”…",
@@ -6575,6 +6581,12 @@ const STRINGS = {
     "sharedCodeLabel": "Código de acceso",
     "sharedDeviceLabel": "Nombre de este dispositivo",
     "sharedDeviceHint": "Se muestra en otros dispositivos cuando una lista se cambió en dos a la vez, p. ej. «Joya del corazón (iPad del templo)».",
+    "sdCopyTitle": "¿Es otro dispositivo?",
+    "sdCopyBody": "Esta biblioteca está unida a la biblioteca compartida “{lib}” como “{device}”, pero la última vez la usó otra copia de 37 Player: quizá su carpeta se copió aquí desde ese dispositivo. Si este es otro dispositivo, dele un nombre propio antes de que sincronice, para que los mensajes de los dispositivos (como «esperando a que {device} lo envíe») no los confundan. No se sincroniza nada hasta que elija.",
+    "sdNewBtn": "Otro dispositivo: usar este nombre",
+    "sdSameBtn": "Sigue siendo “{device}”",
+    "sdNameNeeded": "Escriba un nombre para este dispositivo, distinto de “{device}”.",
+    "sdHeldStatus": "No se sincroniza hasta que diga qué dispositivo es este: pulse Sincronizar ahora.",
     "sharedJoinBtn": "Unirse",
     "sharedJoining": "Conectando…",
     "sharedJoiningNamed": "Uniéndose a «{name}»…",
@@ -8444,6 +8456,12 @@ const STRINGS = {
     "sharedCodeLabel": "Code d’accès",
     "sharedDeviceLabel": "Nom de cet appareil",
     "sharedDeviceHint": "Affiché sur les autres appareils quand une liste a été modifiée sur deux à la fois, p. ex. « Joyau du cœur (iPad du temple) ».",
+    "sdCopyTitle": "Est-ce un autre appareil ?",
+    "sdCopyBody": "Cette bibliothèque est jointe à la bibliothèque partagée « {lib} » sous le nom « {device} », mais elle a été utilisée en dernier par une autre copie de 37 Player : son dossier a peut-être été copié ici depuis cet appareil. Si c'est un autre appareil, donnez-lui un nom à lui avant qu'il se synchronise, pour que les messages des appareils (comme « en attente de l'envoi par {device} ») ne les confondent pas. Rien ne se synchronise avant votre choix.",
+    "sdNewBtn": "Un autre appareil : utiliser ce nom",
+    "sdSameBtn": "C'est toujours « {device} »",
+    "sdNameNeeded": "Tapez un nom pour cet appareil, différent de « {device} ».",
+    "sdHeldStatus": "Pas de synchronisation tant que vous n'avez pas dit quel appareil c'est : appuyez sur Synchroniser.",
     "sharedJoinBtn": "Rejoindre",
     "sharedJoining": "Connexion…",
     "sharedJoiningNamed": "Connexion à « {name} »…",
@@ -10313,6 +10331,12 @@ const STRINGS = {
     "sharedCodeLabel": "Código de acesso",
     "sharedDeviceLabel": "Nome deste dispositivo",
     "sharedDeviceHint": "Mostrado noutros dispositivos quando uma lista foi alterada em dois ao mesmo tempo, p. ex. “Joia do Coração (iPad do templo)”.",
+    "sdCopyTitle": "É outro dispositivo?",
+    "sdCopyBody": "Esta biblioteca está ligada à biblioteca partilhada “{lib}” como “{device}”, mas foi usada por último por outra cópia do 37 Player: talvez a sua pasta tenha sido copiada para aqui a partir desse dispositivo. Se este for outro dispositivo, dê-lhe um nome próprio antes de sincronizar, para que as mensagens dos dispositivos (como “à espera que {device} o envie”) não os confundam. Nada é sincronizado até escolher.",
+    "sdNewBtn": "Outro dispositivo: usar este nome",
+    "sdSameBtn": "Continua a ser “{device}”",
+    "sdNameNeeded": "Escreva um nome para este dispositivo, diferente de “{device}”.",
+    "sdHeldStatus": "Não sincroniza até dizer que dispositivo é este: carregue em Sincronizar agora.",
     "sharedJoinBtn": "Aderir",
     "sharedJoining": "A ligar…",
     "sharedJoiningNamed": "Entrando em “{name}”…",
@@ -12182,6 +12206,12 @@ const STRINGS = {
     "sharedCodeLabel": "Beitrittscode",
     "sharedDeviceLabel": "Name dieses Geräts",
     "sharedDeviceHint": "Wird auf anderen Geräten angezeigt, wenn eine Playlist auf zweien gleichzeitig geändert wurde, z. B. „Herzjuwel (Tempel-iPad)“.",
+    "sdCopyTitle": "Ist das ein anderes Gerät?",
+    "sdCopyBody": "Diese Bibliothek ist der geteilten Bibliothek „{lib}“ als „{device}“ beigetreten, wurde aber zuletzt von einer anderen Kopie von 37 Player benutzt: Vielleicht wurde ihr Ordner von jenem Gerät hierher kopiert. Wenn dies ein anderes Gerät ist, geben Sie ihm vor dem Synchronisieren einen eigenen Namen, damit die Meldungen der Geräte (etwa „wartet, bis {device} es sendet“) die beiden nicht verwechseln. Bis Sie wählen, wird nichts synchronisiert.",
+    "sdNewBtn": "Ein anderes Gerät: diesen Namen verwenden",
+    "sdSameBtn": "Das ist weiterhin „{device}“",
+    "sdNameNeeded": "Geben Sie einen Namen für dieses Gerät ein, anders als „{device}“.",
+    "sdHeldStatus": "Keine Synchronisierung, bis Sie sagen, welches Gerät dies ist: „Jetzt abgleichen“ drücken.",
     "sharedJoinBtn": "Beitreten",
     "sharedJoining": "Verbinde…",
     "sharedJoiningNamed": "„{name}“ wird beigetreten …",
@@ -14051,6 +14081,12 @@ const STRINGS = {
     "sharedCodeLabel": "加入码",
     "sharedDeviceLabel": "本设备名称",
     "sharedDeviceHint": "当一个播放列表同时在两台设备上被修改时，会在其他设备上显示，例如“心之宝（寺院 iPad）”。",
+    "sdCopyTitle": "这是另一台设备吗？",
+    "sdCopyBody": "这个曲库以“{device}”的名称加入了共享曲库“{lib}”，但上次使用它的是另一份 37 Player：也许它的文件夹是从那台设备复制过来的。如果这是另一台设备，请在同步前给它取一个自己的名称，以免设备之间的消息（例如“等待 {device} 发送”）把两者混淆。在您选择之前不会同步任何内容。",
+    "sdNewBtn": "另一台设备：使用这个名称",
+    "sdSameBtn": "这仍然是“{device}”",
+    "sdNameNeeded": "请为本设备输入一个与“{device}”不同的名称。",
+    "sdHeldStatus": "在您说明这是哪台设备之前不会同步：请按“立即同步”。",
     "sharedJoinBtn": "加入",
     "sharedJoining": "正在连接…",
     "sharedJoiningNamed": "正在加入“{name}”…",
@@ -15920,6 +15956,12 @@ const STRINGS = {
     "sharedCodeLabel": "Mã tham gia",
     "sharedDeviceLabel": "Tên thiết bị này",
     "sharedDeviceHint": "Hiển thị trên thiết bị khác khi một danh sách bị sửa trên hai thiết bị cùng lúc, ví dụ “Heart Jewel (iPad chùa)”.",
+    "sdCopyTitle": "Đây có phải là thiết bị khác?",
+    "sdCopyBody": "Thư viện này đã tham gia thư viện dùng chung “{lib}” với tên “{device}”, nhưng lần cuối được một bản 37 Player khác sử dụng: có thể thư mục của nó đã được chép sang đây từ thiết bị đó. Nếu đây là thiết bị khác, hãy đặt cho nó một tên riêng trước khi đồng bộ, để thông báo giữa các thiết bị (như “đang chờ {device} gửi”) không nhầm hai thiết bị. Sẽ không đồng bộ gì cho đến khi bạn chọn.",
+    "sdNewBtn": "Thiết bị khác: dùng tên này",
+    "sdSameBtn": "Đây vẫn là “{device}”",
+    "sdNameNeeded": "Hãy nhập tên cho thiết bị này, khác với “{device}”.",
+    "sdHeldStatus": "Không đồng bộ cho đến khi bạn cho biết đây là thiết bị nào: hãy bấm Đồng bộ ngay.",
     "sharedJoinBtn": "Tham gia",
     "sharedJoining": "Đang kết nối…",
     "sharedJoiningNamed": "Đang tham gia “{name}”…",
@@ -17789,6 +17831,12 @@ const STRINGS = {
     "sharedCodeLabel": "Κωδικός συμμετοχής",
     "sharedDeviceLabel": "Όνομα αυτής της συσκευής",
     "sharedDeviceHint": "Εμφανίζεται σε άλλες συσκευές όταν μια λίστα άλλαξε σε δύο ταυτόχρονα, π.χ. «Heart Jewel (iPad του ναού)».",
+    "sdCopyTitle": "Είναι άλλη συσκευή;",
+    "sdCopyBody": "Αυτή η βιβλιοθήκη συμμετέχει στην κοινόχρηστη βιβλιοθήκη «{lib}» ως «{device}», αλλά τελευταία τη χρησιμοποίησε άλλο αντίγραφο του 37 Player: ίσως ο φάκελός της αντιγράφηκε εδώ από εκείνη τη συσκευή. Αν αυτή είναι άλλη συσκευή, δώστε της δικό της όνομα πριν συγχρονιστεί, ώστε τα μηνύματα των συσκευών (όπως «αναμονή να το στείλει η {device}») να μην τις μπερδεύουν. Τίποτα δεν συγχρονίζεται μέχρι να επιλέξετε.",
+    "sdNewBtn": "Άλλη συσκευή: χρήση αυτού του ονόματος",
+    "sdSameBtn": "Είναι ακόμη η «{device}»",
+    "sdNameNeeded": "Πληκτρολογήστε όνομα για αυτή τη συσκευή, διαφορετικό από «{device}».",
+    "sdHeldStatus": "Δεν γίνεται συγχρονισμός μέχρι να πείτε ποια συσκευή είναι αυτή: πατήστε Συγχρονισμός τώρα.",
     "sharedJoinBtn": "Συμμετοχή",
     "sharedJoining": "Σύνδεση…",
     "sharedJoiningNamed": "Σύνδεση με «{name}»…",
@@ -19658,6 +19706,12 @@ const STRINGS = {
     "sharedCodeLabel": "Codice di accesso",
     "sharedDeviceLabel": "Nome di questo dispositivo",
     "sharedDeviceHint": "Mostrato sugli altri dispositivi quando una playlist è stata modificata su due contemporaneamente, ad es. «Gioiello del cuore (iPad del tempio)».",
+    "sdCopyTitle": "È un altro dispositivo?",
+    "sdCopyBody": "Questa libreria è unita alla libreria condivisa “{lib}” come “{device}”, ma l'ultima volta è stata usata da un'altra copia di 37 Player: forse la sua cartella è stata copiata qui da quel dispositivo. Se questo è un altro dispositivo, dagli un nome suo prima che si sincronizzi, così i messaggi dei dispositivi (come “in attesa che {device} lo invii”) non li confondono. Non si sincronizza nulla finché non scegli.",
+    "sdNewBtn": "Un altro dispositivo: usa questo nome",
+    "sdSameBtn": "È sempre “{device}”",
+    "sdNameNeeded": "Scrivi un nome per questo dispositivo, diverso da “{device}”.",
+    "sdHeldStatus": "Nessuna sincronizzazione finché non dici quale dispositivo è questo: premi Sincronizza ora.",
     "sharedJoinBtn": "Unisciti",
     "sharedJoining": "Connessione…",
     "sharedJoiningNamed": "Accesso a «{name}»…",
@@ -35075,7 +35129,7 @@ const HELP_TOPICS = [
   {
     "id": "libraries",
     "title": "Libraries",
-    "bodyHtml": "\u003cp>One device can hold more than one library: a Center's library and your own, say, or your Dharma recordings and everything else. Each library has its own tracks, playlists, backups, PIN and sharing. Only one is open at a time, and switching never loses anything: the others are simply put aside until you open them again.\u003c/p>\n\u003ch3>Making one\u003c/h3>\n\u003cp>In Settings → \u003cstrong>Library\u003c/strong>, open \u003cstrong>All libraries\u003c/strong> and choose \u003cstrong>New library…\u003c/strong>, give it a name, and choose how it starts:\u003c/p>\n\u003cul>\n\u003cli>\u003cstrong>Start empty:\u003c/strong> a new, empty library. Fill it as usual, with Import / Export.\u003c/li>\n\u003cli>\u003cstrong>Join a shared library:\u003c/strong> enter the join code and this device's name, and the new library joins straight away. Leave the name empty and it takes the shared library's own name, such as \"IKRC Library\".\u003c/li>\n\u003c/ul>\n\u003cp>Joining a shared library from a library that already has tracks asks first whether to make a new library for it instead. That's usually the right choice: joining with an existing library would add all its tracks and playlists to the shared library, for everyone in it to see.\u003c/p>\n\u003ch3>Switching\u003c/h3>\n\u003cp>Once there's more than one library, the open library's name is shown in the top bar, so it's clear which one a session is about to play from. Click it to see the others and switch. Settings → \u003cstrong>Library\u003c/strong> → \u003cstrong>All libraries\u003c/strong> can switch too, and it's where libraries are renamed and deleted. Below it, the same page shows the open library: its tracks and playlists, where it lives (the browser it runs in, the shared library it syncs with, where it's backed up), its file types, and the storage all libraries use together.\u003c/p>\n\u003cp>If something is playing, switching asks first, because it stops playback. Each library remembers its own place: the playlist you had open and where the session had got to.\u003c/p>\n\u003cp>Two windows can have two different libraries open at the same time. A new window opens the library chosen most recently.\u003c/p>\n\u003ch3>Keeping a library in a folder (Chrome and Edge on a computer)\u003c/h3>\n\u003cp>Normally a library lives inside the browser, where the browser can erase it (see 'Reliability'), so most people also keep a backup folder: two copies of everything, three counting the music you imported from. In Chrome or Edge on a computer, a library can live in an ordinary folder instead: Settings → \u003cstrong>Library\u003c/strong> → \u003cstrong>Kept in\u003c/strong> → \u003cstrong>Keep it in a folder…\u003c/strong>\u003c/p>\n\u003cul>\n\u003cli>\u003cstrong>You choose where,\u003c/strong> for example in Music. 37 Player makes a folder named after the library there and copies the whole library into it. If you've already made an empty folder for this library, choose that folder: 37 Player asks whether to use it as it is. That needs as much free space as the library takes, for a while.\u003c/li>\n\u003cli>\u003cstrong>Then it runs from the folder.\u003c/strong> The browser's copy is no longer used, and 37 Player offers to remove it to free the space.\u003c/li>\n\u003cli>\u003cstrong>The folder is the library,\u003c/strong> not a backup of it, so automatic backups stop and the button at the top says \u003cstrong>In a folder\u003c/strong>. Back the folder up as you back up the rest of the computer, or export a .37p now and then. Please don't rename, move, add or remove files in it yourself.\u003c/li>\n\u003cli>\u003cstrong>Readable names:\u003c/strong> the recordings are in \"music\", in a folder for each artist, then each album, named after their details, such as \"music/Tharpa/Prayers for Meditation/01 Liberating Prayer.mp3\". \"playlists\" has each playlist as an .m3u8 file that other players (VLC, foobar2000, Music.app) can open; 37 Player keeps them up to date but doesn't use them itself. You can play them or copy them elsewhere with any other program. Edit a track's details in 37 Player and its file is renamed to match (Undo puts the name back). Playlists, artwork and settings are in the folder \"37 Player's own files\". A folder library made before version 1.4.174 has its recordings moved into the readable names by itself, the first time it's opened.\u003c/li>\n\u003cli>\u003cstrong>Permission:\u003c/strong> an installed 37 Player keeps permission to the folder. In a browser tab, Chrome may ask again after a restart: choose \u003cstrong>Open it\u003c/strong>.\u003c/li>\n\u003cli>\u003cstrong>Moving the folder:\u003c/strong> move the whole folder, then open 37 Player and choose \u003cstrong>Find the folder…\u003c/strong>. It knows its own folder again by the file \"37 Player library.json\" inside it.\u003c/li>\n\u003cli>\u003cstrong>A library folder that's already there\u003c/strong> (the browser's data was cleared, or the folder was copied from another computer, by USB stick, say): Settings → \u003cstrong>Library\u003c/strong> → \u003cstrong>All libraries\u003c/strong> → \u003cstrong>Find a library folder…\u003c/strong> puts it on your list, running from where it is. Opening it changes nothing in it. \u003cstrong>Keep it in a folder…\u003c/strong> never copies a library over a folder that already holds one; it offers to open that one instead.\u003c/li>\n\u003cli>\u003cstrong>Every browser's first library counts as the same library,\u003c/strong> so a folder made from one opens here only in place of this browser's first library, and only while that's still empty (just the starter track). If yours already has tracks or playlists, the folder isn't opened and nothing changes.\u003c/li>\n\u003c/ul>\n\u003ch3>In the desktop app\u003c/h3>\n\u003cp>The desktop app keeps every library in a folder of its own on the computer, where no cleaning program can erase it.\u003c/p>\n\u003cul>\n\u003cli>\u003cstrong>Where:\u003c/strong> the first time, it asks where your libraries should live, suggesting \u003cstrong>Music/37 Player Libraries\u003c/strong>. Choose another place if you like; each library gets its own folder inside it, with the same readable names as above.\u003c/li>\n\u003cli>\u003cstrong>Its name:\u003c/strong> the folder takes the library's name (rename the library and the folder follows the next time 37 Player starts). Settings → \u003cstrong>Library\u003c/strong> shows where it is, with \u003cstrong>Show\u003c/strong> to open it.\u003c/li>\n\u003cli>\u003cstrong>Backups:\u003c/strong> 37 Player doesn't make its own here, and doesn't ask: the folder is ordinary files, so back it up with the rest of the computer, or share the library.\u003c/li>\n\u003cli>\u003cstrong>Found again:\u003c/strong> if the app's own settings are ever lost (a reinstall, a cleaning program), it looks in that place and finds its libraries by their \"37 Player library.json\". A library kept anywhere else: Settings → \u003cstrong>Library\u003c/strong> → \u003cstrong>All libraries\u003c/strong> → \u003cstrong>Find a library folder…\u003c/strong>. If a library's folder can't be found (a drive that isn't plugged in, a folder moved), the app asks where it is rather than starting it again empty.\u003c/li>\n\u003c/ul>\n\u003cp>\u003cstrong>Importing a folder\u003c/strong> (Import / Export → \u003cstrong>Choose a folder…\u003c/strong>) asks how to take its recordings:\u003c/p>\n\u003cul>\n\u003cli>\u003cstrong>Use in place:\u003c/strong> they stay where they are (your Music folder, say, or Music.app's), and the library only points to them. 37 Player never changes, moves or deletes those files. Your edits (names, artists, artwork, cuts) are kept in the library; exports, .37p files and shared libraries get copies with your edits. Deleting such a track from the library leaves its file alone.\u003c/li>\n\u003cli>\u003cstrong>Copy into the library:\u003c/strong> the library keeps its own copies; the originals stay as they are.\u003c/li>\n\u003cli>\u003cstrong>Move into the library:\u003c/strong> as Copy, then each original is deleted once its copy is checked.\u003c/li>\n\u003c/ul>\n\u003cp>Files dropped on 37 Player or picked one by one are always copied. A folder on another drive (a USB stick, an external disk) suggests Copy, because tracks used in place can't play while their drive is unplugged: they say \"on a drive that isn't connected\" and come back when it is.\u003c/p>\n\u003cp>Settings → \u003cstrong>Library\u003c/strong> lists the folders used in place, with \u003cstrong>Look for new files\u003c/strong> (for recordings added to the folder since), \u003cstrong>Copy into the library\u003c/strong> and \u003cstrong>Move into the library\u003c/strong> (to make them the library's own after all), and \u003cstrong>Find this folder…\u003c/strong> if one has moved. The library's playlists in \"playlists\" point to recordings used in place where they are, so other players find them too.\u003c/p>\n\u003ch3>Merging a backup or export into a library\u003c/h3>\n\u003cp>Importing a .37p (a backup or a library export) into a library that already has things offers \u003cstrong>Merge\u003c/strong> or \u003cstrong>Replace\u003c/strong>. Merging adds what's new. If some of the file's tracks are already here with other details (a different name, artist, album or number) or another copy of the recording, 37 Player lists them first and asks: \u003cstrong>Keep this library's\u003c/strong> (the usual choice: an older file shouldn't undo newer changes) or \u003cstrong>Take the file's\u003c/strong>.\u003c/p>\n\u003ch3>Very big recordings\u003c/h3>\n\u003cp>On a Mac, iPad or iPhone (Safari's engine), changing the details of a recording over 256 MB changes them in the library, and in a folder library the file's name, but not the details stored inside the file itself. Rewriting a file that big there means reading all of it into memory, and in a shared library sending all of it again. Exports always carry the current details. Other programs that open the stored file directly see the details it had when it was imported.\u003c/p>\n\u003ch3>Copying between libraries\u003c/h3>\n\u003cp>To copy tracks or playlists from the open library into another one on this device, use 'Import / Export' → \u003cstrong>Copy to another library\u003c/strong> (it's there once you have more than one library). Choose what to copy, as for Export (the selected tracks, a playlist, a folder, an album, all playlists or the whole library), then the library to copy into. That list starts at \u003cstrong>Choose a library…\u003c/strong> every time, so nothing goes to the wrong one out of habit.\u003c/p>\n\u003cul>\n\u003cli>\u003cstrong>Playlists go into folders of the same names\u003c/strong> in the other library, made there if they're missing.\u003c/li>\n\u003cli>\u003cstrong>Tracks the other library already has are left as they are there.\u003c/strong> Tracks keep their identity, so copying the same thing again doesn't make duplicates, and a playlist copied before is brought up to date.\u003c/li>\n\u003cli>\u003cstrong>A different playlist with the same name\u003c/strong> in that folder is kept, and the copy gets the source library's name added, such as \"Acoustic (My library)\".\u003c/li>\n\u003cli>\u003cstrong>Nothing stays linked:\u003c/strong> later changes on either side stay where they're made.\u003c/li>\n\u003cli>The copy appears at once in a window that has the other library open, and otherwise the next time it's opened. There it's one step that \u003cstrong>Undo\u003c/strong> can take back, and in a shared library it's sent to the other devices like anything else you add.\u003c/li>\n\u003cli>While copying, closing or refreshing the window asks first, and switching libraries says the copy would stop. A copy that's stopped leaves nothing half-copied behind.\u003c/li>\n\u003c/ul>\n\u003ch3>What belongs to each library, and what to the device\u003c/h3>\n\u003cul>\n\u003cli>\u003cstrong>Each library has its own:\u003c/strong> tracks and playlists, the PIN, the backup folder, the File format settings, and its shared library, if any, with What's on this device, Review changes and Receive updates only.\u003c/li>\n\u003cli>\u003cstrong>The device keeps for all of them:\u003c/strong> the language, display settings, the screen-off playback settings, this device's name for shared libraries, and the converter.\u003c/li>\n\u003c/ul>\n\u003ch3>Syncing\u003c/h3>\n\u003cp>Only the open library syncs. A shared library that isn't open catches up as soon as you open it, with whatever changed meanwhile, so nothing is missed.\u003c/p>\n\u003ch3>Deleting\u003c/h3>\n\u003cp>Settings → \u003cstrong>Library\u003c/strong> → \u003cstrong>All libraries\u003c/strong> → \u003cstrong>Delete…\u003c/strong> removes a library's tracks, playlists and settings from this device. If it keeps a backup folder (Chrome or Edge on a computer), the dialog offers to delete that backup too: only the files 37 Player put there, and only while the folder still holds that library's backup. Backup files the browser saved (Firefox, Safari, phones) can't be reached, so delete them yourself if you no longer want them; their names include the library's name, such as lib-native-backup-full-skbc-2026-10-22-1530.37p (.zip before version 1.4.092; backups made before version 1.4.051 don't include the name). The shared library it may be joined to isn't touched either: other devices keep it, and this device can join it again later. To keep a copy first, open the library and make a backup or a Portable export.\u003c/p>\n\u003cp>A library kept in a folder is only forgotten by this device: the folder and everything in it stay on the computer, to delete yourself if you don't need it.\u003c/p>\n\u003cp>The open library can't be deleted: switch to another one first.\u003c/p>\n\u003ch3>Space\u003c/h3>\n\u003cp>All libraries share the browser's storage on this device, except those kept in a folder, which take space on the disk like any other files. A recording in two libraries is stored twice.\u003c/p>"
+    "bodyHtml": "\u003cp>One device can hold more than one library: a Center's library and your own, say, or your Dharma recordings and everything else. Each library has its own tracks, playlists, backups, PIN and sharing. Only one is open at a time, and switching never loses anything: the others are simply put aside until you open them again.\u003c/p>\n\u003ch3>Making one\u003c/h3>\n\u003cp>In Settings → \u003cstrong>Library\u003c/strong>, open \u003cstrong>All libraries\u003c/strong> and choose \u003cstrong>New library…\u003c/strong>, give it a name, and choose how it starts:\u003c/p>\n\u003cul>\n\u003cli>\u003cstrong>Start empty:\u003c/strong> a new, empty library. Fill it as usual, with Import / Export.\u003c/li>\n\u003cli>\u003cstrong>Join a shared library:\u003c/strong> enter the join code and this device's name, and the new library joins straight away. Leave the name empty and it takes the shared library's own name, such as \"IKRC Library\".\u003c/li>\n\u003c/ul>\n\u003cp>Joining a shared library from a library that already has tracks asks first whether to make a new library for it instead. That's usually the right choice: joining with an existing library would add all its tracks and playlists to the shared library, for everyone in it to see.\u003c/p>\n\u003ch3>Switching\u003c/h3>\n\u003cp>Once there's more than one library, the open library's name is shown in the top bar, so it's clear which one a session is about to play from. Click it to see the others and switch. Settings → \u003cstrong>Library\u003c/strong> → \u003cstrong>All libraries\u003c/strong> can switch too, and it's where libraries are renamed and deleted. Below it, the same page shows the open library: its tracks and playlists, where it lives (the browser it runs in, the shared library it syncs with, where it's backed up), its file types, and the storage all libraries use together.\u003c/p>\n\u003cp>If something is playing, switching asks first, because it stops playback. Each library remembers its own place: the playlist you had open and where the session had got to.\u003c/p>\n\u003cp>Two windows can have two different libraries open at the same time. A new window opens the library chosen most recently.\u003c/p>\n\u003ch3>Keeping a library in a folder (Chrome and Edge on a computer)\u003c/h3>\n\u003cp>Normally a library lives inside the browser, where the browser can erase it (see 'Reliability'), so most people also keep a backup folder: two copies of everything, three counting the music you imported from. In Chrome or Edge on a computer, a library can live in an ordinary folder instead: Settings → \u003cstrong>Library\u003c/strong> → \u003cstrong>Kept in\u003c/strong> → \u003cstrong>Keep it in a folder…\u003c/strong>\u003c/p>\n\u003cul>\n\u003cli>\u003cstrong>You choose where,\u003c/strong> for example in Music. 37 Player makes a folder named after the library there and copies the whole library into it. If you've already made an empty folder for this library, choose that folder: 37 Player asks whether to use it as it is. That needs as much free space as the library takes, for a while.\u003c/li>\n\u003cli>\u003cstrong>Then it runs from the folder.\u003c/strong> The browser's copy is no longer used, and 37 Player offers to remove it to free the space.\u003c/li>\n\u003cli>\u003cstrong>The folder is the library,\u003c/strong> not a backup of it, so automatic backups stop and the button at the top says \u003cstrong>In a folder\u003c/strong>. Back the folder up as you back up the rest of the computer, or export a .37p now and then. Please don't rename, move, add or remove files in it yourself.\u003c/li>\n\u003cli>\u003cstrong>Readable names:\u003c/strong> the recordings are in \"music\", in a folder for each artist, then each album, named after their details, such as \"music/Tharpa/Prayers for Meditation/01 Liberating Prayer.mp3\". \"playlists\" has each playlist as an .m3u8 file that other players (VLC, foobar2000, Music.app) can open; 37 Player keeps them up to date but doesn't use them itself. You can play them or copy them elsewhere with any other program. Edit a track's details in 37 Player and its file is renamed to match (Undo puts the name back). Playlists, artwork and settings are in the folder \"37 Player's own files\". A folder library made before version 1.4.174 has its recordings moved into the readable names by itself, the first time it's opened.\u003c/li>\n\u003cli>\u003cstrong>Permission:\u003c/strong> an installed 37 Player keeps permission to the folder. In a browser tab, Chrome may ask again after a restart: choose \u003cstrong>Open it\u003c/strong>.\u003c/li>\n\u003cli>\u003cstrong>Moving the folder:\u003c/strong> move the whole folder, then open 37 Player and choose \u003cstrong>Find the folder…\u003c/strong>. It knows its own folder again by the file \"37 Player library.json\" inside it.\u003c/li>\n\u003cli>\u003cstrong>A library folder that's already there\u003c/strong> (the browser's data was cleared, or the folder was copied from another computer, by USB stick, say): Settings → \u003cstrong>Library\u003c/strong> → \u003cstrong>All libraries\u003c/strong> → \u003cstrong>Find a library folder…\u003c/strong> puts it on your list, running from where it is. Opening it changes nothing in it. \u003cstrong>Keep it in a folder…\u003c/strong> never copies a library over a folder that already holds one; it offers to open that one instead.\u003c/li>\n\u003cli>\u003cstrong>Every browser's first library counts as the same library,\u003c/strong> so a folder made from one opens here only in place of this browser's first library, and only while that's still empty (just the starter track). If yours already has tracks or playlists, the folder isn't opened and nothing changes.\u003c/li>\n\u003cli>\u003cstrong>A copied folder is still joined\u003c/strong> to its shared library, so nothing is sent or received again. The first time it's opened by another copy of 37 Player (on another device, or in another browser), it asks whether this is another device before it syncs. If it is, give it a name of its own, so the devices' messages, such as \"waiting for … to send it\", don't mix the two up.\u003c/li>\n\u003c/ul>\n\u003ch3>In the desktop app\u003c/h3>\n\u003cp>The desktop app keeps every library in a folder of its own on the computer, where no cleaning program can erase it.\u003c/p>\n\u003cul>\n\u003cli>\u003cstrong>Where:\u003c/strong> the first time, it asks where your libraries should live, suggesting \u003cstrong>Music/37 Player Libraries\u003c/strong>. Choose another place if you like; each library gets its own folder inside it, with the same readable names as above.\u003c/li>\n\u003cli>\u003cstrong>Its name:\u003c/strong> the folder takes the library's name (rename the library and the folder follows the next time 37 Player starts). Settings → \u003cstrong>Library\u003c/strong> shows where it is, with \u003cstrong>Show\u003c/strong> to open it.\u003c/li>\n\u003cli>\u003cstrong>Backups:\u003c/strong> 37 Player doesn't make its own here, and doesn't ask: the folder is ordinary files, so back it up with the rest of the computer, or share the library.\u003c/li>\n\u003cli>\u003cstrong>Found again:\u003c/strong> if the app's own settings are ever lost (a reinstall, a cleaning program), it looks in that place and finds its libraries by their \"37 Player library.json\". A library kept anywhere else: Settings → \u003cstrong>Library\u003c/strong> → \u003cstrong>All libraries\u003c/strong> → \u003cstrong>Find a library folder…\u003c/strong>. If a library's folder can't be found (a drive that isn't plugged in, a folder moved), the app asks where it is rather than starting it again empty.\u003c/li>\n\u003c/ul>\n\u003cp>\u003cstrong>Importing a folder\u003c/strong> (Import / Export → \u003cstrong>Choose a folder…\u003c/strong>) asks how to take its recordings:\u003c/p>\n\u003cul>\n\u003cli>\u003cstrong>Use in place:\u003c/strong> they stay where they are (your Music folder, say, or Music.app's), and the library only points to them. 37 Player never changes, moves or deletes those files. Your edits (names, artists, artwork, cuts) are kept in the library; exports, .37p files and shared libraries get copies with your edits. Deleting such a track from the library leaves its file alone.\u003c/li>\n\u003cli>\u003cstrong>Copy into the library:\u003c/strong> the library keeps its own copies; the originals stay as they are.\u003c/li>\n\u003cli>\u003cstrong>Move into the library:\u003c/strong> as Copy, then each original is deleted once its copy is checked.\u003c/li>\n\u003c/ul>\n\u003cp>Files dropped on 37 Player or picked one by one are always copied. A folder on another drive (a USB stick, an external disk) suggests Copy, because tracks used in place can't play while their drive is unplugged: they say \"on a drive that isn't connected\" and come back when it is.\u003c/p>\n\u003cp>Settings → \u003cstrong>Library\u003c/strong> lists the folders used in place, with \u003cstrong>Look for new files\u003c/strong> (for recordings added to the folder since), \u003cstrong>Copy into the library\u003c/strong> and \u003cstrong>Move into the library\u003c/strong> (to make them the library's own after all), and \u003cstrong>Find this folder…\u003c/strong> if one has moved. The library's playlists in \"playlists\" point to recordings used in place where they are, so other players find them too.\u003c/p>\n\u003ch3>Merging a backup or export into a library\u003c/h3>\n\u003cp>Importing a .37p (a backup or a library export) into a library that already has things offers \u003cstrong>Merge\u003c/strong> or \u003cstrong>Replace\u003c/strong>. Merging adds what's new. If some of the file's tracks are already here with other details (a different name, artist, album or number) or another copy of the recording, 37 Player lists them first and asks: \u003cstrong>Keep this library's\u003c/strong> (the usual choice: an older file shouldn't undo newer changes) or \u003cstrong>Take the file's\u003c/strong>.\u003c/p>\n\u003ch3>Very big recordings\u003c/h3>\n\u003cp>On a Mac, iPad or iPhone (Safari's engine), changing the details of a recording over 256 MB changes them in the library, and in a folder library the file's name, but not the details stored inside the file itself. Rewriting a file that big there means reading all of it into memory, and in a shared library sending all of it again. Exports always carry the current details. Other programs that open the stored file directly see the details it had when it was imported.\u003c/p>\n\u003ch3>Copying between libraries\u003c/h3>\n\u003cp>To copy tracks or playlists from the open library into another one on this device, use 'Import / Export' → \u003cstrong>Copy to another library\u003c/strong> (it's there once you have more than one library). Choose what to copy, as for Export (the selected tracks, a playlist, a folder, an album, all playlists or the whole library), then the library to copy into. That list starts at \u003cstrong>Choose a library…\u003c/strong> every time, so nothing goes to the wrong one out of habit.\u003c/p>\n\u003cul>\n\u003cli>\u003cstrong>Playlists go into folders of the same names\u003c/strong> in the other library, made there if they're missing.\u003c/li>\n\u003cli>\u003cstrong>Tracks the other library already has are left as they are there.\u003c/strong> Tracks keep their identity, so copying the same thing again doesn't make duplicates, and a playlist copied before is brought up to date.\u003c/li>\n\u003cli>\u003cstrong>A different playlist with the same name\u003c/strong> in that folder is kept, and the copy gets the source library's name added, such as \"Acoustic (My library)\".\u003c/li>\n\u003cli>\u003cstrong>Nothing stays linked:\u003c/strong> later changes on either side stay where they're made.\u003c/li>\n\u003cli>The copy appears at once in a window that has the other library open, and otherwise the next time it's opened. There it's one step that \u003cstrong>Undo\u003c/strong> can take back, and in a shared library it's sent to the other devices like anything else you add.\u003c/li>\n\u003cli>While copying, closing or refreshing the window asks first, and switching libraries says the copy would stop. A copy that's stopped leaves nothing half-copied behind.\u003c/li>\n\u003c/ul>\n\u003ch3>What belongs to each library, and what to the device\u003c/h3>\n\u003cul>\n\u003cli>\u003cstrong>Each library has its own:\u003c/strong> tracks and playlists, the PIN, the backup folder, the File format settings, and its shared library, if any, with What's on this device, Review changes and Receive updates only.\u003c/li>\n\u003cli>\u003cstrong>The device keeps for all of them:\u003c/strong> the language, display settings, the screen-off playback settings, this device's name for shared libraries, and the converter.\u003c/li>\n\u003c/ul>\n\u003ch3>Syncing\u003c/h3>\n\u003cp>Only the open library syncs. A shared library that isn't open catches up as soon as you open it, with whatever changed meanwhile, so nothing is missed.\u003c/p>\n\u003ch3>Deleting\u003c/h3>\n\u003cp>Settings → \u003cstrong>Library\u003c/strong> → \u003cstrong>All libraries\u003c/strong> → \u003cstrong>Delete…\u003c/strong> removes a library's tracks, playlists and settings from this device. If it keeps a backup folder (Chrome or Edge on a computer), the dialog offers to delete that backup too: only the files 37 Player put there, and only while the folder still holds that library's backup. Backup files the browser saved (Firefox, Safari, phones) can't be reached, so delete them yourself if you no longer want them; their names include the library's name, such as lib-native-backup-full-skbc-2026-10-22-1530.37p (.zip before version 1.4.092; backups made before version 1.4.051 don't include the name). The shared library it may be joined to isn't touched either: other devices keep it, and this device can join it again later. To keep a copy first, open the library and make a backup or a Portable export.\u003c/p>\n\u003cp>A library kept in a folder is only forgotten by this device: the folder and everything in it stay on the computer, to delete yourself if you don't need it.\u003c/p>\n\u003cp>The open library can't be deleted: switch to another one first.\u003c/p>\n\u003ch3>Space\u003c/h3>\n\u003cp>All libraries share the browser's storage on this device, except those kept in a folder, which take space on the disk like any other files. A recording in two libraries is stored twice.\u003c/p>"
   },
   {
     "id": "history-and-undo",
@@ -44113,6 +44167,8 @@ async function runSharedSync(opts){
   opts = opts || {};
   if(!sharedConfig()) return;
   if(newerVersionElsewhere) return; // a newer 37 Player in another window does the syncing (see below)
+  // A copy on another device: not until it's named (askSharedDeviceCopy).
+  if(sharedDeviceUnconfirmed()){ if(opts.force) askSharedDeviceCopy(); renderSharedStatusInto(); return; }
   if(opts.force){ sharedDriveFullAt = 0; sharedHalted = false; sharedTooBig.clear(); sharedTooBigNames.clear(); sharedStoreBackoff = 0; sharedFetchErrorsSaid.clear(); try{ localStorage.removeItem(DOWNLOAD_CRASHED_KEY); }catch(err){} }
   if(sharedHalted) return;
   // The review screen is comparing; nothing may change under it.
@@ -44556,6 +44612,7 @@ async function sharedSendInPieces(cfg, j, body, onProgress){
   }
 }
 function sharedUploadInBackground(cfg){
+  if(sharedDeviceUnconfirmed()) return;
   if(sharedUploading){ sharedUploadAgain = true; return; }
   return sharedFilesLock("up", ()=> sharedUploadInBackgroundHere(cfg));
 }
@@ -44652,6 +44709,7 @@ let sharedRetryTimer = null;
 // something new was taken): another pass follows straight after.
 let sharedDownloadAgain = false, sharedUploadAgain = false;
 function sharedDownloadPending(cfg){
+  if(sharedDeviceUnconfirmed()) return;
   if(sharedDownloading){ sharedDownloadAgain = true; return; }
   return sharedFilesLock("down", ()=> sharedDownloadPendingHere(cfg));
 }
@@ -45081,8 +45139,8 @@ async function joinSharedLibrary(url, code, deviceName, opts){
 }
 async function joinSharedLibraryHere(url, code, deviceName, opts){
   opts = opts || {};
-  const cfg = opts.cfg ? Object.assign({}, opts.cfg, {deviceName: (deviceName || "").trim() || t("sharedThisDevice"), receiveOnly: false})
-    : {url: url.trim() || SHARED_DEFAULT_SERVER, code: code.trim(), deviceName: deviceName.trim() || t("sharedThisDevice"), receiveOnly: false};
+  const cfg = opts.cfg ? Object.assign({}, opts.cfg, {deviceName: (deviceName || "").trim() || t("sharedThisDevice"), receiveOnly: false, installs: [installId()]})
+    : {url: url.trim() || SHARED_DEFAULT_SERVER, code: code.trim(), deviceName: deviceName.trim() || t("sharedThisDevice"), receiveOnly: false, installs: [installId()]};
   let remote;
   try{ remote = await sharedGetState(cfg); }
   catch(err){ return {error: err && err.rejected ? sharedRejectedText(cfg) : t("sharedUnreachable")}; }
@@ -45172,6 +45230,75 @@ let leavingOnPurpose = false; // a library switch already asked (switchLibrary)
 window.addEventListener("beforeunload", (e)=>{
   if(!leavingOnPurpose && sharedUploading && sharedStatus.transfer && sharedStatus.transfer.kind === "up"){ e.preventDefault(); e.returnValue = ""; }
 });
+/* ---- A copied library on another device (2.2.021; the plan's item 3) ----
+   A library kept as files carries its shared library's join with it, device
+   name included: a folder copied to another computer (a USB stick) and
+   opened there with Find a library folder… is still joined, which is the
+   point (nothing is sent or received again). But both devices would then
+   sync under one name, and the name is how devices tell each other apart:
+   "waiting for X to send it", the copies kept when a playlist was changed on
+   two at once, the devices' logs, and a device recovering a file the shared
+   library was waiting for from itself (sharedDownloadPending). So each
+   install of 37 Player has an ID of its own (localStorage "37player.install",
+   also in the desktop app's device.json; never in a library), and the join
+   lists the installs it has been confirmed on (cfg.installs). Opened by an
+   install not on that list, the library doesn't sync until the person says
+   whether this is another device (it gets a name of its own) or the same
+   one (another browser or site on the same computer, a new install, the
+   app's data cleared: this install joins the list). A join from before
+   2.2.021 has no list: the install that opens it first is taken as its own. */
+const INSTALL_ID_KEY = "37player.install";
+let installIdCache = null;
+function installId(){
+  if(installIdCache) return installIdCache;
+  try{ installIdCache = localStorage.getItem(INSTALL_ID_KEY); }catch(err){}
+  if(!installIdCache){ installIdCache = uid(); try{ localStorage.setItem(INSTALL_ID_KEY, installIdCache); }catch(err){} }
+  return installIdCache;
+}
+function sharedDeviceUnconfirmed(){
+  const cfg = sharedConfig();
+  return !!cfg && Array.isArray(cfg.installs) && cfg.installs.length > 0 && !cfg.installs.includes(installId());
+}
+let sharedDeviceAsking = false;
+async function askSharedDeviceCopy(){
+  if(sharedDeviceAsking || !sharedDeviceUnconfirmed()) return;
+  sharedDeviceAsking = true;
+  try{
+    // After whatever is being asked already (the start's own questions).
+    while(backdrop.classList.contains("show")) await new Promise(r=> setTimeout(r, 700));
+    if(!sharedDeviceUnconfirmed()) return;
+    const old = (sharedConfig().deviceName || "").trim();
+    const last = ((root.settings && root.settings.sharedLastDevice) || "").trim();
+    let name = last && last.toLowerCase() !== old.toLowerCase() ? last : "", note = "";
+    for(;;){
+      const cfg = sharedConfig();
+      const asked = askChoice(t("sdCopyTitle"), `<p>${escapeHtmlText(t("sdCopyBody", {lib: cfg.libraryName || sharedStatus.libraryName || "", device: old}))}</p>
+        <label for="sdName" class="join-field">${escapeHtmlText(t("sharedDeviceLabel"))}</label><input type="text" id="sdName" maxlength="60">`
+        + (note ? `<p class="settings-note" style="color:var(--rust-bright);">${escapeHtmlText(note)}</p>` : ""),
+        [{label: t("sdNewBtn"), value: "new", kind: "primary"}, {label: t("sdSameBtn", {device: old}), value: "same"}]);
+      const input = document.getElementById("sdName");
+      if(input){ input.value = name; input.addEventListener("input", ()=>{ name = input.value; }); setTimeout(()=> input.focus(), 50); }
+      const c = await asked;
+      if(!c) return; // closed: asked again at Sync now, or the next start
+      const now = sharedConfig();
+      if(!now || !sharedDeviceUnconfirmed()) return;
+      if(c === "same"){
+        now.installs = now.installs.concat([installId()]).slice(-10);
+        sharedLog("opened by another install of 37 Player on “" + old + "”: confirmed as the same device");
+        break;
+      }
+      const nm = (name || "").trim();
+      if(!nm || nm.toLowerCase() === old.toLowerCase()){ note = t("sdNameNeeded", {device: old}); continue; }
+      now.deviceName = nm; now.installs = [installId()];
+      root.settings.sharedLastDevice = nm;
+      sharedLog("a copy of the library from “" + old + "”: this device is now “" + nm + "”");
+      break;
+    }
+    await saveState();
+    renderSharedStatusInto();
+    runSharedSync({force: true});
+  } finally { sharedDeviceAsking = false; }
+}
 // Once per page: later calls (joining from setup, rejoining) only sync soon.
 let sharedSyncInited = false;
 function sharedSyncInit(){
@@ -45179,6 +45306,9 @@ function sharedSyncInit(){
   if(sharedSyncInited){ sharedLoadCovered().then(updateBackupIndicator); scheduleSharedSync(1500); return; }
   sharedSyncInited = true;
   sharedLog("— 37 Player opened (" + (document.querySelector('meta[name="app-version"]') || {}).content + ") —");
+  const c0 = sharedConfig();
+  if(!Array.isArray(c0.installs) || !c0.installs.length){ c0.installs = [installId()]; saveState(); }
+  else if(sharedDeviceUnconfirmed()){ sharedLog("opened by an install of 37 Player it wasn't joined on (a copy?): not syncing until this device is named"); setTimeout(askSharedDeviceCopy, 2500); }
   sharedNoteDownloadCrash();
   // A line every 10 minutes, so a gap shows when the app stopped.
   setInterval(()=>{ if(sharedConfig()) sharedLog("still running" + (sharedStatus.transfer ? ", " + sharedStatus.transfer.kind + " " + sharedStatus.transfer.done + "/" + sharedStatus.transfer.total : "")); }, 10 * 60 * 1000);
@@ -46614,6 +46744,7 @@ function renderSharedStatusInto(){
   const busy = !!sharedStatus.transfer || sharedUploading || sharedDownloading || pendN - arriving > 0;
   let s;
   if(sharedStatus.state === "syncing") s = t("sharedChecking");
+  else if(sharedDeviceUnconfirmed()) s = t("sdHeldStatus");
   else if(sharedStatus.state === "error") s = sharedStatus.message;
   else if(sharedStatus.lastSyncAt) s = t("sharedLastChecked", {time: new Date(sharedStatus.lastSyncAt).toLocaleTimeString([], {hour: "numeric", minute: "2-digit"})}) + " "
     + (busy ? t("sharedStateUpdating") : arriving ? t(arriving === 1 ? "sharedStateWaitingOne" : "sharedStateWaiting", {n: arriving}) : t("sharedStateUpToDate"));

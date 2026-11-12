@@ -31,6 +31,7 @@ Normally a library lives inside the browser, where the browser can erase it (see
 - **Moving the folder:** move the whole folder, then open 37 Player and choose **Find the folder…**. It knows its own folder again by the file "37 Player library.json" inside it.
 - **A library folder that's already there** (the browser's data was cleared, or the folder was copied from another computer, by USB stick, say): Settings → **Library** → **All libraries** → **Find a library folder…** puts it on your list, running from where it is. Opening it changes nothing in it. **Keep it in a folder…** never copies a library over a folder that already holds one; it offers to open that one instead.
 - **Every browser's first library counts as the same library,** so a folder made from one opens here only in place of this browser's first library, and only while that's still empty (just the starter track). If yours already has tracks or playlists, the folder isn't opened and nothing changes.
+- **A copied folder is still joined** to its shared library, so nothing is sent or received again. The first time it's opened by another copy of 37 Player (on another device, or in another browser), it asks whether this is another device before it syncs. If it is, give it a name of its own, so the devices' messages, such as "waiting for … to send it", don't mix the two up.
 
 ### In the desktop app
 
