@@ -168,3 +168,10 @@ Worth looking again only if Apple fixes the uploads; a run of
 `tests/cloudkit/` shows it in a minute. The container `iCloud.com.player37`
 and its development token stay; the test's zone can be deleted from the
 page.
+
+## MEGA: dropped (Gen Rinzin, 12 Nov 2026)
+
+Hardly anyone has a MEGA account, so using it means signing up for one,
+and a second Google account just for the audio does the same with 15 GB
+free and Drive's safer sign-in. MEGA's extra 5 GB isn't worth a password
+typed into 37 Player and a kept session that unlocks the whole account.
