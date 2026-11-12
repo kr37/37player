@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.2.017">
+<meta name="app-version" content="2.2.018">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -43971,6 +43971,7 @@ async function sharedSyncOnce(opts){
   if(!cfg || libraryUnreadable) return;
   sharedSetStatus({state: "syncing", message: ""});
   await sharedRefreshPending();
+  await sharedFindAbsentAudio();
   // "Review changes before syncing": only look. Nothing changes here or in
   // the shared library until the review's Synchronize. Files already agreed
   // on still travel.
@@ -44050,6 +44051,7 @@ async function sharedSyncOnce(opts){
         }
       }
       await sharedSaveBase({version, doc: agreed || merged});
+      await sharedQueueAbsentAudio(agreed || merged, !!(opts.force || opts.useShared));
       // What the shared library now holds is this library, as it is now
       // (once its audio has gone up too: see sharedNoteCovered). A device
       // that only receives is in step only if it has changed nothing.
@@ -44435,8 +44437,41 @@ async function sharedUploadInBackgroundHere(cfg){
 // the revision AND the size agree. (Before revisions existed, Standardize and
 // Replace audio kept the old name, so two devices can hold different audio
 // under the same one.)
+// Tracks in the library whose audio isn't stored on this device (2.2.018).
+// "The same recording" used to compare only revision and size, so a track
+// whose audio never arrived counted as already here: leaving a shared
+// library partway through receiving and joining again said "Downloads
+// nothing" with 438 tracks silent, and would then have said In sync (Gen
+// Rinzin's test, 11 Nov 2026). A file used in place whose drive is away
+// still has its record, so it isn't counted: nothing is fetched for those.
+let sharedAudioAbsent = new Set(), sharedAudioAbsentBefore = new Set();
+async function sharedFindAbsentAudio(){
+  sharedAudioAbsentBefore = sharedAudioAbsent;
+  try{
+    const have = new Set(await storedAudioIds());
+    sharedAudioAbsent = new Set(root.library.filter(tr=> !have.has(tr.id)).map(tr=> tr.id)); // (whatever its revision: a first import has none)
+  }catch(err){ sharedAudioAbsent = new Set(); }
+}
+// Puts those on the list of files to fetch, where the shared library has the
+// same recording. In an ordinary round only ones already absent the round
+// before (an import stores a track's audio a moment after the track); at
+// once when joining or on Sync now (sure).
+async function sharedQueueAbsentAudio(doc, sure){
+  if(!sharedAudioAbsent.size || !doc || !doc.tracks) return;
+  const pending = await sharedLoadPending();
+  let n = 0;
+  doc.tracks.forEach(dt=>{
+    if(!sharedAudioAbsent.has(dt.id) || pending.audio[dt.id] !== undefined) return;
+    if(!sure && !sharedAudioAbsentBefore.has(dt.id)) return;
+    const lt = findLibraryTrack(dt.id);
+    if(!lt || sharedRev(lt.audioRev) !== sharedRev(dt.audioRev)) return;
+    pending.audio[dt.id] = sharedRev(dt.audioRev); n++;
+  });
+  if(n){ await sharedSavePending(); sharedLog(n + " tracks here have no audio: fetching them from the shared library"); }
+}
 function sharedSameAudio(localTrack, docTrack){
   if(!localTrack || !docTrack) return false;
+  if(sharedAudioAbsent.has(localTrack.id)) return false;
   if(sharedRev(localTrack.audioRev) !== sharedRev(docTrack.audioRev)) return false;
   return localTrack.fileSize == null || docTrack.fileSize == null || localTrack.fileSize === docTrack.fileSize;
 }
@@ -44893,6 +44928,7 @@ async function joinSharedLibraryHere(url, code, deviceName, opts){
   const hasShared = remote.version > 0 && !sharedDocEmpty(remote.doc);
   let useShared = false;
   if(hasShared && (localCount || localHasPlaylists)){
+    await sharedFindAbsentAudio(); // (tracks here with no audio count as needing it: the sizes below, and what's fetched)
     const p = sharedJoinPreview(remote.doc), z = sharedJoinSizes(remote.doc);
     // Each choice says what it removes, sends and downloads, under its name.
     const named = (deviceName || "").trim();
