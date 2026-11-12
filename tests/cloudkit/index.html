@@ -168,8 +168,18 @@ async function ensureZone(){
   log("test zone ready (" + (Date.now() - t) + " ms)");
 }
 
-// The data as CloudKit JS is given it: a Blob, or a File (a Blob with a name).
-function asForm(blob, form){ return form === "File" ? new File([blob], "piece.bin", {type: "application/octet-stream"}) : blob; }
+// The data as CloudKit JS is given it. Apple's upload server (cws.icloud-
+// content.com) answers no preflight (12 Nov 2026, Chrome on the HP: "No
+// 'Access-Control-Allow-Origin' header" on the OPTIONS), and a browser sends
+// one only for a content type other than the simple ones: so data with no
+// type, or text/plain, goes without one.
+function asForm(blob, form){
+  if(form === "untyped Blob") return new Blob([blob]);
+  if(form === "text/plain Blob") return new Blob([blob], {type: "text/plain"});
+  if(form === "untyped File") return new File([blob], "piece.bin");
+  if(form === "File") return new File([blob], "piece.bin", {type: "application/octet-stream"});
+  return blob;
+}
 async function readBack(name, bytes, want, label){
   const t = Date.now();
   const got = check(await db.fetchRecords([name], {zoneID: ZONE}), "fetching the piece").records[0];
@@ -226,7 +236,13 @@ async function rawPiece(bytes, label){
   const url = tokens.tokens && tokens.tokens[0] && tokens.tokens[0].url;
   if(!url) throw new Error("assets/upload gave no address: " + JSON.stringify(tokens).slice(0, 200));
   log(label + ": upload address from " + new URL(url).host);
-  const up = await fetch(url, {method: "POST", body: blob});
+  // Without a content type (no preflight); then as text/plain.
+  let up = null, lastErr = null;
+  for(const form of ["untyped Blob", "text/plain Blob"]){
+    try{ up = await fetch(url, {method: "POST", body: asForm(blob, form)}); log(label + ": the upload went as a " + form); break; }
+    catch(e){ lastErr = e; log(label + ": the upload as a " + form + " was refused"); }
+  }
+  if(!up) throw lastErr;
   const upText = await up.text(); let upJson = null; try{ upJson = JSON.parse(upText); }catch(e){}
   if(!up.ok || !upJson || !upJson.singleFile) throw new Error("upload: HTTP " + up.status + " " + upText.slice(0, 200));
   const mod = await rest("records/modify", {zoneID: ZONE, operations: [{operationType: "create", record: {recordType: "P37Piece", recordName: name, fields: {data: {value: upJson.singleFile}}}}]});
@@ -277,10 +293,10 @@ async function runAll(){
     check(await db.saveRecords([{recordType: "P37State", recordName: "note-" + Date.now().toString(36), fields: {version: {value: 0}}}], {zoneID: ZONE}), "saving a record");
     log("a record with no file saved (" + (Date.now() - t) + " ms)", "ok");
   });
-  for(const form of ["Blob", "File"]){
+  for(const form of ["untyped Blob", "untyped File", "text/plain Blob", "Blob", "File"]){
     if(await step("1 KB as a " + form, ()=> piece(1024, "1 KB (" + form + ")", form))){ goodForm = goodForm || form; }
   }
-  await step("16 MB", ()=> piece(16 * MB, "16 MB piece", goodForm || "File"));
+  await step("16 MB", ()=> piece(16 * MB, "16 MB piece", goodForm || "untyped Blob"));
   rawWorks = await step("1 KB by plain web calls", ()=> rawPiece(1024, "1 KB (plain)"));
   if(rawWorks) await step("16 MB by plain web calls", ()=> rawPiece(16 * MB, "16 MB (plain)"));
   await step("the version check", stateRecords);
@@ -290,7 +306,7 @@ async function runAll(){
 async function runBig(mb){
   setButtons(false);
   await step("the test zone", ensureZone);
-  const viaJs = await step(mb + " MB", ()=> piece(mb * MB, mb + " MB piece", goodForm || "File"));
+  const viaJs = await step(mb + " MB", ()=> piece(mb * MB, mb + " MB piece", goodForm || "untyped Blob"));
   if(!viaJs && rawWorks !== false) await step(mb + " MB by plain web calls", ()=> rawPiece(mb * MB, mb + " MB (plain)"));
   setButtons(true);
 }
