@@ -9,12 +9,12 @@ Wherever 37 Player isn't installed, an **Install** button stays in the top bar a
 
 ### Mac and Windows: the desktop app
 
-On a Mac or a Windows computer, Install offers the **desktop app**, downloaded straight from the steps. Its library is ordinary files in a folder, it updates itself, and it doesn't ask for permission again.
+On a Mac or a Windows computer, Install offers the **desktop app**, downloaded straight from the steps. Its library is ordinary files in a folder, it updates itself, and it doesn't have to repeatedly prompt for permissions.
 
 The app isn't signed yet, so the computer warns the first time:
 
 - **Mac:** open the downloaded file and drag **37 Player** into **Applications**. In Applications, Control-click (or right-click) 37 Player, choose **Open**, then **Open** again. If there's no Open button, close the warning, open **System Settings → Privacy & Security**, scroll down, and choose **Open Anyway** beside 37 Player.
-- **Windows:** if the browser says the file isn't commonly downloaded, choose **…** → **Keep** (in Chrome, **Keep anyway**). When it opens, if **Windows protected your PC** appears, choose **More info**, then **Run anyway**.
+- **Windows:** Windows warns twice. First, in Edge's downloads the file is marked as not commonly downloaded: point at it, click **…** and choose **Keep**; then, in **Make sure you trust…**, click the arrow **▾** inside the black **Delete** button and choose **Keep anyway**. (In Chrome, choose to keep the file.) Then, when it opens, **Windows protected your PC** appears: click **More info**, then **Run anyway**.
 
 A computer where apps can't be installed: choose **I can't install apps on this computer**, and the steps show the Chrome or Edge way instead.
 

@@ -47,7 +47,9 @@ const importOne = async (p)=>{
   m = await waitModal(p, /Install 37 Player/);
   const dl = await p.evaluate(()=> document.querySelector('.modal a[data-act="download"]')?.href || '');
   ok(/Get the desktop app/.test(m) && /Download for Windows/.test(m) && /37-Player-windows-setup\.exe$/.test(dl), 'Windows: the desktop app, a direct download (' + dl + ')');
-  ok(/Windows protected your PC/.test(m) && /Run anyway/.test(m), 'with how to get past the warnings');
+  ok(/Windows protected your PC/.test(m) && /Run anyway/.test(m) && /Keep anyway/.test(m) && /black Delete button/.test(m), 'with how to get past the warnings, as Edge shows them');
+  ok(await p.evaluate(()=> [...document.querySelectorAll('.modal .heads-up-num')].map(x=> x.innerText.replace(/\s+/g, ' ')).join(',')) === 'Step 1,Step 2', 'steps are labelled "Step 1", "Step 2"…');
+  await p.screenshot({path: 'shots/setup-windows.png'});
   ok(!/Keep the library in a folder|Chrome or Edge/.test(m) && /I can't install apps on this computer/.test(m), 'nothing else, but a way out for a computer that can\'t install apps');
   ok(!/Bring this library along/.test(m), 'an empty library: nothing to bring along');
   await clickText(p, '.modal a', "^I can't install apps");
