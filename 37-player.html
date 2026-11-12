@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.2.028">
+<meta name="app-version" content="2.2.029">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -2461,7 +2461,7 @@ class FolderLibraryStore {
     if(typeof v.$place === "string"){
       let st = null;
       try{ st = await desktopInvoke("fs_stat", {root: v.$place, path: v.$at}); }catch(err){}
-      if(!st || st.kind !== "file"){ placeOffline.add(v.$place); return null; }
+      if(!st || st.kind !== "file"){ await placeMarkMissing(v.$place); return null; }
       placeOffline.delete(v.$place);
       const d = new DiskBlob(v.$place, v.$at, st.size, v.type || DISK_TYPES[(v.$at.split(".").pop() || "").toLowerCase()] || "", v.name != null ? v.name : v.$at.split("/").pop(), v.lastModified || Math.round(st.modified) || Date.now());
       d.whole = true; d.inPlace = true;
@@ -3449,7 +3449,7 @@ function watchPlaceDrive(el, getTrackId){
     timer = null;
     const id = getTrackId(), r = await placeFileThere(id);
     if(!r || r.there) return;
-    placeOffline.add(r.place.root);
+    await placeMarkMissing(r.place.root);
     el.dataset.p37stuck = "1";
     playLog("the drive of a track used in place isn't connected: paused");
     el.pause();
@@ -3462,7 +3462,7 @@ function watchPlaceDrive(el, getTrackId){
 async function placeAwarePlay(el, trackId){
   const r = await placeFileThere(trackId);
   if(r){
-    if(!r.there){ placeOffline.add(r.place.root); el.pause(); showAudioMissing(trackId); return false; }
+    if(!r.there){ await placeMarkMissing(r.place.root); el.pause(); showAudioMissing(trackId); return false; }
     const lost = placeOffline.has(r.place.root) || !!el.error || el.dataset.p37stuck === "1";
     placeOffline.delete(r.place.root);
     if(lost){
@@ -3587,6 +3587,16 @@ class DesktopDirHandle {
 // Folders used in place that couldn't be reached when last read (a drive
 // not plugged in): by root.
 const placeOffline = new Set();
+// A recording used in place isn't where it was: its folder is marked as not
+// connected only if the folder itself can't be reached (2.2.029). The file
+// alone moved, renamed or deleted, with its drive connected, is said as
+// such (showAudioMissing), not as "a drive that isn't connected".
+async function placeMarkMissing(rootId){
+  let present = false;
+  try{ present = !!(await desktopInvoke("fs_root_info", {id: rootId})).present; }catch(err){}
+  if(present) placeOffline.delete(rootId); else placeOffline.add(rootId);
+  return present;
+}
 const DISK_BLOB_MIN = window.__diskBlobMin != null ? window.__diskBlobMin : 32 * 1048576;
 const DISK_READ_PIECE = 8 * 1048576;
 // A big file (2.2.010, Gen Rinzin, 11 Nov 2026): above this, nothing that
@@ -4538,19 +4548,19 @@ const STRINGS = {
     "chooseBtn": "What's on this device…",
     "chooseTitle": "What's on this device",
     "chooseIntroAll": "This device has everything in the shared library. Untick anything you'd rather keep off it: the device then holds only what you choose.",
-    "chooseIntroPartial": "Ticked is on this device. Tick to bring something here; untick to take it off this device (the shared library keeps it). Nothing changes until Apply.",
+    "chooseIntroPartial": "What's selected is on this device. Select something to bring it here; clear it to take it off this device (the shared library keeps it). Nothing changes until Apply.",
     "chooseTotals": "On this device: {here} of {all}",
     "chooseBring": "Brings {n} tracks ({size} to download)",
     "chooseRemove": "Takes {n} tracks off this device",
     "chooseApply": "Apply",
-    "chooseNothing": "Tick or untick to change what's on this device.",
+    "chooseNothing": "Select or clear items to change what's on this device.",
     "chooseNew": "New",
     "chooseAlbums": "Albums",
     "chooseAlbumCount": "{n}",
     "chooseTrackCount": "{n} tracks",
     "chooseTrackOne": "1 track",
     "chooseNoAlbum": "No album",
-    "chooseAlbumsNote": "Tick an album to bring its tracks here, to make playlists from them, or open it to tick single tracks. An album is ticked when all its tracks will be here, partly ticked when only some will.",
+    "chooseAlbumsNote": "Select an album to bring its tracks here, to make playlists from them, or open it to select single tracks. An album is selected when all its tracks will be here, partly selected when only some will.",
     "chooseWithPlaylist": "comes with a playlist",
     "libViewBrowse": "Browse",
     "libViewTable": "Table",
@@ -4580,9 +4590,9 @@ const STRINGS = {
     "modeEverything": "Everything in the shared library",
     "modePartial": "Only what I choose",
     "modeEverythingNote": "Everything comes here and stays in step: nothing to think about.",
-    "modePartialNote": "This device holds what you tick in “What's on this device”. What it holds stays in step both ways, including new tracks in its playlists.",
+    "modePartialNote": "This device holds what you select in “What's on this device”. What it holds stays in step both ways, including new tracks in its playlists.",
     "autoNewLabel": "New playlists from other devices come here by themselves",
-    "autoNewNote": "Off: they wait in “What's on this device”, marked New, until you tick them.",
+    "autoNewNote": "Off: they wait in “What's on this device”, marked New, until you select them.",
     "partialNoReceiveOnly": "Receive updates only can't be combined with “Only what I choose”. Choose “Everything in the shared library” first.",
     "rvWaitingOne": "1 change to review.",
     "rvWaitingMany": "{n} changes to review.",
@@ -5190,6 +5200,10 @@ const STRINGS = {
     "folderImportDedupedLine": "{n} file(s) already in your library were reused rather than re-imported.",
     "folderImportOverwrittenLine": "{n} existing track(s) were replaced with the new files — audio and details — as you chose.",
     "folderImportPlaylistsLine": "{n} playlist(s) created, mirroring the folder structure.",
+    "folderImportPlaylistsFromFilesLine": "{n} playlist(s) created from the playlist files.",
+    "placeFileGoneTitle": "Its recording isn't in its folder",
+    "placeFileGoneBody": "“{name}” is used in place from {path}, but that file isn't there any more: it was moved, renamed or deleted. Put it back, or give the track another file (Edit track details → Replace audio file), then play it again.",
+    "convertPlaceGone": "the file it uses in place isn't there (moved, renamed or deleted, or its drive isn't connected)",
     "folderImportMissingLine": "{n} playlist track(s) couldn't be found and were left out — check the flagged playlist(s) for details.",
     "folderImportFailedLine": "{n} file(s) couldn't be read and were skipped.",
     "importStoppedEarlyLine": "Stopped early — not everything was processed.",
@@ -7129,6 +7143,10 @@ const STRINGS = {
     "folderImportDedupedLine": "{n} archivo(s) que ya estaban en tu biblioteca se reutilizaron en lugar de volver a importarse.",
     "folderImportOverwrittenLine": "{n} pista(s) existente(s) se reemplazaron por los archivos nuevos (audio y datos), como elegiste.",
     "folderImportPlaylistsLine": "Se crearon {n} lista(s), reflejando la estructura de carpetas.",
+    "folderImportPlaylistsFromFilesLine": "{n} lista(s) creada(s) a partir de los archivos de listas.",
+    "placeFileGoneTitle": "Su grabación no está en su carpeta",
+    "placeFileGoneBody": "«{name}» se usa en su sitio desde {path}, pero ese archivo ya no está: se movió, se cambió de nombre o se borró. Devuélvalo a su sitio, o dele a la pista otro archivo (Editar detalles de la pista → Reemplazar archivo de audio), y vuelva a reproducirla.",
+    "convertPlaceGone": "el archivo que usa en su sitio no está (movido, renombrado o borrado, o su disco no está conectado)",
     "folderImportMissingLine": "No se encontraron {n} pista(s) de listas y se omitieron — revisa las listas marcadas para más detalles.",
     "folderImportFailedLine": "No se pudieron leer {n} archivo(s) y se omitieron.",
     "importStoppedEarlyLine": "Se detuvo antes de tiempo — no todo se procesó.",
@@ -9067,6 +9085,10 @@ const STRINGS = {
     "folderImportDedupedLine": "{n} fichier(s) déjà présents dans votre bibliothèque ont été réutilisés plutôt que réimportés.",
     "folderImportOverwrittenLine": "{n} piste(s) existante(s) ont été remplacées par les nouveaux fichiers — audio et détails —, comme vous l'avez choisi.",
     "folderImportPlaylistsLine": "{n} playlist(s) créée(s), reproduisant la structure des dossiers.",
+    "folderImportPlaylistsFromFilesLine": "{n} liste(s) créée(s) à partir des fichiers de listes.",
+    "placeFileGoneTitle": "Son enregistrement n'est plus dans son dossier",
+    "placeFileGoneBody": "« {name} » est utilisé sur place depuis {path}, mais ce fichier n'y est plus : il a été déplacé, renommé ou supprimé. Remettez-le, ou donnez un autre fichier à la piste (Modifier les détails de la piste → Remplacer le fichier audio), puis relancez-la.",
+    "convertPlaceGone": "le fichier qu'elle utilise sur place n'y est pas (déplacé, renommé ou supprimé, ou son disque n'est pas branché)",
     "folderImportMissingLine": "{n} piste(s) de playlist introuvable(s) et omise(s) — consultez les playlists signalées pour plus de détails.",
     "folderImportFailedLine": "{n} fichier(s) n'a/ont pas pu être lu(s) et a/ont été ignoré(s).",
     "importStoppedEarlyLine": "Arrêté prématurément — tout n'a pas été traité.",
@@ -11005,6 +11027,10 @@ const STRINGS = {
     "folderImportDedupedLine": "{n} arquivo(s) já presentes na sua biblioteca foram reutilizados em vez de reimportados.",
     "folderImportOverwrittenLine": "{n} faixa(s) existente(s) foram substituídas pelos arquivos novos — áudio e dados —, conforme você escolheu.",
     "folderImportPlaylistsLine": "{n} playlist(s) criada(s), espelhando a estrutura de pastas.",
+    "folderImportPlaylistsFromFilesLine": "{n} lista(s) criada(s) a partir dos ficheiros de listas.",
+    "placeFileGoneTitle": "A sua gravação não está na pasta",
+    "placeFileGoneBody": "“{name}” é usada no seu lugar a partir de {path}, mas esse ficheiro já não está lá: foi movido, renomeado ou apagado. Volte a pô-lo lá, ou dê outro ficheiro à faixa (Editar detalhes da faixa → Substituir ficheiro de áudio), e reproduza-a de novo.",
+    "convertPlaceGone": "o ficheiro que usa no seu lugar não está lá (movido, renomeado ou apagado, ou o disco não está ligado)",
     "folderImportMissingLine": "{n} faixa(s) de playlist não foram encontradas e ficaram de fora — verifique as playlists sinalizadas para detalhes.",
     "folderImportFailedLine": "{n} arquivo(s) não puderam ser lidos e foram ignorados.",
     "importStoppedEarlyLine": "Interrompido antes do fim — nem tudo foi processado.",
@@ -12943,6 +12969,10 @@ const STRINGS = {
     "folderImportDedupedLine": "{n} bereits in Ihrer Bibliothek vorhandene Datei(en) wurden wiederverwendet statt erneut importiert.",
     "folderImportOverwrittenLine": "{n} vorhandene(r) Titel wurde(n) wie gewählt durch die neuen Dateien ersetzt – Audio und Angaben.",
     "folderImportPlaylistsLine": "{n} Playlist(s) erstellt, die die Ordnerstruktur widerspiegeln.",
+    "folderImportPlaylistsFromFilesLine": "{n} Playlist(s) aus den Playlist-Dateien erstellt.",
+    "placeFileGoneTitle": "Die Aufnahme ist nicht in ihrem Ordner",
+    "placeFileGoneBody": "„{name}“ wird an Ort und Stelle aus {path} verwendet, aber diese Datei ist nicht mehr dort: Sie wurde verschoben, umbenannt oder gelöscht. Legen Sie sie zurück, oder geben Sie dem Titel eine andere Datei (Titeldetails bearbeiten → Audiodatei ersetzen), und spielen Sie ihn erneut ab.",
+    "convertPlaceGone": "die an Ort und Stelle genutzte Datei ist nicht da (verschoben, umbenannt oder gelöscht, oder ihr Laufwerk ist nicht angeschlossen)",
     "folderImportMissingLine": "{n} Playlist-Titel wurden nicht gefunden und ausgelassen — Details in den markierten Playlists.",
     "folderImportFailedLine": "{n} Datei(en) konnten nicht gelesen werden und wurden übersprungen.",
     "importStoppedEarlyLine": "Vorzeitig gestoppt — es wurde nicht alles verarbeitet.",
@@ -14881,6 +14911,10 @@ const STRINGS = {
     "folderImportDedupedLine": "{n} 个已在曲库中的文件被重复使用，而非重新导入。",
     "folderImportOverwrittenLine": "已按你的选择，用新文件替换了 {n} 首现有曲目（音频和信息）。",
     "folderImportPlaylistsLine": "已创建 {n} 个播放列表，镜像了文件夹结构。",
+    "folderImportPlaylistsFromFilesLine": "已根据播放列表文件创建 {n} 个播放列表。",
+    "placeFileGoneTitle": "它的录音不在原文件夹中",
+    "placeFileGoneBody": "“{name}”原地使用 {path} 中的文件，但那个文件已经不在了：它被移动、重命名或删除了。请把它放回去，或给这首曲目换一个文件（编辑曲目详情 → 替换音频文件），然后再播放。",
+    "convertPlaceGone": "它原地使用的文件不在（被移动、重命名或删除，或所在的驱动器未连接）",
     "folderImportMissingLine": "有 {n} 首播放列表曲目未找到，已被略过——详情请查看被标记的播放列表。",
     "folderImportFailedLine": "有 {n} 个文件无法读取，已跳过。",
     "importStoppedEarlyLine": "已提前停止——并非所有内容都已处理。",
@@ -16819,6 +16853,10 @@ const STRINGS = {
     "folderImportDedupedLine": "{n} tệp đã có trong thư viện của bạn đã được sử dụng lại thay vì nhập lại.",
     "folderImportOverwrittenLine": "{n} bài hiện có đã được thay bằng các tệp mới — cả âm thanh và thông tin — theo lựa chọn của bạn.",
     "folderImportPlaylistsLine": "Đã tạo {n} danh sách phát, phản ánh cấu trúc thư mục.",
+    "folderImportPlaylistsFromFilesLine": "Đã tạo {n} danh sách phát từ các tệp danh sách phát.",
+    "placeFileGoneTitle": "Bản ghi của nó không có trong thư mục",
+    "placeFileGoneBody": "“{name}” được dùng tại chỗ từ {path}, nhưng tệp đó không còn ở đó nữa: nó đã bị di chuyển, đổi tên hoặc xóa. Hãy đặt nó lại chỗ cũ, hoặc cho bài này một tệp khác (Sửa chi tiết bài → Thay tệp âm thanh), rồi phát lại.",
+    "convertPlaceGone": "tệp nó dùng tại chỗ không có ở đó (bị di chuyển, đổi tên hoặc xóa, hoặc ổ đĩa chưa kết nối)",
     "folderImportMissingLine": "Không tìm thấy {n} bài hát trong danh sách phát và đã bị bỏ qua — kiểm tra (các) danh sách phát được gắn cờ để biết chi tiết.",
     "folderImportFailedLine": "Không thể đọc {n} tệp và đã bị bỏ qua.",
     "importStoppedEarlyLine": "Đã dừng sớm — không phải mọi thứ đều được xử lý.",
@@ -18757,6 +18795,10 @@ const STRINGS = {
     "folderImportDedupedLine": "{n} αρχείο(α) που υπήρχαν ήδη στη βιβλιοθήκη σας επαναχρησιμοποιήθηκαν αντί να εισαχθούν ξανά.",
     "folderImportOverwrittenLine": "{n} υπάρχοντα κομμάτια αντικαταστάθηκαν με τα νέα αρχεία — ήχος και στοιχεία — όπως επιλέξατε.",
     "folderImportPlaylistsLine": "Δημιουργήθηκαν {n} λίστες αναπαραγωγής, αντικατοπτρίζοντας τη δομή φακέλων.",
+    "folderImportPlaylistsFromFilesLine": "Δημιουργήθηκαν {n} λίστες από τα αρχεία λιστών.",
+    "placeFileGoneTitle": "Η ηχογράφησή του δεν είναι στον φάκελό της",
+    "placeFileGoneBody": "Το «{name}» χρησιμοποιείται επί τόπου από {path}, αλλά αυτό το αρχείο δεν είναι πια εκεί: μετακινήθηκε, μετονομάστηκε ή διαγράφηκε. Βάλτε το πίσω ή δώστε στο κομμάτι άλλο αρχείο (Επεξεργασία στοιχείων κομματιού → Αντικατάσταση αρχείου ήχου) και παίξτε το ξανά.",
+    "convertPlaceGone": "το αρχείο που χρησιμοποιεί επί τόπου δεν υπάρχει (μετακινήθηκε, μετονομάστηκε ή διαγράφηκε, ή ο δίσκος του δεν είναι συνδεδεμένος)",
     "folderImportMissingLine": "{n} κομμάτι(α) λίστας δεν βρέθηκαν και παραλείφθηκαν — ελέγξτε τις επισημασμένες λίστες για λεπτομέρειες.",
     "folderImportFailedLine": "{n} αρχείο(α) δεν ήταν δυνατό να διαβαστούν και παραλείφθηκαν.",
     "importStoppedEarlyLine": "Διακόπηκε νωρίς — δεν επεξεργάστηκαν όλα.",
@@ -20695,6 +20737,10 @@ const STRINGS = {
     "folderImportDedupedLine": "{n} file già presenti nella tua libreria sono stati riutilizzati anziché reimportati.",
     "folderImportOverwrittenLine": "{n} brano/i esistente/i sostituito/i con i nuovi file — audio e dati —, come hai scelto.",
     "folderImportPlaylistsLine": "Create {n} playlist, rispecchiando la struttura delle cartelle.",
+    "folderImportPlaylistsFromFilesLine": "{n} playlist create dai file di playlist.",
+    "placeFileGoneTitle": "La sua registrazione non è nella sua cartella",
+    "placeFileGoneBody": "“{name}” è usato sul posto da {path}, ma quel file non c'è più: è stato spostato, rinominato o eliminato. Rimettilo al suo posto, o dai al brano un altro file (Modifica dettagli brano → Sostituisci file audio), poi riproducilo.",
+    "convertPlaceGone": "il file che usa sul posto non c'è (spostato, rinominato o eliminato, o il suo disco non è collegato)",
     "folderImportMissingLine": "{n} brano/i della playlist non trovato/i e omesso/i — controlla le playlist contrassegnate per i dettagli.",
     "folderImportFailedLine": "{n} file non è stato possibile leggerlo/i ed è stato/i saltato/i.",
     "importStoppedEarlyLine": "Interrotto in anticipo — non tutto è stato elaborato.",
@@ -26914,7 +26960,7 @@ async function repairDamagedMp4Library(){
     const ul = document.getElementById("mp4RepairedList");
     for(const tr of fixed){ const li = document.createElement("li"); li.textContent = [tr.artist, tr.album, tr.name].filter(Boolean).join(" / "); ul.appendChild(li); }
   };
-  if(backdrop.classList.contains("show")) modalCloseCallbacks.push(()=> setTimeout(show, 0)); else show();
+  showWhenFree(t("mp4RepairedTitle"), show); // never over a dialog in use (2.2.028's queue)
 }
 function scheduleMp4Repair(){
   setTimeout(()=>{
@@ -27858,7 +27904,7 @@ async function runConvertQueue(){
       setActiveOperationProgress(convertBarText(name, null), stopConverting);
       let rec = null;
       try{ rec = await idbGet("audio", id); }catch(err){}
-      if(!rec || !rec.blob || !rec.blob.size){ convertQueue.shift(); convertDone++; convertFailures.push({name, reason: t("convertNoAudioHere")}); continue; }
+      if(!rec || !rec.blob || !rec.blob.size){ convertQueue.shift(); convertDone++; convertFailures.push({name, reason: t(placeOfTrack(id) ? "convertPlaceGone" : "convertNoAudioHere")}); continue; }
       // Watch for playback starting meanwhile: the conversion is dropped.
       const watch = setInterval(()=>{ if(convertShouldWait()) converterStop(); }, 1000);
       try{
@@ -30646,7 +30692,7 @@ async function commitFolderImportSteps(analysis){
   break;
   }
 
-  let playlistsCreated = 0, playlistsReplaced = 0, playlistsSkipped = 0, tracksMissing = 0;
+  let playlistsCreated = 0, playlistsFromFiles = 0, playlistsReplaced = 0, playlistsSkipped = 0, tracksMissing = 0;
   const choice = analysis.playlistChoice || "all";
   const chosenPlaylistPlans = playlistPlans.filter(pl=> choice === "all" || (choice === "complete" && !pl.missing));
   let playlistsLeftOut = playlistPlans.length - chosenPlaylistPlans.length;
@@ -30708,6 +30754,7 @@ async function commitFolderImportSteps(analysis){
       }
       siblings.push(newPlaylist);
       playlistsCreated++;
+      if(!pl.fromFolder) playlistsFromFiles++; // from a playlist file (.m3u8…), not a folder
     }
   }
 
@@ -30724,7 +30771,10 @@ async function commitFolderImportSteps(analysis){
   if(leftOut) lines.push(leftOut===1 ? t("folderImportLeftOutOne") : t("folderImportLeftOutMany",{n:leftOut}));
   if(artAdded) lines.push(artAdded===1 ? t("folderImportArtAddedOne") : t("folderImportArtAddedMany",{n:artAdded}));
   if(overwritten) lines.push(t("folderImportOverwrittenLine",{n:overwritten}));
-  if(playlistsCreated) lines.push(t("folderImportPlaylistsLine",{n:playlistsCreated}));
+  // Said by where they came from (Gen Rinzin: an .m3u8 import said it had
+  // mirrored the folders).
+  if(playlistsFromFiles) lines.push(t("folderImportPlaylistsFromFilesLine",{n:playlistsFromFiles}));
+  if(playlistsCreated - playlistsFromFiles) lines.push(t("folderImportPlaylistsLine",{n:playlistsCreated - playlistsFromFiles}));
   if(playlistsReplaced) lines.push(t("folderImportPlaylistsReplacedLine",{n:playlistsReplaced}));
   if(playlistsSkipped) lines.push(t("folderImportPlaylistsSkippedLine",{n:playlistsSkipped}));
   if(playlistsLeftOut) lines.push(playlistsLeftOut===1 ? t("folderImportPlLeftOutOne") : t("folderImportPlLeftOutMany", {n: playlistsLeftOut}));
@@ -34895,6 +34945,13 @@ function showAudioMissing(libraryId, why){
     placeFolders().then(list=>{ const f = list.find(x=> x.root === place.root), el = document.getElementById("audioMissingBody"); if(el) el.textContent = t("placeOfflineBody", {name: tr ? tr.name : "?", path: f ? f.label : "?"}); });
     return;
   }
+  if(place){
+    // Its folder is there, but not the file: moved, renamed or deleted.
+    if(document.getElementById("audioMissingBody")) closeModal();
+    openModal(`<h3>${t("placeFileGoneTitle")}</h3><p id="audioMissingBody"></p><div class="modal-actions"><button class="btn primary" data-close>${t("ok")}</button></div>`);
+    placeFolders().then(list=>{ const f = list.find(x=> x.root === place.root), el = document.getElementById("audioMissingBody"); if(el) el.textContent = t("placeFileGoneBody", {name: tr ? tr.name : "?", path: f ? f.label + "/" + place.at : place.at}); });
+    return;
+  }
   if(typeof sharedPending !== "undefined" && sharedPending && sharedPending.audio[libraryId] !== undefined){
     // Part of a shared library: still downloading, not sent yet by the
     // device that has it, or couldn't be fetched just now.
@@ -34910,16 +34967,24 @@ function showAudioMissing(libraryId, why){
     return;
   }
   openModal(`<h3>${t("audioMissingTitle")}</h3><p id="audioMissingBody"></p>
-    <div class="modal-actions"><button class="btn primary" data-close>${t("ok")}</button></div>`);
+    <div class="modal-actions"><button class="btn ghost" id="openCleanup" type="button">${escapeHtmlText(t("settingsSecCleanup"))}</button><button class="btn primary" data-close>${t("ok")}</button></div>`);
   document.getElementById("audioMissingBody").textContent = t("audioMissingBody", {name: tr ? tr.name : "?"});
+  wireOpenCleanup();
+}
+// "Library cleanup" in the can't-be-played dialogs (2.2.029, Gen Rinzin):
+// straight to Settings → Library cleanup, which lists every such track.
+function wireOpenCleanup(){
+  const b = document.getElementById("openCleanup");
+  if(b) b.addEventListener("click", ()=>{ closeModal(); withPin(()=>{ openSettingsPage(); goToSettingsSection("cleanup"); }); });
 }
 function showCantPlay(libraryId, cant){
   const tr = findLibraryTrack(libraryId);
   const canConvert = trackCanBeConverted(tr) && !convertQueue.includes(libraryId);
   if(document.getElementById("audioMissingBody")) closeModal(); // one dialog, however many presses
   openModal(`<h3>${t("audioMissingTitle")}</h3><p><strong id="cantPlayName"></strong></p><p id="audioMissingBody"></p>
-    <div class="modal-actions"><button class="btn ${canConvert ? "ghost" : "primary"}" data-close>${t(canConvert ? "convertLaterBtn" : "ok")}</button>
+    <div class="modal-actions"><button class="btn ghost" id="openCleanup" type="button">${escapeHtmlText(t("settingsSecCleanup"))}</button><button class="btn ${canConvert ? "ghost" : "primary"}" data-close>${t(canConvert ? "convertLaterBtn" : "ok")}</button>
     ${canConvert ? `<button class="btn primary" id="cantPlayConvert">${t("convertItNowBtn")}</button>` : ""}</div>`);
+  wireOpenCleanup();
   document.getElementById("cantPlayName").textContent = tr ? tr.name : "?";
   document.getElementById("audioMissingBody").textContent = cant.note;
   const b = document.getElementById("cantPlayConvert");
@@ -37784,7 +37849,11 @@ async function renderSettingsSection(fromTimer){
   }
   box.scrollTop = keepScroll;
 }
-document.getElementById("btnSettings").addEventListener("click", ()=>{ closeHelpPage(); openSettingsPage(); });
+// A second press closes Settings, as ? does Help (2.2.029, Gen Rinzin).
+document.getElementById("btnSettings").addEventListener("click", (e)=>{
+  if(settingsPageOpen()) closeSettingsPage(); else { closeHelpPage(); openSettingsPage(); }
+  e.currentTarget.blur();
+});
 
 // Help, as the same kind of full-window panel as Settings — but reachable
 // from every tab (no PIN), since it's for everyone. While open, the screen
@@ -40226,7 +40295,13 @@ async function finishSetup(){
 // and the display button glow until each has been clicked once.
 async function firstRunDone(){
   backupInfo.headsUpPending = !sharedConfig();
-  backupInfo.glow = ["play", "import", "display"];
+  // The glow is for someone new to 37 Player: not again for a second or third
+  // library on the same device (2.2.029, Gen Rinzin).
+  backupInfo.glow = readLibraryList().list.length > 1 ? [] : ["play", "import", "display"];
+  // Even out loudness: By album from the start (2.2.029, Gen Rinzin), for a
+  // new install or library that hasn't chosen. Not in a shared library, whose
+  // own setting comes with it.
+  if(root.settings && root.settings.levelMode === undefined && !sharedConfig()){ root.settings.levelMode = "album"; root.settings.levelKind = "album"; await saveState(); }
   await finishSetup();
   applyFirstGlow();
 }
@@ -47471,8 +47546,7 @@ function openSharedJoinDialog(opts){
       <p>${escapeHtmlText(t("driveIntro"))}</p>
       <p class="settings-note">${escapeHtmlText(t("driveOneAccountTip"))}</p>
       <p class="settings-note">${escapeHtmlText(t("driveNextNote"))}</p>`}
-      <p id="sjMsg" class="settings-note" style="color:var(--rust-bright);"></p>
-      <div class="modal-actions"><button class="btn ghost" type="button" id="sjBack2">${escapeHtmlText(t("setupBackBtn"))}</button><button class="btn primary" type="button" id="sjGo">${escapeHtmlText(isCode ? t("nextStepBtn") : t("driveUseBtn"))}</button></div>`, "wide");
+      <div class="modal-actions"><span id="sjMsg" class="settings-note" style="flex:1; align-self:center; margin:0; text-align:left; color:var(--rust-bright);"></span><button class="btn ghost" type="button" id="sjBack2">${escapeHtmlText(t("setupBackBtn"))}</button><button class="btn primary" type="button" id="sjGo">${escapeHtmlText(isCode ? t("nextStepBtn") : t("driveUseBtn"))}</button></div>`, "wide");
     const msg = document.getElementById("sjMsg");
     if(message) msg.textContent = message;
     document.getElementById("sjBack2").addEventListener("click", stepOne);

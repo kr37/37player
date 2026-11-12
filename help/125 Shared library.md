@@ -108,27 +108,27 @@ If anything changes while the list is open (someone else syncs, say), Synchroniz
 
 ### What's on this device
 
-**What's on this device…** in Settings → Shared library shows the whole shared library, with a tick on everything that's on this device and the size of each folder and playlist. The total at the top says how much of the shared library this device holds.
+**What's on this device…** in Settings → Shared library shows the whole shared library, with everything that's on this device selected and the size of each folder and playlist. The total at the top says how much of the shared library this device holds.
 
-- **Tick** a playlist or folder to bring it here; **untick** it to take it off this device. The shared library keeps it, and so do the other devices. A track used by two playlists stays while either is ticked.
+- **Select** a playlist or folder to bring it here; **clear** it to take it off this device. The shared library keeps it, and so do the other devices. A track used by two playlists stays while either is selected.
 - **Nothing changes until Apply.** The bar at the bottom says what Apply will do, for example "Brings 12 tracks (840 MB to download) · Takes 3 tracks off this device".
-- **Albums**, below the playlists, list every album in the shared library. Tick one to bring its tracks here, for example to make playlists from them, without bringing any playlist. Open an album (▸) to tick single tracks, with each one's size. A track that comes with a ticked playlist shows as ticked, marked "comes with a playlist". An album shows as ticked when all its tracks will be here, and partly ticked when only some will.
-- **Folders** open and close by their arrow or their name; the box beside them ticks everything inside.
+- **Albums**, below the playlists, list every album in the shared library. Select one to bring its tracks here, for example to make playlists from them, without bringing any playlist. Open an album (▸) to select single tracks, with each one's size. A track that comes with a selected playlist shows as selected, marked "comes with a playlist". An album shows as selected when all its tracks will be here, and partly selected when only some will.
+- **Folders** open and close by their arrow or their name; the box beside them selects everything inside.
 - **Cancel** leaves everything as it was.
 
 ### Everything, or only what you choose
 
 Under **On this device** in Settings → Shared library:
 
-- **Everything in the shared library** (the usual choice): everything comes here and stays in step. A Center's playback computers and iPads, or your own phone and laptop, work this way, with nothing to think about. Unticking something in What's on this device asks first, then switches the device to the other choice.
-- **Only what I choose:** this device holds what's ticked in What's on this device. What it holds stays in step both ways, including new tracks added to its playlists elsewhere. Good for a small iPad, a laptop for one retreat, or helping with a few of a Center's playlists from home.
-  - **New playlists from other devices** wait for you, marked **New** in What's on this device; the button at the top says how many, for example **2 new in the shared library**, and opens it. Looking is enough to clear the count: they stay marked **New** while you look, and you don't have to bring them. Turn on **New playlists from other devices come here by themselves** to have them arrive on their own (what you've unticked stays off).
+- **Everything in the shared library** (the usual choice): everything comes here and stays in step. A Center's playback computers and iPads, or your own phone and laptop, work this way, with nothing to think about. Clearing something in What's on this device asks first, then switches the device to the other choice.
+- **Only what I choose:** this device holds what's selected in What's on this device. What it holds stays in step both ways, including new tracks added to its playlists elsewhere. Good for a small iPad, a laptop for one retreat, or helping with a few of a Center's playlists from home.
+  - **New playlists from other devices** wait for you, marked **New** in What's on this device; the button at the top says how many, for example **2 new in the shared library**, and opens it. Looking is enough to clear the count: they stay marked **New** while you look, and you don't have to bring them. Turn on **New playlists from other devices come here by themselves** to have them arrive on their own (what you've cleared stays off).
   - **Deleting asks which you mean.** Deleting a folder, playlist or track offers **Remove from this device** (the shared library keeps it, and What's on this device can bring it back) or **Delete everywhere** (it's deleted from the shared library and every device). Anything that disappears from this device some other way, such as through Library cleanup, counts as removed from this device. Only **Delete everywhere** deletes from the shared library.
   - **Tracks used by playlists that aren't on this device:** after **Delete everywhere**, 37 Player looks in the shared library. If other playlists there use those tracks, it lists them and asks: **Delete everywhere, from those playlists too** (as a device holding everything would), or **Keep them for those playlists** (they leave this device only). If the shared library can't be reached at that moment, they're kept for those playlists, and the sync log says so.
   - **Playlists the tidy-up removes** along with tracks deleted everywhere (an emptied playlist, say) are deleted everywhere too.
   - **Choosing Everything again** brings the whole shared library here. 37 Player says how much that is first.
 
-When joining, choose **Only what I choose** at the step that says how much will travel. Everything already on the device joins the shared library, and What's on this device opens so you can tick what else to bring.
+When joining, choose **Only what I choose** at the step that says how much will travel. Everything already on the device joins the shared library, and What's on this device opens so you can select what else to bring.
 
 ### Receive updates only
 
