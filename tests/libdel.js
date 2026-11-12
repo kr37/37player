@@ -18,7 +18,7 @@ async function reloading(p, fn){ const nav = p.waitForNavigation({waitUntil:'net
 
   // ---- Start empty: no "will this device share?" in the new library's welcome
   await p.evaluate(()=> window.__lib.newDialog()); await sleep(300);
-  await p.evaluate(()=>{ document.querySelector('input[name=libNewHow][value=empty]').click(); document.getElementById('libNewName').value = 'Second'; });
+  await p.evaluate(()=>{ document.querySelector('input[name=libNewHow][value=empty]').click(); document.querySelector('input[name=libNewWhere][value=browser]')?.click(); document.getElementById('libNewName').value = 'Second'; });
   await reloading(p, ()=> document.getElementById('libNewGo').click());
   const idB = await p.evaluate(()=> window.__lib.id());
   const first = await p.evaluate(()=> (document.querySelector('.modal-backdrop.show .modal')?.innerText || '').slice(0, 200));

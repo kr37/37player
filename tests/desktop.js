@@ -42,6 +42,13 @@ const modalText = p=> p.evaluate(()=> document.querySelector('.modal-backdrop.sh
   await p.evaluate(()=>{ window.__dbg.setMode('editing'); window.__dbg4.settings(); window.__dbg4.section('about'); }); await sleep(500);
   const about = await p.evaluate(()=> document.getElementById('aboutRunning').textContent);
   ok(/desktop app \(version 1\.4\.159\)/.test(about), 'About names the desktop app\'s own version (' + about + ')');
+  // 2.2.031: and the converter's, the one beside the app while none is on this device.
+  const servedConv = fs.readFileSync(path.join(__dirname, 'www', 'ffmpeg', 'VERSION'), 'utf8').trim();
+  let conv = ''; for(let i = 0; i < 20 && !(conv = await p.evaluate(()=> document.getElementById('aboutConverter')?.textContent || '')); i++) await sleep(150);
+  ok(conv.startsWith('Converter: ffmpeg.wasm ' + servedConv + ' (not on this device yet'), 'About names the converter\'s version (' + conv + ')');
+  await p.evaluate(()=> window.__dbg4.section('cleanup')); await sleep(600);
+  const cnote = await p.evaluate(()=> document.getElementById('converterNote')?.textContent || '');
+  ok(cnote && !/ffmpeg\.wasm/.test(cnote), 'Library cleanup no longer names it (' + cnote.slice(0, 60) + ')');
   await p.evaluate(()=> window.__dbg4.section('info')); await sleep(800);
   const where = await p.evaluate(()=> [document.getElementById('infoRunning').textContent, document.getElementById('infoKept').textContent]);
   ok(/desktop app's own storage \(IndexedDB\)/.test(where[0]) && /desktop app's own storage/.test(where[1]) && !/\?|localhost|browser/.test(where.join(' ')), 'Library info says the desktop app\'s own storage, not a browser (' + where.join(' | ') + ')');

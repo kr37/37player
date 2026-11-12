@@ -82,7 +82,7 @@
           box-shadow: 0 2px 5px rgba(0,0,0,0.3);
         }
 
-        #getIt    { float:right; margin-left: 1em; font-size:large; padding: 1em; border-radius: .5em; border: 1px solid gray; }
+        #getIt    { float:right; max-width: 60%; margin-left: 1em; font-size:large; padding: 1em; border-radius: .5em; border: 1px solid gray; }
         #getIt p  { margin: 0;  }
         #getIt li { padding: 0; }
         #getIt ul { margin: 0;  }
@@ -96,13 +96,13 @@
 <body>
     <div id="bodyDiv">
         <div id="getIt" >
-            <p><b>Run it: &nbsp; <a href="37-player.html">37-player.html</a></b></p>
-
-            <p><b>Install it:</b></p>
-            <ul>
-                <li><b>Mac:</b> <a href="https://github.com/kr37/37player/releases/download/desktop-latest/37-Player-mac.dmg">37-Player-mac.dmg</a></li>
-                <li><b>Windows:</b> <a href="https://github.com/kr37/37player/releases/download/desktop-latest/37-Player-windows-setup.exe">37-Player-windows-setup.exe</a><br> (or the <a href="https://github.com/kr37/37player/releases/download/desktop-latest/37-Player-windows.msi">.msi</a>, for installing on many computers)</li>
-            </ul>
+            <!-- Try it out / Install (2.2.023): the app's own guide works out
+                 the best way for this device (the desktop app on a Mac or
+                 Windows computer, Chrome or Edge elsewhere, the Home Screen
+                 on an iPad or iPhone). -->
+            <p><b><a href="37-player.html#try">Try it out</a></b><br>Opens 37 Player in this browser, with nothing to set up.</p>
+            <p><b><a href="37-player.html#setup">Install</a></b><br>37 Player looks at this device and shows the best way to keep a library on it.</p>
+            <p style="font-size: smaller;">Or download the desktop app directly: <a href="https://github.com/kr37/37player/releases/download/desktop-latest/37-Player-mac.dmg">Mac</a>, <a href="https://github.com/kr37/37player/releases/download/desktop-latest/37-Player-windows-setup.exe">Windows</a> (or the <a href="https://github.com/kr37/37player/releases/download/desktop-latest/37-Player-windows.msi">.msi</a>, for installing on many computers).</p>
         </div>
         <h1><img src="homepage/37player.png" style="height: 1em; vertical-align: -.2em;"> 37 Player</h1>
 
@@ -177,7 +177,7 @@
             <li><b>Mac:</b> <a href="https://github.com/kr37/37player/releases/download/desktop-latest/37-Player-mac.dmg">37-Player-mac.dmg</a></li>
             <li><b>Windows:</b> <a href="https://github.com/kr37/37player/releases/download/desktop-latest/37-Player-windows-setup.exe">37-Player-windows-setup.exe</a> (or the <a href="https://github.com/kr37/37player/releases/download/desktop-latest/37-Player-windows.msi">.msi</a>, for installing on many computers)</li>
         </ul>
-        <p style="font-size:small;">These are early versions, not signed yet. On a Mac, the first time: right-click the app → <b>Open</b>. On Windows, if SmartScreen stops it: <b>More info</b> → <b>Run anyway</b>.</p>
+        <p style="font-size:small;">These are early versions, not signed yet. On a Mac, the first time: drag 37 Player into Applications, then right-click it → <b>Open</b>, and <b>Open</b> again (if there's no Open button: System Settings → Privacy &amp; Security → <b>Open Anyway</b>). On Windows: in Edge's downloads, … → <b>Keep</b>, then ▾ beside <b>Delete</b> → <b>Keep anyway</b>; when it opens, <b>More info</b> → <b>Run anyway</b>.</p>
         <script>
             // test.37player.com offers the build whose pages follow dev
             // (desktop-latest-dev); 37player.com the one following main.

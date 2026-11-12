@@ -114,7 +114,7 @@ const openShared = async p=>{ await p.evaluate(()=>{ window.__dbg.setMode('editi
     // (the desktop app on macOS 12): A's state is gzipped, B reads it by hand.
     const B = await device(b, 'B', true);
     await clickText(B, '.modal button', '^English$'); await sleep(400);
-    await clickText(B, '.modal button', '^Yes, join or create one$'); await sleep(400);
+    await B.evaluate(()=> window.__joinFromWelcome()); await sleep(400);
     await B.evaluate(()=>{ document.querySelector('input[name=sjWhere][value=gdrive]').click(); document.getElementById('sjNext').click(); }); await sleep(300);
     ok(await B.evaluate(()=> document.getElementById('sjGo').textContent === 'Use Google Drive…' && !document.getElementById('sjCode')), 'welcome join: Google Drive leads to Use Google Drive…, no code');
     await signIn(B, ()=> document.getElementById('sjGo').click());
@@ -199,7 +199,7 @@ const openShared = async p=>{ await p.evaluate(()=>{ window.__dbg.setMode('editi
     // ---- C: Switch libraries → New library → Join a shared library → Google Drive…
     const C = await device(b, 'C'); await settle(C);
     await C.evaluate(()=> window.__lib.newDialog()); await sleep(400);
-    await C.evaluate(()=>{ window.__dbg.getRoot().settings.sharedLastDevice = 'Laptop'; document.querySelector('input[name=libNewHow][value=join]').click(); });
+    await C.evaluate(()=>{ window.__dbg.getRoot().settings.sharedLastDevice = 'Laptop'; document.querySelector('input[name=libNewHow][value=join]').click(); document.querySelector('input[name=libNewWhere][value=browser]')?.click(); });
     ok(await C.evaluate(()=> document.getElementById('libNewGo').textContent) === 'Next' && await C.evaluate(()=> document.getElementById('libNewNameBox').style.display === 'none'), 'New library → Join a shared library: Continue, no name to give');
     await C.evaluate(()=> document.getElementById('libNewGo').click()); await sleep(300);
     ok(await C.evaluate(()=> !!document.querySelector('input[name=sjWhere][value=gdrive]')), 'it opens the same dialog, offering Google Drive');

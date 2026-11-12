@@ -41,7 +41,7 @@ Volume adjustments made in 37 Player, and its evening out, don't come along: the
 
 Music.app and iTunes play one track straight into the next — but only smoothly when the two are alike. When the next track is a different file type (MP3 after AAC), or has a different sample rate (44.1 kHz after 48 kHz, say) or a different number of channels (mono after stereo), the player has to reset its audio output between them, and you hear a click, dropout, short gap, or worse.
 
-37 Player itself doesn't have this problem, so there's no need to change the library for it. Instead, when exporting with **Portable**, tick **Convert to the preferred format**: every file in the export comes out alike, and the library stays as it is. For a stricter match, set the preferred format (Settings → **File format**) to **Best for Apple** (AAC, 44.1 kHz, stereo), or choose your own under Custom.
+37 Player itself doesn't have this problem, so there's no need to change the library for it. Instead, when exporting with **Portable**, select **Convert to the preferred format**: every file in the export comes out alike, and the library stays as it is. For a stricter match, set the preferred format (Settings → **File format**) to **Best for Apple** (AAC, 44.1 kHz, stereo), or choose your own under Custom.
 
 ### The library's file format
 

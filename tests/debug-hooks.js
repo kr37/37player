@@ -22,6 +22,15 @@ window.__noAutoConverter = true;
 // The Heads-up at the first import and the once-a-day backup prompt (1.4.092)
 // would interrupt tests that aren't about them; welcome.js turns them on.
 if(window.__headsUpOn !== true){ window.__noHeadsUp = true; window.__noDailyPrompt = true; }
+// The welcome's Try it out / Install (2.2.023) answers itself as "No, just
+// start" did, unless a test asks for it (welcome.js, setup.js).
+if(window.__welcomeOn !== true) window.__autoTry = true;
+// The join dialog as the old welcome's "Yes, join or create one" opened it
+// (now in Install's steps): share.js, drive.js.
+window.__joinFromWelcome = ()=>{ setupJoinStep(setupEnvironment()); };
+window.openSetupGuideForTest = ()=>{ openSetupGuide(); };
+// A track's recording taken away, as if it never arrived (leave.js).
+window.__dropAudio = (id)=> libStore.del("audio", [id]);
 // playback
 window.__play = (id)=>playItem(id);
 window.__pause = ()=> togglePlay();
@@ -56,6 +65,7 @@ window.__lib = {id: ()=> LIBRARY_ID, list: readLibraryList, create: createLibrar
 // the welcome (welcome.js)
 window.IMPORT_ACCEPT_FOR_TEST = IMPORT_ACCEPT;
 window.backupInfoForTest = ()=> backupInfo;
+window.saveBackupInfoForTest = ()=> saveBackupInfo();
 // shared library as the backup (share.js)
 window.__share = {offer: (meta)=> offerNativeImport(meta, {}, {}, null, {backupRestore: true}), meta: ()=> buildNativeMeta({type: "library"}).meta,
   prompt: ()=> libraryNeedsBackup() && !libraryProtected() && !sharedAboutToCover(), covered: sharedCoversLibrary, keepers: ()=> root.backupKeepers, keeperLines,
@@ -126,7 +136,7 @@ window.__bk = {run: ()=> runFolderBackupHere(), fullScan: ()=>{ backupFullScanNe
 window.__fs = {make: (name)=> new FolderLibraryStore(async (create)=>{ const top = await navigator.storage.getDirectory(); return folderChild(top, name, create); }, "37player-files-test~" + name, {}), makeNamed: (name, paths, canMove)=> new FolderLibraryStore(async (create)=>{ const top = await navigator.storage.getDirectory(); return folderChild(top, name, create); }, "37player-files-test~" + name, {recordingPath: (id)=> paths[id] || null, canMove: (id)=> !canMove || canMove(id)}), pathFor: (t)=> recordingPathFor(t), makeNamedDesktop: (name, paths, canMove)=> new FolderLibraryStore(async ()=> desktopRootDir(name), "37player-files-test~d~" + name, {recordingPath: (id)=> paths[id] || null, canMove: (id)=> !canMove || canMove(id)}), makeDesktop: (name)=> new FolderLibraryStore(async ()=> desktopRootDir(name), "37player-files-test~d~" + name, {}),
   keyOf: fileKeyOf, unkey: keyOfFile};
 // libraries kept in a folder (folderlib.js)
-window.__fl = {move: moveLibraryToFolder, name: ()=> libraryFolderName(LIBRARY_ID), forget: ()=> folderHandleDelete(LIBRARY_ID), kind: ()=> libStore.constructor.name};
+window.__fl = {move: moveLibraryToFolder, name: ()=> libraryFolderName(LIBRARY_ID), forget: ()=> folderHandleDelete(LIBRARY_ID), kind: ()=> libStore.constructor.name, store: FolderLibraryStore, folderNameFor: ()=> folderNameFor(currentLibraryName()), rekey: (st, a, b)=> libStore.rekey(st, a, b)};
 // a restore or re-join cut off (interrupted.js)
 window.__int = {clear: (what)=> idbClearAll(what)};
 // dropped folders (dropfolder.js)
@@ -144,3 +154,4 @@ window.__dbg3.downloadPass = ()=> sharedDownloadPending(sharedConfig()); // reco
 window.__disk = {kind: ()=> STORAGE_KIND, idbPut, idbGet, DiskBlob, JoinedBlob, audioObjectUrl, writeFileTo, storageOpen, readLibraryList, writeLibraryList, libraryDbName, renameLibrary, id: ()=> LIBRARY_ID, openImportChoice, desktopImportFolder, placeFolders, placeIntoLibrary, placeLookForNew, placePathFrom, libStore: ()=> libStore, rewriteFileTagsIfPossible, tracksWithMissingAudio, showAudioMissing, confirmDeleteTracksFromLibrary, syncPlaylistFiles, placeOffline, switchLibrary, togglePlay}; // diskblob.js, desktoplibs.js, inplace.js, switchplaying.js
 window.__sil = {mp3: buildSilentMp3Bytes, entries: buildPlaceholderEntries, recognize: recognizePlaceholder, tags: parseAudioTags}; // silencemp3.js
 window.__big = {realBlob, sharedFetch, blobWithCurrentTags, convertTracks, trackIsBigFile, scheduleConvertResume, bigBytes: ()=> BIG_FILE_BYTES, queue: ()=> convertQueue.slice()}; // bigfile.js
+window.__rejoin = {idbDelete, storedAudioIds, absent: ()=> [...sharedAudioAbsent], revs: ()=> root.library.map(t=> [t.id.slice(0,6), t.audioRev, t.fileSize])}; // rejoin.js
