@@ -1,5 +1,5 @@
 // The first run and the Heads-up (1.4.092). The first run asks only the
-// language and whether to join a shared library; ▶, Import / Export and the
+// language (its Try it out / Install, 2.2.023, is setup.js's); ▶, Import / Export and the
 // display button glow until clicked. The first import brings the Heads-up,
 // with what applies on this device: Chrome (automatic backups, a shared
 // library), Firefox (Chrome or Edge, backing up by hand), Safari on an iPad
@@ -56,7 +56,10 @@ const libCount = p=> p.evaluate(()=> window.__dbg.getRoot().library.length);
   // ---- Chrome on a computer
   let p = await open(b, 'chrome');
   let m = await modal(p);
-  ok(/join \(or create\) a shared library at this time\?/.test(m) && /No, just start/.test(m) && /Yes, join or create one/.test(m), 'the welcome asks only whether to join a shared library');
+  // Since 2.2.023 the welcome asks Try it out / Install (setup.js); here it
+  // answers itself as "No, just start" did, so the Heads-up below, still
+  // shown to libraries set up before then, is what's tested.
+  ok(!m, 'the welcome answers itself here (its own test: setup.js)');
   ok(!/backup|browser|Home Screen/i.test(m), 'and nothing about backups, browsers or the Home Screen');
   await p.screenshot({path: 'shots/welcome-chrome.png'});
   await clickText(p, '.modal button', '^No, just start$'); await sleep(500);
@@ -114,7 +117,7 @@ const libCount = p=> p.evaluate(()=> window.__dbg.getRoot().library.length);
   const ipad = {ua: IPAD_UA, noFolder: true, touch: true, viewport: {width: 820, height: 1180, hasTouch: true, isMobile: true}};
   p = await open(b, 'ipad', ipad);
   m = await modal(p);
-  ok(/join \(or create\) a shared library/.test(m) && !/Home Screen/.test(m), 'iPad Safari: the welcome too asks only about joining, not the Home Screen');
+  ok(!/Home Screen/.test(m), 'iPad Safari: nothing about the Home Screen before the first import');
   await clickText(p, '.modal button', '^No, just start$'); await sleep(400);
   await importOne(p); await sleep(800);
   m = await modal(p);

@@ -22,6 +22,12 @@ window.__noAutoConverter = true;
 // The Heads-up at the first import and the once-a-day backup prompt (1.4.092)
 // would interrupt tests that aren't about them; welcome.js turns them on.
 if(window.__headsUpOn !== true){ window.__noHeadsUp = true; window.__noDailyPrompt = true; }
+// The welcome's Try it out / Install (2.2.023) answers itself as "No, just
+// start" did, unless a test asks for it (welcome.js, setup.js).
+if(window.__welcomeOn !== true) window.__autoTry = true;
+// The join dialog as the old welcome's "Yes, join or create one" opened it
+// (now in Install's steps): share.js, drive.js.
+window.__joinFromWelcome = ()=>{ setupJoinStep(setupEnvironment()); };
 // playback
 window.__play = (id)=>playItem(id);
 window.__pause = ()=> togglePlay();
@@ -56,6 +62,7 @@ window.__lib = {id: ()=> LIBRARY_ID, list: readLibraryList, create: createLibrar
 // the welcome (welcome.js)
 window.IMPORT_ACCEPT_FOR_TEST = IMPORT_ACCEPT;
 window.backupInfoForTest = ()=> backupInfo;
+window.saveBackupInfoForTest = ()=> saveBackupInfo();
 // shared library as the backup (share.js)
 window.__share = {offer: (meta)=> offerNativeImport(meta, {}, {}, null, {backupRestore: true}), meta: ()=> buildNativeMeta({type: "library"}).meta,
   prompt: ()=> libraryNeedsBackup() && !libraryProtected() && !sharedAboutToCover(), covered: sharedCoversLibrary, keepers: ()=> root.backupKeepers, keeperLines,

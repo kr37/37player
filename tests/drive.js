@@ -114,7 +114,7 @@ const openShared = async p=>{ await p.evaluate(()=>{ window.__dbg.setMode('editi
     // (the desktop app on macOS 12): A's state is gzipped, B reads it by hand.
     const B = await device(b, 'B', true);
     await clickText(B, '.modal button', '^English$'); await sleep(400);
-    await clickText(B, '.modal button', '^Yes, join or create one$'); await sleep(400);
+    await B.evaluate(()=> window.__joinFromWelcome()); await sleep(400);
     await B.evaluate(()=>{ document.querySelector('input[name=sjWhere][value=gdrive]').click(); document.getElementById('sjNext').click(); }); await sleep(300);
     ok(await B.evaluate(()=> document.getElementById('sjGo').textContent === 'Use Google Drive…' && !document.getElementById('sjCode')), 'welcome join: Google Drive leads to Use Google Drive…, no code');
     await signIn(B, ()=> document.getElementById('sjGo').click());
