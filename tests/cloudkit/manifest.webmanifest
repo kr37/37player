@@ -1,0 +1,9 @@
+{
+  "name": "iCloud test",
+  "short_name": "iCloud test",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#1d1a17",
+  "theme_color": "#1d1a17"
+}

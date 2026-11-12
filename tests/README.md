@@ -159,3 +159,19 @@ engines on each pull request to main, and when asked; free there (public
 repository). Not every test can pass in every engine: some exercise Chrome-only
 things (folder access, CDP); the list of those is kept in NOTES.md, Testing.
 
+
+## The iCloud test page (tests/cloudkit/)
+
+A page to try iCloud (CloudKit JS) as a home for shared libraries on real
+devices before any of it goes into 37 Player
+(`desktop/RESEARCH-icloud-mega.md`): sign in with an Apple ID, save a 16 MB
+piece and read it back, save a state record over a stale change tag (which
+must be refused), and optionally 45 MB and 60 MB pieces to find the size
+limit. It works only in the zone "P37Test" of the person's private database,
+which "Delete the test data" removes, and never touches a 37 Player library.
+
+It uses the container `iCloud.com.player37` in the development environment,
+with an API token whose only allowed origin is test.37player.com, so open
+`https://test.37player.com/tests/cloudkit/` (`?container=…&token=…`
+override both). On an iPad, also add it to the Home Screen and run it from
+there. Press "Copy the results" at the end.
