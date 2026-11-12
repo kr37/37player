@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.2.030">
+<meta name="app-version" content="2.2.031">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -5749,6 +5749,8 @@ const STRINGS = {
     "updateNowTip": "Version {version} is ready: Update now opens it (otherwise it opens the next time 37 Player starts)",
     "aboutVersion": "Version {version}",
     "aboutRunningLocal": "Running as a local copy (from a file on this computer).",
+    "aboutConverter": "Converter: ffmpeg.wasm {version}",
+    "aboutConverterNotHere": "not on this device yet; it's downloaded the first time something needs converting",
     "aboutRunningWebsite": "Running from the website {host}.",
     "updateCheckFailed": "Couldn't check for updates — no connection, or the updates address isn't reachable.",
     "updateLatest": "You have the latest version.",
@@ -5903,7 +5905,7 @@ const STRINGS = {
     "convertFailedTitle": "Some tracks couldn't be converted",
     "convertFailedBody": "{n} tracks couldn't be converted. They stay as they were; Library cleanup can try again.",
     "converterTitle": "Converter",
-    "converterOnDevice": "On this device ({mb} MB, ffmpeg.wasm {version}). It turns formats a browser can't play into MP3.",
+    "converterOnDevice": "On this device ({mb} MB). It turns formats a browser can't play into MP3.",
     "converterNotOnDevice": "Not on this device yet. It's downloaded (about 26 MB, once) the first time something needs converting.",
     "converterRemoveBtn": "Remove",
     "converterGetBtn": "Download now",
@@ -7691,6 +7693,8 @@ const STRINGS = {
     "updateNowTip": "La versión {version} está lista: Actualizar ya la abre (si no, se abre la próxima vez que se inicie 37 Player)",
     "aboutVersion": "Versión {version}",
     "aboutRunningLocal": "Funcionando como copia local (desde un archivo de este equipo).",
+    "aboutConverter": "Conversor: ffmpeg.wasm {version}",
+    "aboutConverterNotHere": "aún no está en este dispositivo; se descarga la primera vez que algo necesita convertirse",
     "aboutRunningWebsite": "Funcionando desde el sitio web {host}.",
     "updateCheckFailed": "No se pudo buscar actualizaciones: sin conexión, o la dirección de actualizaciones no responde.",
     "updateLatest": "Tienes la versión más reciente.",
@@ -7845,7 +7849,7 @@ const STRINGS = {
     "convertFailedTitle": "Algunas pistas no se pudieron convertir",
     "convertFailedBody": "No se pudieron convertir {n} pistas. Quedan como estaban; Limpieza de la biblioteca puede intentarlo de nuevo.",
     "converterTitle": "Conversor",
-    "converterOnDevice": "En este dispositivo ({mb} MB, ffmpeg.wasm {version}). Convierte a MP3 los formatos que un navegador no puede reproducir.",
+    "converterOnDevice": "En este dispositivo ({mb} MB). Convierte a MP3 los formatos que un navegador no puede reproducir.",
     "converterNotOnDevice": "Todavía no está en este dispositivo. Se descarga (unos 26 MB, una sola vez) la primera vez que algo necesita convertirse.",
     "converterRemoveBtn": "Quitar",
     "converterGetBtn": "Descargar ahora",
@@ -9633,6 +9637,8 @@ const STRINGS = {
     "updateNowTip": "La version {version} est prête : Mettre à jour l'ouvre (sinon, elle s'ouvrira au prochain démarrage de 37 Player)",
     "aboutVersion": "Version {version}",
     "aboutRunningLocal": "Fonctionne comme copie locale (depuis un fichier de cet ordinateur).",
+    "aboutConverter": "Convertisseur : ffmpeg.wasm {version}",
+    "aboutConverterNotHere": "pas encore sur cet appareil ; il est téléchargé la première fois qu'il faut convertir quelque chose",
     "aboutRunningWebsite": "Fonctionne depuis le site {host}.",
     "updateCheckFailed": "Impossible de vérifier les mises à jour : pas de connexion, ou l'adresse des mises à jour est injoignable.",
     "updateLatest": "Vous avez la dernière version.",
@@ -9787,7 +9793,7 @@ const STRINGS = {
     "convertFailedTitle": "Certaines pistes n'ont pas pu être converties",
     "convertFailedBody": "{n} pistes n'ont pas pu être converties. Elles restent telles quelles ; Nettoyage de la bibliothèque peut réessayer.",
     "converterTitle": "Convertisseur",
-    "converterOnDevice": "Sur cet appareil ({mb} Mo, ffmpeg.wasm {version}). Il convertit en MP3 les formats qu'un navigateur ne lit pas.",
+    "converterOnDevice": "Sur cet appareil ({mb} Mo). Il convertit en MP3 les formats qu'un navigateur ne lit pas.",
     "converterNotOnDevice": "Pas encore sur cet appareil. Il est téléchargé (environ 26 Mo, une seule fois) la première fois que quelque chose doit être converti.",
     "converterRemoveBtn": "Retirer",
     "converterGetBtn": "Télécharger maintenant",
@@ -11575,6 +11581,8 @@ const STRINGS = {
     "updateNowTip": "A versão {version} está pronta: Atualizar já abre-a (senão, abre da próxima vez que o 37 Player iniciar)",
     "aboutVersion": "Versão {version}",
     "aboutRunningLocal": "Rodando como cópia local (de um arquivo neste computador).",
+    "aboutConverter": "Conversor: ffmpeg.wasm {version}",
+    "aboutConverterNotHere": "ainda não está neste dispositivo; é baixado na primeira vez que algo precisar ser convertido",
     "aboutRunningWebsite": "Rodando a partir do site {host}.",
     "updateCheckFailed": "Não foi possível verificar atualizações — sem conexão, ou o endereço de atualizações não responde.",
     "updateLatest": "Você tem a versão mais recente.",
@@ -11729,7 +11737,7 @@ const STRINGS = {
     "convertFailedTitle": "Algumas faixas não puderam ser convertidas",
     "convertFailedBody": "Não foi possível converter {n} faixas. Ficam como estavam; Limpeza da biblioteca pode tentar de novo.",
     "converterTitle": "Conversor",
-    "converterOnDevice": "Neste dispositivo ({mb} MB, ffmpeg.wasm {version}). Converte para MP3 os formatos que um navegador não reproduz.",
+    "converterOnDevice": "Neste dispositivo ({mb} MB). Converte para MP3 os formatos que um navegador não reproduz.",
     "converterNotOnDevice": "Ainda não está neste dispositivo. É baixado (cerca de 26 MB, uma vez só) na primeira vez que algo precisar ser convertido.",
     "converterRemoveBtn": "Remover",
     "converterGetBtn": "Baixar agora",
@@ -13517,6 +13525,8 @@ const STRINGS = {
     "updateNowTip": "Version {version} ist bereit: Jetzt aktualisieren öffnet sie (sonst beim nächsten Start von 37 Player)",
     "aboutVersion": "Version {version}",
     "aboutRunningLocal": "Läuft als lokale Kopie (aus einer Datei auf diesem Computer).",
+    "aboutConverter": "Konverter: ffmpeg.wasm {version}",
+    "aboutConverterNotHere": "noch nicht auf diesem Gerät; er wird geladen, wenn zum ersten Mal etwas umgewandelt werden muss",
     "aboutRunningWebsite": "Läuft von der Website {host}.",
     "updateCheckFailed": "Keine Update-Prüfung möglich – keine Verbindung, oder die Update-Adresse ist nicht erreichbar.",
     "updateLatest": "Sie haben die neueste Version.",
@@ -13671,7 +13681,7 @@ const STRINGS = {
     "convertFailedTitle": "Manche Titel ließen sich nicht umwandeln",
     "convertFailedBody": "{n} Titel konnten nicht umgewandelt werden. Sie bleiben, wie sie waren; Bibliothek aufräumen kann es erneut versuchen.",
     "converterTitle": "Konverter",
-    "converterOnDevice": "Auf diesem Gerät ({mb} MB, ffmpeg.wasm {version}). Er wandelt Formate, die ein Browser nicht abspielt, in MP3 um.",
+    "converterOnDevice": "Auf diesem Gerät ({mb} MB). Er wandelt Formate, die ein Browser nicht abspielt, in MP3 um.",
     "converterNotOnDevice": "Noch nicht auf diesem Gerät. Er wird (etwa 26 MB, einmalig) heruntergeladen, wenn zum ersten Mal etwas umgewandelt werden muss.",
     "converterRemoveBtn": "Entfernen",
     "converterGetBtn": "Jetzt herunterladen",
@@ -15459,6 +15469,8 @@ const STRINGS = {
     "updateNowTip": "版本 {version} 已就绪：点“立即更新”即可打开（否则在下次启动 37 Player 时打开）",
     "aboutVersion": "版本 {version}",
     "aboutRunningLocal": "以本地副本运行（来自此电脑上的文件）。",
+    "aboutConverter": "转换器：ffmpeg.wasm {version}",
+    "aboutConverterNotHere": "尚未在此设备上；第一次需要转换时会下载",
     "aboutRunningWebsite": "从网站 {host} 运行。",
     "updateCheckFailed": "无法检查更新——没有网络，或更新地址无法访问。",
     "updateLatest": "你使用的是最新版本。",
@@ -15613,7 +15625,7 @@ const STRINGS = {
     "convertFailedTitle": "部分曲目无法转换",
     "convertFailedBody": "有 {n} 首曲目无法转换。它们保持原样；可在 曲库整理 中重试。",
     "converterTitle": "转换器",
-    "converterOnDevice": "已在此设备上（{mb} MB，ffmpeg.wasm {version}）。它把浏览器无法播放的格式转换为 MP3。",
+    "converterOnDevice": "已在此设备上（{mb} MB）。它把浏览器无法播放的格式转换为 MP3。",
     "converterNotOnDevice": "尚未在此设备上。第一次需要转换时会下载（约 26 MB，只需一次）。",
     "converterRemoveBtn": "移除",
     "converterGetBtn": "立即下载",
@@ -17401,6 +17413,8 @@ const STRINGS = {
     "updateNowTip": "Phiên bản {version} đã sẵn sàng: Cập nhật ngay sẽ mở nó (nếu không, nó mở vào lần khởi động 37 Player kế tiếp)",
     "aboutVersion": "Phiên bản {version}",
     "aboutRunningLocal": "Đang chạy bản cục bộ (từ tệp trên máy này).",
+    "aboutConverter": "Bộ chuyển đổi: ffmpeg.wasm {version}",
+    "aboutConverterNotHere": "chưa có trên thiết bị này; nó được tải về lần đầu có thứ cần chuyển đổi",
     "aboutRunningWebsite": "Đang chạy từ trang web {host}.",
     "updateCheckFailed": "Không thể kiểm tra cập nhật — không có kết nối, hoặc không truy cập được địa chỉ cập nhật.",
     "updateLatest": "Bạn đang dùng phiên bản mới nhất.",
@@ -17555,7 +17569,7 @@ const STRINGS = {
     "convertFailedTitle": "Một số bài không chuyển đổi được",
     "convertFailedBody": "Không chuyển đổi được {n} bản nhạc. Chúng giữ nguyên; Dọn dẹp thư viện có thể thử lại.",
     "converterTitle": "Bộ chuyển đổi",
-    "converterOnDevice": "Có trên thiết bị này ({mb} MB, ffmpeg.wasm {version}). Nó chuyển các định dạng trình duyệt không phát được sang MP3.",
+    "converterOnDevice": "Có trên thiết bị này ({mb} MB). Nó chuyển các định dạng trình duyệt không phát được sang MP3.",
     "converterNotOnDevice": "Chưa có trên thiết bị này. Nó được tải về (khoảng 26 MB, một lần) vào lần đầu cần chuyển đổi.",
     "converterRemoveBtn": "Xóa",
     "converterGetBtn": "Tải ngay",
@@ -19343,6 +19357,8 @@ const STRINGS = {
     "updateNowTip": "Η έκδοση {version} είναι έτοιμη: η Ενημέρωση τώρα την ανοίγει (αλλιώς ανοίγει στην επόμενη εκκίνηση του 37 Player)",
     "aboutVersion": "Έκδοση {version}",
     "aboutRunningLocal": "Εκτελείται ως τοπικό αντίγραφο (από αρχείο σε αυτόν τον υπολογιστή).",
+    "aboutConverter": "Μετατροπέας: ffmpeg.wasm {version}",
+    "aboutConverterNotHere": "δεν είναι ακόμη σε αυτή τη συσκευή· κατεβαίνει την πρώτη φορά που κάτι χρειάζεται μετατροπή",
     "aboutRunningWebsite": "Εκτελείται από τον ιστότοπο {host}.",
     "updateCheckFailed": "Αδυναμία ελέγχου — χωρίς σύνδεση ή η διεύθυνση ενημερώσεων δεν είναι προσβάσιμη.",
     "updateLatest": "Έχετε την τελευταία έκδοση.",
@@ -19497,7 +19513,7 @@ const STRINGS = {
     "convertFailedTitle": "Ορισμένα κομμάτια δεν μετατράπηκαν",
     "convertFailedBody": "{n} κομμάτια δεν μπόρεσαν να μετατραπούν. Μένουν όπως ήταν· η Τακτοποίηση βιβλιοθήκης μπορεί να ξαναδοκιμάσει.",
     "converterTitle": "Μετατροπέας",
-    "converterOnDevice": "Σε αυτή τη συσκευή ({mb} MB, ffmpeg.wasm {version}). Μετατρέπει σε MP3 μορφές που δεν παίζει ένα πρόγραμμα περιήγησης.",
+    "converterOnDevice": "Σε αυτή τη συσκευή ({mb} MB). Μετατρέπει σε MP3 μορφές που δεν παίζει ένα πρόγραμμα περιήγησης.",
     "converterNotOnDevice": "Δεν είναι ακόμη σε αυτή τη συσκευή. Κατεβαίνει (περίπου 26 MB, μία φορά) την πρώτη φορά που κάτι χρειάζεται μετατροπή.",
     "converterRemoveBtn": "Αφαίρεση",
     "converterGetBtn": "Λήψη τώρα",
@@ -21285,6 +21301,8 @@ const STRINGS = {
     "updateNowTip": "La versione {version} è pronta: Aggiorna ora la apre (altrimenti si apre al prossimo avvio di 37 Player)",
     "aboutVersion": "Versione {version}",
     "aboutRunningLocal": "In esecuzione come copia locale (da un file su questo computer).",
+    "aboutConverter": "Convertitore: ffmpeg.wasm {version}",
+    "aboutConverterNotHere": "non ancora su questo dispositivo; viene scaricato la prima volta che serve convertire qualcosa",
     "aboutRunningWebsite": "In esecuzione dal sito {host}.",
     "updateCheckFailed": "Impossibile controllare: nessuna connessione, o l'indirizzo degli aggiornamenti non è raggiungibile.",
     "updateLatest": "Hai l'ultima versione.",
@@ -21439,7 +21457,7 @@ const STRINGS = {
     "convertFailedTitle": "Alcune tracce non sono state convertite",
     "convertFailedBody": "Non è stato possibile convertire {n} tracce. Restano com'erano; Pulizia libreria può riprovare.",
     "converterTitle": "Convertitore",
-    "converterOnDevice": "Su questo dispositivo ({mb} MB, ffmpeg.wasm {version}). Converte in MP3 i formati che un browser non riproduce.",
+    "converterOnDevice": "Su questo dispositivo ({mb} MB). Converte in MP3 i formati che un browser non riproduce.",
     "converterNotOnDevice": "Non ancora su questo dispositivo. Viene scaricato (circa 26 MB, una volta sola) la prima volta che qualcosa va convertito.",
     "converterRemoveBtn": "Rimuovi",
     "converterGetBtn": "Scarica ora",
@@ -37727,7 +37745,7 @@ async function renderSettingsSection(fromTimer){
     // The converter: on this device or not, and a way to fetch or remove it.
     converterStored().then(rec=>{
       const note = document.getElementById("converterNote"); if(!note) return;
-      note.textContent = rec ? t("converterOnDevice", {version: rec.version || "", mb: Math.round((rec.size || 0) / 1048576)}) + " " : t("converterNotOnDevice") + " ";
+      note.textContent = rec ? t("converterOnDevice", {mb: Math.round((rec.size || 0) / 1048576)}) + " " : t("converterNotOnDevice") + " ";
       const b = document.createElement("button"); b.className = "btn ghost"; b.style.marginLeft = "4px";
       b.textContent = rec ? t("converterRemoveBtn") : t("converterGetBtn");
       b.addEventListener("click", async ()=>{
@@ -37846,14 +37864,31 @@ async function renderSettingsSection(fromTimer){
       <p style="font-size:17px; margin-bottom:4px;"><strong>37 Player</strong></p>
       <p class="settings-note" id="aboutVersion"></p>
       <p id="aboutRunning"></p>
+      <p class="settings-note" id="aboutConverter"></p>
       <div class="settings-row"><button class="btn ghost" id="checkUpdates" type="button">${t("checkUpdatesBtn")}</button>${feedbackAvailable() ? `<button class="btn ghost" id="aboutFeedback" type="button">${escapeHtmlText(t("fbBtn"))}</button>` : ""}</div>
       <p><a href="https://37player.com/" target="_blank" rel="noopener">37player.com</a></p>`;
     const afb = document.getElementById("aboutFeedback"); if(afb) afb.addEventListener("click", openFeedbackDialog);
     document.getElementById("aboutVersion").textContent = t("aboutVersion",{version: APP_VERSION});
     document.getElementById("aboutRunning").textContent = IN_DESKTOP_APP ? t("aboutRunningDesktop", {version: desktopShell ? desktopShell.version : "?"}) : local ? t("aboutRunningLocal") : t("aboutRunningWebsite", {host: location.host});
     document.getElementById("checkUpdates").addEventListener("click", ()=> checkForUpdatesNow());
+    aboutConverterLine(document.getElementById("aboutConverter"));
   }
   box.scrollTop = keepScroll;
+}
+// About's third version (2.2.031, Gen Rinzin): the converter's, beside the
+// page's and the desktop app's (it was in Library cleanup). The copy on this
+// device names its own; with none here yet, the one beside the app
+// (ffmpeg/VERSION, on the site and in the desktop app) is the one a first
+// conversion would download.
+async function aboutConverterLine(el){
+  if(!el) return;
+  const rec = await converterStored();
+  let version = rec && rec.version;
+  if(!version){
+    try{ const r = await fetch(converterBaseUrl() + "VERSION", {cache: "no-cache"}); if(r.ok) version = (await r.text()).trim().slice(0, 20); }catch(err){}
+  }
+  if(!el.isConnected) return;
+  el.textContent = t("aboutConverter", {version: version || "?"}) + (rec ? "" : " (" + t("aboutConverterNotHere") + ")");
 }
 // A second press closes Settings, as ? does Help (2.2.029, Gen Rinzin).
 document.getElementById("btnSettings").addEventListener("click", (e)=>{
