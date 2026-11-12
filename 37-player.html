@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.2.033">
+<meta name="app-version" content="2.2.034">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -24954,104 +24954,48 @@ function renderPlayer(){
    recordings) simply won't have anything to read — that's expected, not
    a failure, and the fields stay editable by hand either way.
 */
-function readId3Int(view, offset, synchsafe){
-  if(synchsafe){
-    return ((view.getUint8(offset)&0x7f)<<21) | ((view.getUint8(offset+1)&0x7f)<<14) | ((view.getUint8(offset+2)&0x7f)<<7) | (view.getUint8(offset+3)&0x7f);
-  }
-  return view.getUint32(offset, false);
-}
-// The end marker (a zero byte, or two in UTF-16) is optional, and iTunes
-// leaves it out. It's removed after decoding, as characters: removing zero
-// bytes before decoding cut the last letter of a UTF-16 text in half
-// ("Liberating Praye\uFFFD"), since in UTF-16 an English letter's second
-// byte is itself a zero.
-function decodeId3Text(bytes){
-  if(!bytes || bytes.length===0) return "";
-  const enc = bytes[0];
-  const body = bytes.subarray(1);
-  let str;
-  try{
-    if(enc===0) str = new TextDecoder("iso-8859-1").decode(body);
-    else if(enc===1){
-      const le = !(body[0]===0xFE && body[1]===0xFF);
-      const hasBom = (body[0]===0xFF && body[1]===0xFE) || (body[0]===0xFE && body[1]===0xFF);
-      str = new TextDecoder(le ? "utf-16le" : "utf-16be").decode(body.subarray(hasBom ? 2 : 0));
-    }
-    else if(enc===2) str = new TextDecoder("utf-16be").decode(body);
-    else str = new TextDecoder("utf-8").decode(body);
-  }catch(e){ return ""; }
-  const first = str.split("\0").find(x=> x.trim() !== "");
-  return (first || "").trim();
-}
-// APIC frame: encoding byte, then MIME type (always Latin-1, single-null-terminated),
-// then picture type byte, then description (terminator width depends on encoding),
-// then the raw image bytes for the rest of the frame.
-function parseApicFrame(frameBytes){
-  try{
-    const enc = frameBytes[0];
-    let pos = 1;
-    let mimeEnd = pos;
-    while(mimeEnd<frameBytes.length && frameBytes[mimeEnd]!==0) mimeEnd++;
-    const mime = (new TextDecoder("iso-8859-1").decode(frameBytes.subarray(pos,mimeEnd)) || "").trim() || "image/jpeg";
-    pos = mimeEnd+1;
-    pos += 1; // picture type byte
-    if(enc===1 || enc===2){
-      let descEnd = pos;
-      while(descEnd+1<frameBytes.length && !(frameBytes[descEnd]===0 && frameBytes[descEnd+1]===0)) descEnd+=2;
-      pos = descEnd+2;
-    } else {
-      let descEnd = pos;
-      while(descEnd<frameBytes.length && frameBytes[descEnd]!==0) descEnd++;
-      pos = descEnd+1;
-    }
-    const imageBytes = frameBytes.subarray(pos);
-    if(imageBytes.length<10) return null;
-    return { mime, bytes: imageBytes };
-  }catch(e){ return null; }
-}
+// Reads an MP3's details: ID3v2 at the start (through parseId3Block, the
+// same reader the tag writer uses: v2.2's three-letter frames, unsynchronised
+// tags, an extended header, v2.4's frame flags and its wrongly-sized frames),
+// then any field still empty from ID3v1 at the end. Before 2.2.034 the import
+// had its own reader that knew only v2.3/v2.4 plain frames, so a file tagged
+// any other way came in with no title, artist, album or picture (Gen Rinzin,
+// 12 Nov 2026: Rak-ma's album, where only the first track got them).
 async function parseId3Tags(blob){
+  const result = {title:"", artist:"", album:"", artwork:null, trackNo:null};
   try{
-    const headBuf = await blob.slice(0,10).arrayBuffer();
-    const head = new Uint8Array(headBuf);
-    if(head[0]===0x49 && head[1]===0x44 && head[2]===0x33){ // "ID3"
-      const version = head[3];
-      const headDv = new DataView(headBuf);
-      const tagSize = readId3Int(headDv, 6, true); // header size field is always synchsafe
-      const tagBuf = await blob.slice(10, 10+tagSize).arrayBuffer();
-      const dv = new DataView(tagBuf);
-      const bytes = new Uint8Array(tagBuf);
-      const result = {title:"", artist:"", album:"", artwork:null, trackNo:null};
-      let offset = 0;
-      const sizeIsSynchsafe = version>=4;
-      while(offset+10 <= bytes.length){
-        const id = String.fromCharCode(bytes[offset],bytes[offset+1],bytes[offset+2],bytes[offset+3]);
-        if(id==="\u0000\u0000\u0000\u0000") break;
-        const size = readId3Int(dv, offset+4, sizeIsSynchsafe);
-        if(size<=0 || offset+10+size>bytes.length) break;
-        const frame = bytes.subarray(offset+10, offset+10+size);
-        if(id==="TIT2") result.title = decodeId3Text(frame);
-        else if(id==="TPE1") result.artist = decodeId3Text(frame);
-        else if(id==="TALB") result.album = decodeId3Text(frame);
-        else if(id==="TRCK") result.trackNo = parseInt(decodeId3Text(frame),10) || null; // format is "N" or "N/total"
-        else if(id==="APIC" && !result.artwork) result.artwork = parseApicFrame(frame);
-        offset += 10+size;
+    const head = new Uint8Array(await blob.slice(0, 10).arrayBuffer());
+    if(head.length === 10 && head[0]===0x49 && head[1]===0x44 && head[2]===0x33){ // "ID3"
+      const block = parseId3Block(new Uint8Array(await blob.slice(0, id3TotalSize(head)).arrayBuffer()));
+      if(block && block.frames){
+        const v = block.version, text = id=>{ const f = block.frames.find(x=> x.id === id); const vals = f ? id3TextValues(v, f) : null; return vals && vals.length ? vals[0].trim() : ""; };
+        const ids = v === 2 ? {title: "TT2", artist: "TP1", albumArtist: "TP2", album: "TAL", track: "TRK", pic: "PIC"} : {title: "TIT2", artist: "TPE1", albumArtist: "TPE2", album: "TALB", track: "TRCK", pic: "APIC"};
+        result.title = text(ids.title);
+        result.artist = text(ids.artist) || text(ids.albumArtist);
+        result.album = text(ids.album);
+        result.trackNo = parseInt(text(ids.track), 10) || null; // "N" or "N/total"
+        // The front cover if there's one, else the first picture.
+        const pics = block.frames.filter(f=> f.id === ids.pic).map(f=>{ try{ return parseId3Picture(v, f); }catch(err){ return null; } }).filter(x=> x && x.bytes && x.bytes.length);
+        const pic = pics.find(x=> x.type === 3) || pics[0];
+        if(pic) result.artwork = {bytes: pic.bytes, mime: pic.mime};
       }
-      if(result.title || result.artist || result.album || result.artwork) return result;
     }
-    if(blob.size>=128){
-      const tailBuf = await blob.slice(blob.size-128, blob.size).arrayBuffer();
-      const tail = new Uint8Array(tailBuf);
-      if(tail[0]===0x54 && tail[1]===0x41 && tail[2]===0x47){ // "TAG"
+    if((!result.title || !result.artist || !result.album) && blob.size >= 128){
+      const tail = new Uint8Array(await blob.slice(blob.size-128, blob.size).arrayBuffer());
+      if(tail[0]===0x54 && tail[1]===0x41 && tail[2]===0x47){ // "TAG": ID3v1, no artwork; a track number in v1.1
         const dec = (start,len)=>{
-          let end=start+len;
-          while(end>start && tail[end-1]===0) end--;
+          let end = start;
+          while(end < start + len && tail[end] !== 0) end++;
           return new TextDecoder("iso-8859-1").decode(tail.subarray(start,end)).trim();
         };
-        return { title: dec(3,30), artist: dec(33,30), album: dec(63,30), artwork:null, trackNo:null }; // ID3v1 has no artwork or track number
+        result.title = result.title || dec(3,30);
+        result.artist = result.artist || dec(33,30);
+        result.album = result.album || dec(63,30);
+        if(result.trackNo == null && tail[125] === 0 && tail[126]) result.trackNo = tail[126];
       }
     }
   }catch(e){ console.warn("ID3 read failed", e); }
-  return null;
+  return (result.title || result.artist || result.album || result.artwork) ? result : null;
 }
 
 /* M4A/MP4 uses a completely different container format — nested "atoms"

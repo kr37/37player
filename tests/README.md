@@ -123,6 +123,7 @@ By hand: `./serve.sh` in one terminal (servers on ports 8861 and 8870), then
 | exportfile | Exporting without a zip: one track as just its file, several as separate files into a chosen folder (a stand-in), a name already there kept |
 | allsettings | Settings → All settings: grouped by whose setting it is; theme, a switch, loudness and language changed in the table take effect; PIN links to its page |
 | big413 | A file the server refuses as too big isn't sent again at every sync, and the status says so |
+| id3read | An import reads an MP3's details however it's tagged: ID3v2.2, v2.3, v2.4 with frame flags, an extended header, unsynchronised, UTF-16, album artist only, and ID3v1 for what's missing |
 
 ## The converter test page (tests/convert/)
 
