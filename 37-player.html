@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.2.036">
+<meta name="app-version" content="2.2.037">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -5344,6 +5344,7 @@ const STRINGS = {
     "folderImportPlLeftOutOne": "1 playlist left out.",
     "folderImportPlLeftOutMany": "{n} playlists left out.",
     "analyzingFolderProgress": "Checked {done} of {total}…",
+    "analyzingBar": "Checking what to import: {done} of {total}…",
     "tooltipImportExport": "Import / Export",
     "importExportTitle": "Import / Export",
     "openBtn": "Open",
@@ -7289,6 +7290,7 @@ const STRINGS = {
     "folderImportPlLeftOutOne": "1 lista omitida.",
     "folderImportPlLeftOutMany": "{n} listas omitidas.",
     "analyzingFolderProgress": "Revisados {done} de {total}…",
+    "analyzingBar": "Comprobando qué importar: {done} de {total}…",
     "tooltipImportExport": "Importar / Exportar",
     "importExportTitle": "Importar / Exportar",
     "openBtn": "Abrir",
@@ -9233,6 +9235,7 @@ const STRINGS = {
     "folderImportPlLeftOutOne": "1 playlist laissée de côté.",
     "folderImportPlLeftOutMany": "{n} playlists laissées de côté.",
     "analyzingFolderProgress": "{done} sur {total} vérifiés…",
+    "analyzingBar": "Vérification avant l'import : {done} sur {total}…",
     "tooltipImportExport": "Importer / Exporter",
     "importExportTitle": "Importer / Exporter",
     "openBtn": "Ouvrir",
@@ -11177,6 +11180,7 @@ const STRINGS = {
     "folderImportPlLeftOutOne": "1 lista deixada de fora.",
     "folderImportPlLeftOutMany": "{n} listas deixadas de fora.",
     "analyzingFolderProgress": "Verificados {done} de {total}…",
+    "analyzingBar": "Verificando o que importar: {done} de {total}…",
     "tooltipImportExport": "Importar / Exportar",
     "importExportTitle": "Importar / Exportar",
     "openBtn": "Abrir",
@@ -13121,6 +13125,7 @@ const STRINGS = {
     "folderImportPlLeftOutOne": "1 Playlist ausgelassen.",
     "folderImportPlLeftOutMany": "{n} Playlists ausgelassen.",
     "analyzingFolderProgress": "{done} von {total} geprüft…",
+    "analyzingBar": "Prüfen, was importiert wird: {done} von {total}…",
     "tooltipImportExport": "Importieren / Exportieren",
     "importExportTitle": "Importieren / Exportieren",
     "openBtn": "Öffnen",
@@ -15065,6 +15070,7 @@ const STRINGS = {
     "folderImportPlLeftOutOne": "1 个播放列表未导入。",
     "folderImportPlLeftOutMany": "{n} 个播放列表未导入。",
     "analyzingFolderProgress": "已检查 {done}/{total}…",
+    "analyzingBar": "正在检查要导入的内容：{done} / {total}…",
     "tooltipImportExport": "导入/导出",
     "importExportTitle": "导入/导出",
     "openBtn": "打开",
@@ -17009,6 +17015,7 @@ const STRINGS = {
     "folderImportPlLeftOutOne": "Đã bỏ qua 1 danh sách phát.",
     "folderImportPlLeftOutMany": "Đã bỏ qua {n} danh sách phát.",
     "analyzingFolderProgress": "Đã kiểm tra {done}/{total}…",
+    "analyzingBar": "Đang kiểm tra những gì sẽ nhập: {done}/{total}…",
     "tooltipImportExport": "Nhập / Xuất",
     "importExportTitle": "Nhập / Xuất",
     "openBtn": "Mở",
@@ -18953,6 +18960,7 @@ const STRINGS = {
     "folderImportPlLeftOutOne": "1 λίστα παραλείφθηκε.",
     "folderImportPlLeftOutMany": "{n} λίστες παραλείφθηκαν.",
     "analyzingFolderProgress": "Ελέγχθηκαν {done} από {total}…",
+    "analyzingBar": "Έλεγχος του τι θα εισαχθεί: {done} από {total}…",
     "tooltipImportExport": "Εισαγωγή / Εξαγωγή",
     "importExportTitle": "Εισαγωγή / Εξαγωγή",
     "openBtn": "Άνοιγμα",
@@ -20897,6 +20905,7 @@ const STRINGS = {
     "folderImportPlLeftOutOne": "1 playlist lasciata fuori.",
     "folderImportPlLeftOutMany": "{n} playlist lasciate fuori.",
     "analyzingFolderProgress": "Controllati {done} di {total}…",
+    "analyzingBar": "Controllo di cosa importare: {done} di {total}…",
     "tooltipImportExport": "Importa / Esporta",
     "importExportTitle": "Importa / Esporta",
     "openBtn": "Apri",
@@ -30091,9 +30100,26 @@ function folderPlaylistOrder(resolvedEntries, trackIdFor){
 // each entry's own path reference against the files actually present in
 // this selection. Nothing is committed until the review dialog is confirmed.
 async function analyzeFolderImport(audioFiles, m3u8Files, imageFiles, xmlFiles){
-  openModal(`<h3>${t(importingLooseFiles ? "analyzingFilesTitle" : "analyzingFolderTitle")}</h3><p id="analyzingFolderFile" class="import-file-line"></p><p id="analyzingFolderStatus">${t("analyzingFolderBody")}</p>`, "wide");
+  openModal(`<h3>${t(importingLooseFiles ? "analyzingFilesTitle" : "analyzingFolderTitle")}</h3><p id="analyzingFolderFile" class="import-file-line"></p><p id="analyzingFolderStatus">${t("analyzingFolderBody")}</p><div class="modal-actions"><button class="btn ghost" id="analyzingFolderStop" type="button">${t("stopBtn")}</button></div>`, "wide");
   const analyzeStatusEl = document.getElementById("analyzingFolderStatus");
   const analyzeFileEl = document.getElementById("analyzingFolderFile");
+  // Clicked away, it goes on in the status bar, and clicking there brings it
+  // back; Stop (here or there) ends it with nothing imported (2.2.037; Gen
+  // Rinzin: on a big folder of near-duplicates it was easy to dismiss and
+  // seemed lost, then the review turned up many minutes later).
+  let analyzeStopped = false;
+  const analyzeKey = "analyze:" + uid();
+  const analyzeStop = ()=>{ analyzeStopped = true; markOperationStopping(analyzeKey); };
+  document.getElementById("analyzingFolderStop").addEventListener("click", analyzeStop);
+  rememberOperationDialog();
+  setActiveOperationProgress(t("analyzingBar", {done: 0, total: audioFiles.length}), analyzeStop, analyzeKey);
+  try{
+    return await analyzeFolderImportSteps();
+  } finally {
+    clearActiveOperation(analyzeKey);
+    closeOwnModal("#analyzingFolderFile");
+  }
+  async function analyzeFolderImportSteps(){
   const suffixIndex = buildSuffixIndex(audioFiles);
   if(xmlFiles && xmlFiles.length){
     const rootName = ((audioFiles[0] && audioFiles[0].webkitRelativePath) || "").split("/")[0] || "Music";
@@ -30121,8 +30147,11 @@ async function analyzeFolderImport(audioFiles, m3u8Files, imageFiles, xmlFiles){
   function bumpAnalyzeProgress(){
     analyzed++;
     analyzeStatusEl.textContent = t("analyzingFolderProgress",{done:analyzed, total:audioFiles.length});
+    setActiveOperationProgress(t("analyzingBar", {done: analyzed, total: audioFiles.length}), analyzeStop, analyzeKey);
   }
   for(const file of audioFiles){
+    if(analyzeStopped) return;
+    if(window.__p37SlowAnalyze) await new Promise(r=> setTimeout(r, window.__p37SlowAnalyze)); // tests (analyzebar.js): slow enough to click away
     // Named as it starts: one big file (a 2-hour recording) can take a while,
     // and a bare count sitting at 0 looks stuck.
     analyzeFileEl.textContent = analyzeFileEl.title = t("checkingFileLine", {name: file.name});
@@ -30194,6 +30223,7 @@ async function analyzeFolderImport(audioFiles, m3u8Files, imageFiles, xmlFiles){
 
   const playlistPlans = [];
   for(const m3u8File of m3u8Files){
+    if(analyzeStopped) return;
     let text;
     try{ text = await m3u8File.text(); }catch(err){ continue; }
     const entries = parseM3u8(text);
@@ -30249,6 +30279,7 @@ async function analyzeFolderImport(audioFiles, m3u8Files, imageFiles, xmlFiles){
   // picture inside its first audio file (or none).
   const artPreview = [], seenDirs = new Set();
   for(const plan of audioPlan){
+    if(analyzeStopped) return;
     const path = plan.file.webkitRelativePath || plan.file.name;
     const dir = path.replace(/[^\/]*$/, "");
     if(seenDirs.has(dir.toLowerCase())) continue;
@@ -30260,10 +30291,14 @@ async function analyzeFolderImport(audioFiles, m3u8Files, imageFiles, xmlFiles){
     artPreview.push({label: segs.slice(-1)[0] || path, title: segs.join(" / "), blob: art && art.blob});
   }
   const folderPlans = importingLooseFiles ? [] : folderPlaylistPlans(audioFiles);
-  closeModal();
+  if(analyzeStopped) return;
+  // Its own dialog only: a dialog opened meanwhile stays (it used to be
+  // closed here too). The review waits its turn (showFolderImportReview).
+  closeOwnModal("#analyzingFolderFile");
   // Folders become playlists by default only when the folder brings no
   // playlists of its own: then it's most likely albums or a session's tracks.
   showFolderImportReview({audioPlan, playlistPlans, folderPlans, makeFolderPlaylists: folderPlans.length > 0 && !playlistPlans.length, folderCovers: covers, artPreview, addArtwork: true});
+  }
 }
 async function showFolderImportReview(analysis){
   await myModalTurn(t("folderImportReviewTitle"), "#analyzingFolderFile");
