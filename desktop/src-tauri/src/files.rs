@@ -549,8 +549,21 @@ pub fn parse_range(h: &str, len: u64) -> Option<(u64, u64)> {
 
 const SERVE_PIECE: u64 = 4 << 20; // an open-ended range gets at most this much at a time
 
+// The answer to a browser's "may I?" before a cross-origin request with a
+// Range header (shell 2.2.2): the page's converter worker reads a big file
+// a block at a time by its address (page 2.2.039), and WebKit may ask first.
+pub fn preflight() -> tauri::http::Response<Vec<u8>> {
+    tauri::http::Response::builder().status(tauri::http::StatusCode::NO_CONTENT)
+        .header("Access-Control-Allow-Origin", "*")
+        .header("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS")
+        .header("Access-Control-Allow-Headers", "Range")
+        .header("Access-Control-Max-Age", "86400")
+        .body(vec![]).unwrap()
+}
+
 pub fn serve(app: &tauri::AppHandle, req: &tauri::http::Request<Vec<u8>>) -> tauri::http::Response<Vec<u8>> {
     use tauri::http::{Response, StatusCode};
+    if req.method() == tauri::http::Method::OPTIONS { return preflight(); }
     let fail = |code: StatusCode, msg: String| Response::builder().status(code).header("Access-Control-Allow-Origin", "*").body(msg.into_bytes()).unwrap();
     let path = percent_decode(req.uri().path().trim_start_matches('/'));
     let Some((root, rel)) = path.split_once('/') else { return fail(StatusCode::NOT_FOUND, "no root".into()) };
@@ -569,7 +582,7 @@ pub fn serve(app: &tauri::AppHandle, req: &tauri::http::Request<Vec<u8>>) -> tau
     let body = match read(&base, rel, start, Some(end)) { Ok(b) => b, Err(e) => return fail(StatusCode::INTERNAL_SERVER_ERROR, e) };
     let mut r = Response::builder()
         .header("Content-Type", mime).header("Accept-Ranges", "bytes").header("Content-Length", body.len().to_string())
-        .header("Access-Control-Allow-Origin", "*").header("Access-Control-Expose-Headers", "Content-Range, Content-Length, Accept-Ranges");
+        .header("Access-Control-Allow-Origin", "*").header("Access-Control-Allow-Headers", "Range").header("Access-Control-Expose-Headers", "Content-Range, Content-Length, Accept-Ranges");
     r = if partial { r.status(StatusCode::PARTIAL_CONTENT).header("Content-Range", format!("bytes {}-{}/{}", start, end.saturating_sub(1), len)) } else { r.status(StatusCode::OK) };
     r.body(body).unwrap()
 }
@@ -591,6 +604,14 @@ mod tests {
         let _ = fs::remove_dir_all(&d);
         fs::create_dir_all(&d).unwrap();
         d
+    }
+    #[test]
+    fn a_range_request_may_be_asked_about_first() {
+        let r = preflight();
+        assert_eq!(r.status(), tauri::http::StatusCode::NO_CONTENT);
+        assert_eq!(r.headers().get("Access-Control-Allow-Origin").unwrap(), "*");
+        assert!(r.headers().get("Access-Control-Allow-Headers").unwrap().to_str().unwrap().contains("Range"));
+        assert!(r.headers().get("Access-Control-Allow-Methods").unwrap().to_str().unwrap().contains("GET"));
     }
     #[test]
     fn paths_must_stay_inside() {
