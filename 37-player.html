@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.2.030.2">
+<meta name="app-version" content="2.2.030.3">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -1578,15 +1578,15 @@
   /* Edit Playlists: keep display separate from actions, including when wrapping. */
   #edCtxBar{ gap:8px 12px; padding:6px calc(18px * var(--hpad)); }
   #edCtxBar .ed-toolbar-actions, #edCtxBar .ed-toolbar-group{ display:flex; align-items:center; gap:4px; min-width:0; max-width:100%; }
-  #edCtxBar .ed-toolbar-actions{ flex-wrap:wrap; gap:8px 16px; }
-  #edCtxBar .ed-toolbar-group{ flex-wrap:wrap; flex-shrink:0; }
+  #edCtxBar .ed-toolbar-actions{ flex-wrap:wrap; gap:8px 16px; margin-right:auto; }
+  #edCtxBar .ed-toolbar-group{ position:relative; flex-wrap:wrap; flex-shrink:0; }
+  #edCtxBar .ed-toolbar-divided::before{ content:""; position:absolute; left:-9px; top:50%; transform:translateY(-50%); width:1px; height:22px; background:var(--line); }
   #edCtxBar .tb-btn{ flex-shrink:0; }
-  #edCtxBar .ed-toolbar-display{ margin-left:auto; order:1; padding:6px 10px; border:1px solid var(--line); border-radius:8px; background:var(--bg-panel); }
+  #edCtxBar .ed-toolbar-display{ margin:0; order:1; padding:0; border:1px solid var(--line); border-radius:0; background:color-mix(in srgb, var(--folder-head, #91afd1) 12%, var(--bg-panel)); }
   #edCtxBar .ed-toolbar-display .tb-btn:not(.on){ color:var(--folder-head, #c8ddf4); background:color-mix(in srgb, #b1c9e5 25%, var(--bg-panel-raised)); }
   body.theme-light #edCtxBar .ed-toolbar-display .tb-btn:not(.on){ background:color-mix(in srgb, white 96%, var(--folder-head)); }
   #edCtxBar .ed-toolbar-display .tb-btn:hover:not(.on){ background:color-mix(in srgb, white 20%, var(--bg-panel-raised)); }
   body.theme-light #edCtxBar .ed-toolbar-display .tb-btn:hover:not(.on){ background:white; }
-  #edCtxBar .ed-toolbar-display .tb-btn.on{ box-shadow:inset 0 -3px 0 rgba(255,255,255,.65); }
   #edCtxBar.ed-toolbar-stacked .ed-toolbar-display{ order:0; margin-left:0; }
   #edCtxBar.ed-toolbar-stacked .ed-toolbar-actions{ order:1; flex-basis:100%; padding-top:5px; border-top:1px solid var(--line); }
 
@@ -23737,7 +23737,7 @@ function buildEditorCtxBar(){
   const display = groups.splice(1, 1)[0];
   display.classList.add("ed-toolbar-display");
   const actions = document.createElement("div"); actions.className = "ed-toolbar-actions";
-  groups.forEach(g=> actions.appendChild(g));
+  groups.forEach((g, i)=>{ if(i === 1 || i === 3) g.classList.add("ed-toolbar-divided"); actions.appendChild(g); });
   bar.replaceChildren(display, actions);
   // Measure the controls themselves: text size and translated labels determine
   // when a second row is needed, rather than a viewport breakpoint.
