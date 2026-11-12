@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.2.030.4">
+<meta name="app-version" content="2.2.030.5">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -1575,20 +1575,23 @@
   .ctx-playing .tb-btn:hover:not(:disabled):not(.on), .ctx-below .tb-btn:hover:not(:disabled):not(.on),
   .library-screen .tb-btn:hover:not(:disabled):not(.on){ background:var(--ctl-hover-bg, var(--bg-panel)); border-color:var(--ctl-hover-border, var(--line)); }
 
-  /* Edit Playlists: keep display separate from actions, including when wrapping. */
-  #edCtxBar{ gap:8px 12px; padding:6px calc(18px * var(--hpad)); }
-  #edCtxBar .ed-toolbar-actions, #edCtxBar .ed-toolbar-group{ display:flex; align-items:center; gap:4px; min-width:0; max-width:100%; }
-  #edCtxBar .ed-toolbar-actions{ flex-wrap:wrap; gap:8px 16px; margin-right:auto; }
-  #edCtxBar .ed-toolbar-group{ position:relative; flex-wrap:wrap; flex-shrink:0; }
-  #edCtxBar .ed-toolbar-divided::before{ content:""; position:absolute; left:-9px; top:50%; transform:translateY(-50%); width:1px; height:22px; background:var(--line); }
-  #edCtxBar .tb-btn{ flex-shrink:0; }
-  #edCtxBar .ed-toolbar-display{ margin:-6px calc(-18px * var(--hpad)) -6px 0; order:1; align-self:stretch; padding:6px calc(18px * var(--hpad)); border:1px solid var(--line); border-radius:0; background:color-mix(in srgb, var(--folder-head, #91afd1) 12%, var(--bg-panel)); }
-  #edCtxBar .ed-toolbar-display .tb-btn:not(.on){ color:var(--folder-head, #c8ddf4); background:color-mix(in srgb, #b1c9e5 25%, var(--bg-panel-raised)); }
-  body.theme-light #edCtxBar .ed-toolbar-display .tb-btn:not(.on){ background:color-mix(in srgb, white 96%, var(--folder-head)); }
-  #edCtxBar .ed-toolbar-display .tb-btn:hover:not(.on){ background:color-mix(in srgb, white 20%, var(--bg-panel-raised)); }
-  body.theme-light #edCtxBar .ed-toolbar-display .tb-btn:hover:not(.on){ background:white; }
-  #edCtxBar.ed-toolbar-stacked .ed-toolbar-display{ order:0; margin: -6px calc(-18px * var(--hpad)) 0; width:calc(100% + 36px * var(--hpad)); max-width:none; box-sizing:border-box; }
-  #edCtxBar.ed-toolbar-stacked .ed-toolbar-actions{ order:1; flex-basis:100%; padding-top:5px; border-top:1px solid var(--line); }
+  /* All screens: keep display separate from actions, including when wrapping. */
+  .display-toolbar{ display:flex; flex-wrap:wrap; align-items:center; min-width:0; overflow:visible; gap:8px 12px; padding:6px calc(18px * var(--hpad)); }
+  .lib-table-totals:has(> .display-toolbar){ padding:0; }
+  .lib-table-view.display-toolbar{ width:100%; box-sizing:border-box; }
+  .ctx-inline.lib-col-bar.display-toolbar{ flex-wrap:wrap; padding:6px calc(18px * var(--hpad)); overflow:visible; }
+  .display-toolbar .ed-toolbar-actions, .display-toolbar .ed-toolbar-group{ display:flex; align-items:center; gap:4px; min-width:0; max-width:100%; }
+  .display-toolbar .ed-toolbar-actions{ flex-wrap:wrap; gap:8px 16px; margin-right:auto; }
+  .display-toolbar .ed-toolbar-group{ position:relative; flex-wrap:wrap; flex-shrink:0; }
+  .display-toolbar .ed-toolbar-divided::before{ content:""; position:absolute; left:-9px; top:50%; transform:translateY(-50%); width:1px; height:22px; background:var(--line); }
+  .display-toolbar .tb-btn{ flex-shrink:0; }
+  .display-toolbar .ed-toolbar-display{ margin:-6px calc(-18px * var(--hpad)) -6px 0; order:1; align-self:stretch; padding:6px calc(18px * var(--hpad)); border:1px solid var(--line); border-radius:0; background:color-mix(in srgb, var(--folder-head, #91afd1) 12%, var(--bg-panel)); }
+  .display-toolbar .ed-toolbar-display .tb-btn:not(.on){ color:var(--folder-head, #c8ddf4); background:color-mix(in srgb, #b1c9e5 25%, var(--bg-panel-raised)); }
+  body.theme-light .display-toolbar .ed-toolbar-display .tb-btn:not(.on){ background:color-mix(in srgb, white 96%, var(--folder-head)); }
+  .display-toolbar .ed-toolbar-display .tb-btn:hover:not(.on){ background:color-mix(in srgb, white 20%, var(--bg-panel-raised)); }
+  body.theme-light .display-toolbar .ed-toolbar-display .tb-btn:hover:not(.on){ background:white; }
+  .display-toolbar.ed-toolbar-stacked .ed-toolbar-display{ order:0; margin: -6px calc(-18px * var(--hpad)) 0; width:calc(100% + 36px * var(--hpad)); max-width:none; box-sizing:border-box; }
+  .display-toolbar.ed-toolbar-stacked .ed-toolbar-actions{ order:1; flex-basis:100%; padding-top:5px; border-top:1px solid var(--line); }
 
   /* Page tabs (Playing | Edit Playlists | Library, and Library's Browse | Table). */
   .mode-tabs{ background:var(--tabs-bg, var(--bg-panel-raised)); }
@@ -23660,6 +23663,7 @@ function buildPlayingCtxBar(){
     {icon: "sliders", label: t("ctxPlayback"), tip: t("ctxPlaybackTip"), lock: ()=> !!root.settings.pin && Date.now() >= pinUnlockedUntil,
       act: ()=> withPin(()=>{ openSettingsPage(); goToSettingsSection("playback"); })}
   ]);
+  groupDisplayToolbar(playingCtxBar, 0);
   return playingCtxBar;
 }
 
@@ -23725,6 +23729,11 @@ function buildEditorCtxBar(){
     {icon: "silence", label: t("ctxSilence"), tip: t("insertASilenceTitle"), enabled: ()=> !!editingPlaylistNode(), act: ()=>{ const pl = editingPlaylistNode(); if(pl) openInsertSilence(pl); }},
     {icon: "stop", label: t("ctxStop"), tip: t("insertAStopTitle"), enabled: ()=> !!editingPlaylistNode(), act: ()=>{ const pl = editingPlaylistNode(); if(pl) openInsertStop(pl); }}
   ]);
+  groupDisplayToolbar(bar, 1, [1, 3]);
+}
+// Shared display panel: preserve existing controls and their event handlers.
+function groupDisplayToolbar(bar, displayIndex, dividers = [1]){
+  bar.classList.add("display-toolbar");
   // Each existing separator becomes a group boundary. Display comes first
   // in keyboard order, on the right when wide and above actions when narrow.
   const groups = [];
@@ -23734,10 +23743,10 @@ function buildEditorCtxBar(){
     else group.appendChild(child);
   }
   groups.push(group);
-  const display = groups.splice(1, 1)[0];
+  const display = groups.splice(displayIndex, 1)[0];
   display.classList.add("ed-toolbar-display");
   const actions = document.createElement("div"); actions.className = "ed-toolbar-actions";
-  groups.forEach((g, i)=>{ if(i === 1 || i === 3) g.classList.add("ed-toolbar-divided"); actions.appendChild(g); });
+  groups.forEach((g, i)=>{ if(dividers.includes(i)) g.classList.add("ed-toolbar-divided"); actions.appendChild(g); });
   bar.replaceChildren(display, actions);
   // Measure the controls themselves: text size and translated labels determine
   // when a second row is needed, rather than a viewport breakpoint.
@@ -23811,9 +23820,7 @@ function buildLibTableViewControls(el){
     {icon: "dupTrack", label: t("ctxCopyTrack"), tip: t("duplicate"), enabled: ()=> !!libFocusTrackId(), act: ()=>{ const tr = findLibraryTrack(libFocusTrackId()); if(tr) duplicateLibraryTrack(tr); }},
     {icon: "del", label: t("ctxDelete"), tip: t("dlgDelete"), danger: true, enabled: anySel, act: libDeleteSelected}
   ]);
-  // The "how it's shown" half, before the count: first to lose its words.
-  for(const c of el.children){ if(c === count) break; c.classList.add("tb-view"); }
-  watchCtxFit(el);
+  groupDisplayToolbar(el, 0);
 }
 function watchCtxFit(el){
   if(!el._fitObs && window.ResizeObserver){ el._fitObs = new ResizeObserver(()=> fitCtxInline(el)); el._fitObs.observe(el.parentElement || el); }
@@ -23824,7 +23831,7 @@ function watchCtxFit(el){
 function fitLibTableView(){ fitCtxInline(document.getElementById("libTableView")); }
 // Any inline bar: drop the words of its .tb-view buttons first, then all.
 function fitCtxInline(el){
-  if(!el || !el.offsetParent) return;
+  if(!el || !el.offsetParent || el.classList.contains("display-toolbar")) return;
   const wraps = ()=>{ if(el.scrollWidth > el.clientWidth + 1) return true; const k = [...el.children].filter(c=> c.offsetParent); if(k.length < 2) return false; const a = k[0].getBoundingClientRect(), z = k[k.length - 1].getBoundingClientRect(); return z.top >= a.bottom - 2; };
   el.classList.remove("tight1", "tight2");
   if(wraps()){ el.classList.add("tight1"); if(wraps()) el.classList.add("tight2"); }
@@ -23875,7 +23882,7 @@ function buildLibraryCtxActions(){
     {icon: "split", label: t("ctxSplit"), tip: t("splitTrackBtn"), enabled: canSplitLibraryPreviewNow, act: libSplitNow},
     {icon: "del", label: t("ctxDelete"), tip: t("dlgDelete"), danger: true, enabled: anySel, act: libDeleteSelected},
   ]);
-  [...bar.children].forEach(c=> c.classList.toggle("tb-view", c.id === "btnUndo" || c.id === "btnRedo")); // the arrows are clear without words: they go first
+  groupDisplayToolbar(bar, 1);
   libTableSelCount();
   watchCtxFit(bar);
 }

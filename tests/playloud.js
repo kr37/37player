@@ -30,7 +30,7 @@ const clickText = (p, sel, src) => p.evaluate((sel, src)=>{ const re=new RegExp(
   const bar = ()=> p.evaluate(()=> [...document.querySelectorAll('.ctx-bar .tb-btn, .ctx-bar .tb-sep')].filter(e=> e.offsetParent !== null).map(e=> e.classList.contains('tb-sep') ? '|' : e.textContent.trim() + (e.classList.contains('on') ? '*' : '')).join(' '));
   await clickText(p, '.tab, button', '^Playing$'); await sleep(300);
   let txt = await bar();
-  ok(/Wrap.*Album.*Loudness.*\|.*Playback/.test(txt), 'the bar: display switches, a line, Playback: ' + txt);
+  ok(await p.evaluate(()=>{ const panel = document.querySelector('.ctx-playing .ed-toolbar-display'); const actions = document.querySelector('.ctx-playing .ed-toolbar-actions'); return panel && /Wrap.*Album.*Loudness/.test(panel.textContent) && /Playback/.test(actions.textContent) && !panel.querySelector('select') && !!actions.querySelector('select'); }), 'display switches grouped separately from loudness adjustment and Playback: ' + txt);
   const pick = v=> p.evaluate(v=>{ const s = document.getElementById('playingLevelMode'); s.value = v; s.dispatchEvent(new Event('change')); }, v);
   ok(await p.evaluate(()=>{ const s = document.getElementById('playingLevelMode'); return s && s.value === 'off' && [...s.options].map(o=> o.value).join() === 'album,off,track'; }), 'Loudness is a dropdown: By album / Off / By track, Off chosen (2.2.005)');
   ok(!(await p.evaluate(()=> document.querySelector('#playingTrackList .tloud'))), 'nothing in the rows while Loudness is off and no track has its own volume');
