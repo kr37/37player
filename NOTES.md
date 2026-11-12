@@ -114,6 +114,8 @@ The full plan and history are in the project doc `shared-library-sync.md`. In sh
 
 ## Non-obvious decisions
 
+- **Edit Playlists toolbar grouping** (2.2.030.1, `chat`, 12 Nov 2026; discussed with Gen Rinzin): begin separating display from actions across the app with Edit Playlists. Wrap, Waveforms and Player form a cool-tinted group at the right on wide screens; at 1100px and below they have their own row above editing actions. Undo/Redo, Edit/Split, Copy/Paste/Delete and Silence/Stop stay in small groups that wrap together. Position and spacing explain the distinction as well as colour; existing theme variables supply the tint, brown still marks enabled options (also underlined), green and amber keep their meanings. Playing and Library arrangements remain to be worked through.
+
 - **Translated Playing controls** (2.2.008): the album recommendation and all new browsing/switching labels and explanations are supplied in Spanish, French, Portuguese, German, Chinese, Vietnamese, Greek and Italian, rather than falling back to English.
 
 - **More room for browsed tracks** (2.2.007, Gen Rinzin): overlay title/count and Use this playlist share a header, Browsing joins the count, and the replacement hint sits under Play from here. On viewports up to 850px high, browsing also reduces live-player padding and waveform height while keeping its transport, names, volume and seekbar. Closing restores normal sizing. The overlay follows changes in the live header height. Touch targets stay full-sized; the track list gets the recovered space.
