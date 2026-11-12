@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.2.038">
+<meta name="app-version" content="2.2.039">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -3754,6 +3754,34 @@ class JoinedBlob {
 // The converter's input is a real File, handed to its worker: a file read
 // where it lies is read whole for it (its memory, as before 2.0).
 async function converterFile(blob, name){ return new File([await realBlob(blob)], name); }
+// What the converter is given for a file (2.2.039; Gen Rinzin's 8 GB Mac
+// mini, 11 Nov 2026: converting a 2.7 GB WAV after a 1 GB one, WebKit's
+// Networking process held 4–6 GB, the inputs read whole into Blobs, and
+// macOS restarted itself). A file of the desktop app's, read where it lies
+// (a DiskBlob), goes as its address: the worker reads it from the disk a
+// block at a time, synchronously, as ffmpeg asks for bytes (lazyInput in
+// converterWorkerMain), and holds one block. Anything else, or if this
+// webview can't read the address that way (tried once, on the file's first
+// bytes; then not again until reloaded), a real File, as before. Call once
+// the converter has started.
+let converterLazyOff = false;
+async function converterInput(blob, name){
+  if(isDiskBlob(blob) && !converterLazyOff && blob.size > 0){
+    const url = window.__p37FileUrl ? await window.__p37FileUrl(blob.p37root, blob.p37path) : window.__TAURI__.core.convertFileSrc(blob.p37root + "/" + blob.p37path, "p37lib");
+    const input = {p37lazy: true, name, size: blob.size, start: blob.start || 0, url};
+    try{
+      const r = await converterAsk({type: "probe", file: input});
+      if(r && r.head && r.head.length >= Math.min(16, blob.size * 2)){ if(!converterLazySaid){ converterLazySaid = true; playLog("the converter reads files from the disk as it goes"); } return input; }
+      throw new Error("no bytes came back");
+    }catch(err){
+      if(err && err.interrupted) throw err;
+      converterLazyOff = true;
+      playLog("the converter can't read files from the disk as it goes here (" + (err && err.message || err) + "): it reads each one whole first");
+    }
+  }
+  return converterFile(blob, name);
+}
+let converterLazySaid = false;
 // What a library can be given as a file's bytes: a Blob, or the desktop
 // app's stand-ins for one.
 function isBlobLike(v){ return v instanceof Blob || v instanceof DiskBlob || v instanceof JoinedBlob; }
@@ -27612,6 +27640,58 @@ async function removeConverter(){
 // The worker's own code, turned into a Blob URL (see converterStart).
 function converterWorkerMain(){
   let core = null, logLines = [];
+  // A file read by its address (converterInput): ffmpeg's reads are served
+  // from one block of LAZY_BLOCK bytes, fetched synchronously with a Range
+  // request (a worker may wait; ffmpeg can't be made to) and replaced by
+  // the next as it reads on. No Blob is made for them: in WebKit a Blob's
+  // bytes live in the Networking process until the collector gets to it.
+  const LAZY_BLOCK = 4 << 20; // the shell serves at most 4 MB per request
+  function lazyInput(f){
+    let block = null;
+    const fetchBlock = (p)=>{
+      const want = Math.min(f.size, p + LAZY_BLOCK) - p;
+      const x = new XMLHttpRequest();
+      x.open("GET", f.url, false);
+      x.setRequestHeader("Range", "bytes=" + (f.start + p) + "-" + (f.start + p + want - 1));
+      let binary = true;
+      try{ x.responseType = "arraybuffer"; }catch(e){ binary = false; x.overrideMimeType("text/plain; charset=x-user-defined"); }
+      x.send();
+      if(x.status !== 206 && !(x.status === 200 && f.start + p === 0 && want === f.size)) throw new Error("reading the file: HTTP " + x.status);
+      const cr = x.getResponseHeader("Content-Range"), m = cr && /bytes (\d+)-/.exec(cr);
+      if(m && +m[1] !== f.start + p) throw new Error("reading the file: the wrong bytes came back");
+      let bytes;
+      if(binary && x.response) bytes = new Uint8Array(x.response);
+      else { const t = x.responseText || ""; bytes = new Uint8Array(t.length); for(let i = 0; i < t.length; i++) bytes[i] = t.charCodeAt(i) & 255; }
+      if(!bytes.length) throw new Error("reading the file: nothing came back");
+      block = {start: p, bytes: bytes.length > want ? bytes.subarray(0, want) : bytes};
+    };
+    return {name: f.name, size: f.size, lastModifiedDate: new Date(),
+      p37ReadInto(buffer, offset, length, position){
+        if(position >= f.size) return 0;
+        length = Math.min(length, f.size - position);
+        let done = 0;
+        while(done < length){
+          const p = position + done;
+          if(!block || p < block.start || p >= block.start + block.bytes.length) fetchBlock(p);
+          const at = p - block.start, n = Math.min(length - done, block.bytes.length - at);
+          buffer.set(block.bytes.subarray(at, at + n), offset + done);
+          done += n;
+        }
+        return done;
+      }};
+  }
+  // WORKERFS reads its files through FileReaderSync; one that can read
+  // itself (lazyInput) is asked directly. Patched once per worker.
+  function readsFromAddress(){
+    const W = core.FS.filesystems.WORKERFS;
+    if(W.p37Patched) return;
+    W.p37Patched = true;
+    const orig = W.stream_ops.read;
+    W.stream_ops.read = function(stream, buffer, offset, length, position){
+      const c = stream.node.contents;
+      return c && c.p37ReadInto ? c.p37ReadInto(buffer, offset, length, position) : orig.apply(this, arguments);
+    };
+  }
   self.onmessage = async ({data})=>{
     try{
       if(data.type === "load"){
@@ -27622,15 +27702,26 @@ function converterWorkerMain(){
         self.postMessage({type: "loaded"});
         return;
       }
+      if(data.type === "probe"){
+        // Can this worker read the file by its address? Its first bytes.
+        const c = lazyInput(data.file), b = new Uint8Array(Math.min(8, data.file.size));
+        c.p37ReadInto(b, 0, b.length, 0);
+        self.postMessage({type: "done", ret: 0, head: Array.from(b, x=> x.toString(16).padStart(2, "0")).join("")});
+        return;
+      }
       logLines = [];
       try{ core.FS.mkdir("/in"); }catch(e){}
       try{ core.FS.mkdir("/out"); }catch(e){}
+      const file = data.file.p37lazy ? lazyInput(data.file) : data.file;
       // The file's first bytes as this worker reads them, for the error when
       // ffmpeg can't make sense of it (WebKit, 5 Nov 2026).
       let head = "";
-      try{ head = Array.from(new Uint8Array(new FileReaderSync().readAsArrayBuffer(data.file.slice(0, 8))), b=> b.toString(16).padStart(2, "0")).join(""); }
-      catch(e){ head = "error " + (e && e.name || e); }
-      core.FS.mount(core.FS.filesystems.WORKERFS, {files: [data.file]}, "/in");
+      try{
+        const b = file.p37ReadInto ? (()=>{ const x = new Uint8Array(Math.min(8, file.size)); file.p37ReadInto(x, 0, x.length, 0); return x; })() : new Uint8Array(new FileReaderSync().readAsArrayBuffer(file.slice(0, 8)));
+        head = Array.from(b, x=> x.toString(16).padStart(2, "0")).join("");
+      }catch(e){ head = "error " + (e && e.name || e); }
+      readsFromAddress();
+      core.FS.mount(core.FS.filesystems.WORKERFS, {files: [file]}, "/in");
       let ret, out = null;
       try{
         core.exec(...data.args);
@@ -27729,7 +27820,7 @@ async function converterConvert(blob, sourceName, onFraction, target){
   const kind = FORMAT_KINDS[target.format];
   await converterStart();
   const ext = (String(sourceName || "").match(/\.[a-z0-9]{1,5}$/i) || [""])[0].toLowerCase();
-  const file = await converterFile(blob, "source" + ext);
+  const file = await converterInput(blob, "source" + ext);
   const probe = await converterAsk({type: "run", file, args: ["-hide_banner", "-nostdin", "-i", "/in/" + file.name]});
   const info = converterReadInput(probe.log);
   if(!info.hasAudio) throw converterNoAudioError(probe.log, {page: await blobHeadHex(blob), worker: probe.head, size: blob.size});
@@ -28605,7 +28696,7 @@ async function splitViaConverter(sourceTrack, blob, fmt, segs, ids, mode, step, 
   const run = async ()=>{
     await converterStart();
     const ext = fileExt(sourceTrack.filename) || (fmt.ext || ".bin").replace(/^\./, "");
-    const file = await converterFile(blob, "source." + ext);
+    const file = await converterInput(blob, "source." + ext);
     const probe = await converterAsk({type: "run", file, args: ["-hide_banner", "-nostdin", "-i", "/in/" + file.name]});
     const info = converterReadInput(probe.log);
     if(!info.hasAudio) throw converterNoAudioError(probe.log);
@@ -31830,7 +31921,7 @@ async function analyzeWithConverter(blob){
   const run = async ()=>{
     await converterStart();
     const fmt = await sniffAudioFormat(blob).catch(()=> ({}));
-    const file = await converterFile(blob, "source" + (fmt.ext || ""));
+    const file = await converterInput(blob, "source" + (fmt.ext || ""));
     const probe = await converterAsk({type: "run", file, args: ["-hide_banner", "-nostdin", "-i", "/in/" + file.name]});
     const info = converterReadInput(probe.log);
     if(!info.hasAudio || !(info.duration > 0)) throw new Error("the converter found no sound with a length");
