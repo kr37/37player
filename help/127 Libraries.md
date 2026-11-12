@@ -9,6 +9,8 @@ In Settings → **Library**, open **All libraries** and choose **New library…*
 - **Start empty:** a new, empty library. Fill it as usual, with Import / Export.
 - **Join a shared library:** enter the join code and this device's name, and the new library joins straight away. Leave the name empty and it takes the shared library's own name, such as "IKRC Library".
 
+In Chrome or Edge on a computer it also asks **where the library should be kept**. **In a folder** is chosen already: the library is ordinary files in a folder you choose, backed up with the rest of the computer, and 37 Player makes no second copy of it. **In this browser's storage** keeps it inside the browser, as before.
+
 Joining a shared library from a library that already has tracks asks first whether to make a new library for it instead. That's usually the right choice: joining with an existing library would add all its tracks and playlists to the shared library, for everyone in it to see.
 
 ### Switching
@@ -29,6 +31,9 @@ Normally a library lives inside the browser, where the browser can erase it (see
 - **Readable names:** the recordings are in "music", in a folder for each artist, then each album, named after their details, such as "music/Tharpa/Prayers for Meditation/01 Liberating Prayer.mp3". "playlists" has each playlist as an .m3u8 file that other players (VLC, foobar2000, Music.app) can open; 37 Player keeps them up to date but doesn't use them itself. You can play them or copy them elsewhere with any other program. Edit a track's details in 37 Player and its file is renamed to match (Undo puts the name back). Playlists, artwork and settings are in the folder "37 Player's own files". A folder library made before version 1.4.174 has its recordings moved into the readable names by itself, the first time it's opened.
 - **Permission:** an installed 37 Player keeps permission to the folder. In a browser tab, Chrome may ask again after a restart: choose **Open it**.
 - **Moving the folder:** move the whole folder, then open 37 Player and choose **Find the folder…**. It knows its own folder again by the file "37 Player library.json" inside it.
+- **A library folder that's already there** (the browser's data was cleared, or the folder was copied from another computer, by USB stick, say): Settings → **Library** → **All libraries** → **Find a library folder…** puts it on your list, running from where it is. Opening it changes nothing in it. **Keep it in a folder…** never copies a library over a folder that already holds one; it offers to open that one instead.
+- **Every browser's first library counts as the same library,** so a folder made from one opens here only in place of this browser's first library, and only while that's still empty (just the starter track). If yours already has tracks or playlists, the folder isn't opened and nothing changes.
+- **A copied folder is still joined** to its shared library, so nothing is sent or received again. The first time it's opened by another copy of 37 Player (on another device, or in another browser), it asks whether this is another device before it syncs. If it is, give it a name of its own, so the devices' messages, such as "waiting for … to send it", don't mix the two up.
 
 ### In the desktop app
 

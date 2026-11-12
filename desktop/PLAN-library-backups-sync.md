@@ -82,17 +82,31 @@ So the answer depends on whether the copy keeps the IDs and revisions.
 
 `moveLibraryToFolder` treats a chosen folder whose marker has this library's ID as "this library's own folder, carry on", and then writes this library's records over the folder's. Every browser's first library has the same ID (`main`). So a new, empty first library pointed at an existing library folder would replace that folder's record of tracks and playlists with the empty one; the recordings would stay on disk, unlisted. On the T470 the read-only files stopped it. Read in the code, **not run**. I'd confirm it with a test and fix it before anything else: a folder that already holds a library with content is never written into; it's offered to be opened instead (5.2).
 
+**Confirmed and fixed in 2.2.019** (12 Nov 2026). tests/folderlib.js clears the browser's storage, makes a new first library and points Keep it in a folder… at the old library's folder: before the fix the old folder's list of tracks was replaced by the empty one. Now a folder holding a library is used only if it is this library's own unfinished copy: its marker carries a token kept in this library's own storage (so it goes when that storage goes), or no library record was written into it yet. Anything else, the chosen folder itself or one of the library's name inside it, is refused: "“X” already holds a 37 Player library. 37 Player won't copy this library over it: choose another place." A copy cut off after its library record was written still carries on (tested). Offering to open the folder instead comes with item 2 (5.2).
+
 ### 5.2 Missing: opening an existing library folder in Chrome/Edge
 
 The desktop app has Find a library folder…; Chrome and Edge have nothing like it. That one feature would cover: Chrome's data cleared with a folder library; the T470 rebuild without a second 50 GB; seeding by USB in Chrome; and it is most of "Use in place" for the browser.
 
+**Built in 2.2.020** (12 Nov 2026): Settings → Library → All libraries → **Find a library folder…** in Chrome and Edge, and **Open that library** where Keep it in a folder… refuses. Opening writes nothing into the folder. The library keeps the folder's ID, so when this browser already has a library with that ID:
+
+| This browser's library with the same ID | What happens |
+|---|---|
+| None | Added to the list of libraries |
+| Kept in another folder | Asks; **Use “X”** runs it from the new folder, the other folder stays as it is |
+| In the browser's storage, still only the starter (every new first library) | The folder's library takes its place and name; the browser's copy is left alone. This is the T470 rebuild |
+| In the browser's storage, with tracks or playlists of its own | Refused, nothing changed |
+
+**T** folderlib.js for all four. **Decided by Gen Rinzin (12 Nov):** the last row keeps refusing; he will try it. The other way would be to open the folder as a separate library by giving the folder a new ID. The catch: anything else that knows the folder by its old ID (another browser profile, the desktop app on the same computer) would then see it as another library's folder and refuse it. Seeding a new computer by USB isn't affected, since its first library is still empty.
+
 ## 6. Proposed order of work, once the tables are agreed
 
-1. Test and fix 5.1.
-2. **Open a library folder…** in Chrome/Edge (5.2).
-3. A copied library notices it is on a new device (an ID per install, kept outside the folder) and asks for this device's name before syncing.
-4. The message changes in section 2.
-5. Joining with plain files (row C): where a match has the same size and the same first and last 64 KB as the shared copy, keep this device's file as that track's audio instead of removing it and downloading. Then any copy of the files seeds a device.
+1. Test and fix 5.1. **Done, 2.2.019.**
+2. **Open a library folder…** in Chrome/Edge (5.2). **Done, 2.2.020** (named Find a library folder…, as in the desktop app; see 5.2).
+3. A copied library notices it is on a new device (an ID per install, kept outside the folder) and asks for this device's name before syncing. **Done, 2.2.021:** "Is this another device?" with a name field, **Another device: use this name** / **This is still “X”**; nothing syncs until answered. The desktop app's two-stage wipe test now asks once (the install ID goes with the data folder): "This is still" answers it. **T** copied.js.
+4. The message changes in section 2. **First part done, 2.2.022:** the quiet "Your library is ordinary files" notice after the first import (desktop app and folder libraries), and "Where should this library be kept?" (a folder suggested) for a new library made in Settings in Chrome/Edge. **Second part, 2.2.023:** Gen Rinzin replaced the drafted wizard with his own design (12 Nov): Try it out / Install, on the home page and in the welcome; Install assesses the device and offers only the best way (Mac/Windows: the desktop app only, with how to get past the unsigned-build warnings; other computers: Chrome or Edge, installed, the library in a folder; iPad/iPhone: the Home Screen, then Google Drive or backups by hand); Try it out is quiet for two days or until the fifth import, then asks once; an Install button in the top bar wherever 37 Player isn't installed. Automatic backup folders are left in Settings → Backups only. **T** setup.js.
+5. Joining with plain files (row C): where a match has the same size and the same first and last 64 KB as the shared copy, keep this device's file as that track's audio instead of removing it and downloading. Then any copy of the files seeds a device. **Done, 2.2.025**, for all three choices (Use the shared library here, Combine, Only what I choose); in a library kept as files the recording isn't copied, only its small record is rewritten. **T** dup.js, folderlib.js.
+6. **Leaving a shared library cleans up after itself** (added by Gen Rinzin, 11 Nov 2026: tracks that never synced, left sitting without audio, are a bug). On leaving: tracks whose audio never arrived are removed from the library; then it asks about playlists left empty (default: remove them) and playlists left with some tracks missing. Since 2.2.018 such tracks are fetched if the device joins again, but a device that stays out keeps them, silent, with nothing to show it until one is played. **Done, 2.2.027:** the Leave question says how many tracks never arrived; leaving removes them, then asks about playlists left empty (Remove them / Keep them, empty) and left with some missing (Remove the missing tracks from them / Remove these playlists); closing takes the default. **T** leave.js.
 
 ## 7. Questions for Gen Rinzin
 

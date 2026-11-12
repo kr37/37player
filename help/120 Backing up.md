@@ -6,7 +6,7 @@ Backing up
 
 In Chrome or Edge on a computer (Windows, Mac, Linux, or Chromebook), 37 Player can keep a backup folder up to date by itself, a few seconds after every change. Most other browsers built on the same engine can too; in Brave, first turn on "File System Access API" at brave://flags.
 
-- **Setting it up:** Settings → **Backups** → Choose backup folder (37 Player also offers it when you first import music). Create a new, empty folder and choose it — not your existing music folder. You can change it later in Settings. If Chrome asks whether 37 Player may keep access to the folder, choose **Allow on every visit**; otherwise it will ask again each time you open 37 Player (the button at the top will say **Resume backups** — click it to continue).
+- **Setting it up:** Settings → **Backups** → Choose backup folder. Create a new, empty folder and choose it — not your existing music folder. You can change it later in Settings. If Chrome asks whether 37 Player may keep access to the folder, choose **Allow on every visit**; otherwise it will ask again each time you open 37 Player (the button at the top will say **Resume backups** — click it to continue).
 - **A synced folder** (Dropbox, Google Drive, Syncthing, or similar) also gives you a copy off this computer.
 - **The button at the top** shows how things stand, on every tab: **✓ Backed up** when all is well, **Backing up…** while it catches up.
 
