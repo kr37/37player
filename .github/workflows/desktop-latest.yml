@@ -9,7 +9,15 @@ name: Desktop app on the home page
 # workflow, with the build, "28m" say; empty means the newest m build), so a
 # build reaches a home page only once he's happy with it. (Builds up to 27
 # have no letter: they follow dev's pages.)
+# A "d" build goes to desktop-latest-dev by itself as soon as it's built
+# (Gen Rinzin, 11 Nov 2026: test.37player.com was still offering a build four
+# days old); 37player.com's stays his choice. That needs this file on the
+# default branch (main): GitHub only runs workflow_run from there. The build
+# workflow has had two names, so both are listed.
 on:
+  workflow_run:
+    workflows: ["Desktop app (test builds)", "Desktop app for the Mac (test build)"]
+    types: [completed]
   workflow_dispatch:
     inputs:
       test:
@@ -20,6 +28,7 @@ permissions:
   contents: write
 jobs:
   promote:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     steps:
       - name: Copy the installers to desktop-latest
@@ -27,9 +36,14 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
           N: ${{ inputs.test }}
+          AFTER_BUILD: ${{ github.event_name == 'workflow_run' }}
         run: |
           set -e
-          if [ -n "$N" ]; then from="desktop-test-$N"
+          if [ "$AFTER_BUILD" = "true" ]; then
+            # After a build: the newest d build, if it isn't there already.
+            from=$(gh api "repos/$REPO/releases?per_page=50" --jq '[.[] | select(.tag_name | test("^desktop-test-[0-9]+d$"))][0].tag_name')
+            if gh api "repos/$REPO/releases/tags/desktop-latest-dev" --jq .body 2>/dev/null | grep -q "from $from;"; then echo "$from is already on test.37player.com's home page"; exit 0; fi
+          elif [ -n "$N" ]; then from="desktop-test-$N"
           else from=$(gh api "repos/$REPO/releases?per_page=50" --jq '[.[] | select(.tag_name | test("^desktop-test-[0-9]+m$"))][0].tag_name'); fi
           [ -n "$from" ] && [ "$from" != "null" ] || { echo "No such build"; exit 1; }
           case "$from" in *m) dest=desktop-latest; site=37player.com;; *) dest=desktop-latest-dev; site=test.37player.com;; esac

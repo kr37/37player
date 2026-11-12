@@ -108,6 +108,7 @@ By hand: `./serve.sh` in one terminal (servers on ports 8861 and 8870), then
 | share | The welcome's sharing question, "In sync", who keeps backups, restoring on a joined device |
 | choose | What's on this device: unticking, New, ticking, albums, back to Everything |
 | drive | Google Drive libraries against a fake Google and the real token.php: sign-in, making a folder, joining, a true tie, an expired token, signing in again |
+| bigfile | Big files never held whole in the page (the desktop app): a real Blob made in pieces, a 20 MB file sent to Google Drive 1 MB at a time from the disk, details not written into a big file, no automatic conversion of one (only when asked, with a warning) |
 | moved | The move to 37player.com: a new browser goes straight there, a used one stays with "37 Player has moved" and the way across; saved addresses follow |
 | emptyshared | A shared library with nothing in it yet: joining it sends everything up without "use the shared library or combine", and restoring a backup on a device joined to it restores straight in and stays joined |
 | webkitstore | Re-tagging stores the new file in one piece and reads it back on Safari (pretended), and as before elsewhere: MP3 and WAV keep playing with the new tags |

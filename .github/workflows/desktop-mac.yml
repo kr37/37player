@@ -77,6 +77,9 @@ jobs:
           # Named by the version first (Gen Rinzin, 7 Nov 2026), the build's
           # number after; the files carry the version too.
           v=$(curl -s "https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/37-player.html" | head -c 4000 | grep -o 'app-version" content="[^"]*' | head -1 | sed 's/.*content="//')
+          # The app's own (shell's) version too, in the title: the page's
+          # number alone hid that 31d was shell 2.2.1 (Gen Rinzin, 11 Nov 2026).
+          sv=$(curl -s "https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/desktop/src-tauri/tauri.conf.json" | grep -o '"version": *"[^"]*' | head -1 | sed 's/.*"//')
           mv 37-Player-mac-test.dmg "37-Player-$v-mac.dmg"
           mv 37-Player-windows-test-setup.exe "37-Player-$v-windows-setup.exe"
           mv 37-Player-windows-test.msi "37-Player-$v-windows.msi"
@@ -84,5 +87,5 @@ jobs:
           if [ -f 37-Player-mac-test-symbols.zip ]; then mv 37-Player-mac-test-symbols.zip "37-Player-$v-mac-symbols.zip"; syms="37-Player-$v-mac-symbols.zip"; fi
           gh release create "$tag" "37-Player-$v-mac.dmg" "37-Player-$v-windows-setup.exe" "37-Player-$v-windows.msi" $syms \
             --repo "${{ github.repository }}" --prerelease --target "${{ github.sha }}" \
-            --title "37 Player $v for computers (build $n)" \
+            --title "37 Player $v for computers (build $n, app $sv)" \
             --notes "The desktop app, not signed yet, from branch ${{ github.ref_name }}; its pages follow ${{ inputs.channel == 'main' && 'main (37player.com)' || 'dev (test.37player.com)' }}. Mac: right-click → Open. Windows: SmartScreen → More info → Run anyway."

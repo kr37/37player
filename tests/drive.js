@@ -18,9 +18,9 @@ const waitIdle = async (p)=>{ for(let k=0;k<400;k++){ const s = await p.evaluate
 const names = p=> p.evaluate(()=>{ const out=[]; (function w(a){ (a||[]).forEach(n=>{ if(n.kind==='playlist') out.push(n.name); if(n.children) w(n.children); }); })(window.__dbg.getRoot().tree); return out.sort().join('|'); });
 const base = 'www/ovt'; const files = [];
 (function walk(d){ for(const n of fs.readdirSync(d)){ const f = path.join(d,n); if(fs.statSync(f).isDirectory()) walk(f); else files.push([path.relative(base,f), fs.readFileSync(f).toString('base64')]); } })(base);
-async function device(b, name){
+async function device(b, name, old){
   const p = await (await b.createBrowserContext()).newPage(); await p.setViewport({width: 1300, height: 900});
-  await p.evaluateOnNewDocument((t, d)=>{ window.__noAutoConverter = true; window.__p37TokenUrl = t; window.__p37DriveApi = d; window.__p37DriveChunk = 1024 * 1024; window.__p37DriveSimpleMax = 1024 * 1024; }, TOKEN, DRIVE);
+  await p.evaluateOnNewDocument((t, d, o)=>{ window.__noAutoConverter = true; window.__p37TokenUrl = t; window.__p37DriveApi = d; window.__p37DriveChunk = 1024 * 1024; window.__p37DriveSimpleMax = 1024 * 1024; if(o.oldWebKit){ delete window.DecompressionStream; delete window.CompressionStream; } }, TOKEN, DRIVE, {oldWebKit: !!old});
   p.on('pageerror', e=> console.log(name, 'PAGE ERROR:', e.message));
   p.on('dialog', d=>{ console.log(name, 'ALERT:', d.message()); d.dismiss(); });
   await p.goto(APP, {waitUntil: 'networkidle0'}); await sleep(700);
@@ -110,8 +110,9 @@ const openShared = async p=>{ await p.evaluate(()=>{ window.__dbg.setMode('editi
     ok(audioN === libN && libN > 0, `every audio file is in Drive (${audioN} of ${libN})`);
     ok(g.uploads.some(u=> u.kind === 'chunk') , 'a file over the one-request size went up in pieces (' + g.uploads.filter(u=> u.kind === 'chunk').length + ' pieces)');
     sec = await A.evaluate(()=> document.getElementById('settingsBody')?.innerText || '');
-    // ---- B: joins from the welcome
-    const B = await device(b, 'B');
+    // ---- B: joins from the welcome, in a WebKit without (De)CompressionStream
+    // (the desktop app on macOS 12): A's state is gzipped, B reads it by hand.
+    const B = await device(b, 'B', true);
     await clickText(B, '.modal button', '^English$'); await sleep(400);
     await clickText(B, '.modal button', '^Yes, join or create one$'); await sleep(400);
     await B.evaluate(()=>{ document.querySelector('input[name=sjWhere][value=gdrive]').click(); document.getElementById('sjNext').click(); }); await sleep(300);

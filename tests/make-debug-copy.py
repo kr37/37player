@@ -21,6 +21,9 @@ if os.environ.get('STORE') == 'desktop':
     src = src.replace('<head>', '<head><script>\n' + shell + '\n</script>', 1)
 elif os.environ.get('STORE'):
     src = src.replace('<head>', '<head><script>window.__p37Store = %r;</script>' % os.environ['STORE'], 1)
+# Converting carries on a minute after opening (2.2.010); the tests don't wait
+# that long: six seconds, as it was, unless a test sets its own.
+src = src.replace('<head>', '<head><script>window.__convertResumeMs = window.__convertResumeMs || 6000;</script>', 1)
 os.makedirs(os.path.join(here, 'www'), exist_ok=True)
 open(os.path.join(here, 'www', '37-player.html'), 'w', encoding='utf-8').write(src)
 # old.html: the same, claiming to be an old version (for twowin.js)

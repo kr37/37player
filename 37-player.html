@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.2.000">
+<meta name="app-version" content="2.2.017">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -543,6 +543,29 @@
   .plov-backdrop{ position:absolute; left:0; right:0; bottom:0; z-index:30; background:rgba(0,0,0,0.30); display:flex; padding:4px 16px 16px; }
   .plov-panel{ flex:1; min-height:0; display:flex; flex-direction:column; background:var(--bg-panel); border:1px solid var(--line); border-radius:var(--radius, 10px); box-shadow:0 10px 36px rgba(0,0,0,0.45); overflow:hidden; }
   .plov-head{ display:flex; align-items:flex-start; gap:10px; padding:12px 14px 6px; }
+  .plov-actions{ display:flex; flex-direction:column; align-items:flex-start; gap:2px; max-width:240px; }
+  .plov-actions .plov-meta{ margin:0; }
+  .plov-play-action{ flex-shrink:0; max-width:180px; }
+  .plov-play-action .plov-play-hint{ padding:3px 0 0; font-size:12px; }
+  .plov-head{ flex-wrap:wrap; padding-top:8px; }
+  .plov-close{ margin-left:auto; }
+  .plov-head .plov-titles{ flex-basis:180px; }
+  .plov-panel > .plov-head, .plov-panel > .plov-status, .plov-panel > .plov-player{ flex-shrink:0; }
+  @media(max-width:600px){ .plov-head .plov-actions{ order:3; max-width:none; flex-basis:100%; flex-direction:row; align-items:center; gap:8px; } }
+  @media(max-height:850px){
+    .player.browsing-playlist .now-playing-fixed{ padding-top:6px; padding-bottom:2px; }
+    .player.browsing-playlist .now-playing-top{ margin-bottom:6px; }
+    .player.browsing-playlist .waveform-wrap{ margin-bottom:4px; }
+    .player.browsing-playlist canvas#waveform{ height:48px; }
+    .player.browsing-playlist .plov-wave{ height:36px; }
+    .player.browsing-playlist .plov-player{ padding-bottom:5px; }
+  }
+  .plov-browsing{ font-size:12px; font-weight:600; color:var(--text-dim); margin-bottom:3px; }
+  .plov-status, .plov-play-hint{ font-size:12.5px; color:var(--text-dim); padding:0 14px 4px; }
+  .plov-status:empty, .plov-play-hint:empty{ display:none; }
+  .plov-play.btn{ min-height:44px; flex-shrink:0; }
+  .plov-close.btn{ min-height:44px; }
+  @media(max-width:600px){ .plov-player{ flex-wrap:wrap; } .plov-track{ flex-basis:100%; } }
   .plov-titles{ flex:1; min-width:0; }
   .plov-title{ font-family:var(--font-display); font-size:22px; overflow-wrap:anywhere; }
   .plov-title.clickable{ cursor:pointer; user-select:none; border-radius:6px; }
@@ -906,6 +929,8 @@
   .fmt-list td{ padding:5px 10px; border-bottom:1px solid var(--line); vertical-align:top; }
   .fmt-list tr:last-child td{ border-bottom:none; }
   .fmt-list td.num{ text-align:right; white-space:nowrap; font-variant-numeric:tabular-nums; }
+  .fmt-list input.fmt-pick{ margin:2px 8px 0 0; cursor:pointer; width:auto; flex:none; vertical-align:-2px; }
+  .fmt-list label.fmt-pick-row{ display:flex; align-items:flex-start; margin:0; font:inherit; color:inherit; cursor:pointer; }
   .fmt-list th.num{ text-align:right; }
   .fmt-list .fmt-album{ color:var(--text-dim); font-size:12.5px; }
   .fmt-list td:first-child{ overflow-wrap:anywhere; min-width:140px; }
@@ -1195,7 +1220,11 @@
   .delete-used ul{ margin:4px 0 0 0; padding-left:20px; }
   .lib-row .lloud{ color:var(--text-dim); font-size:13px; flex-shrink:0; min-width:6.2em; text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }
   .lib-row .lloud .ladj{ color:var(--amber); margin-left:4px; }
-  #levelModeControl button{ white-space:nowrap; }
+  .playing-level{ display:inline-flex; align-items:center; gap:7px; color:var(--text-dim); font-size:13px; white-space:nowrap; }
+  .playing-level-face{ position:relative; display:inline-flex; align-items:center; gap:8px; min-height:32px; padding:0 8px; border:1px solid var(--ctl-border, var(--line)); border-radius:8px; background:var(--ctl-bg, var(--bg-panel-raised)); color:var(--text); }
+  .playing-level-face select{ position:absolute; inset:0; width:100%; height:100%; opacity:0; cursor:pointer; }
+  .playing-level-face:focus-within{ outline:2px solid var(--amber); outline-offset:2px; }
+  @media (pointer:coarse){ .playing-level-face{ min-height:44px; } }
   .edit-volume-row{ display:flex; gap:14px; align-items:flex-start; margin-top:4px; }
   .edit-volume-row input[type=number]{ width:100% !important; }
   .edit-volume-note{ font-size:12.5px; padding-top:22px; line-height:1.45; }
@@ -1635,6 +1664,16 @@
   .library-screen.lib-table-mode .lib-table tr.lt-row:hover td.c-name.lt-wave{ background:var(--wave) bottom left / 100% 100% no-repeat, var(--lib-table-hover); }
   .library-screen.lib-table-mode .lib-table tr.lt-row.selected td.c-name.lt-wave{ background:var(--wave) bottom left / 100% 100% no-repeat, linear-gradient(rgba(217,164,65,0.35),rgba(217,164,65,0.35)),var(--lib-table-row); }
   .library-screen.lib-table-mode .lib-waveform-canvas{ background:var(--bg-panel); }
+  /* Theme-aware, identical transport icons regardless of platform fonts. */
+  .transport-skip-icon{ display:block; width:19px; height:19px; flex:none; }
+  .playing-toolbar-shell{ position:relative; display:flex; flex-direction:column; flex:none; background:var(--bg-deep); }
+  .playing-toolbar-shell.collapsed{ background:transparent; }
+  .playing-toolbar-shell .ctx-playing{ border-bottom:1px solid var(--line); }
+  .playing-toolbar-shell .ctx-playing[hidden]{ display:none !important; }
+  .playing-toolbar-toggle{ align-self:center; display:inline-flex; align-items:center; justify-content:center; width:48px; height:18px; padding:0; border:1px solid var(--ctl-border, var(--line)); border-top:0; border-radius:0 0 10px 10px; background:var(--ctl-bg, var(--bg-panel-raised)); color:var(--active-bg, var(--text)); cursor:pointer; }
+  .playing-toolbar-toggle svg{ width:17px; height:17px; fill:none; stroke:currentColor; stroke-width:2.6; stroke-linecap:round; stroke-linejoin:round; }
+  .playing-toolbar-toggle:hover{ background:var(--ctl-hover-bg, var(--bg-panel)); border-color:var(--ctl-hover-border, var(--line)); }
+  .playing-toolbar-toggle:focus-visible{ outline:2px solid var(--active-bg, var(--text)); outline-offset:2px; }
 </style>
 </head>
 <body>
@@ -1832,6 +1871,8 @@
 /* ===================== Icons ===================== */
 // Playback and operator cues: inline SVGs remain sharp on phones and offline.
 // In the style of Lucide/Feather (THIRD-PARTY-NOTICES.md).
+const ICON_SKIP_BACK = `<svg class="transport-skip-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h2.5v14H5V5Zm15 0L9 12l11 7V5Z" fill="currentColor"/></svg>`;
+const ICON_SKIP_FORWARD = `<svg class="transport-skip-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M16.5 5H19v14h-2.5V5ZM4 5l11 7-11 7V5Z" fill="currentColor"/></svg>`;
 const ICON_PLAYING = `<svg class="icon playing-eq" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M2 10v3M6 6v11M10 3v18M14 8v7M18 5v13M22 10v3"/></svg>`;
 const ICON_SILENCE = `<svg class="icon kind-icon silence-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>`;
 const ICON_STOP = `<svg class="icon kind-icon stop-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="1.5" fill="currentColor"/></svg>`;
@@ -3412,6 +3453,12 @@ class DesktopDirHandle {
 const placeOffline = new Set();
 const DISK_BLOB_MIN = window.__diskBlobMin != null ? window.__diskBlobMin : 32 * 1048576;
 const DISK_READ_PIECE = 8 * 1048576;
+// A big file (2.2.010, Gen Rinzin, 11 Nov 2026): above this, nothing that
+// needs the whole file in memory happens by itself. It isn't converted
+// automatically (only when asked, with a warning), and its details aren't
+// written into it. The converter holds its input whole, so a 2.7 GB WAV
+// made an 8 GB Mac crawl (8 Nov 2026).
+const BIG_FILE_BYTES = window.__bigFileBytes || 500 * 1048576;
 class DiskBlob {
   constructor(root, path, size, type, name, lastModified, start){ this.p37root = root; this.p37path = path; this.size = size; this.type = type || ""; this.name = name || ""; this.lastModified = lastModified || 0; this.start = start || 0; }
   slice(a, b, type){
@@ -3424,10 +3471,23 @@ class DiskBlob {
     if(d.whole && this.inPlace) d.inPlace = true; // (a file used in place, whole: still a reference)
     return d;
   }
+  // Read in pieces of DISK_READ_PIECE: one request for a whole big file
+  // made the shell hold it twice and, before shell 2.2.1, froze the window
+  // while a slow disk read it (Gen Rinzin's Mac mini, 8 Nov 2026).
   async arrayBuffer(){
     if(!this.size) return new ArrayBuffer(0);
-    const r = await desktopInvoke("fs_read", {root: this.p37root, path: this.p37path, start: this.start, end: this.start + this.size});
-    return r instanceof ArrayBuffer ? r : (r && r.buffer) ? r.buffer.slice(r.byteOffset, r.byteOffset + r.byteLength) : new Uint8Array(r).buffer;
+    const piece = async (a, b)=>{
+      const r = await desktopInvoke("fs_read", {root: this.p37root, path: this.p37path, start: this.start + a, end: this.start + b});
+      return r instanceof ArrayBuffer ? new Uint8Array(r) : (r && r.buffer) ? new Uint8Array(r.buffer, r.byteOffset, r.byteLength) : new Uint8Array(r);
+    };
+    if(this.size <= DISK_READ_PIECE) return (await piece(0, this.size)).slice().buffer;
+    const out = new Uint8Array(this.size);
+    for(let at = 0; at < this.size; at += DISK_READ_PIECE){
+      const b = await piece(at, Math.min(at + DISK_READ_PIECE, this.size));
+      if(b.byteLength !== Math.min(DISK_READ_PIECE, this.size - at)) throw new Error("the file changed while it was read");
+      out.set(b, at);
+    }
+    return out.buffer;
   }
   async text(){ return new TextDecoder().decode(await this.arrayBuffer()); }
   async bytes(){ return new Uint8Array(await this.arrayBuffer()); }
@@ -3461,7 +3521,22 @@ function isBlobLike(v){ return v instanceof Blob || v instanceof DiskBlob || v i
 // The pieces to write, a JoinedBlob opened up.
 function blobParts(list){ const out = []; for(const p of list){ if(p instanceof JoinedBlob) out.push(...p.parts); else out.push(p); } return out; }
 // A real Blob for something that may be a DiskBlob: read whole (memory!).
-async function realBlob(b, type){ return isDiskBlob(b) ? new Blob([await b.arrayBuffer()], {type: type || b.type}) : b; }
+// Piece by piece, each piece a Blob of its own at once (2.2.010): reading
+// into one buffer the size of the file and then copying that into a Blob
+// held a big file twice (a 2.7 GB WAV: 5.48 GB in the page, Gen Rinzin's
+// 8 GB Mac mini, 11 Nov 2026, and the whole Mac swapping).
+async function realBlob(b, type){
+  if(!isDiskBlob(b)) return b;
+  if(b.size <= DISK_READ_PIECE) return new Blob([await b.arrayBuffer()], {type: type || b.type});
+  const parts = [];
+  for(let at = 0; at < b.size; at += DISK_READ_PIECE){
+    const n = Math.min(DISK_READ_PIECE, b.size - at);
+    const piece = await b.slice(at, at + n).arrayBuffer();
+    if(piece.byteLength !== n) throw new Error("the file changed while it was read");
+    parts.push(new Blob([piece]));
+  }
+  return new Blob(parts, {type: type || b.type});
+}
 const DISK_TYPES = {mp3: "audio/mpeg", m4a: "audio/mp4", mp4: "audio/mp4", aac: "audio/aac", wav: "audio/wav", flac: "audio/flac", ogg: "audio/ogg", oga: "audio/ogg", opus: "audio/ogg", webm: "audio/webm", aif: "audio/aiff", aiff: "audio/aiff", wma: "audio/x-ms-wma", jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png", gif: "image/gif", webp: "image/webp"};
 // A playable address for a track's audio: a DiskBlob's own (the shell
 // serves it with Range, so the player streams and seeks from disk), else an
@@ -3887,6 +3962,15 @@ const STRINGS = {
     "deleteTidyGo": "Delete",
     "deleteUsedInNone": "Not used in any playlist.",
     "deleteTracksBodyOne": "This removes it from the library and from every playlist that uses it. You can undo this with ↶.",
+    "plovBrowsing": "Browsing",
+    "plovUse": "Use this playlist",
+    "plovReadyHint": "Ready at the first track. Does not start playback.",
+    "plovPlayingStatus": "Playback stays with {name} until you switch.",
+    "plovActiveStatus": "{name} is still the active playlist.",
+    "plovPlayHere": "Play from here",
+    "plovReplaces": "Replaces current playback.",
+    "playingToolbarShow": "Show the toolbar",
+    "playingToolbarHide": "Hide the toolbar",
     "plovPlayTooltip": "Start playing this — from the point marked on the waveform",
     "plovTitleTooltip": "Click: make this the active playlist, ready at its first track. Double-click: start playing it.",
     "plovSwitchTitle": "Stop what's playing?",
@@ -4507,6 +4591,7 @@ const STRINGS = {
     "sharedDeviceHint": "Shown on other devices when a playlist was changed on two at once, e.g. “Heart Jewel (Temple iPad)”.",
     "sharedJoinBtn": "Join",
     "sharedJoining": "Connecting…",
+    "sharedJoiningNamed": "Joining “{name}”…",
     "sharedBadCode": "That join code wasn’t accepted. Check it and try again.",
     "driveOrTitle": "Or keep it on Google Drive",
     "driveIntro": "The shared library lives in a folder of your Google Drive. Every device that shares it signs in with the same Google account (a Center's account, say).",
@@ -5356,6 +5441,7 @@ const STRINGS = {
     "ctxLevelGroupLabel": "Even out loudness:",
     "libSwitchBusyCopying": "copying to “{name}”: it would stop, and nothing half-copied is left there (copy again afterwards);",
     "ctxLevelAlbum": "By album",
+    "ctxLevelAlbumRecommended": "By album (recommended)",
     "ctxLevelAlbumTip": "Even out loudness album by album (recommended): each album keeps its own ups and downs",
     "ctxLevelOff": "Off",
     "ctxLevelOffTip": "Don't even out loudness (each track's own volume still applies)",
@@ -5561,6 +5647,7 @@ const STRINGS = {
     "discardOriginalsBtn": "Discard them",
     "convertBtn": "Convert",
     "convertAllBtn": "Convert all {n}",
+    "convertSelectedBtn": "Convert selected ({n})",
     "convertThemNowBtn": "Convert them now",
     "convertItNowBtn": "Convert it now",
     "convertLaterBtn": "Later",
@@ -5572,6 +5659,15 @@ const STRINGS = {
     "converterDownloadFailed": "The converter couldn't be downloaded ({msg}). Check the internet connection and try again.",
     "convertProgress": "Converting {done} of {total}: {name}",
     "convertWaiting": "{n} to convert once nothing is playing",
+    "convertBigTitle": "{n} of these files are big",
+    "convertBigTitleOne": "This file is big",
+    "convertBigBody": "Converting a file this big (up to {size} here) needs about as much of this device's memory as the file's size, and can take a long time. With little memory to spare, the device may stop responding until it's done, or even restart itself. Big files converted one after another add up: convert one at a time, and quit 37 Player before the next. Close other apps first, and don't do this during a session.",
+    "convertBigPlayNote": "Starting playback sets the conversion aside.",
+    "convertBigGoBtn": "Convert them anyway",
+    "convertBigGoBtnOne": "Convert it anyway",
+    "convertBigSkipBtn": "Convert only the smaller ones",
+    "cleanupBigNote": "{n} of them are over {size}: those are only converted when you ask here, never by themselves.",
+    "cleanupBigNoteOne": "One of them is over {size}: it's only converted when you ask here, never by itself.",
     "convertNoAudioHere": "its audio isn't on this device yet",
     "convertFailedTitle": "Some tracks couldn't be converted",
     "convertFailedBody": "{n} tracks couldn't be converted. They stay as they were; Library cleanup can try again.",
@@ -5596,6 +5692,16 @@ const STRINGS = {
     "manualFirstBackupBody": "This saves a full backup of your library as a file. Keep it — and all your later backup files — together in one folder, such as \"37 Player backups\" in your Music folder.",
   },
   "es": {
+    "plovBrowsing": "Explorando",
+    "plovUse": "Usar esta lista",
+    "plovReadyHint": "Lista en la primera pista. No inicia la reproducción.",
+    "plovPlayingStatus": "La reproducción sigue en {name} hasta que cambies de lista.",
+    "plovActiveStatus": "{name} sigue siendo la lista activa.",
+    "plovPlayHere": "Reproducir desde aquí",
+    "plovReplaces": "Sustituye la reproducción actual.",
+    "playingToolbarShow": "Mostrar la barra de herramientas",
+    "playingToolbarHide": "Ocultar la barra de herramientas",
+    "ctxLevelAlbumRecommended": "Por álbum (recomendado)",
     "deletePlayingNow": "Esta pista, “{name}”, está sonando ahora mismo. Borrarla la detiene.",
     "infoRunningDesktop": "el almacenamiento propio de la aplicación de escritorio (IndexedDB)",
     "infoAppLabel": "37 Player",
@@ -6349,6 +6455,7 @@ const STRINGS = {
     "sharedDeviceHint": "Se muestra en otros dispositivos cuando una lista se cambió en dos a la vez, p. ej. «Joya del corazón (iPad del templo)».",
     "sharedJoinBtn": "Unirse",
     "sharedJoining": "Conectando…",
+    "sharedJoiningNamed": "Uniéndose a «{name}»…",
     "sharedBadCode": "Ese código no fue aceptado. Revíselo e inténtelo de nuevo.",
     "driveOrTitle": "O guárdala en Google Drive",
     "driveIntro": "La biblioteca compartida vive en una carpeta de tu Google Drive. Todos los dispositivos que la comparten inician sesión con la misma cuenta de Google (la de un Centro, por ejemplo).",
@@ -7403,6 +7510,7 @@ const STRINGS = {
     "discardOriginalsBtn": "Descartarlos",
     "convertBtn": "Convertir",
     "convertAllBtn": "Convertir las {n}",
+    "convertSelectedBtn": "Convertir las seleccionadas ({n})",
     "convertThemNowBtn": "Convertirlas ahora",
     "convertItNowBtn": "Convertirla ahora",
     "convertLaterBtn": "Más tarde",
@@ -7414,6 +7522,15 @@ const STRINGS = {
     "converterDownloadFailed": "No se pudo descargar el conversor ({msg}). Comprueba la conexión a internet y vuelve a intentarlo.",
     "convertProgress": "Convirtiendo {done} de {total}: {name}",
     "convertWaiting": "{n} por convertir cuando no se esté reproduciendo nada",
+    "convertBigTitle": "{n} de estos archivos son grandes",
+    "convertBigTitleOne": "Este archivo es grande",
+    "convertBigBody": "Convertir un archivo tan grande (aquí, hasta {size}) necesita más o menos tanta memoria de este dispositivo como ocupa el archivo, y puede tardar mucho. Con poca memoria libre, el dispositivo puede dejar de responder hasta que termine, o incluso reiniciarse. Los archivos grandes convertidos uno tras otro se suman: convierta uno cada vez y cierre 37 Player antes del siguiente. Cierre antes las demás aplicaciones, y no lo haga durante una sesión.",
+    "convertBigPlayNote": "Si empieza la reproducción, la conversión se deja para después.",
+    "convertBigGoBtn": "Convertirlos de todos modos",
+    "convertBigGoBtnOne": "Convertirlo de todos modos",
+    "convertBigSkipBtn": "Convertir solo los más pequeños",
+    "cleanupBigNote": "{n} de ellas pasan de {size}: esas solo se convierten cuando usted lo pide aquí, nunca por sí solas.",
+    "cleanupBigNoteOne": "Una de ellas pasa de {size}: solo se convierte cuando usted lo pide aquí, nunca por sí sola.",
     "convertNoAudioHere": "su audio todavía no está en este dispositivo",
     "convertFailedTitle": "Algunas pistas no se pudieron convertir",
     "convertFailedBody": "No se pudieron convertir {n} pistas. Quedan como estaban; Limpieza de la biblioteca puede intentarlo de nuevo.",
@@ -7438,6 +7555,16 @@ const STRINGS = {
     "manualFirstBackupBody": "Esto guarda una copia completa de tu biblioteca en un archivo. Guárdalo, junto con todas tus copias posteriores, en una misma carpeta, como \"37 Player backups\" dentro de tu carpeta Música.",
   },
   "fr": {
+    "plovBrowsing": "Consultation",
+    "plovUse": "Utiliser cette playlist",
+    "plovReadyHint": "Prête au premier morceau. Ne lance pas la lecture.",
+    "plovPlayingStatus": "La lecture reste sur {name} jusqu’à ce que vous changiez de playlist.",
+    "plovActiveStatus": "{name} reste la playlist active.",
+    "plovPlayHere": "Lire à partir d’ici",
+    "plovReplaces": "Remplace la lecture en cours.",
+    "playingToolbarShow": "Afficher la barre d’outils",
+    "playingToolbarHide": "Masquer la barre d’outils",
+    "ctxLevelAlbumRecommended": "Par album (recommandé)",
     "deletePlayingNow": "Cette piste, « {name} », est en lecture en ce moment. La supprimer l'arrête.",
     "infoRunningDesktop": "le stockage propre à l'application de bureau (IndexedDB)",
     "infoAppLabel": "37 Player",
@@ -8191,6 +8318,7 @@ const STRINGS = {
     "sharedDeviceHint": "Affiché sur les autres appareils quand une liste a été modifiée sur deux à la fois, p. ex. « Joyau du cœur (iPad du temple) ».",
     "sharedJoinBtn": "Rejoindre",
     "sharedJoining": "Connexion…",
+    "sharedJoiningNamed": "Connexion à « {name} »…",
     "sharedBadCode": "Ce code n’a pas été accepté. Vérifiez-le et réessayez.",
     "driveOrTitle": "Ou gardez-la sur Google Drive",
     "driveIntro": "La bibliothèque partagée se trouve dans un dossier de votre Google Drive. Chaque appareil qui la partage se connecte avec le même compte Google (celui d'un Centre, par exemple).",
@@ -9245,6 +9373,7 @@ const STRINGS = {
     "discardOriginalsBtn": "Les supprimer",
     "convertBtn": "Convertir",
     "convertAllBtn": "Tout convertir ({n})",
+    "convertSelectedBtn": "Convertir la sélection ({n})",
     "convertThemNowBtn": "Les convertir maintenant",
     "convertItNowBtn": "La convertir maintenant",
     "convertLaterBtn": "Plus tard",
@@ -9256,6 +9385,15 @@ const STRINGS = {
     "converterDownloadFailed": "Le convertisseur n'a pas pu être téléchargé ({msg}). Vérifiez la connexion internet et réessayez.",
     "convertProgress": "Conversion {done} sur {total} : {name}",
     "convertWaiting": "{n} à convertir quand plus rien ne joue",
+    "convertBigTitle": "{n} de ces fichiers sont volumineux",
+    "convertBigTitleOne": "Ce fichier est volumineux",
+    "convertBigBody": "Convertir un fichier aussi volumineux (ici, jusqu'à {size}) demande à peu près autant de mémoire de cet appareil que la taille du fichier, et peut prendre longtemps. Avec peu de mémoire disponible, l'appareil peut ne plus répondre jusqu'à la fin, voire redémarrer. Les gros fichiers convertis l'un après l'autre s'additionnent : convertissez-en un à la fois, et quittez 37 Player avant le suivant. Fermez d'abord les autres applications, et ne le faites pas pendant une session.",
+    "convertBigPlayNote": "Lancer la lecture met la conversion de côté.",
+    "convertBigGoBtn": "Les convertir quand même",
+    "convertBigGoBtnOne": "Le convertir quand même",
+    "convertBigSkipBtn": "Ne convertir que les plus petits",
+    "cleanupBigNote": "{n} d'entre elles dépassent {size} : celles-là ne sont converties que lorsque vous le demandez ici, jamais d'elles-mêmes.",
+    "cleanupBigNoteOne": "L'une d'elles dépasse {size} : elle n'est convertie que lorsque vous le demandez ici, jamais d'elle-même.",
     "convertNoAudioHere": "son audio n'est pas encore sur cet appareil",
     "convertFailedTitle": "Certaines pistes n'ont pas pu être converties",
     "convertFailedBody": "{n} pistes n'ont pas pu être converties. Elles restent telles quelles ; Nettoyage de la bibliothèque peut réessayer.",
@@ -9280,6 +9418,16 @@ const STRINGS = {
     "manualFirstBackupBody": "Cela enregistre une sauvegarde complète de votre bibliothèque dans un fichier. Gardez-le — ainsi que toutes vos sauvegardes suivantes — dans un même dossier, par exemple « 37 Player backups » dans votre dossier Musique.",
   },
   "pt": {
+    "plovBrowsing": "A explorar",
+    "plovUse": "Usar esta lista",
+    "plovReadyHint": "Pronta na primeira faixa. Não inicia a reprodução.",
+    "plovPlayingStatus": "A reprodução continua em {name} até mudar de lista.",
+    "plovActiveStatus": "{name} continua a ser a lista ativa.",
+    "plovPlayHere": "Reproduzir daqui",
+    "plovReplaces": "Substitui a reprodução atual.",
+    "playingToolbarShow": "Mostrar a barra de ferramentas",
+    "playingToolbarHide": "Ocultar a barra de ferramentas",
+    "ctxLevelAlbumRecommended": "Por álbum (recomendado)",
     "deletePlayingNow": "Esta faixa, “{name}”, está tocando agora. Apagá-la faz a reprodução parar.",
     "infoRunningDesktop": "o armazenamento próprio do aplicativo de computador (IndexedDB)",
     "infoAppLabel": "37 Player",
@@ -10033,6 +10181,7 @@ const STRINGS = {
     "sharedDeviceHint": "Mostrado noutros dispositivos quando uma lista foi alterada em dois ao mesmo tempo, p. ex. “Joia do Coração (iPad do templo)”.",
     "sharedJoinBtn": "Aderir",
     "sharedJoining": "A ligar…",
+    "sharedJoiningNamed": "Entrando em “{name}”…",
     "sharedBadCode": "Esse código não foi aceite. Verifique-o e tente novamente.",
     "driveOrTitle": "Ou guarde no Google Drive",
     "driveIntro": "A biblioteca compartilhada fica numa pasta do seu Google Drive. Todos os dispositivos que a compartilham entram com a mesma conta Google (a de um Centro, por exemplo).",
@@ -11087,6 +11236,7 @@ const STRINGS = {
     "discardOriginalsBtn": "Descartá-los",
     "convertBtn": "Converter",
     "convertAllBtn": "Converter as {n}",
+    "convertSelectedBtn": "Converter as selecionadas ({n})",
     "convertThemNowBtn": "Convertê-las agora",
     "convertItNowBtn": "Convertê-la agora",
     "convertLaterBtn": "Mais tarde",
@@ -11098,6 +11248,15 @@ const STRINGS = {
     "converterDownloadFailed": "Não foi possível baixar o conversor ({msg}). Verifique a conexão com a internet e tente de novo.",
     "convertProgress": "Convertendo {done} de {total}: {name}",
     "convertWaiting": "{n} para converter quando nada estiver tocando",
+    "convertBigTitle": "{n} destes arquivos são grandes",
+    "convertBigTitleOne": "Este arquivo é grande",
+    "convertBigBody": "Converter um arquivo tão grande (aqui, até {size}) precisa de mais ou menos tanta memória deste dispositivo quanto o tamanho do arquivo, e pode demorar muito. Com pouca memória livre, o dispositivo pode parar de responder até terminar, ou até reiniciar. Arquivos grandes convertidos um após o outro se somam: converta um de cada vez e feche o 37 Player antes do próximo. Feche antes os outros aplicativos, e não faça isso durante uma sessão.",
+    "convertBigPlayNote": "Iniciar a reprodução deixa a conversão para depois.",
+    "convertBigGoBtn": "Converter mesmo assim",
+    "convertBigGoBtnOne": "Converter mesmo assim",
+    "convertBigSkipBtn": "Converter só os menores",
+    "cleanupBigNote": "{n} delas passam de {size}: essas só são convertidas quando você pede aqui, nunca sozinhas.",
+    "cleanupBigNoteOne": "Uma delas passa de {size}: só é convertida quando você pede aqui, nunca sozinha.",
     "convertNoAudioHere": "o áudio ainda não está neste dispositivo",
     "convertFailedTitle": "Algumas faixas não puderam ser convertidas",
     "convertFailedBody": "Não foi possível converter {n} faixas. Ficam como estavam; Limpeza da biblioteca pode tentar de novo.",
@@ -11122,6 +11281,16 @@ const STRINGS = {
     "manualFirstBackupBody": "Isto salva um backup completo da sua biblioteca num arquivo. Guarde-o — e todos os backups seguintes — numa mesma pasta, como \"37 Player backups\" na sua pasta Música.",
   },
   "de": {
+    "plovBrowsing": "Durchsehen",
+    "plovUse": "Diese Playlist verwenden",
+    "plovReadyHint": "Beim ersten Titel bereit. Startet keine Wiedergabe.",
+    "plovPlayingStatus": "Die Wiedergabe bleibt bei {name}, bis du wechselst.",
+    "plovActiveStatus": "{name} ist weiterhin die aktive Playlist.",
+    "plovPlayHere": "Ab hier abspielen",
+    "plovReplaces": "Ersetzt die laufende Wiedergabe.",
+    "playingToolbarShow": "Werkzeugleiste einblenden",
+    "playingToolbarHide": "Werkzeugleiste ausblenden",
+    "ctxLevelAlbumRecommended": "Pro Album (empfohlen)",
     "deletePlayingNow": "Dieser Titel, „{name}“, spielt gerade. Beim Löschen wird er angehalten.",
     "infoRunningDesktop": "dem eigenen Speicher der Desktop-App (IndexedDB)",
     "infoAppLabel": "37 Player",
@@ -11875,6 +12044,7 @@ const STRINGS = {
     "sharedDeviceHint": "Wird auf anderen Geräten angezeigt, wenn eine Playlist auf zweien gleichzeitig geändert wurde, z. B. „Herzjuwel (Tempel-iPad)“.",
     "sharedJoinBtn": "Beitreten",
     "sharedJoining": "Verbinde…",
+    "sharedJoiningNamed": "„{name}“ wird beigetreten …",
     "sharedBadCode": "Dieser Code wurde nicht akzeptiert. Bitte prüfen und erneut versuchen.",
     "driveOrTitle": "Oder in Google Drive aufbewahren",
     "driveIntro": "Die gemeinsame Bibliothek liegt in einem Ordner deines Google Drive. Jedes Gerät, das sie teilt, meldet sich mit demselben Google-Konto an (etwa dem eines Zentrums).",
@@ -12929,6 +13099,7 @@ const STRINGS = {
     "discardOriginalsBtn": "Verwerfen",
     "convertBtn": "Umwandeln",
     "convertAllBtn": "Alle {n} umwandeln",
+    "convertSelectedBtn": "Ausgewählte umwandeln ({n})",
     "convertThemNowBtn": "Jetzt umwandeln",
     "convertItNowBtn": "Jetzt umwandeln",
     "convertLaterBtn": "Später",
@@ -12940,6 +13111,15 @@ const STRINGS = {
     "converterDownloadFailed": "Der Konverter konnte nicht heruntergeladen werden ({msg}). Prüfen Sie die Internetverbindung und versuchen Sie es erneut.",
     "convertProgress": "Umwandeln {done} von {total}: {name}",
     "convertWaiting": "{n} zum Umwandeln, sobald nichts mehr abgespielt wird",
+    "convertBigTitle": "{n} dieser Dateien sind groß",
+    "convertBigTitleOne": "Diese Datei ist groß",
+    "convertBigBody": "Eine so große Datei umzuwandeln (hier bis zu {size}) braucht etwa so viel Arbeitsspeicher dieses Geräts, wie die Datei groß ist, und kann lange dauern. Bei wenig freiem Speicher reagiert das Gerät womöglich nicht mehr, bis es fertig ist, oder startet sogar neu. Große Dateien nacheinander summieren sich: Wandeln Sie jeweils nur eine um und beenden Sie 37 Player vor der nächsten. Schließen Sie vorher andere Programme, und tun Sie dies nicht während einer Sitzung.",
+    "convertBigPlayNote": "Wird etwas abgespielt, wird die Umwandlung zurückgestellt.",
+    "convertBigGoBtn": "Trotzdem umwandeln",
+    "convertBigGoBtnOne": "Trotzdem umwandeln",
+    "convertBigSkipBtn": "Nur die kleineren umwandeln",
+    "cleanupBigNote": "{n} davon sind größer als {size}: Diese werden nur umgewandelt, wenn Sie es hier verlangen, nie von selbst.",
+    "cleanupBigNoteOne": "Eine davon ist größer als {size}: Sie wird nur umgewandelt, wenn Sie es hier verlangen, nie von selbst.",
     "convertNoAudioHere": "das Audio ist noch nicht auf diesem Gerät",
     "convertFailedTitle": "Manche Titel ließen sich nicht umwandeln",
     "convertFailedBody": "{n} Titel konnten nicht umgewandelt werden. Sie bleiben, wie sie waren; Bibliothek aufräumen kann es erneut versuchen.",
@@ -12964,6 +13144,16 @@ const STRINGS = {
     "manualFirstBackupBody": "Damit wird eine vollständige Sicherung Ihrer Bibliothek als Datei gespeichert. Bewahren Sie sie – und alle späteren Sicherungen – zusammen in einem Ordner auf, etwa „37 Player backups“ in Ihrem Musik-Ordner.",
   },
   "zh": {
+    "plovBrowsing": "正在浏览",
+    "plovUse": "使用此播放列表",
+    "plovReadyHint": "停在第一首，等待播放。不会开始播放。",
+    "plovPlayingStatus": "切换前将继续播放 {name}。",
+    "plovActiveStatus": "{name} 仍是当前播放列表。",
+    "plovPlayHere": "从此处播放",
+    "plovReplaces": "替换当前播放内容。",
+    "playingToolbarShow": "显示工具栏",
+    "playingToolbarHide": "隐藏工具栏",
+    "ctxLevelAlbumRecommended": "按专辑（推荐）",
     "deletePlayingNow": "这首曲目“{name}”正在播放。删除它会停止播放。",
     "infoRunningDesktop": "桌面应用自己的存储空间（IndexedDB）",
     "infoAppLabel": "37 Player",
@@ -13717,6 +13907,7 @@ const STRINGS = {
     "sharedDeviceHint": "当一个播放列表同时在两台设备上被修改时，会在其他设备上显示，例如“心之宝（寺院 iPad）”。",
     "sharedJoinBtn": "加入",
     "sharedJoining": "正在连接…",
+    "sharedJoiningNamed": "正在加入“{name}”…",
     "sharedBadCode": "该加入码未被接受。请检查后重试。",
     "driveOrTitle": "或保存在 Google 云端硬盘",
     "driveIntro": "共享曲库保存在你的 Google 云端硬盘的一个文件夹中。共享它的每台设备都用同一个 Google 账号登录（例如中心的账号）。",
@@ -14771,6 +14962,7 @@ const STRINGS = {
     "discardOriginalsBtn": "丢弃它们",
     "convertBtn": "转换",
     "convertAllBtn": "全部转换（{n}）",
+    "convertSelectedBtn": "转换所选（{n}）",
     "convertThemNowBtn": "立即转换",
     "convertItNowBtn": "立即转换",
     "convertLaterBtn": "稍后",
@@ -14782,6 +14974,15 @@ const STRINGS = {
     "converterDownloadFailed": "无法下载转换器（{msg}）。请检查网络连接后重试。",
     "convertProgress": "正在转换第 {done} 首，共 {total} 首：{name}",
     "convertWaiting": "还有 {n} 首，等没有播放时转换",
+    "convertBigTitle": "其中 {n} 个文件很大",
+    "convertBigTitleOne": "这个文件很大",
+    "convertBigBody": "转换这么大的文件（这里最大 {size}）需要占用本设备与文件大小差不多的内存，而且可能要很长时间。可用内存不多时，设备在转换完成之前可能没有反应，甚至自行重新启动。接连转换的大文件会累加占用：请一次只转换一个，并在转换下一个之前退出 37 Player。请先关闭其他应用，也不要在法会或课程进行中转换。",
+    "convertBigPlayNote": "开始播放会把转换搁置。",
+    "convertBigGoBtn": "仍然转换",
+    "convertBigGoBtnOne": "仍然转换",
+    "convertBigSkipBtn": "只转换较小的",
+    "cleanupBigNote": "其中 {n} 首超过 {size}：这些只有在您在这里要求时才会转换，不会自动转换。",
+    "cleanupBigNoteOne": "其中 1 首超过 {size}：只有在您在这里要求时才会转换，不会自动转换。",
     "convertNoAudioHere": "其音频尚未到达此设备",
     "convertFailedTitle": "部分曲目无法转换",
     "convertFailedBody": "有 {n} 首曲目无法转换。它们保持原样；可在 曲库整理 中重试。",
@@ -14806,6 +15007,16 @@ const STRINGS = {
     "manualFirstBackupBody": "这会将曲库的完整备份保存为一个文件。请把它和之后的所有备份文件放在同一个文件夹中，例如“音乐”文件夹里的“37 Player backups”。",
   },
   "vi": {
+    "plovBrowsing": "Đang xem",
+    "plovUse": "Dùng danh sách này",
+    "plovReadyHint": "Sẵn sàng ở bài đầu tiên. Không bắt đầu phát.",
+    "plovPlayingStatus": "Tiếp tục phát {name} cho đến khi bạn chuyển danh sách.",
+    "plovActiveStatus": "{name} vẫn là danh sách phát đang dùng.",
+    "plovPlayHere": "Phát từ đây",
+    "plovReplaces": "Thay thế nội dung đang phát.",
+    "playingToolbarShow": "Hiện thanh công cụ",
+    "playingToolbarHide": "Ẩn thanh công cụ",
+    "ctxLevelAlbumRecommended": "Theo album (khuyên dùng)",
     "deletePlayingNow": "Bản nhạc này, “{name}”, đang phát. Xóa nó sẽ dừng phát.",
     "infoRunningDesktop": "bộ nhớ riêng của ứng dụng máy tính (IndexedDB)",
     "infoAppLabel": "37 Player",
@@ -15559,6 +15770,7 @@ const STRINGS = {
     "sharedDeviceHint": "Hiển thị trên thiết bị khác khi một danh sách bị sửa trên hai thiết bị cùng lúc, ví dụ “Heart Jewel (iPad chùa)”.",
     "sharedJoinBtn": "Tham gia",
     "sharedJoining": "Đang kết nối…",
+    "sharedJoiningNamed": "Đang tham gia “{name}”…",
     "sharedBadCode": "Mã này không được chấp nhận. Hãy kiểm tra và thử lại.",
     "driveOrTitle": "Hoặc lưu trên Google Drive",
     "driveIntro": "Thư viện chung nằm trong một thư mục của Google Drive của bạn. Mọi thiết bị dùng chung nó đều đăng nhập bằng cùng một tài khoản Google (chẳng hạn tài khoản của một Trung tâm).",
@@ -16613,6 +16825,7 @@ const STRINGS = {
     "discardOriginalsBtn": "Bỏ chúng",
     "convertBtn": "Chuyển đổi",
     "convertAllBtn": "Chuyển đổi cả {n}",
+    "convertSelectedBtn": "Chuyển đổi mục đã chọn ({n})",
     "convertThemNowBtn": "Chuyển đổi ngay",
     "convertItNowBtn": "Chuyển đổi ngay",
     "convertLaterBtn": "Để sau",
@@ -16624,6 +16837,15 @@ const STRINGS = {
     "converterDownloadFailed": "Không tải được bộ chuyển đổi ({msg}). Hãy kiểm tra kết nối internet rồi thử lại.",
     "convertProgress": "Đang chuyển đổi {done} / {total}: {name}",
     "convertWaiting": "{n} bài sẽ chuyển đổi khi không có gì đang phát",
+    "convertBigTitle": "{n} tệp trong số này rất lớn",
+    "convertBigTitleOne": "Tệp này rất lớn",
+    "convertBigBody": "Chuyển đổi một tệp lớn như vậy (ở đây lên tới {size}) cần lượng bộ nhớ của thiết bị này gần bằng kích thước của tệp, và có thể mất nhiều thời gian. Khi còn ít bộ nhớ trống, thiết bị có thể ngừng phản hồi cho đến khi xong, hoặc thậm chí tự khởi động lại. Các tệp lớn chuyển đổi liên tiếp sẽ cộng dồn: hãy chuyển đổi từng tệp một và thoát 37 Player trước tệp tiếp theo. Hãy đóng các ứng dụng khác trước, và đừng làm việc này trong một buổi lễ.",
+    "convertBigPlayNote": "Bắt đầu phát sẽ tạm gác việc chuyển đổi.",
+    "convertBigGoBtn": "Vẫn chuyển đổi",
+    "convertBigGoBtnOne": "Vẫn chuyển đổi",
+    "convertBigSkipBtn": "Chỉ chuyển đổi các tệp nhỏ hơn",
+    "cleanupBigNote": "{n} bài trong số đó lớn hơn {size}: chúng chỉ được chuyển đổi khi bạn yêu cầu ở đây, không bao giờ tự động.",
+    "cleanupBigNoteOne": "Một bài trong số đó lớn hơn {size}: nó chỉ được chuyển đổi khi bạn yêu cầu ở đây, không bao giờ tự động.",
     "convertNoAudioHere": "âm thanh của bài chưa có trên thiết bị này",
     "convertFailedTitle": "Một số bài không chuyển đổi được",
     "convertFailedBody": "Không chuyển đổi được {n} bản nhạc. Chúng giữ nguyên; Dọn dẹp thư viện có thể thử lại.",
@@ -16648,6 +16870,16 @@ const STRINGS = {
     "manualFirstBackupBody": "Thao tác này lưu bản sao lưu đầy đủ của thư viện thành một tệp. Hãy giữ nó — cùng mọi bản sao lưu sau này — trong cùng một thư mục, ví dụ \"37 Player backups\" trong thư mục Nhạc.",
   },
   "el": {
+    "plovBrowsing": "Περιήγηση",
+    "plovUse": "Χρήση αυτής της λίστας",
+    "plovReadyHint": "Έτοιμη στο πρώτο κομμάτι. Δεν ξεκινά η αναπαραγωγή.",
+    "plovPlayingStatus": "Η αναπαραγωγή παραμένει στη λίστα {name} μέχρι να αλλάξετε λίστα.",
+    "plovActiveStatus": "Η λίστα {name} παραμένει ενεργή.",
+    "plovPlayHere": "Αναπαραγωγή από εδώ",
+    "plovReplaces": "Αντικαθιστά την τρέχουσα αναπαραγωγή.",
+    "playingToolbarShow": "Εμφάνιση γραμμής εργαλείων",
+    "playingToolbarHide": "Απόκρυψη γραμμής εργαλείων",
+    "ctxLevelAlbumRecommended": "Ανά άλμπουμ (προτείνεται)",
     "deletePlayingNow": "Αυτό το κομμάτι, «{name}», παίζει αυτή τη στιγμή. Η διαγραφή του το σταματά.",
     "infoRunningDesktop": "τον δικό αποθηκευτικό χώρο της εφαρμογής υπολογιστή (IndexedDB)",
     "infoAppLabel": "37 Player",
@@ -17401,6 +17633,7 @@ const STRINGS = {
     "sharedDeviceHint": "Εμφανίζεται σε άλλες συσκευές όταν μια λίστα άλλαξε σε δύο ταυτόχρονα, π.χ. «Heart Jewel (iPad του ναού)».",
     "sharedJoinBtn": "Συμμετοχή",
     "sharedJoining": "Σύνδεση…",
+    "sharedJoiningNamed": "Σύνδεση με «{name}»…",
     "sharedBadCode": "Ο κωδικός δεν έγινε δεκτός. Ελέγξτε τον και δοκιμάστε ξανά.",
     "driveOrTitle": "Ή κρατήστε την στο Google Drive",
     "driveIntro": "Η κοινή βιβλιοθήκη βρίσκεται σε φάκελο του Google Drive σας. Κάθε συσκευή που τη μοιράζεται συνδέεται με τον ίδιο λογαριασμό Google (ενός Κέντρου, για παράδειγμα).",
@@ -18455,6 +18688,7 @@ const STRINGS = {
     "discardOriginalsBtn": "Απόρριψή τους",
     "convertBtn": "Μετατροπή",
     "convertAllBtn": "Μετατροπή και των {n}",
+    "convertSelectedBtn": "Μετατροπή επιλεγμένων ({n})",
     "convertThemNowBtn": "Μετατροπή τώρα",
     "convertItNowBtn": "Μετατροπή τώρα",
     "convertLaterBtn": "Αργότερα",
@@ -18466,6 +18700,15 @@ const STRINGS = {
     "converterDownloadFailed": "Δεν ήταν δυνατή η λήψη του μετατροπέα ({msg}). Ελέγξτε τη σύνδεση στο διαδίκτυο και δοκιμάστε ξανά.",
     "convertProgress": "Μετατροπή {done} από {total}: {name}",
     "convertWaiting": "{n} για μετατροπή μόλις δεν παίζει τίποτα",
+    "convertBigTitle": "{n} από αυτά τα αρχεία είναι μεγάλα",
+    "convertBigTitleOne": "Αυτό το αρχείο είναι μεγάλο",
+    "convertBigBody": "Η μετατροπή ενός τόσο μεγάλου αρχείου (εδώ έως {size}) χρειάζεται περίπου τόση μνήμη αυτής της συσκευής όσο το μέγεθος του αρχείου, και μπορεί να πάρει πολύ χρόνο. Με λίγη ελεύθερη μνήμη, η συσκευή μπορεί να μην ανταποκρίνεται μέχρι να τελειώσει, ή ακόμη και να επανεκκινηθεί. Τα μεγάλα αρχεία που μετατρέπονται το ένα μετά το άλλο αθροίζονται: μετατρέψτε ένα κάθε φορά και κλείστε το 37 Player πριν από το επόμενο. Κλείστε πρώτα τις άλλες εφαρμογές, και μην το κάνετε κατά τη διάρκεια μιας συνεδρίας.",
+    "convertBigPlayNote": "Αν ξεκινήσει αναπαραγωγή, η μετατροπή μπαίνει σε αναμονή.",
+    "convertBigGoBtn": "Μετατροπή παρ' όλα αυτά",
+    "convertBigGoBtnOne": "Μετατροπή παρ' όλα αυτά",
+    "convertBigSkipBtn": "Μετατροπή μόνο των μικρότερων",
+    "cleanupBigNote": "{n} από αυτά ξεπερνούν τα {size}: αυτά μετατρέπονται μόνο όταν το ζητήσετε εδώ, ποτέ από μόνα τους.",
+    "cleanupBigNoteOne": "Ένα από αυτά ξεπερνά τα {size}: μετατρέπεται μόνο όταν το ζητήσετε εδώ, ποτέ από μόνο του.",
     "convertNoAudioHere": "ο ήχος του δεν είναι ακόμη σε αυτή τη συσκευή",
     "convertFailedTitle": "Ορισμένα κομμάτια δεν μετατράπηκαν",
     "convertFailedBody": "{n} κομμάτια δεν μπόρεσαν να μετατραπούν. Μένουν όπως ήταν· η Τακτοποίηση βιβλιοθήκης μπορεί να ξαναδοκιμάσει.",
@@ -18490,6 +18733,16 @@ const STRINGS = {
     "manualFirstBackupBody": "Αυτό αποθηκεύει ένα πλήρες αντίγραφο της βιβλιοθήκης σας σε αρχείο. Κρατήστε το — μαζί με όλα τα επόμενα αντίγραφα — στον ίδιο φάκελο, π.χ. «37 Player backups» μέσα στον φάκελο Μουσική.",
   },
   "it": {
+    "plovBrowsing": "Esplorazione",
+    "plovUse": "Usa questa playlist",
+    "plovReadyHint": "Pronta al primo brano. Non avvia la riproduzione.",
+    "plovPlayingStatus": "La riproduzione resta su {name} finché non cambi playlist.",
+    "plovActiveStatus": "{name} è ancora la playlist attiva.",
+    "plovPlayHere": "Riproduci da qui",
+    "plovReplaces": "Sostituisce la riproduzione in corso.",
+    "playingToolbarShow": "Mostra la barra degli strumenti",
+    "playingToolbarHide": "Nascondi la barra degli strumenti",
+    "ctxLevelAlbumRecommended": "Per album (consigliato)",
     "deletePlayingNow": "Questo brano, “{name}”, sta suonando adesso. Eliminarlo lo ferma.",
     "infoRunningDesktop": "lo spazio di archiviazione dell'app per computer (IndexedDB)",
     "infoAppLabel": "37 Player",
@@ -19243,6 +19496,7 @@ const STRINGS = {
     "sharedDeviceHint": "Mostrato sugli altri dispositivi quando una playlist è stata modificata su due contemporaneamente, ad es. «Gioiello del cuore (iPad del tempio)».",
     "sharedJoinBtn": "Unisciti",
     "sharedJoining": "Connessione…",
+    "sharedJoiningNamed": "Accesso a «{name}»…",
     "sharedBadCode": "Il codice non è stato accettato. Controllalo e riprova.",
     "driveOrTitle": "Oppure tienila su Google Drive",
     "driveIntro": "La libreria condivisa sta in una cartella del tuo Google Drive. Ogni dispositivo che la condivide accede con lo stesso account Google (quello di un Centro, ad esempio).",
@@ -20297,6 +20551,7 @@ const STRINGS = {
     "discardOriginalsBtn": "Scartali",
     "convertBtn": "Converti",
     "convertAllBtn": "Converti tutte ({n})",
+    "convertSelectedBtn": "Converti i selezionati ({n})",
     "convertThemNowBtn": "Convertile ora",
     "convertItNowBtn": "Convertila ora",
     "convertLaterBtn": "Più tardi",
@@ -20308,6 +20563,15 @@ const STRINGS = {
     "converterDownloadFailed": "Non è stato possibile scaricare il convertitore ({msg}). Controlla la connessione a internet e riprova.",
     "convertProgress": "Conversione {done} di {total}: {name}",
     "convertWaiting": "{n} da convertire quando non c'è niente in riproduzione",
+    "convertBigTitle": "{n} di questi file sono grandi",
+    "convertBigTitleOne": "Questo file è grande",
+    "convertBigBody": "Convertire un file così grande (qui fino a {size}) richiede all'incirca tanta memoria di questo dispositivo quanto la dimensione del file, e può richiedere molto tempo. Con poca memoria libera, il dispositivo può non rispondere finché non ha finito, o persino riavviarsi. I file grandi convertiti uno dopo l'altro si sommano: ne converta uno alla volta, e chiuda 37 Player prima del successivo. Chiuda prima le altre applicazioni, e non lo faccia durante una sessione.",
+    "convertBigPlayNote": "Avviare la riproduzione mette da parte la conversione.",
+    "convertBigGoBtn": "Convertili comunque",
+    "convertBigGoBtnOne": "Convertilo comunque",
+    "convertBigSkipBtn": "Converti solo i più piccoli",
+    "cleanupBigNote": "{n} di esse superano {size}: quelle vengono convertite solo quando lo chiede qui, mai da sole.",
+    "cleanupBigNoteOne": "Una di esse supera {size}: viene convertita solo quando lo chiede qui, mai da sola.",
     "convertNoAudioHere": "il suo audio non è ancora su questo dispositivo",
     "convertFailedTitle": "Alcune tracce non sono state convertite",
     "convertFailedBody": "Non è stato possibile convertire {n} tracce. Restano com'erano; Pulizia libreria può riprovare.",
@@ -21231,7 +21495,8 @@ function openPlaylistOverlay(plId){
 function closePlaylistOverlay(){
   if(!overlayPl) return;
   overlayPl = null; overlayPending = null;
-  const o = document.getElementById("plOverlayWrap"); if(o) o.remove();
+  playerEl.classList.remove("browsing-playlist");
+  const o = document.getElementById("plOverlayWrap"); if(o){ if(o.anchorObserver) o.anchorObserver.disconnect(); o.remove(); }
   renderRail();
 }
 function overlayItemLabel(it){
@@ -21267,11 +21532,12 @@ function drawOverlayWave(canvas, item){
   ctx.fillRect(Math.max(0, x-1.5), 0, 3, h);
 }
 function renderPlaylistOverlay(){
+  playerEl.classList.toggle("browsing-playlist", !!overlayPl && appMode === "playing");
   const old = document.getElementById("plOverlayWrap");
-  if(old){ const sc = old.querySelector(".plov-scroll"); if(sc && overlayPl) overlayPl.scrollTop = sc.scrollTop; old.remove(); }
+  if(old){ if(old.anchorObserver) old.anchorObserver.disconnect(); const sc = old.querySelector(".plov-scroll"); if(sc && overlayPl) overlayPl.scrollTop = sc.scrollTop; old.remove(); }
   if(!overlayPl || appMode!=="playing") return;
   const f = findNode(overlayPl.id);
-  if(!f || f.node.kind!=="playlist"){ overlayPl = null; return; }
+  if(!f || f.node.kind!=="playlist"){ overlayPl = null; playerEl.classList.remove("browsing-playlist"); return; }
   const pl = f.node, items = sortedItems(pl);
   if(overlayPl.selectedId && !items.some(i=> i.id===overlayPl.selectedId)) overlayPl.selectedId = null;
   const target = overlayTarget(pl);
@@ -21282,15 +21548,24 @@ function renderPlaylistOverlay(){
   wrap.id = "plOverlayWrap";
   wrap.className = "plov-backdrop";
   wrap.style.top = top + "px";
+  const active = findPlayingContext();
+  const live = (!audioEl.paused && !audioEl.ended) || silenceState.active;
+  const status = active ? t(live ? "plovPlayingStatus" : "plovActiveStatus", {name: active.playlist.name}) : "";
   const count = items.length===1 ? t("itemCountOne") : t("itemCountMany", {n: items.length});
   wrap.innerHTML = `
-    <div class="plov-panel" role="dialog" aria-modal="false">
+    <div class="plov-panel" role="dialog" aria-modal="false" aria-labelledby="plovTitle">
       <div class="plov-head">
-        <div class="plov-titles"><div class="plov-title"></div><div class="plov-meta">${count} · ${fmtTimeLong(totalDurationOf(pl.items))}</div></div>
-        <button class="plov-close" type="button" title="${t("closeBtn")}">✕</button>
+        <div class="plov-titles"><div class="plov-title" id="plovTitle"></div><div class="plov-meta">${escapeHtmlText(t("plovBrowsing"))} · ${count} · ${fmtTimeLong(totalDurationOf(pl.items))}</div></div>
+        <div class="plov-actions">
+          <button class="btn primary plov-use" type="button" ${items.length ? "" : "disabled"}>${escapeHtmlText(t("plovUse"))}</button>
+          <span class="plov-meta">${escapeHtmlText(t("plovReadyHint"))}</span>
+        </div>
+        <button class="btn ghost plov-close" type="button">${escapeHtmlText(t("closeBtn"))} ×</button>
       </div>
+      <div class="plov-status">${escapeHtmlText(status)}</div>
       <div class="plov-player">
-        <button class="tbtn-play-sm plov-play" type="button" title="${t("plovPlayTooltip")}">▶</button>
+        <div class="plov-play-action"><button class="btn primary plov-play" type="button" title="${escapeHtmlText(t("plovPlayTooltip"))}" ${target ? "" : "disabled"}><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg> ${escapeHtmlText(t("plovPlayHere"))}</button>
+          <div class="plov-play-hint">${live ? escapeHtmlText(t("plovReplaces")) : ""}</div></div>
         <div class="plov-track">
           <div class="plov-track-name"></div>
           <div class="plov-wave-wrap"><canvas class="plov-wave" width="900" height="56"></canvas><div class="waveform-hover-time plov-hover-time"></div></div>
@@ -21350,6 +21625,7 @@ function renderPlaylistOverlay(){
   });
   canvas.addEventListener("mouseleave", ()=>{ hoverEl.style.display = "none"; });
   wrap.querySelector(".plov-play").addEventListener("click", ()=>{ if(target) startFromOverlay(target.id, target.kind==="track" ? overlayPl.startRatio : 0); });
+  wrap.querySelector(".plov-use").addEventListener("click", overlayQueuePlaylist);
   wrap.querySelector(".plov-close").addEventListener("click", closePlaylistOverlay);
   wrap.addEventListener("mousedown", (e)=>{ if(e.target===wrap) closePlaylistOverlay(); });
 
@@ -21387,6 +21663,14 @@ function renderPlaylistOverlay(){
     list.appendChild(row);
   });
   playerEl.appendChild(wrap);
+  // Keep the overlay below the live player when height-dependent styling changes.
+  if(anchor && typeof ResizeObserver !== "undefined"){
+    wrap.anchorObserver = new ResizeObserver(()=>{
+      if(!wrap.isConnected){ wrap.anchorObserver.disconnect(); return; }
+      wrap.style.top = (anchor.offsetTop + anchor.offsetHeight + 2) + "px";
+    });
+    wrap.anchorObserver.observe(anchor);
+  }
   const sc = wrap.querySelector(".plov-scroll");
   if(overlayPl.scrollTop) sc.scrollTop = overlayPl.scrollTop;
 }
@@ -22447,10 +22731,45 @@ function withPin(fn){
 }
 
 // ---- Playing ----
+let playingToolbarCollapsed = false;
+try{ playingToolbarCollapsed = localStorage.getItem("37player.playingToolbarCollapsed") === "true"; }catch(_){}
 const playingCtxBar = document.createElement("div");
 playingCtxBar.className = "ctx-bar ctx-playing"; playingCtxBar.setAttribute("role", "toolbar");
+// Native select handles keyboard and touch; the visible face stays compact.
+function playingLevelControl(){
+  const label = document.createElement("label");
+  label.className = "playing-level";
+  const caption = document.createElement("span");
+  caption.textContent = t("ctxLoudness");
+  const face = document.createElement("span");
+  face.className = "playing-level-face";
+  const value = document.createElement("span");
+  value.setAttribute("aria-hidden", "true");
+  face.append(value);
+  face.insertAdjacentHTML("beforeend", '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>');
+  const select = document.createElement("select");
+  select.id = "playingLevelMode";
+  select.setAttribute("aria-label", t("ctxLevelGroup"));
+  const choices = [
+    ["album", "ctxLevelAlbum", "ctxLevelAlbumRecommended", "ctxLevelAlbumTip"],
+    ["off", "ctxLevelOff", "ctxLevelOff", "ctxLevelOffTip"],
+    ["track", "ctxLevelTrack", "ctxLevelTrack", "ctxLevelTrackTip"]
+  ];
+  choices.forEach(([id, short, full])=> select.add(new Option(t(full), id)));
+  const update = ()=>{
+    const choice = choices.find(c=> c[0] === levelMode()) || choices[1];
+    select.value = choice[0];
+    value.textContent = t(choice[1]);
+    label.title = t(choice[3]);
+  };
+  select.addEventListener("change", ()=>{ setLevelMode(select.value); update(); });
+  face.append(select);
+  label.append(caption, face);
+  update();
+  return label;
+}
 function buildPlayingCtxBar(){
-  // Wrap, Album, Loudness | Even out loudness: the three choices | Playback
+  // Display switches | Loudness picker | Playback
   // (Gen Rinzin, 30 Oct 2026; a "Display:" label with the switches as icons only
   // was tried in 1.4.129 and dropped: the words are wanted).
   fillCtxBar(playingCtxBar, [
@@ -22458,14 +22777,7 @@ function buildPlayingCtxBar(){
     {icon: "album", label: t("ctxAlbum"), tip: t("albumColumnLabel"), on: ()=> !!root.settings.showAlbumColumn, act: ()=> ctxToggleSetting("albumColumnToggle")},
     {icon: "loud", label: t("ctxLoudness"), tip: t("showPlayLoudTip"), on: ()=> !!root.settings.showPlayLoudness, act: ()=>{ root.settings.showPlayLoudness = !root.settings.showPlayLoudness; saveState(); renderPlayer(); }},
     "|",
-    // How it sounds (1.4.128, Gen Rinzin): the three choices side by side, as
-    // Canva's left / centre / right, after the switches about the display.
-    {group: t("ctxLevelGroupLabel")},
-    ctxSeg(t("ctxLevelGroup"), [
-      {value: "album", icon: "album", label: t("ctxLevelAlbum"), tip: t("ctxLevelAlbumTip")},
-      {value: "off", icon: "levelOff", label: t("ctxLevelOff"), tip: t("ctxLevelOffTip")},
-      {value: "track", icon: "note", label: t("ctxLevelTrack"), tip: t("ctxLevelTrackTip")},
-    ], levelMode, setLevelMode),
+    playingLevelControl(),
     "|",
     {icon: "sliders", label: t("ctxPlayback"), tip: t("ctxPlaybackTip"), lock: ()=> !!root.settings.pin && Date.now() >= pinUnlockedUntil,
       act: ()=> withPin(()=>{ openSettingsPage(); goToSettingsSection("playback"); })}
@@ -23348,7 +23660,30 @@ function renderPlayer(){
   const prevBrowsedPlId = playerEl.dataset.browsedPlaylistId || null;
 
   playerEl.innerHTML = "";
-  playerEl.appendChild(buildPlayingCtxBar());
+  const toolbarShell = document.createElement("div");
+  toolbarShell.className = "playing-toolbar-shell";
+  toolbarShell.appendChild(buildPlayingCtxBar());
+  const toolbarToggle = document.createElement("button");
+  toolbarToggle.type = "button";
+  toolbarToggle.className = "playing-toolbar-toggle";
+  function updateToolbar(){
+    playingCtxBar.hidden = playingToolbarCollapsed;
+    toolbarShell.classList.toggle("collapsed", playingToolbarCollapsed);
+    toolbarToggle.setAttribute("aria-expanded", String(!playingToolbarCollapsed));
+    toolbarToggle.setAttribute("aria-label", t(playingToolbarCollapsed ? "playingToolbarShow" : "playingToolbarHide"));
+    toolbarToggle.title = toolbarToggle.getAttribute("aria-label");
+    toolbarToggle.innerHTML = playingToolbarCollapsed
+      ? '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>'
+      : '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 15 6-6 6 6"/></svg>';
+  }
+  toolbarToggle.addEventListener("click", ()=>{
+    playingToolbarCollapsed = !playingToolbarCollapsed;
+    try{ localStorage.setItem("37player.playingToolbarCollapsed", String(playingToolbarCollapsed)); }catch(_){}
+    updateToolbar();
+  });
+  toolbarShell.appendChild(toolbarToggle);
+  updateToolbar();
+  playerEl.appendChild(toolbarShell);
   const playingCtx = findPlayingContext();               // {playlist, item} of what's actually playing, or null
   const browsedPl = viewedPlaylist();                     // the playlist currently selected in the sidebar, or null
   // True whenever something is actually queued AND you're looking at a
@@ -23383,8 +23718,8 @@ function renderPlayer(){
         <div class="stop-sub">Playback is halted here. Tap below when it's time to continue.</div>
         <button class="btn primary stop-continue" id="btnContinue">▶ Continue playing</button>
         <div class="transport-mini">
-          <button id="btnPrev" title="Previous">⏮</button>
-          <button id="btnNext" title="Skip ahead">⏭</button>
+          <button id="btnPrev" title="Previous">${ICON_SKIP_BACK}</button>
+          <button id="btnNext" title="Skip ahead">${ICON_SKIP_FORWARD}</button>
         </div>
       </div>`;
   } else if(curItem){
@@ -23392,9 +23727,9 @@ function renderPlayer(){
     fixed.innerHTML = `
       <div class="now-playing-top">
         <div class="transport-inline">
-          <button class="tbtn-sm" id="btnPrev" title="Previous">⏮</button>
+          <button class="tbtn-sm" id="btnPrev" title="Previous">${ICON_SKIP_BACK}</button>
           <button class="tbtn-play-sm" id="btnPlay" title="Play/Pause">▶</button>
-          <button class="tbtn-sm" id="btnNext" title="Next">⏭</button>
+          <button class="tbtn-sm" id="btnNext" title="Next">${ICON_SKIP_FORWARD}</button>
         </div>
         <div class="now-playing-heading">
           <div style="display:flex; align-items:center; gap:6px; min-width:0;">
@@ -25440,9 +25775,12 @@ async function snapshotLegacyTagTracks(){
 // file it was made from — for Standardize's re-encoded files.
 async function blobWithCurrentTags(track, blob, opts){
   opts = opts || {};
-  blob = await realBlob(blob); // (the desktop app's big files: read whole to write the details in)
+  // The format first, from the file's first bytes: a file with no writer,
+  // or too big to rewrite in memory, is never read whole to find that out.
   const fmt = await sniffAudioFormat(blob, track.filename);
   if(!TAG_WRITABLE_KINDS.has(fmt.kind)) return {blob, fmt, written: false};
+  if(isDiskBlob(blob) && blob.size > BIG_FILE_BYTES) return {blob, fmt, written: false, tooBig: true};
+  blob = await realBlob(blob); // (the desktop app's big files: read whole to write the details in)
   let typed = blob.type ? blob : new Blob([blob], {type: fmt.mime});
   // A file damaged by the pre-1.1.089 writer is repaired first — rewriting
   // its tags would erase the sign that identifies the damage (see repairDamagedMp4).
@@ -26539,9 +26877,31 @@ function trackCanBeConverted(tr){
   if(!tr || tr.needsConvert === NEEDS_CONVERT_PLAYLIST) return false;
   return !!tr.needsConvert || !(tr.duration > 0) || trackMatchesPolicy(tr);
 }
+// A file too big to convert without being asked (BIG_FILE_BYTES).
+function trackIsBigFile(tr){ return !!tr && (tr.fileSize || 0) > BIG_FILE_BYTES; }
 // Asks to download the converter first when it isn't here, then queues.
-async function convertTracks(ids){
+// opts.auto: started by 37 Player itself (after an import, a split): big
+// files are left as they are. Asked for by a person, big files get a
+// warning first, with the choice to leave them out. The big ones a person
+// agreed to are remembered for this session (convertBigOk), since a queue
+// carried over a restart never converts a big file by itself.
+const convertBigOk = new Set();
+async function convertTracks(ids, opts){
   ids = ids.filter(id=> trackCanBeConverted(findLibraryTrack(id)) && !convertQueue.includes(id));
+  const big = ids.filter(id=> trackIsBigFile(findLibraryTrack(id)));
+  if(big.length && opts && opts.auto) ids = ids.filter(id=> !big.includes(id));
+  else if(big.length){
+    const trs = big.map(id=> findLibraryTrack(id));
+    const largest = trs.reduce((a, b)=> (b.fileSize || 0) > (a.fileSize || 0) ? b : a);
+    const list = trs.slice(0, 8).map(tr=> `<li>${escapeHtmlText((tr.name || tr.filename || "") + " (" + fmtBytes(tr.fileSize || 0) + ")")}</li>`).join("") + (trs.length > 8 ? `<li>…</li>` : "");
+    const btns = [{label: t(big.length === 1 ? "convertBigGoBtnOne" : "convertBigGoBtn"), value: "go", kind: "primary"}];
+    if(big.length < ids.length) btns.push({label: t("convertBigSkipBtn"), value: "skip"});
+    btns.push({label: t("cancel"), value: null});
+    const c = await askChoice(t(big.length === 1 ? "convertBigTitleOne" : "convertBigTitle", {n: big.length}), `<p>${escapeHtmlText(t("convertBigBody", {size: fmtBytes(largest.fileSize || 0)}) + (standardizeOnlyWhenIdle() ? " " + t("convertBigPlayNote") : ""))}</p><ul class="delete-list">${list}</ul>`, btns);
+    if(!c) return;
+    if(c === "skip") ids = ids.filter(id=> !big.includes(id));
+    else big.forEach(id=> convertBigOk.add(id));
+  }
   if(!ids.length) return;
   if(!(await converterStored()) && !(await ensureConverter())){
     const ok = await askToDownloadConverter(); // couldn't fetch it quietly: say so, and let them try
@@ -26560,19 +26920,25 @@ function convertQueueSave(){
   if(convertQueue.length) idbPut("state", {key: "convertQueue", value: {ids: convertQueue.slice(), total: convertTotal, done: convertDone}}).catch(()=>{});
   else idbDelete("state", "convertQueue").catch(()=>{});
 }
+// A minute after opening, not six seconds (2.2.010, Gen Rinzin): nothing
+// heavy right at the start, so Settings can be reached first.
+const CONVERT_RESUME_AFTER_MS = window.__convertResumeMs || 60000;
 function scheduleConvertResume(){
   setTimeout(async ()=>{
     let rec = null;
     try{ rec = await idbGet("state", "convertQueue"); }catch(err){}
     const v = rec && rec.value;
     if(!v || !Array.isArray(v.ids) || convertRunning) return;
-    const ids = v.ids.filter(id=> trackCanBeConverted(findLibraryTrack(id)) && !convertQueue.includes(id));
+    // Never a big file by itself: one that was being converted when the app
+    // had to be force-quit would start again at every opening (the Mac
+    // mini, 8 Nov 2026). It's still listed in Library cleanup, to ask again.
+    const ids = v.ids.filter(id=> trackCanBeConverted(findLibraryTrack(id)) && !trackIsBigFile(findLibraryTrack(id)) && !convertQueue.includes(id));
     if(!ids.length){ idbDelete("state", "convertQueue").catch(()=>{}); return; }
     if(!(await converterStored()) && !(await ensureConverter())) return; // try again next start
     convertQueue.push(...ids);
     convertDone = Math.max(0, (v.total || ids.length) - ids.length); convertTotal = convertDone + ids.length;
     runConvertQueue();
-  }, 6000);
+  }, CONVERT_RESUME_AFTER_MS);
 }
 function askToDownloadConverter(){
   return new Promise(resolve=>{
@@ -26625,7 +26991,7 @@ async function runConvertQueue(){
       }
       const id = convertQueue[0];
       const tr = findLibraryTrack(id);
-      if(!trackCanBeConverted(tr)){ convertQueue.shift(); convertDone++; continue; }
+      if(!trackCanBeConverted(tr) || (trackIsBigFile(tr) && !convertBigOk.has(id))){ convertQueue.shift(); convertDone++; continue; }
       const name = tr.name || tr.filename || "";
       setActiveOperationProgress(convertBarText(name, null), stopConverting);
       let rec = null;
@@ -26634,12 +27000,17 @@ async function runConvertQueue(){
       // Watch for playback starting meanwhile: the conversion is dropped.
       const watch = setInterval(()=>{ if(convertShouldWait()) converterStop(); }, 1000);
       try{
+        const wasBig = trackIsBigFile(tr);
         const out = await converterConvert(rec.blob, tr.filename, (f)=> setActiveOperationProgress(convertBarText(name, f), stopConverting));
         clearInterval(watch);
         await applyConvertedAudio(id, out.blob, rec.blob, out.kind);
         convertQueue.shift(); convertDone++;
         convertKept.push(id);
-        if(++sinceFresh >= CONVERTER_FRESH_EVERY){ converterStop(); sinceFresh = 0; }
+        // After a big file, a fresh converter at once: the old one may still
+        // hold the file it was given, and the next big one comes on top of it
+        // (the Mac mini, 11 Nov 2026: 4.38 GB held while converting a 2.7 GB
+        // WAV straight after a 1 GB one).
+        if(wasBig || ++sinceFresh >= CONVERTER_FRESH_EVERY){ converterStop(); sinceFresh = 0; }
       }catch(err){
         clearInterval(watch);
         if(err && err.interrupted){ if(convertStopped) break; continue; } // playback started: again when it stops
@@ -26755,7 +27126,7 @@ async function convertAfterImport(names, importedIds){
   ids.forEach(id=> convertSoon.add(id));
   try{
     if(!(await ensureConverter())){ if(names.length) showUnplayableFilesWarning(names); return; }
-    await convertTracks(ids);
+    await convertTracks(ids, {auto: true});
   } finally {
     ids.forEach(id=> convertSoon.delete(id)); // queued by now (convertQueue holds them), or not to be
   }
@@ -27399,7 +27770,7 @@ async function splitTrackInto(sourceTrack, cuts, pieces, opts){
   // import would convert is converted now.
   if(!encoded && !opts.noConverter){
     const later = tracks.filter(tr=> trackMatchesPolicy(tr)).map(tr=> tr.id);
-    if(later.length) convertTracks(later);
+    if(later.length) convertTracks(later, {auto: true});
   }
   let j = 0;
   return pieces.map(p=> p ? tracks[j++] : null);
@@ -27645,13 +28016,13 @@ async function openSplitter(track, opts){
         <div class="sp-canvas-wrap"><canvas id="spZoom" class="sp-zoom" tabindex="0"></canvas><div class="sp-tip" id="spTip"></div><div class="sp-fine-note" id="spFineNote"></div></div>
       </div>
       <div class="sp-transport">
-        ${btn("spPrevMark", "⏮", t("splitPrevMark"))}
+        ${btn("spPrevMark", ICON_SKIP_BACK, t("splitPrevMark"))}
         ${btn("spBack100", "−100 ms", t("splitNudgeBack", {ms: 100}), "sp-nudge")}
         ${btn("spBack10", "−10 ms", t("splitNudgeBack", {ms: 10}), "sp-nudge")}
         <button class="tbtn-play-sm" type="button" id="spPlay" title="${escapeHtmlText(t("splitPlayTitle"))}">▶</button>
         ${btn("spFwd10", "+10 ms", t("splitNudgeFwd", {ms: 10}), "sp-nudge")}
         ${btn("spFwd100", "+100 ms", t("splitNudgeFwd", {ms: 100}), "sp-nudge")}
-        ${btn("spNextMark", "⏭", t("splitNextMark"))}
+        ${btn("spNextMark", ICON_SKIP_FORWARD, t("splitNextMark"))}
         <span class="sp-time" id="spTime"></span>
         <span class="sp-gap"></span>
         ${btn("spHearTo", "◁| " + escapeHtmlText(t("splitHearTo")), t("splitHearToTitle"))}
@@ -33052,9 +33423,9 @@ function renderLibraryPreviewPanel(){
   const playerBar = document.getElementById("libPlayerBar");
   playerBar.innerHTML = `
       <div class="lib-preview-transport-row transport-inline">
-        <button class="tbtn-sm" id="libBtnPrev" title="${t('previous')}" ${track?"":"disabled"}>⏮</button>
+        <button class="tbtn-sm" id="libBtnPrev" title="${t('previous')}" ${track?"":"disabled"}>${ICON_SKIP_BACK}</button>
         <button class="tbtn-play-sm" id="libBtnPlay" title="${t('playPause')}" ${track?"":"disabled"}>▶</button>
-        <button class="tbtn-sm" id="libBtnNext" title="${t('next')}" ${track?"":"disabled"}>⏭</button>
+        <button class="tbtn-sm" id="libBtnNext" title="${t('next')}" ${track?"":"disabled"}>${ICON_SKIP_FORWARD}</button>
       </div>
       <div class="ed-preview-text"><div class="ed-preview-album"></div><div class="lib-preview-title"></div></div>
       <span class="ed-preview-time"><span id="libTimeCur">${curLabel}</span> / <span id="libTimeDur">${durLabel}</span></span>
@@ -34520,7 +34891,7 @@ const HELP_TOPICS = [
   {
     "id": "itunes-music-app",
     "title": "iTunes / Music.app",
-    "bodyHtml": "\u003cp>How 37 Player works alongside Music.app on a Mac and iTunes on Windows: bringing a library in, taking one back out, and why standardizing matters there.\u003c/p>\n\u003ch3>Importing\u003c/h3>\n\u003cp>37 Player can bring in a whole Music.app or iTunes library in one go — the audio, and every playlist inside its playlist folders.\u003c/p>\n\u003cp>\u003cstrong>1. Export the library file.\u003c/strong> In Music.app (or iTunes), choose \u003cstrong>File → Library → Export Library…\u003c/strong> and save the file into the folder that holds your music:\u003c/p>\n\u003cul>\n\u003cli>\u003cstrong>Music.app:\u003c/strong> the \u003cstrong>Media\u003c/strong> folder, usually in your Music folder under \u003cstrong>Music → Media\u003c/strong>.\u003c/li>\n\u003cli>\u003cstrong>iTunes on Windows:\u003c/strong> the \u003cstrong>iTunes Media\u003c/strong> folder, usually in your Music folder under \u003cstrong>iTunes → iTunes Media\u003c/strong>.\u003c/li>\n\u003c/ul>\n\u003cp>Keep the name it suggests (Library.xml). That one file lists every playlist and where each of its tracks is.\u003c/p>\n\u003cp>\u003cstrong>2. Import the folder.\u003c/strong> In 37 Player, open 'Import / Export', choose \u003cstrong>Import a folder…\u003c/strong>, and pick that same folder. 37 Player reads the library file along with the audio, and the usual review appears: how many tracks are new, and which playlist entries couldn't be found. Choose \u003cstrong>Import\u003c/strong>, and the playlists appear in 'Edit Playlists' in the same folders they had in Music.app.\u003c/p>\n\u003cp>Good to know:\u003c/p>\n\u003cul>\n\u003cli>\u003cstrong>Everything in the folder is imported\u003c/strong>, not just the tracks your playlists use. To bring in less, pick a smaller folder (one artist, say) — playlists still come in, with anything outside that folder listed as missing.\u003c/li>\n\u003cli>\u003cstrong>Apple's own lists\u003c/strong> (Library, Music, Downloaded and the like) are left out. A smart playlist comes in as the tracks it held when you exported — it doesn't keep updating.\u003c/li>\n\u003cli>\u003cstrong>A track that can't be found\u003c/strong> — never downloaded (streamed from Apple Music, or left in the cloud), or outside the folder you picked — leaves a \u003cstrong>Stop\u003c/strong> in its place in the playlist, named \"MISSING TRACK: title — album\", so playback halts right there instead of quietly skipping it, and the playlist is flagged. Once the track is in the library, put it in where the Stop is, and remove the Stop.\u003c/li>\n\u003cli>\u003cstrong>AIFF files\u003c/strong> (.aif), common in older iTunes libraries, come in as WAV, since most browsers can't play AIFF. The sound is identical, and the name, artist, album and artwork come along.\u003c/li>\n\u003cli>\u003cstrong>Older iTunes Store purchases\u003c/strong> protected against copying (.m4p files) can't be played in a browser.\u003c/li>\n\u003cli>\u003cstrong>Files a browser can't play\u003c/strong> — Windows Media Audio (.wma), Apple Lossless (ALAC, inside an .m4a) outside Safari, compressed AIFF and a few others — are converted to MP3 as they come in, so they play everywhere and keep their place in the playlists. 37 Player then asks whether to keep the originals too, for a later export (a portable export takes the original), showing how much room they take; Settings → Library cleanup can discard them later. Converting needs 37 Player's converter, which it fetches by itself (about 26 MB, once) and keeps, so it works offline afterwards; it waits while anything is playing. Without the converter (no internet the first time, say), such files come in marked \"Can't be played\", with \u003cstrong>Convert them now\u003c/strong> for later.\u003c/li>\n\u003cli>\u003cstrong>Your music doesn't have to be organized the way Music.app keeps it.\u003c/strong> Tracks are found by their folder names and file name, and if a file has moved, by its name and size.\u003c/li>\n\u003cli>\u003cstrong>Single playlists\u003c/strong> work too: a playlist exported on its own (\u003cstrong>File → Library → Export Playlist…\u003c/strong>, as an .m3u file), or an .m3u, .m3u8 or .xspf (VLC) from another player. Put it in the music folder and import the folder. ('Importing playlists' explains where playlists end up.)\u003c/li>\n\u003c/ul>\n\u003ch3>Exporting\u003c/h3>\n\u003cp>To take a library from 37 Player into Music.app or iTunes, use 'Import / Export' → Export and choose \u003cstrong>Portable\u003c/strong>. It unpacks into a \u003cstrong>music\u003c/strong> folder (artist / album / tracks) and a \u003cstrong>playlists\u003c/strong> folder of .m3u8 files.\u003c/p>\n\u003cul>\n\u003cli>\u003cstrong>The audio:\u003c/strong> in Music.app, choose \u003cstrong>File → Import…\u003c/strong> and pick the \u003cstrong>music\u003c/strong> folder.\u003c/li>\n\u003cli>\u003cstrong>The playlists:\u003c/strong> choose \u003cstrong>File → Library → Import Playlist…\u003c/strong> and pick each .m3u8 file. Music.app doesn't recreate folders from these, so a playlist lands at the top level; drag it into a playlist folder afterwards if you want one.\u003c/li>\n\u003c/ul>\n\u003cp>Every track keeps its name, artist, album, track number and artwork, since 37 Player writes those into the files themselves.\u003c/p>\n\u003cp>Volume adjustments made in 37 Player, and its evening out, don't come along: they aren't written into the files as ReplayGain tags, so Music.app plays each file at its own level. Music.app's own \u003cstrong>Sound Check\u003c/strong> (in its Playback settings) evens tracks out in a similar way.\u003c/p>\n\u003ch3>Why standardize for Music.app and iTunes\u003c/h3>\n\u003cp>Music.app and iTunes play one track straight into the next — but only smoothly when the two are alike. When the next track is a different file type (MP3 after AAC), or has a different sample rate (44.1 kHz after 48 kHz, say) or a different number of channels (mono after stereo), the player has to reset its audio output between them, and you hear a click, dropout, short gap, or worse.\u003c/p>\n\u003cp>37 Player itself doesn't have this problem, so there's no need to change the library for it. Instead, when exporting with \u003cstrong>Portable\u003c/strong>, tick \u003cstrong>Convert to the preferred format\u003c/strong>: every file in the export comes out alike, and the library stays as it is. For a stricter match, set the preferred format (Settings → \u003cstrong>File format\u003c/strong>) to \u003cstrong>Best for Apple\u003c/strong> (AAC, 44.1 kHz, stereo), or choose your own under Custom.\u003c/p>\n\u003ch3>The library's file format\u003c/h3>\n\u003cp>Settings → \u003cstrong>File format\u003c/strong> sets one \u003cstrong>preferred format\u003c/strong> for the library — Standard (MP3 192k, recommended), Best for Apple, Very small, Lossless (FLAC, not recommended: much larger, with no difference you can hear), or Custom — and which files are converted to it:\u003c/p>\n\u003cul>\n\u003cli>\u003cstrong>Don't touch my files:\u003c/strong> nothing is changed. A file this browser can't play still gets a playable copy, and its original is kept too.\u003c/li>\n\u003cli>\u003cstrong>Reduce uncompressed audio\u003c/strong> (recommended): WAV and AIFF files are converted as they come in.\u003c/li>\n\u003cli>\u003cstrong>Choose the rules:\u003c/strong> uncompressed audio, a bitrate above a limit, a sample rate or channel count other than the preferred format's, or less widely playable types (Opus, Ogg, WebM).\u003c/li>\n\u003c/ul>\n\u003cp>The page says what the settings would mean for the library as it is (\"12 tracks would be converted…\"). Converting them is in Settings → \u003cstrong>Library cleanup\u003c/strong> → Convert to the preferred format, with \u003cstrong>Convert them now\u003c/strong> and the list of those tracks (name, album, type, size, sample rate, bit rate, channels). In a shared library these settings belong to the library, so a change on one device applies on all of them, and a file about to be converted is never sent before its converted version is ready.\u003c/p>\n\u003cp>Videos (a recorded teaching, say) can come in too: 37 Player asks whether to take their sound as audio tracks. The video itself isn't kept.\u003c/p>"
+    "bodyHtml": "\u003cp>How 37 Player works alongside Music.app on a Mac and iTunes on Windows: bringing a library in, taking one back out, and why standardizing matters there.\u003c/p>\n\u003ch3>Importing\u003c/h3>\n\u003cp>37 Player can bring in a whole Music.app or iTunes library in one go — the audio, and every playlist inside its playlist folders.\u003c/p>\n\u003cp>\u003cstrong>1. Export the library file.\u003c/strong> In Music.app (or iTunes), choose \u003cstrong>File → Library → Export Library…\u003c/strong> and save the file into the folder that holds your music:\u003c/p>\n\u003cul>\n\u003cli>\u003cstrong>Music.app:\u003c/strong> the \u003cstrong>Media\u003c/strong> folder, usually in your Music folder under \u003cstrong>Music → Media\u003c/strong>.\u003c/li>\n\u003cli>\u003cstrong>iTunes on Windows:\u003c/strong> the \u003cstrong>iTunes Media\u003c/strong> folder, usually in your Music folder under \u003cstrong>iTunes → iTunes Media\u003c/strong>.\u003c/li>\n\u003c/ul>\n\u003cp>Keep the name it suggests (Library.xml). That one file lists every playlist and where each of its tracks is.\u003c/p>\n\u003cp>\u003cstrong>2. Import the folder.\u003c/strong> In 37 Player, open 'Import / Export', choose \u003cstrong>Import a folder…\u003c/strong>, and pick that same folder. 37 Player reads the library file along with the audio, and the usual review appears: how many tracks are new, and which playlist entries couldn't be found. Choose \u003cstrong>Import\u003c/strong>, and the playlists appear in 'Edit Playlists' in the same folders they had in Music.app.\u003c/p>\n\u003cp>Good to know:\u003c/p>\n\u003cul>\n\u003cli>\u003cstrong>Everything in the folder is imported\u003c/strong>, not just the tracks your playlists use. To bring in less, pick a smaller folder (one artist, say) — playlists still come in, with anything outside that folder listed as missing.\u003c/li>\n\u003cli>\u003cstrong>Apple's own lists\u003c/strong> (Library, Music, Downloaded and the like) are left out. A smart playlist comes in as the tracks it held when you exported — it doesn't keep updating.\u003c/li>\n\u003cli>\u003cstrong>A track that can't be found\u003c/strong> — never downloaded (streamed from Apple Music, or left in the cloud), or outside the folder you picked — leaves a \u003cstrong>Stop\u003c/strong> in its place in the playlist, named \"MISSING TRACK: title — album\", so playback halts right there instead of quietly skipping it, and the playlist is flagged. Once the track is in the library, put it in where the Stop is, and remove the Stop.\u003c/li>\n\u003cli>\u003cstrong>AIFF files\u003c/strong> (.aif), common in older iTunes libraries, come in as WAV, since most browsers can't play AIFF. The sound is identical, and the name, artist, album and artwork come along.\u003c/li>\n\u003cli>\u003cstrong>Older iTunes Store purchases\u003c/strong> protected against copying (.m4p files) can't be played in a browser.\u003c/li>\n\u003cli>\u003cstrong>Files a browser can't play\u003c/strong> — Windows Media Audio (.wma), Apple Lossless (ALAC, inside an .m4a) outside Safari, compressed AIFF and a few others — are converted to MP3 as they come in, so they play everywhere and keep their place in the playlists. 37 Player then asks whether to keep the originals too, for a later export (a portable export takes the original), showing how much room they take; Settings → Library cleanup can discard them later. Converting needs 37 Player's converter, which it fetches by itself (about 26 MB, once) and keeps, so it works offline afterwards; it waits while anything is playing. Without the converter (no internet the first time, say), such files come in marked \"Can't be played\", with \u003cstrong>Convert them now\u003c/strong> for later. A file over 500 MB is never converted by itself, since converting needs about as much memory as the file's size: Settings → Library cleanup offers it, with a warning first.\u003c/li>\n\u003cli>\u003cstrong>Your music doesn't have to be organized the way Music.app keeps it.\u003c/strong> Tracks are found by their folder names and file name, and if a file has moved, by its name and size.\u003c/li>\n\u003cli>\u003cstrong>Single playlists\u003c/strong> work too: a playlist exported on its own (\u003cstrong>File → Library → Export Playlist…\u003c/strong>, as an .m3u file), or an .m3u, .m3u8 or .xspf (VLC) from another player. Put it in the music folder and import the folder. ('Importing playlists' explains where playlists end up.)\u003c/li>\n\u003c/ul>\n\u003ch3>Exporting\u003c/h3>\n\u003cp>To take a library from 37 Player into Music.app or iTunes, use 'Import / Export' → Export and choose \u003cstrong>Portable\u003c/strong>. It unpacks into a \u003cstrong>music\u003c/strong> folder (artist / album / tracks) and a \u003cstrong>playlists\u003c/strong> folder of .m3u8 files.\u003c/p>\n\u003cul>\n\u003cli>\u003cstrong>The audio:\u003c/strong> in Music.app, choose \u003cstrong>File → Import…\u003c/strong> and pick the \u003cstrong>music\u003c/strong> folder.\u003c/li>\n\u003cli>\u003cstrong>The playlists:\u003c/strong> choose \u003cstrong>File → Library → Import Playlist…\u003c/strong> and pick each .m3u8 file. Music.app doesn't recreate folders from these, so a playlist lands at the top level; drag it into a playlist folder afterwards if you want one.\u003c/li>\n\u003c/ul>\n\u003cp>Every track keeps its name, artist, album, track number and artwork, since 37 Player writes those into the files themselves.\u003c/p>\n\u003cp>Volume adjustments made in 37 Player, and its evening out, don't come along: they aren't written into the files as ReplayGain tags, so Music.app plays each file at its own level. Music.app's own \u003cstrong>Sound Check\u003c/strong> (in its Playback settings) evens tracks out in a similar way.\u003c/p>\n\u003ch3>Why standardize for Music.app and iTunes\u003c/h3>\n\u003cp>Music.app and iTunes play one track straight into the next — but only smoothly when the two are alike. When the next track is a different file type (MP3 after AAC), or has a different sample rate (44.1 kHz after 48 kHz, say) or a different number of channels (mono after stereo), the player has to reset its audio output between them, and you hear a click, dropout, short gap, or worse.\u003c/p>\n\u003cp>37 Player itself doesn't have this problem, so there's no need to change the library for it. Instead, when exporting with \u003cstrong>Portable\u003c/strong>, tick \u003cstrong>Convert to the preferred format\u003c/strong>: every file in the export comes out alike, and the library stays as it is. For a stricter match, set the preferred format (Settings → \u003cstrong>File format\u003c/strong>) to \u003cstrong>Best for Apple\u003c/strong> (AAC, 44.1 kHz, stereo), or choose your own under Custom.\u003c/p>\n\u003ch3>The library's file format\u003c/h3>\n\u003cp>Settings → \u003cstrong>File format\u003c/strong> sets one \u003cstrong>preferred format\u003c/strong> for the library — Standard (MP3 192k, recommended), Best for Apple, Very small, Lossless (FLAC, not recommended: much larger, with no difference you can hear), or Custom — and which files are converted to it:\u003c/p>\n\u003cul>\n\u003cli>\u003cstrong>Don't touch my files:\u003c/strong> nothing is changed. A file this browser can't play still gets a playable copy, and its original is kept too.\u003c/li>\n\u003cli>\u003cstrong>Reduce uncompressed audio\u003c/strong> (recommended): WAV and AIFF files are converted as they come in.\u003c/li>\n\u003cli>\u003cstrong>Choose the rules:\u003c/strong> uncompressed audio, a bitrate above a limit, a sample rate or channel count other than the preferred format's, or less widely playable types (Opus, Ogg, WebM).\u003c/li>\n\u003c/ul>\n\u003cp>The page says what the settings would mean for the library as it is (\"12 tracks would be converted…\"). Converting them is in Settings → \u003cstrong>Library cleanup\u003c/strong> → Convert to the preferred format, with \u003cstrong>Convert them now\u003c/strong> and the list of those tracks (name, album, type, size, sample rate, bit rate, channels). In a shared library these settings belong to the library, so a change on one device applies on all of them, and a file about to be converted is never sent before its converted version is ready.\u003c/p>\n\u003cp>Videos (a recorded teaching, say) can come in too: 37 Player asks whether to take their sound as audio tracks. The video itself isn't kept.\u003c/p>"
   },
   {
     "id": "importing-playlists",
@@ -38814,6 +39185,10 @@ function updateBackupIndicator(){
   else if(!backupInfo.handle && sharedConfig() && sharedCoversLibrary()){ label = t("backupIndicatorShared"); cls = "ok"; title = [t("sharedCoveredTooltip")].concat(keeperLines()).join("\n"); }
   else if(!backupInfo.handle && needs && sharedAboutToCover()){ label = t("backupIndicatorSending"); cls = "busy"; title = t("sharedCoveredTooltip"); }
   else if(needs){ label = t("backupIndicatorNeeded"); cls = urgent ? "urgent" : "warn"; title = lastTip; }
+  // The desktop app makes no backups: a library there that's in a shared
+  // library but not yet (or no longer) counted as all there says where it
+  // is, never "Backed up" (Gen Rinzin's Mac mini, 11 Nov 2026).
+  else if(libraryInDesktopFolder(LIBRARY_ID)){ label = t("folderLibIndicator"); cls = "ok"; title = t("folderLibIndicatorTip", {name: libraryFolderLabel()}); }
   else { label = t("backupIndicatorBackedUp"); cls = "ok"; title = lastTip; }
   btn.textContent = label;
   btn.className = "backup-indicator " + cls;
@@ -38823,6 +39198,15 @@ function updateBackupIndicator(){
 document.getElementById("btnBackup").addEventListener("click", ()=>{
   if(sharedConfig() && sharedConfig().kind === "gdrive" && driveNeedsSignIn) return openSharedSettings();
   if(!backupInfo.handle && syncStuck()) return openSyncStuckDialog();
+  // A library kept in a folder (the desktop app's, or Chrome's) has no
+  // backups to make here: the button shows where it is (Settings → Library,
+  // with the folder and Show), or how its syncing stands. It used to open
+  // "Back up library", after seconds of adding up sizes (the Mac mini, 11 Nov 2026).
+  if(libraryIsFolder()){
+    const open = ()=> setTimeout(()=>{ closeHelpPage(); settingsSection = sharedConfig() ? "shared" : "info"; if(settingsPageOpen()) renderSettingsPage(); else openSettingsPage(); }, 0);
+    if(appMode === "editing" || appMode === "library") open(); else requestAppMode("editing", open);
+    return;
+  }
   performUserBackup();
 });
 setInterval(updateBackupIndicator, 60*1000); // a sync that stops finishing shows after days
@@ -40747,8 +41131,8 @@ async function readZipEntriesFromFile(file, onProgress){
     // Windows) usually squeezes them ("deflate"), and they're unpacked here.
     if(method === 0){ webkitSlices.add(raw); entries.push({name, blob: raw}); }
     else if(method === 8){
-      if(typeof DecompressionStream === "undefined") throw new Error(t("zipCompressedUnsupported"));
-      entries.push({name, blob: await new Response(raw.stream().pipeThrough(new DecompressionStream("deflate-raw"))).blob()});
+      if(typeof DecompressionStream === "undefined") entries.push({name, blob: new Blob([inflateRawBytes(new Uint8Array(await raw.arrayBuffer()))])});
+      else entries.push({name, blob: await new Response(raw.stream().pipeThrough(new DecompressionStream("deflate-raw"))).blob()});
     }
     else throw new Error(t("zipCompressedUnsupported"));
     if(onProgress){ onProgress(i+1, entryInfos.length); await new Promise(r=> setTimeout(r,0)); }
@@ -41219,6 +41603,7 @@ function renderAllSettings(body){
 }
 // Library cleanup → Convert to the preferred format: what File format's
 // settings would convert, the button, and the tracks themselves.
+const cleanupConvertSel = new Set(); // the tracks ticked in Library cleanup's list of files to convert
 function renderCleanupConvert(){
   const el = document.getElementById("cleanupConvertNote"); if(!el) return;
   const p = formatPolicy(), target = preferredFormat(p), list = policyMatchesHere(p).filter(tr=> !convertQueue.includes(tr.id));
@@ -41236,16 +41621,26 @@ function renderCleanupConvert(){
   const from = list.reduce((n, tr)=> n + (tr.fileSize || 0), 0), to = list.reduce((n, tr)=> n + estimatedSizeAfter(tr, target), 0);
   el.appendChild(document.createTextNode(t("fmtEffectSome", {n: list.length, format: formatLabel(target), from: fmtBytes(from), to: fmtBytes(to)}) + " "));
   el.appendChild(change);
-  const row = document.createElement("div");
-  const b = document.createElement("button"); b.className = "btn primary"; b.style.marginTop = "8px"; b.textContent = t("fmtEffectBtn");
+  const bigOnes = list.filter(tr=> trackIsBigFile(tr)).length;
+  if(bigOnes){ const bn = document.createElement("p"); bn.className = "settings-note"; bn.id = "cleanupBigNote"; bn.textContent = t(bigOnes === 1 ? "cleanupBigNoteOne" : "cleanupBigNote", {n: bigOnes, size: fmtBytes(BIG_FILE_BYTES)}); el.appendChild(bn); }
+  // Convert selected (the ones ticked in the list below) and Convert all:
+  // big files are best converted one at a time (2.2.015).
+  const ids = new Set(list.map(tr=> tr.id));
+  [...cleanupConvertSel].forEach(id=>{ if(!ids.has(id)) cleanupConvertSel.delete(id); });
+  const row = document.createElement("div"); row.style.cssText = "display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;";
+  const bs = document.createElement("button"); bs.className = "btn primary"; bs.id = "cleanupConvertSelected";
+  const selLabel = ()=>{ bs.textContent = t("convertSelectedBtn", {n: cleanupConvertSel.size}); bs.disabled = !cleanupConvertSel.size; };
+  selLabel();
+  bs.addEventListener("click", async ()=>{ await convertTracks([...cleanupConvertSel]); renderCleanupConvert(); }); // (ticked on purpose: no "are you sure"; big files still get their warning)
+  const b = document.createElement("button"); b.className = "btn ghost"; b.id = "cleanupConvertAll"; b.textContent = t("convertAllBtn", {n: list.length});
   b.addEventListener("click", async ()=>{
     const go = await askChoice(t("fmtConvertConfirmTitle", {n: list.length}), `<p>${t("fmtConvertConfirmBody", {format: escapeHtmlText(formatLabel(target))})}</p>`, [
       {label: t("fmtEffectBtn"), value: "go", kind: "primary"}, {label: t("cancel"), value: null}]);
     if(go === "go"){ await convertTracks(list.map(tr=> tr.id)); renderCleanupConvert(); }
   });
-  row.appendChild(b);
+  row.appendChild(bs); row.appendChild(b);
   el.appendChild(row);
-  el.appendChild(fmtEffectList(list));
+  el.appendChild(fmtEffectList(list, {sel: cleanupConvertSel, onChange: selLabel, open: bigOnes > 0}));
 }
 // Library cleanup → Damaged files.
 // Library cleanup → "Show in Table" (1.4.112): the Library's Table, showing
@@ -41342,9 +41737,12 @@ function goToSettingsSection(id, anchorId){
 // the list is as long as it is, inside the page's own scrolling (a box
 // within a scrolling page kept catching the mouse wheel).
 let fmtListState = {open: false, key: "name", up: true};
-function fmtEffectList(list){
+// pick ({sel: a Set of track ids, onChange, open}): a box to tick in front of
+// each row, and one in the heading for all or none (Library cleanup: Gen Rinzin,
+// 11 Nov 2026, there was no way to convert big files one at a time).
+function fmtEffectList(list, pick){
   const d = document.createElement("details");
-  d.className = "fmt-list"; d.open = fmtListState.open;
+  d.className = "fmt-list"; d.open = fmtListState.open || !!(pick && pick.open);
   d.addEventListener("toggle", ()=>{ fmtListState.open = d.open; });
   const kbpsOf = tr=> tr.fileSize && tr.duration ? tr.fileSize * 8 / tr.duration / 1000 : null;
   const cols = [
@@ -41367,15 +41765,39 @@ function fmtEffectList(list){
     const rows = list.slice().sort((a, b)=>{ const x = col.val(a), y = col.val(b); const r = col.text ? byText.compare(x, y) : x < y ? -1 : x > y ? 1 : 0; return fmtListState.up ? r : -r; });
     table.innerHTML = "";
     const head = table.insertRow();
-    cols.forEach(c=>{
+    cols.forEach((c, ci)=>{
       const th = document.createElement("th"); th.textContent = c.label; if(c.num) th.className = "num";
+      // The box for all or none sits in the first heading, before its name
+      // (a column of its own took 140px: the browser shares spare width out).
+      if(pick && ci === 0){
+        const all = document.createElement("input"); all.type = "checkbox"; all.id = "fmtPickAll"; all.className = "fmt-pick";
+        all.checked = list.length > 0 && list.every(tr=> pick.sel.has(tr.id));
+        all.indeterminate = !all.checked && list.some(tr=> pick.sel.has(tr.id));
+        all.addEventListener("click", (e)=>{ e.stopPropagation(); list.forEach(tr=>{ if(all.checked) pick.sel.add(tr.id); else pick.sel.delete(tr.id); }); render(); pick.onChange(); });
+        th.insertBefore(all, th.firstChild);
+      }
       if(c.key === fmtListState.key) th.dataset.sorted = fmtListState.up ? "up" : "down";
       th.addEventListener("click", ()=>{ if(fmtListState.key === c.key) fmtListState.up = !fmtListState.up; else { fmtListState.key = c.key; fmtListState.up = !c.num; } render(); });
       head.appendChild(th);
     });
     rows.forEach(tr=>{
       const row = table.insertRow();
-      const name = row.insertCell();
+      let name = row.insertCell();
+      if(pick){
+        const lab = document.createElement("label"); lab.className = "fmt-pick-row";
+        lab.style.cssText = "display:flex; align-items:flex-start; margin:0; cursor:pointer;"; // (in the element: Settings' own rules for labels and inputs outrank a class)
+        const cb = document.createElement("input"); cb.type = "checkbox"; cb.className = "fmt-pick"; cb.dataset.id = tr.id; cb.checked = pick.sel.has(tr.id);
+        cb.style.cssText = "display:inline-block; width:auto; flex:none; margin:2px 8px 0 0;";
+        cb.addEventListener("change", ()=>{
+          if(cb.checked) pick.sel.add(tr.id); else pick.sel.delete(tr.id);
+          const all = document.getElementById("fmtPickAll");
+          if(all){ all.checked = list.every(x=> pick.sel.has(x.id)); all.indeterminate = !all.checked && list.some(x=> pick.sel.has(x.id)); }
+          pick.onChange();
+        });
+        const text = document.createElement("div");
+        lab.appendChild(cb); lab.appendChild(text); name.appendChild(lab);
+        name = text; // (the name and album go beside the box; a click on them ticks it)
+      }
       const n = document.createElement("div"); n.textContent = tr.name || tr.filename || ""; name.appendChild(n);
       // The album says most (in a Center's library the artist is often the
       // same throughout), so it comes first.
@@ -42255,6 +42677,9 @@ const SHARED_OFF = /[?&]nosync\b/.test(location.search);
 // as the library's fingerprint at the moment the shared library held all of
 // it, audio included; any change here afterwards needs sending again first.
 let sharedSyncedFp = null, sharedCoveredFp;
+let sharedNotCoveredWhy = null; // the last reason logged (sharedUploadInBackgroundHere)
+let sharedUnreadable = new Set(); // tracks whose audio the last send pass couldn't read here
+const sharedUnreadableSaid = new Set(); // …and the ones already said in the log this session
 async function sharedLoadCovered(){
   if(sharedCoveredFp !== undefined) return;
   try{ const r = await idbGet("state", "sharedCovered"); sharedCoveredFp = r && r.fingerprint || null; }catch(err){ sharedCoveredFp = null; }
@@ -42533,8 +42958,11 @@ function sharedUrl(cfg, params){
 async function sharedFetch(cfg, params, init){
   // A file of the desktop app's read where it lies goes as real bytes (whole
   // files are sent only below 48 MB; bigger ones go in 16 MB pieces).
-  if(init && isDiskBlob(init.body)) init = Object.assign({}, init, {body: await realBlob(init.body)});
+  // Google Drive first: its big files go up a piece at a time, each read
+  // from the disk as it's sent (driveUpload). Reading the file whole here
+  // first (until 2.2.010) put all of a 2.7 GB WAV in memory, twice.
   if(cfg.kind === "gdrive") return driveFetch(cfg, params, init || {});
+  if(init && isDiskBlob(init.body)) init = Object.assign({}, init, {body: await realBlob(init.body)});
   init = init || {};
   // URL-encoded: a passphrase may use any language's letters, and headers carry only plain ASCII.
   init.headers = Object.assign({"X-Library": encodeURIComponent(cfg.code.trim())}, init.headers || {});
@@ -42707,10 +43135,11 @@ function driveResponse(body, status, headers){
 }
 // One file into a folder: small ones in one request, big ones resumable,
 // in pieces, so a dropped connection only costs the piece it was on.
-async function driveUpload(cfg, folder, name, blob, mime, appProperties){
+async function driveUpload(cfg, folder, name, blob, mime, appProperties, onProgress){
   const meta = {name, parents: [folder], mimeType: mime || "application/octet-stream"};
   if(appProperties) meta.appProperties = appProperties;
   if(blob.size <= GDRIVE_SIMPLE_MAX){
+    blob = await realBlob(blob); // (small; the pieces below are read as each is sent)
     const boundary = "p37" + Math.random().toString(36).slice(2);
     const body = new Blob(["--" + boundary + "\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n" + JSON.stringify(meta) + "\r\n--" + boundary + "\r\nContent-Type: " + meta.mimeType + "\r\n\r\n", blob, "\r\n--" + boundary + "--"]);
     return driveJson(cfg, "/upload/drive/v3/files?uploadType=multipart&fields=id,createdTime,size", {method: "POST", headers: {"Content-Type": "multipart/related; boundary=" + boundary}, body});
@@ -42737,6 +43166,7 @@ async function driveUpload(cfg, folder, name, blob, mime, appProperties){
     if(res.status !== 308) throw await driveError(res, "Drive upload ");
     const range = res.headers.get("Range");
     offset = range ? parseInt(range.split("-")[1], 10) + 1 : end;
+    if(onProgress) onProgress(offset, blob.size);
   }
   throw new Error("Drive upload didn't finish");
 }
@@ -42744,9 +43174,99 @@ async function driveGz(text){
   if(typeof CompressionStream !== "function") return null;
   try{ return await new Response(new Blob([text]).stream().pipeThrough(new CompressionStream("gzip"))).blob(); }catch(err){ return null; }
 }
+// Without DecompressionStream (WebKit before Safari 16.4, as in the desktop
+// app on macOS 12), every existing Drive library's state couldn't be read:
+// joining one went quietly back to the Shared library page (Gen Rinzin's
+// Mac mini, 8 Nov 2026; a new, empty library worked).
 async function driveGunzip(blob){
+  if(typeof DecompressionStream !== "function") return new TextDecoder().decode(gunzipBytes(new Uint8Array(await blob.arrayBuffer())));
   return await new Response(blob.stream().pipeThrough(new DecompressionStream("gzip"))).text();
 }
+// Raw DEFLATE (RFC 1951), for WebKit without DecompressionStream (Safari
+// before 16.4: the desktop app on macOS 12, Gen Rinzin's Mac mini). Slow
+// beside the browser's own, but only used where that's missing.
+function inflateRawBytes(src){
+  let pos = 0, bit = 0, out = new Uint8Array(Math.max(1024, src.length * 4)), n = 0;
+  const need = k=>{ if(n + k > out.length){ let m = out.length * 2; while(m < n + k) m *= 2; const o = new Uint8Array(m); o.set(out.subarray(0, n)); out = o; } };
+  const bits = k=>{ let v = 0; for(let i = 0; i < k; i++){ if(pos >= src.length) throw new Error("inflate: ran out of data"); v |= ((src[pos] >> bit) & 1) << i; if(++bit === 8){ bit = 0; pos++; } } return v; };
+  // A Huffman table from code lengths: counts per length and symbols in order.
+  const table = lens=>{
+    const count = new Uint16Array(16), offs = new Uint16Array(16), sym = new Uint16Array(lens.length);
+    for(const l of lens) count[l]++;
+    count[0] = 0;
+    for(let i = 1; i < 16; i++) offs[i] = offs[i - 1] + count[i - 1];
+    lens.forEach((l, s)=>{ if(l) sym[offs[l]++] = s; });
+    return {count, sym};
+  };
+  const decode = h=>{
+    let code = 0, first = 0, index = 0;
+    for(let len = 1; len < 16; len++){
+      code |= bits(1);
+      const c = h.count[len];
+      if(code - c < first) return h.sym[index + (code - first)];
+      index += c; first += c; first <<= 1; code <<= 1;
+    }
+    throw new Error("inflate: bad code");
+  };
+  const LB = [3,4,5,6,7,8,9,10,11,13,15,17,19,23,27,31,35,43,51,59,67,83,99,115,131,163,195,227,258];
+  const LX = [0,0,0,0,0,0,0,0,1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4,5,5,5,5,0];
+  const DB = [1,2,3,4,5,7,9,13,17,25,33,49,65,97,129,193,257,385,513,769,1025,1537,2049,3073,4097,6145,8193,12289,16385,24577];
+  const DX = [0,0,0,0,1,1,2,2,3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,11,11,12,12,13,13];
+  let fixedL = null, fixedD = null;
+  for(;;){
+    const last = bits(1), type = bits(2);
+    if(type === 0){
+      if(bit){ bit = 0; pos++; }
+      if(pos + 4 > src.length) throw new Error("inflate: ran out of data");
+      const len = src[pos] | (src[pos + 1] << 8); pos += 4;
+      if(pos + len > src.length) throw new Error("inflate: ran out of data");
+      need(len); out.set(src.subarray(pos, pos + len), n); n += len; pos += len;
+    } else if(type === 1 || type === 2){
+      let L, D;
+      if(type === 1){
+        if(!fixedL){ const l = new Array(288); for(let i = 0; i < 288; i++) l[i] = i < 144 ? 8 : i < 256 ? 9 : i < 280 ? 7 : 8; fixedL = table(l); fixedD = table(new Array(30).fill(5)); }
+        L = fixedL; D = fixedD;
+      } else {
+        const hl = bits(5) + 257, hd = bits(5) + 1, hc = bits(4) + 4;
+        const ORD = [16,17,18,0,8,7,9,6,10,5,11,4,12,3,13,2,14,1,15], cl = new Array(19).fill(0);
+        for(let i = 0; i < hc; i++) cl[ORD[i]] = bits(3);
+        const C = table(cl), lens = [];
+        while(lens.length < hl + hd){
+          const s = decode(C);
+          if(s < 16) lens.push(s);
+          else if(s === 16){ if(!lens.length) throw new Error("inflate: bad lengths"); const p = lens[lens.length - 1]; for(let r = 3 + bits(2); r--;) lens.push(p); }
+          else if(s === 17){ for(let r = 3 + bits(3); r--;) lens.push(0); }
+          else { for(let r = 11 + bits(7); r--;) lens.push(0); }
+        }
+        L = table(lens.slice(0, hl)); D = table(lens.slice(hl, hl + hd));
+      }
+      for(;;){
+        const s = decode(L);
+        if(s < 256){ need(1); out[n++] = s; }
+        else if(s === 256) break;
+        else {
+          const i = s - 257; if(i >= 29) throw new Error("inflate: bad length");
+          const len = LB[i] + bits(LX[i]), d = decode(D); if(d >= 30) throw new Error("inflate: bad distance");
+          const dist = DB[d] + bits(DX[d]); if(dist > n) throw new Error("inflate: bad distance");
+          need(len); for(let k = 0; k < len; k++){ out[n] = out[n - dist]; n++; }
+        }
+      }
+    } else throw new Error("inflate: bad block");
+    if(last) break;
+  }
+  return out.slice(0, n);
+}
+// The bytes of a gzip file (RFC 1952; one member, as CompressionStream makes).
+function gunzipBytes(src){
+  if(src.length < 18 || src[0] !== 0x1f || src[1] !== 0x8b || src[2] !== 8) throw new Error("gzip: not a gzip file");
+  const flg = src[3]; let p = 10;
+  if(flg & 4) p += 2 + (src[p] | (src[p + 1] << 8));
+  if(flg & 8) while(src[p++]);
+  if(flg & 16) while(src[p++]);
+  if(flg & 2) p += 2;
+  return inflateRawBytes(src.subarray(p));
+}
+
 // sync.php's requests, answered from the Drive folder.
 async function driveFetch(cfg, params, init){
   const lib = await driveLibrary(cfg);
@@ -42833,13 +43353,13 @@ async function driveFetch(cfg, params, init){
       const f = await driveFindFile(cfg, folder, params.name);
       const replace = params.kind === "peaks" && params.replace === "1";
       if(f && !replace) return driveResponse({stored: false, exists: true});
-      const blob = init.body instanceof Blob ? init.body : new Blob([init.body]);
+      const blob = isDiskBlob(init.body) || init.body instanceof Blob ? init.body : new Blob([init.body]); // (a file on disk stays there: sent in pieces)
       if(f && replace){
         const r = await driveCall(cfg, "/upload/drive/v3/files/" + encodeURIComponent(f.id) + "?uploadType=media", {method: "PATCH", headers: {"Content-Type": "application/json"}, body: blob});
         if(!r.ok) return driveResponse({error: "replace " + r.status}, r.status);
         return driveResponse({stored: true});
       }
-      const made = await driveUpload(cfg, folder, params.name, blob);
+      const made = await driveUpload(cfg, folder, params.name, blob, undefined, undefined, init.onProgress); // (onProgress: ours, how much of a big file has gone)
       if(!driveNames.has(folder)) driveNames.set(folder, new Map());
       driveNames.get(folder).set(params.name, {id: made.id, size: blob.size});
       return driveResponse({stored: true});
@@ -43226,7 +43746,7 @@ function sharedSetStatus(patch){
   if(sharedStatus.transfer){
     const tr = sharedStatus.transfer;
     setActiveOperationProgress(sharedStatus.paused ? t(sharedStatus.paused === "review" ? "sharedBarPausedReview" : "sharedBarPaused")
-      : tr.kind === "up" ? t("sharedBarUploading", {done: workingOn(tr.done, tr.total), total: tr.total}) + " " + t("sharedBarKeepOpen")
+      : tr.kind === "up" ? t("sharedBarUploading", {done: workingOn(tr.done, tr.total), total: tr.total}) + (tr.part && tr.part.total ? " (" + fmtBytes(tr.part.have) + " / " + fmtBytes(tr.part.total) + ")" : "") + " " + t("sharedBarKeepOpen")
       : t("sharedBarDownloading", {done: workingOn(tr.done, tr.total), total: tr.total}), null, "shared");
   } else clearActiveOperation("shared");
 }
@@ -43736,7 +44256,8 @@ async function sharedUploadFiles(cfg, doc){
       jobs.push({kind: "artwork", name: sharedArtName(t), id: t.id});
   });
   const fileJobs = jobs.filter(j=> j.kind !== "peaks").length;
-  if(fileJobs) sharedLog("sending " + fileJobs + " files");
+  const unreadable = new Set(); // audio this pass couldn't read (see sendOne)
+  if(fileJobs && !jobs.every(j=> j.kind === "peaks" || sharedUnreadable.has(j.id))) sharedLog("sending " + fileJobs + " files"); // (not said again each round for files that can't be read)
   // A few at a time: each file costs a request or two of waiting (Google
   // Drive is slow to make each new file, a second or more), so one at a time
   // left most of a connection idle, above all for small files and artwork.
@@ -43753,8 +44274,25 @@ async function sharedUploadFiles(cfg, doc){
       if(!tr || isStandInPeaks(tr.peaks)) return; // never share a flat stand-in; a real one is sent when it's made
       body = JSON.stringify(tr.peaks);
     } else {
-      const rec = await idbGet(j.kind === "audio" ? "audio" : "artwork", j.id);
-      if(!rec || !rec.blob) return;
+      const rec = await idbGet(j.kind === "audio" ? "audio" : "artwork", j.id).catch(()=> null);
+      // A file this device should hold but can't read (a folder used in
+      // place that the system won't let the app into, a drive unplugged):
+      // said in the log, once, and the library isn't counted as all in the
+      // shared library. It used to be passed over in silence: Gen Palden's
+      // MacBook logged "sending 15 files" 117 times in two days and sent
+      // none (2.2.002, 10–11 Nov 2026).
+      if(!rec || !rec.blob){
+        if(j.kind === "audio"){
+          unreadable.add(j.id);
+          if(!sharedUnreadableSaid.has(j.id)){
+            sharedUnreadableSaid.add(j.id);
+            const ut = findLibraryTrack(j.id);
+            sharedLog("can't send “" + ((ut && ut.name) || j.id) + "”: its file can't be read on this device");
+          }
+        }
+        done++;
+        return;
+      }
       body = rec.blob;
       // Never send a damaged file to everyone (Safari is where they've come
       // from, so it's checked there; reading it through costs little memory).
@@ -43768,9 +44306,12 @@ async function sharedUploadFiles(cfg, doc){
     }
     const tr = j.kind === "peaks" ? null : findLibraryTrack(j.id);
     if(tr) sharedLog("sending " + (j.kind === "artwork" ? "artwork of " : "") + "“" + (tr.name || j.id) + "” (#" + j.id.slice(0, 4) + ", " + (body.size / 1e6).toFixed(1) + " MB)");
+    // A big file goes in pieces: the status bar says how much of it has gone
+    // (2.2.011, Gen Rinzin: "sending 1 of 1" for an hour says nothing).
+    const partDone = (have, total)=> sharedSetStatus({transfer: {kind: "up", done, total: fileJobs, part: {have, total}}});
     if(j.kind === "audio" && body.size >= SHARED_PIECE_UP_MIN && sharedPiecesUpOk(cfg)){
       let lastLog = 0;
-      const how = await sharedSendInPieces(cfg, j, body, (have, total)=>{ if(have - lastLog >= 256 * 1048576){ lastLog = have; sharedLog("sent " + fmtBytes(have) + " of " + fmtBytes(total) + " of “" + ((tr && tr.name) || j.id) + "”"); } });
+      const how = await sharedSendInPieces(cfg, j, body, (have, total)=>{ partDone(have, total); if(have - lastLog >= 256 * 1048576){ lastLog = have; sharedLog("sent " + fmtBytes(have) + " of " + fmtBytes(total) + " of “" + ((tr && tr.name) || j.id) + "”"); } });
       if(how === "too-big"){
         sharedTooBig.add(j.name); sharedTooBigNames.add((tr && tr.name) || j.id);
         sharedLog("the server refused a piece of “" + ((tr && tr.name) || j.id) + "”; not sending it again until “Sync now”");
@@ -43780,7 +44321,9 @@ async function sharedUploadFiles(cfg, doc){
       if(!sharedConfig()) stop = true;
       return;
     }
-    const r = await sharedFetch(cfg, Object.assign({op: "file", kind: j.kind, name: j.name}, j.replace ? {replace: "1"} : {}), {method: "PUT", body});
+    const init = {method: "PUT", body};
+    if(cfg.kind === "gdrive" && j.kind === "audio" && body.size >= SHARED_PIECE_UP_MIN) init.onProgress = partDone; // (Google Drive's own pieces)
+    const r = await sharedFetch(cfg, Object.assign({op: "file", kind: j.kind, name: j.name}, j.replace ? {replace: "1"} : {}), init);
     if(r.status === 413 && j.kind !== "peaks"){
       sharedTooBig.add(j.name);
       sharedLog("the server refused “" + ((tr && tr.name) || j.id) + "” (" + (body.size / 1e6).toFixed(0) + " MB) as too big for its upload limit; not sending it again until “Sync now”");
@@ -43800,6 +44343,7 @@ async function sharedUploadFiles(cfg, doc){
     }
   };
   await Promise.all(Array.from({length: Math.min(SHARED_UPLOADS_AT_ONCE, jobs.length)}, worker));
+  sharedUnreadable = unreadable;
   if(failed) throw failed;
   if(sharedStatus.transfer && sharedStatus.transfer.kind === "up") sharedSetStatus({transfer: null});
 }
@@ -43860,7 +44404,22 @@ async function sharedUploadInBackgroundHere(cfg){
   sharedUploading = true;
   try{
     const base = await sharedLoadBase();
-    if(base && base.doc){ await sharedUploadFiles(cfg, base.doc); if(sharedConfig() && !sharedTooBigNames.size && !convertQueue.length && !convertSoon.size) sharedNoteCovered(); }
+    if(base && base.doc){
+      await sharedUploadFiles(cfg, base.doc);
+      if(sharedConfig()){
+        // Why this library isn't yet counted as all in the shared library
+        // ("In sync"), said once in the sync log each time the reason changes
+        // (2.2.015: the Mac mini's top bar didn't say In sync after
+        // everything had gone up, and nothing recorded why).
+        const why = sharedUnreadable.size ? sharedUnreadable.size + " recordings can't be read on this device, so they haven't been sent"
+          : sharedTooBigNames.size ? "a file was refused as too big to send"
+          : (convertQueue.length || convertSoon.size) ? "files are waiting to be converted"
+          : !sharedSyncedFp ? "no sync round has finished since opening"
+          : libraryFingerprint() !== sharedSyncedFp ? "the library changed while files were going up (the next round looks again)" : "";
+        if(!why) sharedNoteCovered();
+        if(why !== sharedNotCoveredWhy){ sharedNotCoveredWhy = why; sharedLog(why ? "not yet counted as all in the shared library: " + why : "everything here is in the shared library"); }
+      }
+    }
   }catch(err){
     console.warn("Shared library upload paused:", err);
     if(err && err.driveFull){ sharedDriveFullAt = Date.now(); sharedDriveFullSaid = false; sharedSetStatus({state: "error", message: sharedFailText(err)}); }
@@ -44306,7 +44865,19 @@ function sharedFoldFoldersAndPlaylists(remoteDoc){
 // opts.partial: partial sync was ticked with the join code, so it's chosen
 // already: the question that offers it (with the sizes) leads with it.
 // opts.cfg: a library that isn't joined by code (Google Drive): its settings.
+// The first sync of a join can take a while (54 s on Gen Rinzin's Mac mini,
+// 11 Nov 2026, combining a library with one on Google Drive), and Settings
+// still showed "Join or create" meanwhile, as if it had failed: the status
+// bar says it's joining, and Settings → Shared library is drawn again at the
+// end, whoever started the join.
 async function joinSharedLibrary(url, code, deviceName, opts){
+  try{ return await joinSharedLibraryHere(url, code, deviceName, opts); }
+  finally{
+    clearActiveOperation("join");
+    if(settingsPageOpen() && settingsSection === "shared" && sharedConfig() && !backdrop.classList.contains("show")) renderSettingsSection();
+  }
+}
+async function joinSharedLibraryHere(url, code, deviceName, opts){
   opts = opts || {};
   const cfg = opts.cfg ? Object.assign({}, opts.cfg, {deviceName: (deviceName || "").trim() || t("sharedThisDevice"), receiveOnly: false})
     : {url: url.trim() || SHARED_DEFAULT_SERVER, code: code.trim(), deviceName: deviceName.trim() || t("sharedThisDevice"), receiveOnly: false};
@@ -44373,6 +44944,7 @@ async function joinSharedLibrary(url, code, deviceName, opts){
   await sharedSavePending();
   await saveState();
   sharedSetStatus({libraryName: remote.name, conflicts: [], state: "syncing"});
+  setActiveOperationProgress(t("sharedJoiningNamed", {name: remote.name || ""}), null, "join");
   await runSharedSync({useShared, force: true});
   // Partial sync: straight on to choosing what else to bring.
   if(cfg.partial) setTimeout(()=> openSharedChoose(), 300);
@@ -45844,7 +46416,7 @@ function renderSharedStatusInto(){
     + (busy ? t("sharedStateUpdating") : arriving ? t(arriving === 1 ? "sharedStateWaitingOne" : "sharedStateWaiting", {n: arriving}) : t("sharedStateUpToDate"));
   else s = t("sharedNeverSynced");
   if(cfg.reviewMode && sharedStatus.reviewCount) s += " " + t(sharedStatus.reviewCount === 1 ? "rvWaitingOne" : "rvWaitingMany", {n: sharedStatus.reviewCount});
-  if(sharedStatus.transfer) s += " " + t(sharedStatus.transfer.kind === "up" ? "sharedUploading" : "sharedDownloading", {done: workingOn(sharedStatus.transfer.done, sharedStatus.transfer.total), total: sharedStatus.transfer.total});
+  if(sharedStatus.transfer) s += " " + t(sharedStatus.transfer.kind === "up" ? "sharedUploading" : "sharedDownloading", {done: workingOn(sharedStatus.transfer.done, sharedStatus.transfer.total), total: sharedStatus.transfer.total}) + (sharedStatus.transfer.kind === "up" && sharedStatus.transfer.part && sharedStatus.transfer.part.total ? " (" + fmtBytes(sharedStatus.transfer.part.have) + " / " + fmtBytes(sharedStatus.transfer.part.total) + ")" : "");
   if(sharedStatus.paused) s += " " + t(sharedStatus.paused === "review" ? "sharedPausedReview" : "sharedPausedPlaying");
   if(sharedTooBigNames.size) s += " " + t("sharedTooBigNote", {names: [...sharedTooBigNames].join(", ")});
   if(arriving && busy) s += " " + t(arriving === 1 ? "sharedStillArrivingOne" : "sharedStillArriving", {n: arriving});
@@ -46866,10 +47438,15 @@ if(IN_DESKTOP_APP && window.__TAURI__ && window.__TAURI__.event && window.__TAUR
   showDesktopStartNote();
   await ensureLibraryFolder(); // a library kept in a folder: the folder first, with permission
   const storageWatch = setTimeout(openStorageNotResponding, 8000);
+  // How long starting took, and where (2.2.011): the Mac mini's window stayed
+  // blank white for about 20 s. Seconds since the page began to load.
+  const startAt = {began: performance.now()};
   await libStore.open();
+  startAt.open = performance.now();
   if(STORAGE_KIND === "desktop") setTimeout(()=> tidyPlaces().catch(err=> console.warn("Tidying the folders used in place:", err)), 4000);
   if(STORAGE_KIND === "desktop"){ const back = await libraryMirrorRestore(); if(back.length) setTimeout(()=> playLog("this library's own values came back from its folder (" + back.join(", ") + "): the app's browser storage had been emptied"), 2000); }
   await loadState();
+  startAt.read = performance.now();
   undoInit();
   clearTimeout(storageWatch);
   if(document.getElementById("storageStuckTry")){ delete backdrop.dataset.busy; closeModal(); }
@@ -46909,6 +47486,7 @@ if(IN_DESKTOP_APP && window.__TAURI__ && window.__TAURI__.event && window.__TAUR
   updateBackupIndicator();
   updateMovedIndicator();
   signalAppUp();
+  { const sec = v=> (v / 1000).toFixed(1); playLog("started: the page ran " + sec(startAt.began) + " s after it began to load, the library's storage opened at " + sec(startAt.open) + " s, the library was read at " + sec(startAt.read) + " s (" + root.library.length + " tracks), the screen drawn at " + sec(performance.now()) + " s"); }
   if(libraryNotLoaded){ openLibraryNotLoaded(); checkForAppUpdate(); return; } // nothing else: no welcome, no files opened with it, no syncing
   if(libraryUnreadable) openLibraryRecovery();
   else if(recoveredFromSpareAt) showSpareRecoveryNotice();
