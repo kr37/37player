@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.2.035">
+<meta name="app-version" content="2.2.036">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -34859,7 +34859,7 @@ function openLibTableColumns(){
   document.getElementById("libColsReset").addEventListener("click", ()=>{ libTable.hidden = LIB_TABLE_DEFAULT.hidden.slice(); saveLibTable(); renderLibraryTable(); draw(); });
 }
 
-// Redrawn once typing pauses (2.2.035; Gen Rinzin: typing in Table's
+// Redrawn once typing pauses (2.2.036; Gen Rinzin: typing in Table's
 // search lagged on the T470). A redraw takes 30–45 ms with 2,500 tracks on a
 // fast computer, several times that on an old laptop, and one per letter
 // held up the letters themselves. Emptying the box redraws at once.
