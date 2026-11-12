@@ -82,7 +82,11 @@ mod tests {
     use super::*;
     fn get(port: u16, path: &str) -> String {
         let mut s = TcpStream::connect(("127.0.0.1", port)).unwrap();
-        write!(s, "GET {} HTTP/1.1\r\nHost: x\r\n\r\n", path).unwrap();
+        // In one write, as a browser sends it: write! sends each piece on its
+        // own, and the server reads once, so it could answer "GET " alone and
+        // close with the rest unread, which a Mac answers with a reset (the
+        // d build of 12 Nov 2026 failed so).
+        s.write_all(format!("GET {} HTTP/1.1\r\nHost: x\r\n\r\n", path).as_bytes()).unwrap();
         let mut out = String::new(); s.read_to_string(&mut out).unwrap(); out
     }
     #[test]
