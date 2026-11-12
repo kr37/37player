@@ -93,6 +93,7 @@ The desktop app has Find a library folder…; Chrome and Edge have nothing like 
 3. A copied library notices it is on a new device (an ID per install, kept outside the folder) and asks for this device's name before syncing.
 4. The message changes in section 2.
 5. Joining with plain files (row C): where a match has the same size and the same first and last 64 KB as the shared copy, keep this device's file as that track's audio instead of removing it and downloading. Then any copy of the files seeds a device.
+6. **Leaving a shared library cleans up after itself** (added by Gen Rinzin, 11 Nov 2026: tracks that never synced, left sitting without audio, are a bug). On leaving: tracks whose audio never arrived are removed from the library; then it asks about playlists left empty (default: remove them) and playlists left with some tracks missing. Since 2.2.018 such tracks are fetched if the device joins again, but a device that stays out keeps them, silent, with nothing to show it until one is played.
 
 ## 7. Questions for Gen Rinzin
 
