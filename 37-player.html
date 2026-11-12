@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.2.030.3">
+<meta name="app-version" content="2.2.030.4">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -1582,12 +1582,12 @@
   #edCtxBar .ed-toolbar-group{ position:relative; flex-wrap:wrap; flex-shrink:0; }
   #edCtxBar .ed-toolbar-divided::before{ content:""; position:absolute; left:-9px; top:50%; transform:translateY(-50%); width:1px; height:22px; background:var(--line); }
   #edCtxBar .tb-btn{ flex-shrink:0; }
-  #edCtxBar .ed-toolbar-display{ margin:0; order:1; padding:0; border:1px solid var(--line); border-radius:0; background:color-mix(in srgb, var(--folder-head, #91afd1) 12%, var(--bg-panel)); }
+  #edCtxBar .ed-toolbar-display{ margin:-6px calc(-18px * var(--hpad)) -6px 0; order:1; align-self:stretch; padding:6px calc(18px * var(--hpad)); border:1px solid var(--line); border-radius:0; background:color-mix(in srgb, var(--folder-head, #91afd1) 12%, var(--bg-panel)); }
   #edCtxBar .ed-toolbar-display .tb-btn:not(.on){ color:var(--folder-head, #c8ddf4); background:color-mix(in srgb, #b1c9e5 25%, var(--bg-panel-raised)); }
   body.theme-light #edCtxBar .ed-toolbar-display .tb-btn:not(.on){ background:color-mix(in srgb, white 96%, var(--folder-head)); }
   #edCtxBar .ed-toolbar-display .tb-btn:hover:not(.on){ background:color-mix(in srgb, white 20%, var(--bg-panel-raised)); }
   body.theme-light #edCtxBar .ed-toolbar-display .tb-btn:hover:not(.on){ background:white; }
-  #edCtxBar.ed-toolbar-stacked .ed-toolbar-display{ order:0; margin-left:0; }
+  #edCtxBar.ed-toolbar-stacked .ed-toolbar-display{ order:0; margin: -6px calc(-18px * var(--hpad)) 0; width:calc(100% + 36px * var(--hpad)); max-width:none; box-sizing:border-box; }
   #edCtxBar.ed-toolbar-stacked .ed-toolbar-actions{ order:1; flex-basis:100%; padding-top:5px; border-top:1px solid var(--line); }
 
   /* Page tabs (Playing | Edit Playlists | Library, and Library's Browse | Table). */
@@ -23745,8 +23745,10 @@ function buildEditorCtxBar(){
   const fit = ()=>{
     const style = getComputedStyle(bar);
     const actionWidth = groups.reduce((sum, g)=> sum + g.scrollWidth, 0) + 16 * (groups.length - 1);
-    const needed = actionWidth + display.offsetWidth + 12;
-    const available = bar.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
+    const displayStyle = getComputedStyle(display);
+    const displayWidth = [...display.children].reduce((sum, b)=> sum + b.offsetWidth, 0) + 4 * (display.children.length - 1) + parseFloat(displayStyle.paddingLeft) + parseFloat(displayStyle.paddingRight) + 2;
+    const needed = actionWidth + displayWidth + 12;
+    const available = bar.clientWidth - parseFloat(style.paddingLeft);
     bar.classList.toggle("ed-toolbar-stacked", needed > available);
   };
   bar._editorFitObserver = new ResizeObserver(fit);
