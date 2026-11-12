@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.2.024">
+<meta name="app-version" content="2.2.025">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -2177,6 +2177,10 @@ class IdbLibraryStore {
       cur.onerror = ()=> reject(cur.error);
     }));
   }
+  // A record moved to a new key (the folder store's keeps its file).
+  rekey(store, from, to){
+    return this.update(store, [from], ([rec])=> rec ? {put: [Object.assign({}, rec, {[STORE_KEYPATH[store]]: to})], del: [from], result: true} : {result: false});
+  }
   update(store, keys, fn){
     return this.run(d=> new Promise((resolve, reject)=>{
       const tx = d.transaction(store, "readwrite"), os = tx.objectStore(store);
@@ -2564,6 +2568,20 @@ class FolderLibraryStore {
       let gone = [];
       for(const k of keys) gone = gone.concat(await this.removeRecord(store, k));
       await this.addOrphans(gone);
+    });
+  }
+  // A record moved to a new key, its file left where it is: only its .json
+  // is written under the new name (2.2.025, keeping a device's own copy of a
+  // recording when it joins; a 50 GB library isn't copied a second time).
+  rekey(store, from, to){
+    return this.locked(async()=>{
+      const dir = await this.sub(store), raw = await this.readRaw(store, from);
+      if(raw === undefined) return false;
+      const kp = STORE_KEYPATH[store];
+      await writeWholeFile(dir, fileKeyOf(to) + ".json", JSON.stringify(Object.assign({}, raw, {[kp]: to})));
+      try{ await dir.removeEntry(fileKeyOf(from) + ".json"); }catch(err){ if(!err || err.name !== "NotFoundError") throw err; }
+      if(store === "audio") this.places = null;
+      return true;
     });
   }
   keys(store, prefix){
@@ -4725,6 +4743,7 @@ const STRINGS = {
     "sharedSizeDown": "downloads about {size}.",
     "sharedSizeUpDown": "sends about {up} and downloads about {down}.",
     "sharedSizeHint": "On mobile data or a slow connection? You can cancel now and join later.",
+    "sharedAdoptChecking": "Comparing this device's files with the shared library's: {done} of {total}…",
     "driveMadeSizeHint": "“{name}” is set up on your Google Drive. On mobile data or a slow connection? You can cancel now: it's taken off your Drive again, and you can set it up later.",
     "sharedJoinTitle": "Join “{name}”",
     "sharedJoinDownloadBody": "This will download about {size} ({n} tracks).",
@@ -6651,6 +6670,7 @@ const STRINGS = {
     "sharedSizeDown": "descarga unos {size}.",
     "sharedSizeUpDown": "envía unos {up} y descarga unos {down}.",
     "sharedSizeHint": "¿Con datos móviles o una conexión lenta? Puedes cancelar ahora y unirte más tarde.",
+    "sharedAdoptChecking": "Comparando los archivos de este dispositivo con los de la biblioteca compartida: {done} de {total}…",
     "driveMadeSizeHint": "«{name}» ya está creada en tu Google Drive. ¿Con datos móviles o una conexión lenta? Puedes cancelar ahora: se quita de nuevo de tu Drive y puedes crearla más tarde.",
     "sharedJoinTitle": "Unirse a «{name}»",
     "sharedJoinDownloadBody": "Se descargarán unos {size} ({n} pistas).",
@@ -8576,6 +8596,7 @@ const STRINGS = {
     "sharedSizeDown": "télécharge environ {size}.",
     "sharedSizeUpDown": "envoie environ {up} et télécharge environ {down}.",
     "sharedSizeHint": "Sur données mobiles ou une connexion lente ? Vous pouvez annuler et rejoindre plus tard.",
+    "sharedAdoptChecking": "Comparaison des fichiers de cet appareil avec ceux de la bibliothèque partagée : {done} sur {total}…",
     "driveMadeSizeHint": "« {name} » est créée sur votre Google Drive. Sur données mobiles ou une connexion lente ? Vous pouvez annuler maintenant : elle est retirée de votre Drive, et vous pourrez la créer plus tard.",
     "sharedJoinTitle": "Rejoindre « {name} »",
     "sharedJoinDownloadBody": "Environ {size} seront téléchargés ({n} pistes).",
@@ -10501,6 +10522,7 @@ const STRINGS = {
     "sharedSizeDown": "baixa cerca de {size}.",
     "sharedSizeUpDown": "envia cerca de {up} e baixa cerca de {down}.",
     "sharedSizeHint": "Em dados móveis ou com conexão lenta? Você pode cancelar agora e entrar depois.",
+    "sharedAdoptChecking": "A comparar os ficheiros deste dispositivo com os da biblioteca partilhada: {done} de {total}…",
     "driveMadeSizeHint": "«{name}» está criada no seu Google Drive. Com dados móveis ou uma ligação lenta? Pode cancelar agora: é retirada de novo do seu Drive, e pode criá-la mais tarde.",
     "sharedJoinTitle": "Entrar em “{name}”",
     "sharedJoinDownloadBody": "Isto vai baixar cerca de {size} ({n} faixas).",
@@ -12426,6 +12448,7 @@ const STRINGS = {
     "sharedSizeDown": "lädt etwa {size} herunter.",
     "sharedSizeUpDown": "sendet etwa {up} und lädt etwa {down} herunter.",
     "sharedSizeHint": "Mobile Daten oder langsame Verbindung? Sie können jetzt abbrechen und später beitreten.",
+    "sharedAdoptChecking": "Dateien dieses Geräts werden mit denen der geteilten Bibliothek verglichen: {done} von {total}…",
     "driveMadeSizeHint": "„{name}“ ist in Ihrem Google Drive angelegt. Mobile Daten oder eine langsame Verbindung? Sie können jetzt abbrechen: Sie wird wieder aus Ihrem Drive entfernt, und Sie können sie später anlegen.",
     "sharedJoinTitle": "„{name}“ beitreten",
     "sharedJoinDownloadBody": "Dabei werden etwa {size} heruntergeladen ({n} Titel).",
@@ -14351,6 +14374,7 @@ const STRINGS = {
     "sharedSizeDown": "下载约 {size}。",
     "sharedSizeUpDown": "发送约 {up}，下载约 {down}。",
     "sharedSizeHint": "正在使用移动数据或网络较慢？可以现在取消，稍后再加入。",
+    "sharedAdoptChecking": "正在把本设备的文件与共享曲库中的比较：{done} / {total}…",
     "driveMadeSizeHint": "“{name}”已在你的 Google Drive 上建好。在使用移动数据或网速慢？你可以现在取消：它会从你的 Drive 上再移除，以后可以再建。",
     "sharedJoinTitle": "加入“{name}”",
     "sharedJoinDownloadBody": "将下载约 {size}（{n} 首曲目）。",
@@ -16276,6 +16300,7 @@ const STRINGS = {
     "sharedSizeDown": "tải về khoảng {size}.",
     "sharedSizeUpDown": "gửi khoảng {up} và tải về khoảng {down}.",
     "sharedSizeHint": "Đang dùng dữ liệu di động hoặc mạng chậm? Bạn có thể hủy bây giờ và tham gia sau.",
+    "sharedAdoptChecking": "Đang so sánh tệp của thiết bị này với tệp của thư viện dùng chung: {done} / {total}…",
     "driveMadeSizeHint": "“{name}” đã được tạo trên Google Drive của bạn. Đang dùng dữ liệu di động hoặc mạng chậm? Bạn có thể huỷ bây giờ: nó sẽ được gỡ khỏi Drive, và bạn có thể tạo lại sau.",
     "sharedJoinTitle": "Tham gia “{name}”",
     "sharedJoinDownloadBody": "Sẽ tải về khoảng {size} ({n} bản).",
@@ -18201,6 +18226,7 @@ const STRINGS = {
     "sharedSizeDown": "κατεβάζει περίπου {size}.",
     "sharedSizeUpDown": "στέλνει περίπου {up} και κατεβάζει περίπου {down}.",
     "sharedSizeHint": "Με δεδομένα κινητής ή αργή σύνδεση; Μπορείτε να ακυρώσετε τώρα και να συμμετάσχετε αργότερα.",
+    "sharedAdoptChecking": "Σύγκριση των αρχείων αυτής της συσκευής με της κοινόχρηστης βιβλιοθήκης: {done} από {total}…",
     "driveMadeSizeHint": "Η «{name}» δημιουργήθηκε στο Google Drive σας. Με δεδομένα κινητής ή αργή σύνδεση; Μπορείτε να ακυρώσετε τώρα: αφαιρείται ξανά από το Drive σας, και μπορείτε να τη δημιουργήσετε αργότερα.",
     "sharedJoinTitle": "Συμμετοχή στο «{name}»",
     "sharedJoinDownloadBody": "Θα κατέβουν περίπου {size} ({n} κομμάτια).",
@@ -20126,6 +20152,7 @@ const STRINGS = {
     "sharedSizeDown": "scarica circa {size}.",
     "sharedSizeUpDown": "invia circa {up} e scarica circa {down}.",
     "sharedSizeHint": "Con dati mobili o una connessione lenta? Puoi annullare ora e unirti più tardi.",
+    "sharedAdoptChecking": "Confronto dei file di questo dispositivo con quelli della libreria condivisa: {done} di {total}…",
     "driveMadeSizeHint": "«{name}» è creata sul tuo Google Drive. Con dati mobili o una connessione lenta? Puoi annullare ora: viene tolta di nuovo dal tuo Drive, e puoi crearla più tardi.",
     "sharedJoinTitle": "Unisciti a “{name}”",
     "sharedJoinDownloadBody": "Verranno scaricati circa {size} ({n} brani).",
@@ -45756,7 +45783,7 @@ function sharedJoinSizes(remoteDoc){
   let useDown = 0, useDownN = 0, combDown = 0, combDownN = 0, up = 0, upN = 0;
   remoteDoc.tracks.forEach(rt=>{
     const lt = localById.get(rt.id);
-    if(!sharedSameAudio(lt, rt)){ useDown += size(rt); useDownN++; }
+    if(!sharedSameAudio(lt, rt) && !covered.has(rt.id)){ useDown += size(rt); useDownN++; } // a match here: kept if it's the same file (sharedAdoptSameFiles)
     if(!(lt && sharedSameAudio(lt, rt)) && !covered.has(rt.id)){ combDown += size(rt); combDownN++; }
   });
   root.library.forEach(lt=>{ if(!remoteIds.has(lt.id) && !dup.has(lt.id)){ up += size(lt); upN++; } });
@@ -45771,6 +45798,96 @@ function sharedJoinPreview(remoteDoc){
   const covered = new Set([...root.library.filter(t=> remoteIds.has(t.id)).map(t=> t.id), ...dup.values()]);
   const theirs = remoteDoc.tracks.filter(t=> !covered.has(t.id)).length;
   return {same, dupes, mine, theirs};
+}
+/* ---- Joining with plain files (2.2.025; the plan's item 5) ----
+   A device given the recordings some other way (the music folder copied by
+   USB stick, a Portable export, its files imported afresh) has every track
+   under a new ID, so joining used to match them by name, album, artist and
+   length (sharedDuplicateMap) and then remove this device's copy and
+   download the shared one: about 50 GB came down for a 50 GB library.
+   Now each match is first compared with the shared library's file: the same
+   size, and the same first and last 64 KB (as sharedReconcileAudio does for
+   the same ID). Where they agree, this device's file becomes that track's
+   audio: the record moves to the shared track's ID (libStore.rekey: in a
+   library kept as files only the small record is rewritten, the recording
+   stays where it is), the track takes the shared library's details and
+   revision, and this device's playlists point at it. So nothing is sent or
+   downloaded for it; only its artwork comes down (small). Matches that don't
+   agree, or can't be compared (not on the server yet, a read failing), go on
+   as before. For every choice: Use the shared library here, Combine, and
+   Only what I choose. Any copy of the files can then seed a device. */
+async function sharedAdoptSameFiles(cfg, remoteDoc){
+  const map = sharedDuplicateMap(remoteDoc);
+  if(!map.size) return 0;
+  let onServer = null;
+  try{ const res = await sharedFetch(cfg, {op: "list"}); if(res.ok) onServer = new Set((await res.json()).audio || []); }catch(err){}
+  if(!onServer){ sharedLog("joining: couldn't list the shared library's files, so this device's copies of its recordings weren't compared"); return 0; }
+  const remoteById = new Map(remoteDoc.tracks.map(t=> [t.id, t])), localById = new Map(root.library.map(t=> [t.id, t]));
+  const pairs = [...map.entries()], same = new Map();
+  let done = 0;
+  const KEY = "adoptFiles";
+  const check = async ([lid, sid])=>{
+    try{
+      const rt = remoteById.get(sid), name = sharedAudioName(rt);
+      if(!rt || !onServer.has(name)) return;
+      const rec = await idbGet("audio", lid).catch(()=> null), mine = rec && rec.blob;
+      if(!mine || !mine.size || (rt.fileSize != null && rt.fileSize !== mine.size)) return;
+      const n = Math.min(AUDIO_MATCH_BYTES, mine.size);
+      const head = await sharedServerHead(cfg, name, 0, n);
+      if(head.total >= 0 && head.total !== mine.size) return;
+      if(!sameAudioBytes(head.bytes.subarray(0, n), new Uint8Array(await mine.slice(0, n).arrayBuffer()))) return;
+      const tail = await sharedServerHead(cfg, name, mine.size - n, n);
+      if(!sameAudioBytes(tail.bytes, new Uint8Array(await mine.slice(mine.size - n).arrayBuffer()))) return;
+      same.set(lid, sid);
+    }catch(err){}
+    finally {
+      done++;
+      if(done % 5 === 0 || done === pairs.length) setActiveOperationProgress(t("sharedAdoptChecking", {done, total: pairs.length}), null, KEY);
+    }
+  };
+  setActiveOperationProgress(t("sharedAdoptChecking", {done: 0, total: pairs.length}), null, KEY);
+  try{ for(let i = 0; i < pairs.length; i += 6) await Promise.all(pairs.slice(i, i + 6).map(check)); }
+  finally { clearActiveOperation(KEY); }
+  if(!same.size){ sharedLog("joining: " + pairs.length + " track(s) here look like the shared library's, but none is the same file"); return 0; }
+  const pending = await sharedLoadPending();
+  const taken = new Map(); // shared ID → the track here that became it
+  let moved = 0;
+  for(const [lid, sid] of same){
+    if(taken.has(sid)) continue; // two here alike: one takes the ID, the other folds into it (below)
+    const lt = localById.get(lid), rt = remoteById.get(sid);
+    try{ if(!await libStore.rekey("audio", lid, sid)) continue; }
+    catch(err){ sharedLog("“" + (lt.name || lid) + "”: couldn't keep this device's file (" + errText(err) + "); the shared library's will download"); continue; }
+    try{ await libStore.del("audio", [ORIGINAL_KEY_PREFIX + lid]); }catch(err){}
+    try{ await idbDelete("artwork", lid); }catch(err){}
+    if(objectUrlCache[lid]){ URL.revokeObjectURL(objectUrlCache[lid]); delete objectUrlCache[lid]; }
+    const nt = syncClone(rt);
+    SYNC_LOCAL_TRACK_FIELDS.forEach(k=>{ if(k !== "original" && lt[k] !== undefined) nt[k] = lt[k]; else delete nt[k]; }); // the same audio: its waveform stays good
+    const i = root.library.findIndex(t=> t.id === lid);
+    if(i >= 0) root.library[i] = nt;
+    // The shared library's artwork, not this device's (it may differ).
+    if(rt.hasArtwork) pending.art[sid] = sharedRev(rt.artRev);
+    taken.set(sid, lid);
+    moved++;
+  }
+  // Other tracks here matched to a shared track now kept: they fold into it
+  // (playlists point at it, the copy goes), as combining always did.
+  const repoint = new Map();
+  for(const [lid, sid] of map) if(taken.has(sid)) repoint.set(lid, sid);
+  for(const [lid] of repoint){
+    if(taken.get(repoint.get(lid)) === lid) continue;
+    root.library = root.library.filter(t=> t.id !== lid);
+    try{ await idbDelete("audio", lid); }catch(err){}
+    try{ await idbDelete("artwork", lid); }catch(err){}
+    if(objectUrlCache[lid]){ URL.revokeObjectURL(objectUrlCache[lid]); delete objectUrlCache[lid]; }
+  }
+  (function walk(nodes){ (nodes || []).forEach(n=>{
+    (n.items || []).forEach(it=>{ if(it.kind === "track" && repoint.has(it.refId)) it.refId = repoint.get(it.refId); });
+    if(n.children) walk(n.children);
+  }); })(root.tree);
+  await sharedSavePending();
+  await saveState();
+  sharedLog("joining: " + moved + " of " + pairs.length + " track(s) here are the same files as the shared library's, so they're kept and nothing is sent or downloaded for them");
+  return moved;
 }
 // Before combining: this device's copies of recordings the shared library
 // already has (under other IDs) give way to the shared ones — its playlists
@@ -45889,6 +46006,7 @@ async function joinSharedLibraryHere(url, code, deviceName, opts){
     if(!choice) return {cancelled: true};
     useShared = choice === "shared";
     if(choice === "partial") cfg.partial = true;
+    await sharedAdoptSameFiles(cfg, remote.doc); // this device's own copies of the same files: kept (2.2.025)
     if(!useShared) await sharedFoldDuplicates(remote.doc);
   } else {
     // Nothing to choose, but still say how much will travel before it starts.

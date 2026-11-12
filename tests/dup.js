@@ -30,6 +30,8 @@ const waitIdle = async (p)=>{ for(let k=0;k<400;k++){ const s = await p.evaluate
   await A.evaluate((c,u)=> window.__dbg3.join(u,c,'Laptop'), CODE, URL_SYNC); await waitIdle(A);
   // F imports the same files separately (new IDs), plus one track of its own, and a playlist using them
   const F = await device(b,'F');
+  // Whole recordings F downloads (not the 64 KB looks at the start and end).
+  let fGets = []; F.on('request', r=>{ const u = r.url(); if(!/op=file/.test(u) || !/kind=audio/.test(u) || r.method() !== 'GET') return; const m = /bytes=(\d+)-(\d+)/.exec(r.headers().range || ''); if(!m || Number(m[2]) - Number(m[1]) + 1 > 65536) fGets.push(u); });
   await F.evaluate(async()=>{ const r = window.__dbg.getRoot(); r.tree = []; r.library = []; delete r.settings.starterPlaylistId; await window.__dbg.saveState(); });
   await F.evaluate((files)=>{ const list = files.map(([rel,b64])=>{ const f = new File([Uint8Array.from(atob(b64), c=>c.charCodeAt(0))], rel.split('/').pop()); Object.defineProperty(f,'webkitRelativePath',{value: rel}); return f; }); window.__dbg.bulkImportFolder(list); }, files);
   await sleep(2500); await F.evaluate(()=>{ const b=[...document.querySelectorAll('.modal .btn.primary')].pop(); b && b.click(); }); await sleep(4000);
@@ -56,6 +58,14 @@ const waitIdle = async (p)=>{ for(let k=0;k<400;k++){ const s = await p.evaluate
   ok(names.includes('Mantra 1 (split)'), 'the phone\'s own track was added');
   const pl = await A.evaluate(()=>{ const r=window.__dbg.getRoot(); const p=r.tree.find(n=>n.name==='Phone mantras'); return p ? p.items.map(i=> (r.library.find(t=>t.id===i.refId)||{}).name || 'MISSING').join(',') : null; });
   ok(pl && !pl.includes('MISSING'), 'phone playlist points at the shared copies: '+pl);
+  // 2.2.025: F's own copies are the same files as the shared library's, so
+  // they're kept under the shared IDs and nothing is downloaded for them.
+  const fNow = await F.evaluate(()=> window.__dbg.getRoot().library.filter(t=> t.name === 'Liberating Prayer' || t.name === '02 loud').map(t=> t.id));
+  const aIds = new Set(idsA.split(','));
+  ok(fNow.length === 2 && fNow.every(id=> aIds.has(id)), 'F\'s matching tracks now have the shared IDs (' + fNow.join(', ') + ')');
+  ok(!fGets.length, 'and F downloaded none of those recordings (' + fGets.length + ' whole files fetched)');
+  const fAudio = await F.evaluate(async(ids)=>{ const out = []; for(const id of ids){ const r = await window.__dmg.get(id).catch(()=> null); out.push(r ? r.size : 0); } return out; }, fNow);
+  ok(fAudio.every(n=> n > 0), 'their audio is here, kept from F\'s own files (' + fAudio.join(', ') + ' bytes)');
   console.log(fails ? fails+' FAILED' : 'ALL OK');
   await b.close();
 })();

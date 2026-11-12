@@ -56,7 +56,7 @@ By hand: `./serve.sh` in one terminal (servers on ports 8861 and 8870), then
 | fold | Folders and playlists moving and deleting across devices |
 | rev | Review changes: arrows, dependencies, applying |
 | part | Partial sync: what comes, what stays, deleting |
-| dup | The same recordings imported on two devices are matched |
+| dup | The same recordings imported on two devices are matched; since 2.2.025 the joining device's copies, being the same files, are kept under the shared IDs and none is downloaded |
 | ipad | Touch: selecting, dragging, folders (iPad emulation) |
 | miss, miss2 | Tracks not arrived yet: banner, "waiting for (device)", clearing when they land; miss2 in the order an import writes |
 | table | Library → Table: switching views, sorting both ways, search and chips, selecting (click, Shift, Ctrl-A), Delete asking, double-click playing, ✎, Columns, kept after a reload, an iPad's width with the name pinned |

@@ -269,5 +269,19 @@ const waitModal = async (p, re, ms)=>{ for(let i=0; i<(ms||15000)/200; i++){ con
   await p.evaluate(async()=>{ window.__dbg.getRoot().library[0].name = 'Renamed again'; await window.__dbg.saveState(); });
   await sleep(9000);
   ok(!/ordinary files/.test(await modalText(p)), 'and only once');
+
+  // A record moved to a new ID keeps its recording where it is (2.2.025,
+  // joining with plain files): only the small record is rewritten.
+  const rk = await p.evaluate(async()=>{
+    const id = window.__dbg.getRoot().library[0].id;
+    const files = async()=>{ const d = await (await (await navigator.storage.getDirectory()).getDirectoryHandle('picked4')).getDirectoryHandle('Second'); const out = []; (async function walk(){})(); const w = async (dir, pre)=>{ for await (const [n, h] of dir.entries()){ if(h.kind === 'directory') await w(h, pre + n + '/'); else out.push(pre + n); } }; await w(await d.getDirectoryHandle('music'), ''); return out.sort().join(','); };
+    const before = await files(), size = (await window.__dmg.get(id)).size;
+    const ok1 = await window.__fl.rekey('audio', id, 'rekeyed-1');
+    const after = await files();
+    const moved = await window.__dmg.get('rekeyed-1').then(b=> b.size).catch(()=> 0);
+    const old = await window.__dmg.get(id).then(()=> 'still there').catch(()=> 'gone');
+    return {ok1, same: before === after, before, size, moved, old};
+  });
+  ok(rk.ok1 && rk.same && rk.moved === rk.size && rk.old === 'gone', 'rekey in a folder library: the record moves, the recording stays where it was (' + JSON.stringify(rk) + ')');
   console.log(fails ? fails + ' FAILED' : 'ALL OK'); await b.close();
 })();
