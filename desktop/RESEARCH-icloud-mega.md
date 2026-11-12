@@ -104,3 +104,35 @@ the community, maintained) that works in browsers.
 
 **Verdict.** Lower priority than CloudKit. The password sign-in is a real
 step back from the other homes.
+
+## Setting up the sign-in test (Gen Rinzin's part)
+
+1. **Make the container.** developer.apple.com → Account → Certificates,
+   Identifiers & Profiles → Identifiers → + → **iCloud Containers** →
+   Continue. Description "37 Player libraries", identifier
+   `iCloud.com.player37` (matching the desktop app's `com.player37.app`) →
+   Continue → Register. As far as known, a container can't be renamed or
+   deleted later, so choose the identifier with care.
+2. **Only if the container doesn't show in the CloudKit Console** (step 3):
+   Identifiers → App IDs → `com.player37.app` (register it if it isn't
+   there), turn on iCloud with CloudKit, and assign the container to it.
+3. **Make a development API token.** icloud.developer.apple.com → CloudKit
+   Database → the container → Development → Tokens & Keys → **New API
+   Token**. Name "37 Player sign-in test"; leave Sign in Callback as it is
+   (the pop-up hands the token back to the page); Allowed Origins: only
+   `test.37player.com`. Save, and copy the token.
+4. **Make the two record types** (Development → Schema → Record Types → +),
+   in case CloudKit won't make them by itself on the first save:
+   `P37Piece` with the field `data` (Asset), and `P37State` with the fields
+   `version` (Int(64)) and `body` (Asset).
+5. **Send Claude** the container identifier and the token. A web token isn't
+   a secret: it sits in the page for anyone to see. It's limited to the
+   allowed origin.
+
+Then Claude writes `tests/cloudkit/index.html`, the test page: sign in, save
+a 16 MB piece and a state record, read them back, save over a stale change
+tag, and a button that copies the results. Gen Rinzin deploys it to
+test.37player.com and opens it on each device in turn: Windows in Chrome,
+the Mac in Safari, the iPad in Safari, then the iPad as a Home Screen app.
+The desktop app's sign-in through the browser needs a second token, with a
+sign-in callback address; that comes after, if the browser results are good.
