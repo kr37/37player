@@ -88,10 +88,21 @@ So the answer depends on whether the copy keeps the IDs and revisions.
 
 The desktop app has Find a library folder…; Chrome and Edge have nothing like it. That one feature would cover: Chrome's data cleared with a folder library; the T470 rebuild without a second 50 GB; seeding by USB in Chrome; and it is most of "Use in place" for the browser.
 
+**Built in 2.2.020** (12 Nov 2026): Settings → Library → All libraries → **Find a library folder…** in Chrome and Edge, and **Open that library** where Keep it in a folder… refuses. Opening writes nothing into the folder. The library keeps the folder's ID, so when this browser already has a library with that ID:
+
+| This browser's library with the same ID | What happens |
+|---|---|
+| None | Added to the list of libraries |
+| Kept in another folder | Asks; **Use “X”** runs it from the new folder, the other folder stays as it is |
+| In the browser's storage, still only the starter (every new first library) | The folder's library takes its place and name; the browser's copy is left alone. This is the T470 rebuild |
+| In the browser's storage, with tracks or playlists of its own | Refused, nothing changed |
+
+**T** folderlib.js for all four. **For Gen Rinzin:** the last row could instead open the folder as a separate library by giving the folder a new ID. The catch: anything else that knows the folder by its old ID (another browser profile, the desktop app on the same computer) would then see it as another library's folder and refuse it. Seeding a new computer by USB isn't affected, since its first library is still empty.
+
 ## 6. Proposed order of work, once the tables are agreed
 
 1. Test and fix 5.1. **Done, 2.2.019.**
-2. **Open a library folder…** in Chrome/Edge (5.2).
+2. **Open a library folder…** in Chrome/Edge (5.2). **Done, 2.2.020** (named Find a library folder…, as in the desktop app; see 5.2).
 3. A copied library notices it is on a new device (an ID per install, kept outside the folder) and asks for this device's name before syncing.
 4. The message changes in section 2.
 5. Joining with plain files (row C): where a match has the same size and the same first and last 64 KB as the shared copy, keep this device's file as that track's audio instead of removing it and downloading. Then any copy of the files seeds a device.

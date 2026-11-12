@@ -144,10 +144,13 @@ const waitModal = async (p, re, ms)=>{ for(let i=0; i<(ms||15000)/200; i++){ con
   const oldTracks = await folderTracks('picked/' + after.folder);
   ok(/Renamed tone/.test(oldTracks), 'the folder\'s library has its tracks (' + oldTracks + ')');
   // The browser's storage cleared (the stand-in folders, in OPFS, stay).
-  await p.goto('http://localhost:8861/', {waitUntil: 'networkidle0'});
-  await p.evaluate(async()=>{ for(const d of await indexedDB.databases()) await new Promise(r=>{ const q = indexedDB.deleteDatabase(d.name); q.onsuccess = q.onerror = q.onblocked = r; }); localStorage.clear(); sessionStorage.clear(); });
-  await p.goto(APP, {waitUntil: 'networkidle0'}); await sleep(800);
-  await settle(p);
+  const clearBrowser = async ()=>{
+    await p.goto('http://localhost:8861/', {waitUntil: 'networkidle0'});
+    await p.evaluate(async()=>{ for(const d of await indexedDB.databases()) await new Promise(r=>{ const q = indexedDB.deleteDatabase(d.name); q.onsuccess = q.onerror = q.onblocked = r; }); localStorage.clear(); sessionStorage.clear(); });
+    await p.goto(APP, {waitUntil: 'networkidle0'}); await sleep(800);
+    await settle(p);
+  };
+  await clearBrowser();
   const fresh = await p.evaluate(()=> ({n: window.__dbg.getRoot().library.length, kind: window.__fl.kind(), folder: window.__fl.name()}));
   ok(fresh.kind === 'IdbLibraryStore' && !fresh.folder && fresh.n < 2, 'a new first library, in the browser (' + JSON.stringify(fresh) + ')');
   const tryMove = async (pick)=>{
@@ -160,16 +163,53 @@ const waitModal = async (p, re, ms)=>{ for(let i=0; i<(ms||15000)/200; i++){ con
     await clickText(p, '.modal button', '^Choose where'); await sleep(2500);
     return {alerts: alerts.slice(), modal: await modalText(p), kind: await p.evaluate(()=> window.__fl.kind()).catch(()=> 'reloaded')};
   };
-  // The old library's folder itself.
+  // The old library's folder itself: refused, with "Open that library" offered.
   const t1 = await tryMove('picked/' + after.folder);
-  ok(t1.alerts.some(a=> /already holds a 37 Player library/.test(a)) && t1.kind === 'IdbLibraryStore', 'choosing it is refused (' + (t1.alerts.join(' | ') || t1.modal.slice(0, 80)) + ')');
-  ok(await folderTracks('picked/' + after.folder) === oldTracks, 'and its library is untouched');
-  // The folder it's in, where the new library's folder would go by the same name.
+  ok(/already holds a 37 Player library/.test(t1.modal) && /Open that library/.test(t1.modal) && t1.kind === 'IdbLibraryStore', 'choosing it is refused, offering to open that library (' + t1.modal.slice(0, 120).replace(/\n/g, ' | ') + ')');
+  await clickText(p, '.modal button', '^Cancel$'); await sleep(500);
+  ok(await folderTracks('picked/' + after.folder) === oldTracks && (await p.evaluate(()=> window.__fl.kind())) === 'IdbLibraryStore', 'Cancel: its library is untouched, and this one stays in the browser');
+  // The folder it's in, where the new library's folder would go by the same
+  // name; this time Open that library: the folder's library takes the new,
+  // empty one's place (2.2.020, the T470 rebuild).
   const newName = await p.evaluate(()=> window.__fl.folderNameFor());
+  ok(newName === after.folder, 'the new library\'s folder would have the same name ("' + newName + '")');
   const t2 = await tryMove('picked');
-  if(newName === after.folder) ok(t2.alerts.some(a=> /already holds a 37 Player library/.test(a)) && t2.kind === 'IdbLibraryStore', 'choosing the folder it\'s in, with the same name, is refused (' + (t2.alerts.join(' | ') || t2.modal.slice(0, 80)) + ')');
-  else ok(false, 'the new library\'s folder name should match the old one\'s for this check ("' + newName + '", "' + after.folder + '")');
+  ok(/already holds a 37 Player library/.test(t2.modal), 'choosing the folder it\'s in is refused too');
   ok(await folderTracks('picked/' + after.folder) === oldTracks, 'and its library is still untouched');
+  let nav2 = p.waitForNavigation({waitUntil: 'networkidle0', timeout: 60000}).catch(()=>{});
+  await clickText(p, '.modal button', '^Open that library$');
+  await nav2; await sleep(1500);
+  const opened = await p.evaluate(()=> ({kind: window.__fl.kind(), folder: window.__fl.name(), tracks: window.__dbg.getRoot().library.map(t=> t.name).sort().join(', ')}));
+  ok(opened.kind === 'FolderLibraryStore' && opened.folder === after.folder && opened.tracks === oldTracks, 'Open that library: the folder\'s library opens in place of the empty one (' + JSON.stringify(opened) + ')');
+  // Settings → Libraries → Find a library folder…
+  const findFolder = async (pick)=>{
+    await p.evaluate((pick)=> localStorage.setItem('__pick', pick), pick);
+    alerts.length = 0;
+    await p.evaluate(()=>{ window.__dbg.setMode('editing'); window.__dbg4.settings(); }); await sleep(300);
+    await p.evaluate(()=> window.__dbg4.section('info')); await sleep(800);
+    const btn = await p.evaluate(()=>{ const b = document.getElementById('libFindFolder'); if(b){ b.click(); return b.textContent; } return null; });
+    await sleep(2500);
+    return {btn, alerts: alerts.slice(), modal: await modalText(p)};
+  };
+  // A second clearing; this time the new first library gets a track of its own.
+  await clearBrowser();
+  await p.evaluate((c)=>{ const f = new File([Uint8Array.from(atob(c), x=>x.charCodeAt(0))], 'tone.mp3', {type:'audio/mpeg'}); Object.defineProperty(f, 'webkitRelativePath', {value: 'Mine/tone.mp3'}); window.__dbg.bulkImportFolder([f]); }, b64('tone.mp3'));
+  for(let i=0; i<60; i++){ await sleep(250); if(await p.$('#folderImportGo')) break; }
+  await p.click('#folderImportGo').catch(()=>{});
+  for(let i=0; i<120; i++){ await sleep(250); if(await p.evaluate(()=> window.__dbg.getRoot().library.some(t=> /tone/i.test(t.filename || t.name)) && !document.getElementById('bulkImportStatus'))) break; }
+  await sleep(1500);
+  await p.evaluate(()=> document.querySelector('.modal [data-close]')?.click()).catch(()=>{});
+  const mine = await p.evaluate(()=> window.__dbg.getRoot().library.length);
+  const f1 = await findFolder('picked/' + after.folder);
+  ok(f1.btn === 'Find a library folder…', 'Settings → Libraries has "Find a library folder…" in Chrome (' + f1.btn + ')');
+  ok(f1.alerts.some(a=> /same identity/.test(a)) && (await p.evaluate(()=> window.__fl.kind())) === 'IdbLibraryStore' && (await p.evaluate(()=> window.__dbg.getRoot().library.length)) === mine, 'a first library with tracks of its own isn\'t replaced by the folder\'s (' + f1.alerts.join(' | ') + ')');
+  ok(await folderTracks('picked/' + after.folder) === oldTracks, 'and the folder is untouched');
+  // A folder holding another library (its own ID): added to the list.
+  await p.evaluate(async()=>{ const d = await (await navigator.storage.getDirectory()).getDirectoryHandle('picked3', {create: true}); const w = await (await d.getFileHandle('37 Player library.json', {create: true})).createWritable(); await w.write(JSON.stringify({format: '37player-library', id: 'other1', name: 'Another library'})); await w.close(); });
+  const f2 = await findFolder('picked3');
+  const listed = await p.evaluate(()=> JSON.parse(localStorage.getItem('37player.libraries') || '{}').list.find(l=> l.id === 'other1') || null);
+  ok(listed && listed.name === 'Another library' && listed.folder === 'picked3', 'a folder of another library is added to the list (' + JSON.stringify(listed) + ')');
+  ok(await p.evaluate(()=> document.body.innerText.includes('Another library')), 'and shown there');
   // This library's own copy, cut off after its library record was written,
   // still carries on when the same place is chosen again.
   await p.evaluate(()=>{ const P = window.__fl.store.prototype, put = P.put; P.put = async function(store, rec){ if(store === 'state' && rec && rec.key === 'view' && !window.__cutOnce){ window.__cutOnce = true; throw new Error('cut off for the test'); } return put.apply(this, arguments); }; });
@@ -177,11 +217,21 @@ const waitModal = async (p, re, ms)=>{ for(let i=0; i<(ms||15000)/200; i++){ con
   if(/Use this folder/.test(t4.modal)){ await clickText(p, '.modal button', '^Use “picked2”'); await sleep(2500); }
   const cut = await p.evaluate(async()=>{ const d = await (await navigator.storage.getDirectory()).getDirectoryHandle('picked2'); try{ await (await (await d.getDirectoryHandle("37 Player's own files")).getDirectoryHandle('state')).getFileHandle('root.json'); return true; }catch(e){ return false; } });
   ok(alerts.some(a=> /couldn't be copied/.test(a)) && cut, 'a copy cut off after the library record is written (' + alerts.join(' | ') + ')');
-  const nav2 = p.waitForNavigation({waitUntil: 'networkidle0', timeout: 60000}).catch(()=>{});
+  nav2 = p.waitForNavigation({waitUntil: 'networkidle0', timeout: 60000}).catch(()=>{});
   await tryMove('picked2');
   await nav2; await sleep(1500);
-  const resumed = await p.evaluate(()=> ({kind: window.__fl.kind(), folder: window.__fl.name()}));
-  ok(resumed.kind === 'FolderLibraryStore' && resumed.folder === 'picked2', 'choosing the same place again carries on (' + JSON.stringify(resumed) + ')');
-  ok(await folderTracks('picked/' + after.folder) === oldTracks, 'and the old library\'s folder is still as it was');
+  const resumed = await p.evaluate(()=> ({kind: window.__fl.kind(), folder: window.__fl.name(), n: window.__dbg.getRoot().library.length}));
+  ok(resumed.kind === 'FolderLibraryStore' && resumed.folder === 'picked2' && resumed.n === mine, 'choosing the same place again carries on (' + JSON.stringify(resumed) + ')');
+  await clickText(p, '.modal button', '^Not now$'); await sleep(300);
+  // Now kept in picked2: Find a library folder… with the old folder (the
+  // same ID, another folder) asks before using it instead.
+  const f3 = await findFolder('picked/' + after.folder);
+  ok(/Use this folder for/.test(f3.modal) && /picked2/.test(f3.modal), 'the same library in another folder: asks first (' + f3.modal.slice(0, 140).replace(/\n/g, ' | ') + ')');
+  nav2 = p.waitForNavigation({waitUntil: 'networkidle0', timeout: 60000}).catch(()=>{});
+  await clickText(p, '.modal button', '^Use “');
+  await nav2; await sleep(1500);
+  const swapped = await p.evaluate(()=> ({kind: window.__fl.kind(), folder: window.__fl.name(), tracks: window.__dbg.getRoot().library.map(t=> t.name).sort().join(', ')}));
+  ok(swapped.folder === after.folder && swapped.tracks === oldTracks, 'Use: the library runs from that folder (' + JSON.stringify(swapped) + ')');
+  ok(await p.evaluate(async()=>{ const d = await (await navigator.storage.getDirectory()).getDirectoryHandle('picked2'); try{ await d.getFileHandle('37 Player library.json'); return true; }catch(e){ return false; } }), 'and the other folder stays as it was');
   console.log(fails ? fails + ' FAILED' : 'ALL OK'); await b.close();
 })();
