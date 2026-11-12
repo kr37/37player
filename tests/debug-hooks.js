@@ -126,7 +126,7 @@ window.__bk = {run: ()=> runFolderBackupHere(), fullScan: ()=>{ backupFullScanNe
 window.__fs = {make: (name)=> new FolderLibraryStore(async (create)=>{ const top = await navigator.storage.getDirectory(); return folderChild(top, name, create); }, "37player-files-test~" + name, {}), makeNamed: (name, paths, canMove)=> new FolderLibraryStore(async (create)=>{ const top = await navigator.storage.getDirectory(); return folderChild(top, name, create); }, "37player-files-test~" + name, {recordingPath: (id)=> paths[id] || null, canMove: (id)=> !canMove || canMove(id)}), pathFor: (t)=> recordingPathFor(t), makeNamedDesktop: (name, paths, canMove)=> new FolderLibraryStore(async ()=> desktopRootDir(name), "37player-files-test~d~" + name, {recordingPath: (id)=> paths[id] || null, canMove: (id)=> !canMove || canMove(id)}), makeDesktop: (name)=> new FolderLibraryStore(async ()=> desktopRootDir(name), "37player-files-test~d~" + name, {}),
   keyOf: fileKeyOf, unkey: keyOfFile};
 // libraries kept in a folder (folderlib.js)
-window.__fl = {move: moveLibraryToFolder, name: ()=> libraryFolderName(LIBRARY_ID), forget: ()=> folderHandleDelete(LIBRARY_ID), kind: ()=> libStore.constructor.name};
+window.__fl = {move: moveLibraryToFolder, name: ()=> libraryFolderName(LIBRARY_ID), forget: ()=> folderHandleDelete(LIBRARY_ID), kind: ()=> libStore.constructor.name, store: FolderLibraryStore, folderNameFor: ()=> folderNameFor(currentLibraryName())};
 // a restore or re-join cut off (interrupted.js)
 window.__int = {clear: (what)=> idbClearAll(what)};
 // dropped folders (dropfolder.js)

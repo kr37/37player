@@ -82,13 +82,15 @@ So the answer depends on whether the copy keeps the IDs and revisions.
 
 `moveLibraryToFolder` treats a chosen folder whose marker has this library's ID as "this library's own folder, carry on", and then writes this library's records over the folder's. Every browser's first library has the same ID (`main`). So a new, empty first library pointed at an existing library folder would replace that folder's record of tracks and playlists with the empty one; the recordings would stay on disk, unlisted. On the T470 the read-only files stopped it. Read in the code, **not run**. I'd confirm it with a test and fix it before anything else: a folder that already holds a library with content is never written into; it's offered to be opened instead (5.2).
 
+**Confirmed and fixed in 2.2.019** (12 Nov 2026). tests/folderlib.js clears the browser's storage, makes a new first library and points Keep it in a folder… at the old library's folder: before the fix the old folder's list of tracks was replaced by the empty one. Now a folder holding a library is used only if it is this library's own unfinished copy: its marker carries a token kept in this library's own storage (so it goes when that storage goes), or no library record was written into it yet. Anything else, the chosen folder itself or one of the library's name inside it, is refused: "“X” already holds a 37 Player library. 37 Player won't copy this library over it: choose another place." A copy cut off after its library record was written still carries on (tested). Offering to open the folder instead comes with item 2 (5.2).
+
 ### 5.2 Missing: opening an existing library folder in Chrome/Edge
 
 The desktop app has Find a library folder…; Chrome and Edge have nothing like it. That one feature would cover: Chrome's data cleared with a folder library; the T470 rebuild without a second 50 GB; seeding by USB in Chrome; and it is most of "Use in place" for the browser.
 
 ## 6. Proposed order of work, once the tables are agreed
 
-1. Test and fix 5.1.
+1. Test and fix 5.1. **Done, 2.2.019.**
 2. **Open a library folder…** in Chrome/Edge (5.2).
 3. A copied library notices it is on a new device (an ID per install, kept outside the folder) and asks for this device's name before syncing.
 4. The message changes in section 2.

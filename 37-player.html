@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.2.018">
+<meta name="app-version" content="2.2.019">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -2822,6 +2822,27 @@ async function ensureLibraryFolder(){
     }catch(err){ if(!err || err.name !== "AbortError") console.warn("Opening the library's folder:", err); }
   }
 }
+// Whether a library folder holds a library record ("root"), in either
+// layout. The records are written last, so a copy into a folder that was
+// stopped or failed before them leaves none.
+async function folderHasLibraryRecord(dir){
+  for(const own of [await folderChild(dir, OWN_FILES_FOLDER, false), dir]){
+    const st = own && await folderChild(own, "state", false);
+    if(!st) continue;
+    try{ await st.getFileHandle(fileKeyOf("root") + ".json"); return true; }catch(err){}
+  }
+  return false;
+}
+// This browser library's token for its copies into a folder (2.2.019),
+// kept in the library's own storage, so it goes when that storage goes. A
+// folder whose marker carries it is this library's own copy.
+async function folderCopyToken(){
+  let rec = null; try{ rec = await idbGet("state", "folderCopy"); }catch(err){}
+  if(rec && rec.token) return rec.token;
+  const token = uid();
+  await idbPut("state", {key: "folderCopy", token});
+  return token;
+}
 // About how much a library's files take, from what the tracks say.
 function libraryBytesEstimate(){ return root.library.reduce((n, tr)=> n + (tr.fileSize || 0), 0); }
 function folderNameFor(name){ return (name || "").replace(/[\\/:*?"<>|\u0000-\u001f]/g, " ").replace(/\s+/g, " ").trim().replace(/[. ]+$/, "").slice(0, 80) || "37 Player library"; }
@@ -2849,13 +2870,25 @@ async function moveLibraryToFolder(){
   let parent;
   try{ parent = await window.showDirectoryPicker({id: "37player-library", mode: "readwrite", startIn: "music"}); }
   catch(err){ if(err && err.name !== "AbortError") alert(t("folderLibFailed", {error: err.message || err.name})); return; }
+  // A folder that already holds a library is used only if it's this
+  // library's own copy, to carry on after a stop or a failure: the marker
+  // has this library's ID and either its token, or no library record was
+  // written yet. Never another library's (2.2.019, the plan's 5.1): every
+  // browser's first library has the same ID ("main"), so after the
+  // browser's storage was cleared, a new, empty first library took an older
+  // library's folder for its own and wrote its records over that library's.
+  // Nor is a library made inside another's folder.
+  const token = await folderCopyToken();
+  const ownCopy = async (d, m)=> !!m && m.id === LIBRARY_ID && (m.copyToken === token || !await folderHasLibraryRecord(d));
   // The folder picked may be the library's own (Gen Rinzin, 6 Nov 2026: with
   // several libraries, he made an empty folder for this one first, and got
   // "Name/Name"). This library's folder, or an empty folder with its name,
   // is used as it is; another empty folder, the person says which.
   let dir = null, own = await folderLibraryMarker(parent);
-  if(own && own.id === LIBRARY_ID) dir = parent;
-  else if(!own && await folderIsEmpty(parent)){
+  if(own){
+    if(!await ownCopy(parent, own)){ alert(t("folderLibHoldsLibrary", {folder: parent.name})); return; }
+    dir = parent;
+  } else if(await folderIsEmpty(parent)){
     if(parent.name.toLowerCase() === folderName.toLowerCase()) dir = parent;
     else {
       const holder = /librar|bibliot|biblioth|曲库|thư viện|βιβλιοθ|^music$|^musik$|^musique$|^música$|^musica$|^音乐$|^documents$/i.test(parent.name);
@@ -2871,13 +2904,13 @@ async function moveLibraryToFolder(){
     dir = await folderChild(parent, folderName, false);
     if(dir){
       const m = await folderLibraryMarker(dir);
-      if(m ? m.id !== LIBRARY_ID : !await folderIsEmpty(dir)){ alert(t("folderLibNotEmpty", {name: folderName})); return; }
+      if(m ? !await ownCopy(dir, m) : !await folderIsEmpty(dir)){ alert(m ? t("folderLibHoldsLibrary", {folder: dir.name}) : t("folderLibNotEmpty", {name: folderName})); return; }
     } else dir = await parent.getDirectoryHandle(folderName, {create: true});
   }
   let stopped = false;
   const stop = ()=>{ stopped = true; markOperationStopping("moveLib"); };
   try{
-    await writeWholeFile(dir, FOLDER_MARKER, JSON.stringify({format: "37player-library", id: LIBRARY_ID, name: libName, createdAt: Date.now()}, null, 1));
+    await writeWholeFile(dir, FOLDER_MARKER, JSON.stringify({format: "37player-library", id: LIBRARY_ID, name: libName, createdAt: Date.now(), copyToken: token}, null, 1));
     await writeWholeFile(dir, "README.txt", FOLDER_README);
     const dest = new FolderLibraryStore(async ()=> dir, "37player-files~" + LIBRARY_ID, recordingNameOpts());
     // Nothing else writes meanwhile: syncing, sending and receiving,
@@ -3873,6 +3906,7 @@ const STRINGS = {
     "folderLibFailed": "The library couldn't be copied to the folder ({error}). It's still in the browser, as it was.",
     "folderLibStopped": "Copying stopped. The library is still in the browser, as it was. Choosing the same place again carries on where it stopped.",
     "folderLibNotEmpty": "There's already a folder called “{name}” there, with other things in it. Choose another place, or rename that folder first.",
+    "folderLibHoldsLibrary": "“{folder}” already holds a 37 Player library. 37 Player won't copy this library over it: choose another place.",
     "folderLibMoveEmptyHint": "Already made an empty folder for this library? Choose that folder, and 37 Player can use it as it is.",
     "folderLibUseThisTitle": "Use this folder?",
     "folderLibUseThisBody": "“{folder}” is empty. 37 Player can keep this library right in it, or make a folder called “{name}” inside it, if “{folder}” is meant to hold several libraries.",
@@ -5746,6 +5780,7 @@ const STRINGS = {
     "folderLibFailed": "No se pudo copiar la biblioteca a la carpeta ({error}). Sigue en el navegador, como estaba.",
     "folderLibStopped": "Copia detenida. La biblioteca sigue en el navegador, como estaba. Si elige el mismo lugar otra vez, continúa donde se detuvo.",
     "folderLibNotEmpty": "Ya hay allí una carpeta llamada “{name}” con otras cosas dentro. Elija otro lugar o cambie antes el nombre de esa carpeta.",
+    "folderLibHoldsLibrary": "“{folder}” ya contiene una biblioteca de 37 Player. 37 Player no copiará esta biblioteca encima de ella: elija otro lugar.",
     "folderLibMoveEmptyHint": "¿Ya creó una carpeta vacía para esta biblioteca? Elija esa carpeta y 37 Player podrá usarla tal cual.",
     "folderLibUseThisTitle": "¿Usar esta carpeta?",
     "folderLibUseThisBody": "“{folder}” está vacía. 37 Player puede guardar esta biblioteca directamente en ella, o crear dentro una carpeta llamada “{name}”, si “{folder}” va a contener varias bibliotecas.",
@@ -7609,6 +7644,7 @@ const STRINGS = {
     "folderLibFailed": "La bibliothèque n'a pas pu être copiée dans le dossier ({error}). Elle est toujours dans le navigateur, telle quelle.",
     "folderLibStopped": "Copie arrêtée. La bibliothèque est toujours dans le navigateur, telle quelle. Choisir le même endroit reprend là où elle s'est arrêtée.",
     "folderLibNotEmpty": "Il y a déjà là un dossier nommé « {name} » qui contient autre chose. Choisissez un autre endroit, ou renommez d'abord ce dossier.",
+    "folderLibHoldsLibrary": "« {folder} » contient déjà une bibliothèque 37 Player. 37 Player ne copiera pas cette bibliothèque par-dessus : choisissez un autre endroit.",
     "folderLibMoveEmptyHint": "Vous avez déjà créé un dossier vide pour cette bibliothèque ? Choisissez ce dossier, et 37 Player peut l'utiliser tel quel.",
     "folderLibUseThisTitle": "Utiliser ce dossier ?",
     "folderLibUseThisBody": "« {folder} » est vide. 37 Player peut y garder directement cette bibliothèque, ou créer dedans un dossier nommé « {name} », si « {folder} » doit contenir plusieurs bibliothèques.",
@@ -9472,6 +9508,7 @@ const STRINGS = {
     "folderLibFailed": "Não foi possível copiar a biblioteca para a pasta ({error}). Ela continua no navegador, como estava.",
     "folderLibStopped": "Cópia interrompida. A biblioteca continua no navegador, como estava. Escolher o mesmo lugar de novo continua de onde parou.",
     "folderLibNotEmpty": "Já existe ali uma pasta chamada “{name}” com outras coisas dentro. Escolha outro lugar, ou mude antes o nome dessa pasta.",
+    "folderLibHoldsLibrary": "“{folder}” já contém uma biblioteca do 37 Player. O 37 Player não vai copiar esta biblioteca por cima dela: escolha outro lugar.",
     "folderLibMoveEmptyHint": "Já criou uma pasta vazia para esta biblioteca? Escolha essa pasta, e o 37 Player pode usá-la como está.",
     "folderLibUseThisTitle": "Usar esta pasta?",
     "folderLibUseThisBody": "“{folder}” está vazia. O 37 Player pode guardar esta biblioteca diretamente nela, ou criar dentro uma pasta chamada “{name}”, se “{folder}” for guardar várias bibliotecas.",
@@ -11335,6 +11372,7 @@ const STRINGS = {
     "folderLibFailed": "Die Bibliothek konnte nicht in den Ordner kopiert werden ({error}). Sie ist weiterhin unverändert im Browser.",
     "folderLibStopped": "Kopieren angehalten. Die Bibliothek ist weiterhin unverändert im Browser. Wenn Sie denselben Ort noch einmal wählen, geht es dort weiter, wo es aufgehört hat.",
     "folderLibNotEmpty": "Dort gibt es schon einen Ordner „{name}“ mit anderem Inhalt. Wählen Sie einen anderen Ort, oder benennen Sie diesen Ordner zuerst um.",
+    "folderLibHoldsLibrary": "„{folder}“ enthält bereits eine 37-Player-Bibliothek. 37 Player kopiert diese Bibliothek nicht darüber: Wählen Sie einen anderen Ort.",
     "folderLibMoveEmptyHint": "Haben Sie schon einen leeren Ordner für diese Bibliothek angelegt? Wählen Sie diesen Ordner, dann kann 37 Player ihn so verwenden.",
     "folderLibUseThisTitle": "Diesen Ordner verwenden?",
     "folderLibUseThisBody": "„{folder}“ ist leer. 37 Player kann diese Bibliothek direkt darin ablegen oder darin einen Ordner „{name}“ anlegen, falls „{folder}“ mehrere Bibliotheken aufnehmen soll.",
@@ -13198,6 +13236,7 @@ const STRINGS = {
     "folderLibFailed": "曲库未能复制到文件夹（{error}）。它仍在浏览器中，原样未动。",
     "folderLibStopped": "复制已停止。曲库仍在浏览器中，原样未动。再次选择同一位置会从中断处继续。",
     "folderLibNotEmpty": "那里已经有一个名为“{name}”的文件夹，里面还有别的东西。请选择其他位置，或先给那个文件夹改名。",
+    "folderLibHoldsLibrary": "“{folder}”里已经有一个 37 Player 曲库。37 Player 不会把这个曲库复制到它上面，请选择其他位置。",
     "folderLibMoveEmptyHint": "已经为这个曲库建好了一个空文件夹？选择那个文件夹，37 Player 就可以直接使用它。",
     "folderLibUseThisTitle": "使用这个文件夹？",
     "folderLibUseThisBody": "“{folder}”是空的。37 Player 可以把这个曲库直接放在里面；如果“{folder}”打算存放多个曲库，也可以在里面建立一个名为“{name}”的文件夹。",
@@ -15061,6 +15100,7 @@ const STRINGS = {
     "folderLibFailed": "Không thể sao chép thư viện vào thư mục ({error}). Thư viện vẫn ở trong trình duyệt như cũ.",
     "folderLibStopped": "Đã dừng sao chép. Thư viện vẫn ở trong trình duyệt như cũ. Chọn lại đúng nơi đó sẽ tiếp tục từ chỗ đã dừng.",
     "folderLibNotEmpty": "Ở đó đã có một thư mục tên “{name}” chứa thứ khác. Hãy chọn nơi khác, hoặc đổi tên thư mục đó trước.",
+    "folderLibHoldsLibrary": "“{folder}” đã chứa một thư viện 37 Player. 37 Player sẽ không chép thư viện này đè lên nó: hãy chọn nơi khác.",
     "folderLibMoveEmptyHint": "Bạn đã tạo sẵn một thư mục trống cho thư viện này? Hãy chọn thư mục đó, 37 Player có thể dùng nó như vậy.",
     "folderLibUseThisTitle": "Dùng thư mục này?",
     "folderLibUseThisBody": "“{folder}” đang trống. 37 Player có thể lưu thư viện này ngay trong đó, hoặc tạo bên trong một thư mục tên “{name}”, nếu “{folder}” dùng để chứa nhiều thư viện.",
@@ -16924,6 +16964,7 @@ const STRINGS = {
     "folderLibFailed": "Η βιβλιοθήκη δεν αντιγράφηκε στον φάκελο ({error}). Βρίσκεται ακόμα στο πρόγραμμα περιήγησης, όπως ήταν.",
     "folderLibStopped": "Η αντιγραφή σταμάτησε. Η βιβλιοθήκη βρίσκεται ακόμα στο πρόγραμμα περιήγησης, όπως ήταν. Αν επιλέξετε ξανά την ίδια θέση, συνεχίζει από εκεί που σταμάτησε.",
     "folderLibNotEmpty": "Υπάρχει ήδη εκεί φάκελος με όνομα «{name}» που περιέχει άλλα πράγματα. Επιλέξτε άλλη θέση ή μετονομάστε πρώτα εκείνον τον φάκελο.",
+    "folderLibHoldsLibrary": "Ο φάκελος «{folder}» περιέχει ήδη μια βιβλιοθήκη του 37 Player. Το 37 Player δεν θα αντιγράψει αυτή τη βιβλιοθήκη από πάνω της: επιλέξτε άλλη θέση.",
     "folderLibMoveEmptyHint": "Έχετε ήδη φτιάξει έναν άδειο φάκελο για αυτή τη βιβλιοθήκη; Επιλέξτε αυτόν τον φάκελο, και το 37 Player μπορεί να τον χρησιμοποιήσει όπως είναι.",
     "folderLibUseThisTitle": "Χρήση αυτού του φακέλου;",
     "folderLibUseThisBody": "Ο «{folder}» είναι άδειος. Το 37 Player μπορεί να κρατήσει αυτή τη βιβλιοθήκη κατευθείαν μέσα του, ή να φτιάξει μέσα του έναν φάκελο με όνομα «{name}», αν ο «{folder}» προορίζεται για πολλές βιβλιοθήκες.",
@@ -18787,6 +18828,7 @@ const STRINGS = {
     "folderLibFailed": "Non è stato possibile copiare la libreria nella cartella ({error}). È ancora nel browser, com'era.",
     "folderLibStopped": "Copia interrotta. La libreria è ancora nel browser, com'era. Scegliendo di nuovo lo stesso posto, si riprende da dove si era fermata.",
     "folderLibNotEmpty": "Lì c'è già una cartella chiamata “{name}” con dentro altre cose. Scegli un altro posto, o rinomina prima quella cartella.",
+    "folderLibHoldsLibrary": "“{folder}” contiene già una libreria di 37 Player. 37 Player non copierà questa libreria sopra di essa: scegli un altro posto.",
     "folderLibMoveEmptyHint": "Hai già creato una cartella vuota per questa libreria? Scegli quella cartella, e 37 Player può usarla così com'è.",
     "folderLibUseThisTitle": "Usare questa cartella?",
     "folderLibUseThisBody": "“{folder}” è vuota. 37 Player può tenere questa libreria direttamente lì dentro, oppure crearvi una cartella chiamata “{name}”, se “{folder}” deve contenere più librerie.",
