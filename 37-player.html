@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.2.032">
+<meta name="app-version" content="2.2.033">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -2319,6 +2319,8 @@ class IdbLibraryStore {
    so one left by an interrupted write is still tidied; nothing in the
    folder that 37 Player didn't write is ever deleted. */
 const FILES_GRACE_MS = 24*60*60*1000;
+const FILES_SUPERSEDED_MS = 60*1000;   // a recording replaced by a new version of it (noteSuperseded)
+const FILES_TIDY_EVERY_MS = 6*60*60*1000; // the tidy again while the library stays open (2.2.033)
 const OWN_FILES_FOLDER = "37 Player's own files";
 // One part of a recording's path (an artist, an album, a file name): what
 // Windows and the Mac refuse becomes "-" (as in the portable export,
@@ -2394,7 +2396,13 @@ class FolderLibraryStore {
       let own = await folderChild(dir, OWN_FILES_FOLDER, false);
       if(!own) own = (await folderChild(dir, "state", false)) || !(this.opts.recordingPath || this.opts.ownFiles) ? dir : await folderChild(dir, OWN_FILES_FOLDER, true);
       this.dir = dir; this.own = own; this.subs = {};
-      if(!this.tidied){ this.tidied = true; setTimeout(()=> this.tidy().then(()=> this.renameRecordings()).then(()=>{ if(this === libStore) return syncPlaylistFiles(); }).catch(err=> console.warn("Tidying the library's files:", err)), 20000); }
+      if(!this.tidied){
+        this.tidied = true;
+        setTimeout(()=> this.tidy().then(()=> this.renameRecordings()).then(()=>{ if(this === libStore) return syncPlaylistFiles(); }).catch(err=> console.warn("Tidying the library's files:", err)), 20000);
+        // And every few hours while it stays open: a window open for days
+        // otherwise kept every file on the waiting list (2.2.033).
+        const again = setInterval(()=>{ if(this !== libStore){ clearInterval(again); return; } this.tidy().catch(err=> console.warn("Tidying the library's files:", err)); }, FILES_TIDY_EVERY_MS);
+      }
     }
     return this.dir;
   }
@@ -2572,7 +2580,7 @@ class FolderLibraryStore {
     catch(err){ return {}; }
   }
   put(store, record){
-    return this.locked(async()=>{ await this.addOrphans(await this.writeRecord(store, record)); return record[STORE_KEYPATH[store]]; });
+    return this.locked(async()=>{ const gone = await this.writeRecord(store, record); await this.addOrphans(gone); this.noteSuperseded(store, record, gone); return record[STORE_KEYPATH[store]]; });
   }
   del(store, keys){
     keys = Array.isArray(keys) ? keys : [keys];
@@ -2614,9 +2622,11 @@ class FolderLibraryStore {
       for(const k of keys) recs.push(await this.get(store, k));
       const r = fn(recs) || {};
       let gone = [];
-      for(const rec of (r.put || [])) gone = gone.concat(await this.writeRecord(store, rec));
+      const replaced = [];
+      for(const rec of (r.put || [])){ const g = await this.writeRecord(store, rec); gone = gone.concat(g); replaced.push([rec, g]); }
       for(const k of (r.del || [])) gone = gone.concat(await this.removeRecord(store, k));
       await this.addOrphans(gone);
+      for(const [rec, g] of replaced) this.noteSuperseded(store, rec, g);
       return r.result;
     });
   }
@@ -2736,6 +2746,48 @@ class FolderLibraryStore {
       for(const path of Object.keys(before)) if(!(path in now)) await this.removePath(path).catch(()=>{});
       mem[prefix] = now;
       await writeWholeFile(this.own, "written.json", JSON.stringify(mem));
+    });
+  }
+  // A readable recording replaced by a new version of the same track (its
+  // details written into it again: an album renamed, say) goes about a
+  // minute later, once no player here holds it, instead of after the day's
+  // grace (2.2.033; Gen Rinzin, 12 Nov 2026: each rename of an album left a
+  // whole copy of it in the folder, and the T470 stays open for days). The
+  // record already points at the new file. A deleted track's recording
+  // still waits its day. (Another window playing the old version would
+  // lose it: two windows on one library playing the same track while it's
+  // edited is rare enough.)
+  noteSuperseded(store, record, gone){
+    if(store !== "audio" || !record || !gone || !gone.length) return;
+    const paths = gone.filter(p=> p.startsWith("/"));
+    if(!paths.length) return;
+    if(!this.superseded) this.superseded = new Map();
+    paths.forEach(p=> this.superseded.set(p, record.id));
+    this.scheduleSupersededDrop();
+  }
+  scheduleSupersededDrop(){
+    if(this.supersededTimer) return;
+    this.supersededTimer = setTimeout(()=>{ this.supersededTimer = null; this.dropSuperseded().catch(err=> console.warn("Removing replaced recordings:", err)); }, FILES_SUPERSEDED_MS);
+  }
+  dropSuperseded(){
+    if(!this.superseded || !this.superseded.size) return Promise.resolve(0);
+    return this.locked(async()=>{
+      const ledger = await this.readLedger();
+      let dropped = 0, changed = false;
+      for(const [p, id] of [...this.superseded]){
+        if(this.opts.canMove && !this.opts.canMove(id)) continue; // still playing: next time
+        let raw = null;
+        try{ raw = await this.readRaw("audio", id); }catch(err){}
+        const now = raw && raw.blob && typeof raw.blob.$path === "string" ? "/" + raw.blob.$path : null;
+        this.superseded.delete(p);
+        if(now && now.toLowerCase() === p.toLowerCase()) continue; // in use again (an Undo): keep it
+        try{ await this.removePath(p.slice(1)); }catch(err){ if(!err || err.name !== "NotFoundError") continue; }
+        if(ledger[p]){ delete ledger[p]; changed = true; }
+        dropped++;
+      }
+      if(changed) await writeWholeFile(this.own, "orphans.json", JSON.stringify(ledger));
+      if(this.superseded.size) this.scheduleSupersededDrop();
+      return dropped;
     });
   }
   // Removes files whose grace is over, and puts any file no record uses
