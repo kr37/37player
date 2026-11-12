@@ -97,7 +97,7 @@ The desktop app has Find a library folder…; Chrome and Edge have nothing like 
 | In the browser's storage, still only the starter (every new first library) | The folder's library takes its place and name; the browser's copy is left alone. This is the T470 rebuild |
 | In the browser's storage, with tracks or playlists of its own | Refused, nothing changed |
 
-**T** folderlib.js for all four. **For Gen Rinzin:** the last row could instead open the folder as a separate library by giving the folder a new ID. The catch: anything else that knows the folder by its old ID (another browser profile, the desktop app on the same computer) would then see it as another library's folder and refuse it. Seeding a new computer by USB isn't affected, since its first library is still empty.
+**T** folderlib.js for all four. **Decided by Gen Rinzin (12 Nov):** the last row keeps refusing; he will try it. The other way would be to open the folder as a separate library by giving the folder a new ID. The catch: anything else that knows the folder by its old ID (another browser profile, the desktop app on the same computer) would then see it as another library's folder and refuse it. Seeding a new computer by USB isn't affected, since its first library is still empty.
 
 ## 6. Proposed order of work, once the tables are agreed
 
