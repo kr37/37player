@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.2.034">
+<meta name="app-version" content="2.2.035">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -2102,6 +2102,7 @@ async function webkitOwnBytes(blob){
   return own;
 }
 
+const ROOT_REV_KEY = "rootRev"; // the library record's revision on its own (IdbLibraryStore.keepRootRev)
 class IdbLibraryStore {
   // opts.gone(): this library was deleted from another window, so its
   // database mustn't be opened again (that would make a new, empty one).
@@ -2165,17 +2166,29 @@ class IdbLibraryStore {
   }
   putNow(store, record){
     return this.run(d=> new Promise((resolve, reject)=>{
-      const tx = d.transaction(store, "readwrite");
-      const r = tx.objectStore(store).put(record);
+      const tx = d.transaction(store, "readwrite"), os = tx.objectStore(store);
+      const r = os.put(record);
+      IdbLibraryStore.keepRootRev(os, store, record, null);
       settleTx(tx, resolve, reject, ()=> r.result);
     }));
+  }
+  // "rootRev" holds only the library record's revision, written with it in
+  // the same transaction, so writeRootIfCurrent can check the revision
+  // without reading the whole library back (2.2.035: that read was a third
+  // of a save's time with a big library). Anything that writes "root"
+  // writes it too; anything that deletes "root" deletes it. It's trusted
+  // only when it equals the revision expected; otherwise "root" is read.
+  static keepRootRev(os, store, putRec, delKey){
+    if(store !== "state") return;
+    if(putRec && putRec.key === "root") os.put({key: ROOT_REV_KEY, rev: putRec.rev || 0});
+    if(delKey === "root") os.delete(ROOT_REV_KEY);
   }
   del(store, keys){
     keys = Array.isArray(keys) ? keys : [keys];
     if(!keys.length) return Promise.resolve();
     return this.run(d=> new Promise((resolve, reject)=>{
       const tx = d.transaction(store, "readwrite"), os = tx.objectStore(store);
-      keys.forEach(k=> os.delete(k));
+      keys.forEach(k=>{ os.delete(k); IdbLibraryStore.keepRootRev(os, store, null, k); });
       settleTx(tx, resolve, reject);
     }));
   }
@@ -2201,8 +2214,8 @@ class IdbLibraryStore {
       let left = keys.length, out;
       const apply = ()=>{
         const r = fn(recs) || {};
-        (r.put || []).forEach(rec=> os.put(rec));
-        (r.del || []).forEach(k=> os.delete(k));
+        (r.put || []).forEach(rec=>{ os.put(rec); IdbLibraryStore.keepRootRev(os, store, rec, null); });
+        (r.del || []).forEach(k=>{ os.delete(k); IdbLibraryStore.keepRootRev(os, store, null, k); });
         out = r.result;
       };
       keys.forEach((k, i)=>{ const g = os.get(k); g.onsuccess = ()=>{ recs[i] = g.result; if(--left === 0) apply(); }; });
@@ -2218,7 +2231,7 @@ class IdbLibraryStore {
     req.onsuccess = ()=>{
       const cursor = req.result;
       if(!cursor) return;
-      if(!keep.includes(cursor.key)) store.delete(cursor.key);
+      if(cursor.key === ROOT_REV_KEY ? !keep.includes("root") : !keep.includes(cursor.key)) store.delete(cursor.key); // rootRev goes with root
       cursor.continue();
     };
   }
@@ -2255,27 +2268,31 @@ class IdbLibraryStore {
       const tx = d.transaction("state", "readwrite");
       const store = tx.objectStore("state");
       let result = {ok:false};
-      const replace = ()=>{
-        store.delete("root");
-        store.put({key:"root", value, rev: expectedRev + 1});
-        result = {ok:true, rev: expectedRev + 1};
+      const write = rev=>{ store.put({key:"root", value, rev}); store.put({key: ROOT_REV_KEY, rev}); result = {ok:true, rev}; };
+      if(force){ store.delete("root"); write(expectedRev + 1); return settleTx(tx, resolve, reject, ()=> result); }
+      // The whole library record, read to see its revision: only when the
+      // small revision record doesn't say what's expected (see keepRootRev).
+      const readRoot = ()=>{
+        const get = store.get("root");
+        // The stored record can't be read (damaged — see loadState). Only
+        // overwritten once the person has chosen how to recover.
+        get.onerror = (e)=>{
+          e.preventDefault(); // keeps the transaction alive
+          result = {ok:false, unreadable:true};
+        };
+        get.onsuccess = ()=>{
+          const cur = get.result;
+          const curRev = cur ? (cur.rev||0) : null;
+          if(cur && curRev!==expectedRev) return; // someone else saved since this window loaded
+          write((curRev==null ? expectedRev : curRev) + 1);
+        };
       };
-      if(force){ replace(); return settleTx(tx, resolve, reject, ()=> result); }
-      const get = store.get("root");
-      // The stored record can't be read (damaged — see loadState). Only
-      // overwritten once the person has chosen how to recover.
-      get.onerror = (e)=>{
-        e.preventDefault(); // keeps the transaction alive
-        if(!force){ result = {ok:false, unreadable:true}; return; }
-        replace();
-      };
-      get.onsuccess = ()=>{
-        const cur = get.result;
-        const curRev = cur ? (cur.rev||0) : null;
-        if(cur && curRev!==expectedRev) return; // someone else saved since this window loaded
-        const newRev = (curRev==null ? expectedRev : curRev) + 1;
-        store.put({key:"root", value, rev:newRev});
-        result = {ok:true, rev:newRev};
+      const quick = store.get(ROOT_REV_KEY);
+      quick.onerror = (e)=>{ e.preventDefault(); readRoot(); };
+      quick.onsuccess = ()=>{
+        const q = quick.result;
+        if(q && q.rev === expectedRev) write(expectedRev + 1);
+        else readRoot();
       };
       settleTx(tx, resolve, reject, ()=> result);
     }));
@@ -2648,14 +2665,32 @@ class FolderLibraryStore {
     return this.locked(async()=>{
       let rev = expectedRev + 1;
       if(!force){
-        let cur;
-        try{ cur = await this.readRaw("state", "root"); }
-        catch(err){ return {ok:false, unreadable:true}; } // see loadState: overwritten only once the person chooses
-        if(cur){ const curRev = cur.rev || 0; if(curRev !== expectedRev) return {ok:false}; rev = curRev + 1; }
+        const quick = await this.rootRevQuick();
+        if(quick !== expectedRev){
+          let cur;
+          try{ cur = await this.readRaw("state", "root"); }
+          catch(err){ return {ok:false, unreadable:true}; } // see loadState: overwritten only once the person chooses
+          if(cur){ const curRev = cur.rev || 0; if(curRev !== expectedRev) return {ok:false}; rev = curRev + 1; }
+        }
       }
-      await this.addOrphans(await this.writeRecord("state", {key:"root", value, rev}));
+      // The revision before the library, so the next save can read it from
+      // the file's first bytes (rootRevQuick).
+      await this.addOrphans(await this.writeRecord("state", {key:"root", rev, value}));
       return {ok:true, rev};
     });
+  }
+  // The library record's revision from the first bytes of root.json, if it
+  // was written with the revision first (2.2.035); null otherwise (an older
+  // version wrote it last), and then the whole record is read. Parsing the
+  // whole file at every save just for its revision was a third of the time
+  // a save took with a big library.
+  async rootRevQuick(){
+    try{
+      const dir = await this.sub("state");
+      const f = await (await dir.getFileHandle(fileKeyOf("root") + ".json")).getFile();
+      const m = /^\{"key":"root","rev":(\d+),"value":/.exec(await f.slice(0, 64).text());
+      return m ? Number(m[1]) : null;
+    }catch(err){ return null; }
   }
   // Gives every recording the readable name its details call for (1.4.174):
   // after an edit, an Undo, or for an older library's recordings still in
@@ -21623,7 +21658,25 @@ function hashString(s){
   return (h2>>>0).toString(16) + (h1>>>0).toString(16);
 }
 function libraryPartOf(r){ const v = {library:r.library, tree:r.tree, standardizeTargetRate:r.standardizeTargetRate||null, formatPolicy:r.formatPolicy||null, storageRev:r.storageRev||0}; if(r.backupKeepers && Object.keys(r.backupKeepers).length) v.backupKeepers = r.backupKeepers; return v; }
-function libraryHashOf(r){ return hashString(JSON.stringify(libraryPartOf(r))); }
+// A waveform counts by a fingerprint of it, made once per array (2.2.035):
+// turning every waveform into text at each save was most of a save's time
+// (720 numbers a track; 33 MB for 2,500 tracks, about a third of a second
+// on a fast computer and several times that on the T470, all of it holding
+// up the page). A waveform is never changed in place, only replaced by a
+// new array (analyzeAudio, the splitter, a conversion), so a remembered
+// fingerprint can't go stale.
+const peaksPrints = new WeakMap();
+function peaksPrint(pk){
+  if(!pk || typeof pk !== "object") return pk;
+  let h = peaksPrints.get(pk);
+  if(h === undefined){ h = "~" + pk.length + ":" + hashString(JSON.stringify(Array.from(pk))); peaksPrints.set(pk, h); }
+  return h;
+}
+function libraryHashOf(r){
+  const part = libraryPartOf(r);
+  const library = (part.library || []).map(t=> t && t.peaks ? Object.assign({}, t, {peaks: peaksPrint(t.peaks)}) : t);
+  return hashString(JSON.stringify(Object.assign({}, part, {library})));
+}
 // Writes the library only if the stored revision is still expectedRev.
 // Resolves {ok:true, rev} or {ok:false}.
 function idbWriteLibraryIfCurrent(value, expectedRev){
