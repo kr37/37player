@@ -1,0 +1,42 @@
+# What Apple's notary service says about the Mac builds sent to it (13 Nov
+# 2026: the first signed builds waited hours in notarization). Run it by
+# hand; it lists the latest submissions, their state, and the log of any
+# that was refused. Uses the App Store Connect API key in the secrets
+# (APPLE_API_KEY, APPLE_API_ISSUER, APPLE_API_KEY_P8).
+name: Notarization status
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  status:
+    runs-on: ubuntu-latest
+    env:
+      KEY_ID: ${{ secrets.APPLE_API_KEY }}
+      ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+      P8: ${{ secrets.APPLE_API_KEY_P8 }}
+    steps:
+      - name: Ask Apple
+        run: |
+          pip install -q pyjwt cryptography requests
+          python3 - <<'EOF'
+          import os, time, jwt, requests
+          now = int(time.time())
+          token = jwt.encode({"iss": os.environ["ISSUER"], "iat": now, "exp": now + 1200, "aud": "appstoreconnect-v1"},
+                             os.environ["P8"], algorithm="ES256", headers={"kid": os.environ["KEY_ID"], "typ": "JWT"})
+          h = {"Authorization": "Bearer " + token}
+          r = requests.get("https://appstoreconnect.apple.com/notary/v2/submissions", headers=h, timeout=60)
+          print("HTTP", r.status_code)
+          if r.status_code != 200:
+              print(r.text[:2000]); raise SystemExit(1)
+          subs = r.json().get("data", [])
+          print(len(subs), "submissions (newest first):")
+          for s in subs[:15]:
+              a = s.get("attributes", {})
+              print(f'  {a.get("createdDate")}  {a.get("status"):12}  {a.get("name")}  {s.get("id")}')
+          for s in subs[:15]:
+              if s.get("attributes", {}).get("status") in ("Invalid", "Rejected"):
+                  lg = requests.get(f'https://appstoreconnect.apple.com/notary/v2/submissions/{s["id"]}/logs', headers=h, timeout=60).json()
+                  url = lg.get("data", {}).get("attributes", {}).get("developerLogUrl")
+                  if url: print("\nLog of", s["id"], ":\n", requests.get(url, timeout=60).text[:4000])
+          EOF
