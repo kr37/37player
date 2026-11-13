@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.3.005">
+<meta name="app-version" content="2.4.000">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -36698,6 +36698,33 @@ const mqMoreContrast = window.matchMedia ? window.matchMedia("(prefers-contrast:
 function effectiveTheme(){ const th = root.settings.theme || "dark"; return th === "auto" ? (mqLight && mqLight.matches ? "light" : "dark") : th; }
 function effectiveMoreContrast(){ const v = root.settings.moreContrast; return v === true || v === false ? v : !!(mqMoreContrast && mqMoreContrast.matches); }
 [mqLight, mqMoreContrast].forEach(mq=>{ if(mq && mq.addEventListener) mq.addEventListener("change", ()=>{ try{ applyDisplaySettings(); }catch(err){} }); });
+// The Size setting in the desktop app: the webview's own zoom, set by the
+// shell (p37_zoom), not the transform the page uses in a browser. WebKitGTK
+// drew transformed text blurred (Gen Rinzin's T470, 13 Nov 2026: sharp at
+// the smallest size, soft above it), and zoom is the more coherent: Settings,
+// Help and every dialog follow the size, and narrow-window rules go by the
+// room there really is. Whether the shell can is known once it has answered
+// (desktopShellCheck); until then, what it said last time (kept, so the
+// page doesn't start magnified and then change).
+const SHELL_ZOOM_KEY = "37player.shellZoom";
+function desktopShellZooms(){
+  try{ // (also when called before the desktop app's own variables exist, further down the page)
+    if(!IN_DESKTOP_APP || !(window.__TAURI__ && window.__TAURI__.core)) return false;
+    if(desktopShell) return !!desktopShell.zoom;
+    return localStorage.getItem(SHELL_ZOOM_KEY) === "1";
+  }catch(err){ return false; }
+}
+let desktopZoomSet = null;
+function desktopZoom(scale){
+  if(desktopZoomSet === scale) return;
+  desktopZoomSet = scale;
+  window.__TAURI__.core.invoke("p37_zoom", {scale}).catch(err=>{
+    // A shell that can't after all (an older one put back): the page's own way.
+    desktopZoomSet = null;
+    try{ localStorage.removeItem(SHELL_ZOOM_KEY); }catch(e){}
+    if(!desktopShell){ document.documentElement.style.setProperty("--ui-scale", scale); if(resizableColumnSets && resizableColumnSets.length) reapplyColumnWidths(); }
+  });
+}
 function applyDisplaySettings(){
   const theme = effectiveTheme(), themeChoice = root.settings.theme || "dark";
   document.body.classList.toggle("more-contrast", effectiveMoreContrast());
@@ -36712,7 +36739,11 @@ function applyDisplaySettings(){
   // the way, which is exactly what caused scrolling to stop short of the real
   // bottom at the larger sizes. Transform only affects the final paint, so the
   // scrollable area's height is always computed at true, unscaled precision.
-  document.documentElement.style.setProperty("--ui-scale", scale);
+  // In the desktop app (shell 2.4.0 on) the shell zooms the webview instead,
+  // as Ctrl-plus does in a browser, and the page isn't magnified (2.4.000).
+  const byShell = desktopShellZooms();
+  document.documentElement.style.setProperty("--ui-scale", byShell ? 1 : scale);
+  if(byShell) desktopZoom(scale);
   if(resizableColumnSets && resizableColumnSets.length) reapplyColumnWidths();
   document.documentElement.style.setProperty("--density", density);
   const dIdx = density < 1 ? 0 : density > 1 ? 2 : 1;
@@ -49514,10 +49545,13 @@ if(IN_DESKTOP_APP){
   window.addEventListener("resize", fitHeight);
 }
 const DESKTOP_BRIDGE_NEEDED = +((document.querySelector('meta[name="desktop-bridge"]') || {}).content || 1);
-let desktopShell = null; // {version, bridge, pages, device, updates}
+let desktopShell = null; // {version, bridge, pages, device, updates, zoom}
 async function desktopShellCheck(){
   if(!IN_DESKTOP_APP || !window.__TAURI__ || !window.__TAURI__.core) return;
   try{ desktopShell = await window.__TAURI__.core.invoke("p37_shell_info"); }catch(err){ desktopShell = {version: "?", bridge: 0}; }
+  // Whether it sizes the page itself (the Size setting): kept for the next start, and applied now.
+  try{ if(desktopShell.zoom) localStorage.setItem(SHELL_ZOOM_KEY, "1"); else localStorage.removeItem(SHELL_ZOOM_KEY); }catch(err){}
+  try{ applyDisplaySettings(); }catch(err){}
   if((desktopShell.bridge || 0) < DESKTOP_BRIDGE_NEEDED)
     askChoice(t("desktopShellOldTitle"), `<p>${escapeHtmlText(t("desktopShellOldBody", {shell: desktopShell.version}))}</p>`, [{label: t("ok"), value: null, kind: "primary"}]);
 }
