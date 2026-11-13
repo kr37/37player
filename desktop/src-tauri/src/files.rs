@@ -344,11 +344,22 @@ pub fn renamed_path(cur: &Path, name: &str) -> Option<PathBuf> {
     Some(p)
 }
 
+// The folder with the library's name holds a copy of the same library (the
+// T470, 13 Nov 2026: renamed to "… (2)" beside its copy, it looked like a
+// library the app had made). Then the folder keeps its name.
+pub fn name_held_by_copy(cur: &Path, name: &str, lib_id: &str) -> bool {
+    let Some(parent) = cur.parent() else { return false };
+    let other = parent.join(folder_name(name));
+    if other == cur { return false; }
+    matches!(read_marker(&other), Some((id, _)) if id == lib_id)
+}
+
 #[tauri::command(async)]
 pub fn fs_root_rename(app: tauri::AppHandle, id: String, name: String) -> Result<String, String> {
     if !id.starts_with("lib-") { return Err("only a library's folder".into()); }
     let r = roots(&app);
     let cur = r.get(&id)?;
+    if name_held_by_copy(&cur, &name, &id["lib-".len()..]) { return Ok(cur.to_string_lossy().into_owned()); }
     let Some(to) = renamed_path(&cur, &name) else { return Ok(cur.to_string_lossy().into_owned()) };
     fs::rename(&cur, &to).map_err(|e| e.to_string())?;
     r.set(&id, to.clone())?;
@@ -378,7 +389,43 @@ pub fn read_marker(dir: &Path) -> Option<(String, String)> {
 }
 
 #[derive(serde::Serialize, Debug, PartialEq)]
-pub struct Found { pub id: String, pub name: String, pub path: String }
+pub struct Found {
+    pub id: String, pub name: String, pub path: String,
+    // Whether 37 Player can save in it, and when its library record last
+    // changed (ms): two folders can hold copies of one library (a folder
+    // copied beside itself with a file manager; Gen Rinzin's T470, 13 Nov
+    // 2026: a read-only copy from 9 Nov was taken over the one in use).
+    pub writable: bool, pub changed: u64,
+}
+
+// The folder 37 Player keeps a library's records in: "37 Player's own
+// files/state", or state/ at the top for a library that began without it.
+fn state_dir(lib: &Path) -> PathBuf {
+    let own = lib.join("37 Player's own files");
+    if own.is_dir() { own.join("state") } else { lib.join("state") }
+}
+fn modified_ms(p: &Path) -> u64 {
+    fs::metadata(p).and_then(|m| m.modified()).ok().and_then(|t| t.duration_since(UNIX_EPOCH).ok()).map(|d| d.as_millis() as u64).unwrap_or(0)
+}
+// Read-only folders (no write permission) can't be saved in: the library's
+// folder, its own files' folder and the records' folder.
+pub fn library_writable(lib: &Path) -> bool {
+    let st = state_dir(lib);
+    [lib.to_path_buf(), lib.join("37 Player's own files"), st]
+        .iter().filter(|p| p.is_dir())
+        .all(|p| fs::metadata(p).map(|m| !m.permissions().readonly()).unwrap_or(false))
+}
+pub fn found_at(p: &Path) -> Option<Found> {
+    let (id, name) = read_marker(p)?;
+    let st = state_dir(p);
+    let changed = [st.join("root.json"), p.join(MARKER)].iter().map(|f| modified_ms(f)).find(|&t| t > 0).unwrap_or(0);
+    Some(Found { id, name, path: p.to_string_lossy().into_owned(), writable: library_writable(p), changed })
+}
+// Of several copies of one library, the one to use when nobody has said:
+// one that can be saved in, then the most recently changed.
+pub fn best_copy<'a>(copies: &[&'a Found]) -> Option<&'a Found> {
+    copies.iter().copied().max_by(|a, b| (a.writable, a.changed).cmp(&(b.writable, b.changed)).then(b.path.cmp(&a.path)))
+}
 
 // The library folders directly inside a folder.
 pub fn find_libraries(base: &Path) -> Vec<Found> {
@@ -387,7 +434,7 @@ pub fn find_libraries(base: &Path) -> Vec<Found> {
     for e in rd.flatten() {
         let p = e.path();
         if !p.is_dir() { continue; }
-        if let Some((id, name)) = read_marker(&p) { out.push(Found { id, name, path: p.to_string_lossy().into_owned() }); }
+        if let Some(f) = found_at(&p) { out.push(f); }
     }
     out.sort_by(|a, b| a.path.cmp(&b.path));
     out
@@ -418,12 +465,29 @@ pub fn fs_place_default(app: tauri::AppHandle) -> Result<String, String> {
 pub fn fs_find_libraries(app: tauri::AppHandle) -> Result<Vec<Found>, String> {
     let found = find_libraries(&place(&app)?);
     let r = roots(&app);
+    let mut seen: Vec<&str> = vec![];
     for f in &found {
+        if seen.contains(&f.id.as_str()) { continue; }
+        seen.push(&f.id);
         let rid = format!("lib-{}", f.id);
         let keep = r.get(&rid).map(|p| p.is_dir()).unwrap_or(false);
-        if !keep { r.set(&rid, PathBuf::from(&f.path))?; }
+        if keep { continue; }
+        let copies: Vec<&Found> = found.iter().filter(|g| g.id == f.id).collect();
+        if let Some(b) = best_copy(&copies) { r.set(&rid, PathBuf::from(&b.path))?; }
     }
     Ok(found)
+}
+
+// One of the copies fs_find_libraries found, chosen by the person: its folder
+// becomes the library's. Only a folder in the libraries' place that holds
+// that library.
+#[tauri::command]
+pub fn fs_root_use_found(app: tauri::AppHandle, id: String, path: String) -> Result<(), String> {
+    let p = PathBuf::from(&path);
+    let base = place(&app)?;
+    if p.parent() != Some(base.as_path()) { return Err("not a folder in the libraries' place".into()); }
+    match read_marker(&p) { Some((mid, _)) if mid == id => {}, _ => return Err("not that library's folder".into()) }
+    roots(&app).set(&format!("lib-{}", id), p)
 }
 
 // Find a library folder…: the person chooses a folder anywhere; if it's a
@@ -433,9 +497,9 @@ pub async fn fs_root_choose_library(app: tauri::AppHandle, title: String) -> Res
     use tauri_plugin_dialog::DialogExt;
     let Some(p) = app.dialog().file().set_title(title).blocking_pick_folder() else { return Ok(None) };
     let path = p.into_path().map_err(|e| e.to_string())?;
-    let Some((id, name)) = read_marker(&path) else { return Err("not a library folder".into()) };
-    roots(&app).set(&format!("lib-{}", id), path.clone())?;
-    Ok(Some(Found { id, name, path: path.to_string_lossy().into_owned() }))
+    let Some(f) = found_at(&path) else { return Err("not a library folder".into()) };
+    roots(&app).set(&format!("lib-{}", f.id), path.clone())?;
+    Ok(Some(f))
 }
 
 // A new library's folder in the libraries' place (see above),
@@ -681,6 +745,37 @@ mod tests {
         let f = find_libraries(&d);
         assert_eq!(f.iter().map(|x| (x.id.as_str(), x.name.as_str())).collect::<Vec<_>>(), vec![("abc_1", "Kadampa"), ("main", "")]);
         assert!(find_libraries(&d.join("nothing")).is_empty());
+        assert!(f.iter().all(|x| x.writable && x.changed > 0));
+    }
+    #[cfg(unix)]
+    #[test]
+    fn of_two_copies_the_one_that_can_be_saved_in() {
+        use std::os::unix::fs::PermissionsExt;
+        let d = tmp("copies");
+        let marker = br#"{"format":"37player-library","id":"rz1","name":"Rz restored library"}"#;
+        write(&d, "Rz restored library/37 Player library.json", marker).unwrap();
+        write(&d, "Rz restored library/37 Player's own files/state/root.json", b"{}").unwrap();
+        write(&d, "Old copy/37 Player library.json", marker).unwrap();
+        write(&d, "Old copy/state/root.json", b"{}").unwrap();
+        // The old copy is read-only (and was changed later, which doesn't matter).
+        std::thread::sleep(std::time::Duration::from_millis(20));
+        write(&d, "Old copy/state/root.json", b"{ }").unwrap();
+        for p in ["Old copy/state", "Old copy"] { fs::set_permissions(d.join(p), fs::Permissions::from_mode(0o555)).unwrap(); }
+        let f = find_libraries(&d);
+        assert_eq!(f.len(), 2);
+        assert_eq!(f[0].path, d.join("Old copy").to_string_lossy());
+        assert!(!f[0].writable && f[1].writable);
+        let all: Vec<&Found> = f.iter().collect();
+        assert_eq!(best_copy(&all).unwrap().path, d.join("Rz restored library").to_string_lossy());
+        // Both writable: the newer.
+        for p in ["Old copy/state", "Old copy"] { fs::set_permissions(d.join(p), fs::Permissions::from_mode(0o755)).unwrap(); }
+        let f = find_libraries(&d);
+        let all: Vec<&Found> = f.iter().collect();
+        assert_eq!(best_copy(&all).unwrap().path, d.join("Old copy").to_string_lossy());
+        // Renamed to its library's name? Not beside a copy that has it.
+        assert!(name_held_by_copy(&d.join("Old copy"), "Rz restored library", "rz1"));
+        assert!(!name_held_by_copy(&d.join("Old copy"), "Rz restored library", "other"));
+        assert!(!name_held_by_copy(&d.join("Rz restored library"), "Rz restored library", "rz1"));
     }
     #[test]
     fn a_big_file_in_pieces() {
