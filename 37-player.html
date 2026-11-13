@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.3.004">
+<meta name="app-version" content="2.3.005">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -1125,6 +1125,10 @@
   .sel-start-time{ font-size:12.5px; color:var(--text-dim); white-space:nowrap; font-variant-numeric:tabular-nums; }
   .item-row .tdur{ color:var(--text-dim); font-size:13px; font-variant-numeric:tabular-nums; flex-shrink:0; }
   .item-row .talbum{ color:var(--folder); font-size:12.5px; flex-shrink:0; max-width:170px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  /* With Wrap on, the album wraps too and takes under a third of the row
+     (28%; 2.3.005, Gen Rinzin, 13 Nov 2026: on one line at its full width it left
+     the title two characters wide and fifteen lines tall on a narrow window). */
+  body.wrap-names .item-row .talbum{ white-space:normal; overflow:visible; text-overflow:clip; overflow-wrap:break-word; flex:0 1 auto; min-width:0; max-width:min(170px, 28%); }
   .item-row .drag-handle{ cursor:grab; color:var(--text-faint); display:none; flex-shrink:0; }
   body.edit-mode.unlocked .item-row .drag-handle{ display:inline; }
   .item-row-actions{ display:none; gap:2px; flex-shrink:0; }
