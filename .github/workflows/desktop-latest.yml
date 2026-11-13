@@ -56,7 +56,7 @@ jobs:
           mkdir d && cd d
           gh release download "$from" --repo "$REPO" -p '*.dmg' -p '*.exe' -p '*.msi'
           mv ./*.dmg 37-Player-mac.dmg; mv ./*.exe 37-Player-windows-setup.exe; mv ./*.msi 37-Player-windows.msi
-          notes="37 Player $v for computers (from $from; on $site's home page). Not signed yet: on a Mac, right-click the app → Open the first time; on Windows, SmartScreen → More info → Run anyway."
+          notes="37 Player $v for computers (from $from; on $site's home page). The Mac app is signed and notarized by Apple (builds since 39d). Windows' isn't signed yet: SmartScreen → More info → Run anyway."
           files="37-Player-mac.dmg 37-Player-windows-setup.exe 37-Player-windows.msi"
           # The Linux .deb, in builds since 12 Nov 2026 (38d), when there is one.
           if gh release download "$from" --repo "$REPO" -p '*.deb' 2>/dev/null && ls ./*.deb > /dev/null 2>&1; then
