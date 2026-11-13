@@ -77,6 +77,8 @@
         const segs = parts(cur), base = segs.pop(), parentPath = segs.join('/'), want = folderName(args.name);
         const bare = base.replace(/ \(\d+\)$/, '');
         if(bare === want) return cur;
+        // Not beside a copy of the same library that has the name (2.2.041).
+        { const other = await pathDir((parentPath ? parentPath + '/' : '') + want), om = other && await markerOf(other); if(om && om.id === args.id.slice(4) && (parentPath ? parentPath + '/' : '') + want !== cur) return cur; }
         let to = (parentPath ? parentPath + '/' : '') + want, n = 2;
         if(base.toLowerCase() !== want.toLowerCase()) while(await pathDir(to)) to = (parentPath ? parentPath + '/' : '') + want + ' (' + (n++) + ')';
         const copy = async (from, into)=>{ for await (const [nm, h] of from.entries()){ if(h.kind === 'directory') await copy(h, await into.getDirectoryHandle(nm, {create: true})); else { const w = await (await into.getFileHandle(nm, {create: true})).createWritable(); await w.write(await h.getFile()); await w.close(); } } };
@@ -107,11 +109,25 @@
         const r = await readRoots(), base = r.place || DEFAULT_PLACE, d = await pathDir(base), out = [];
         if(d) for await (const [n, h] of d.entries()){
           if(h.kind !== 'directory') continue;
-          const m = await markerOf(h); if(m) out.push({id: m.id, name: m.name, path: base + '/' + n});
+          const pth = base + '/' + n, m = await markerOf(h);
+          // __fakeReadOnly: folders that can't be saved in; __fakeChanged: when each library record last changed.
+          if(m) out.push({id: m.id, name: m.name, path: pth, writable: !(window.__fakeReadOnly || []).includes(pth), changed: (window.__fakeChanged || {})[pth] || 1});
         }
         out.sort((a, b)=> a.path < b.path ? -1 : 1);
-        for(const f of out){ const rid = 'lib-' + f.id; if(!(rid in r) || !(await pathDir(r[rid]))) r[rid] = f.path; }
+        for(const f of out){
+          const rid = 'lib-' + f.id; if(rid in r && await pathDir(r[rid])) continue;
+          // Of copies: one that can be saved in, then the newest (as files.rs best_copy).
+          const best = out.filter(g=> g.id === f.id).reduce((a, g)=> (g.writable - a.writable || g.changed - a.changed) > 0 ? g : a);
+          r[rid] = best.path;
+        }
         await writeRoots(r); return out;
+      }
+      case 'fs_root_use_found': {
+        const r = await readRoots(), base = r.place || DEFAULT_PLACE;
+        if(!String(args.path).startsWith(base + '/') || String(args.path).slice(base.length + 1).includes('/')) throw new Error("not a folder in the libraries' place");
+        const d = await pathDir(args.path), m = d && await markerOf(d);
+        if(!m || m.id !== args.id) throw new Error("not that library's folder");
+        r['lib-' + args.id] = args.path; await writeRoots(r); return null;
       }
       case 'fs_root_choose_library': {
         const pick = window.__fakeShellPick; window.__fakeShellPicked = (window.__fakeShellPicked || 0) + 1;

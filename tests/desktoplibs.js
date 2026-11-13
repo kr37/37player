@@ -6,7 +6,9 @@
 //  - the webview's storage emptied (CCleaner): everything is still there,
 //    a library's own small values too (its folder's local.json);
 //  - the app's own data folder emptied too: the libraries are found again in
-//    their place by their "37 Player library.json";
+//    their place by their "37 Player library.json", and a note names them;
+//  - two folders holding copies of one library (2.2.041): the one that can
+//    be saved in is taken, not the first by name, and the person is asked;
 //  - a library whose folder can't be found is asked about (Find a library
 //    folder…), never made again empty;
 //  - Settings → Libraries → Find a library folder… adds one from anywhere.
@@ -98,11 +100,46 @@ const wipeWebview = (p)=> p.evaluate(async()=>{
   await p.reload({waitUntil: 'domcontentloaded'}); await sleep(2500);
   for(const x of ['^English$']){ await clickText(p, '.modal button', x); await sleep(300); }
   await waitLoaded(p);
-  const w2 = await p.evaluate(()=> ({tracks: window.__dbg.getRoot().library.length, list: window.__disk.readLibraryList().list.map(l=> [l.id, l.name]), toast: [...document.querySelectorAll('.toast')].map(t=> t.textContent).join(' | ')}));
+  const w2 = await p.evaluate(()=> ({tracks: window.__dbg.getRoot().library.length, list: window.__disk.readLibraryList().list.map(l=> [l.id, l.name])}));
   const r2 = await roots(p);
-  w2.toast = w2.toast + ' | ' + await waitToast(p, /Found/);
+  // Said in a note that stays, naming them (2.2.041: a toast was missed).
+  w2.toast = await waitModal(p, /Libraries found/);
+  await clickText(p, '.modal button', '^OK$'); await sleep(400);
   ok(w2.list.length === 2 && JSON.stringify(w2.list) === JSON.stringify([['main', 'Prayers'], ['teach1', 'Teachings']]) && w2.tracks === 1, 'the app\'s data folder emptied too: both libraries found again in their place, under their names (' + JSON.stringify(w2.list) + ', ' + w2.tracks + ' track)');
-  ok(r2['lib-main'] === 'Music/37 Player Libraries/Prayers' && /Found 2 libraries/.test(w2.toast), 'by their markers, and a notice says so (' + w2.toast + ')');
+  ok(r2['lib-main'] === 'Music/37 Player Libraries/Prayers' && /found 2 libraries/.test(w2.toast) && /Prayers/.test(w2.toast) && /Teachings/.test(w2.toast) && /same device/.test(w2.toast), 'by their markers, and a note names them (' + w2.toast.slice(0, 200) + ')');
+
+  // ---- A copy of a library beside it (the T470, 13 Nov 2026): an older,
+  // read-only copy whose name comes first isn't taken; the person is asked.
+  await p.evaluate(async()=>{
+    const top = await (await navigator.storage.getDirectory()).getDirectoryHandle('fake-shell');
+    const libs = await (await top.getDirectoryHandle('Music')).getDirectoryHandle('37 Player Libraries');
+    const src = await libs.getDirectoryHandle('Prayers');
+    const m = await (await src.getFileHandle('37 Player library.json')).getFile();
+    const d = await libs.getDirectoryHandle('Old Prayers', {create: true});
+    const w = await (await d.getFileHandle('37 Player library.json', {create: true})).createWritable(); await w.write(await m.text()); await w.close();
+  });
+  await wipeWebview(p);
+  await p.evaluate(async()=>{ localStorage.removeItem('__fakeDevice'); await (await (await navigator.storage.getDirectory()).getDirectoryHandle('fake-shell')).removeEntry('roots.json'); });
+  await p.evaluateOnNewDocument(()=>{ window.__fakeReadOnly = ['Music/37 Player Libraries/Old Prayers']; window.__fakeChanged = {'Music/37 Player Libraries/Old Prayers': 1762725739000, 'Music/37 Player Libraries/Prayers': 1762725739000 - 86400000}; });
+  await p.reload({waitUntil: 'domcontentloaded'}); await sleep(2500);
+  await clickText(p, '.modal button', '^English$'); await sleep(300);
+  const mc = await waitModal(p, /Copies of/);
+  const prim = await p.evaluate(()=> [...document.querySelectorAll('.modal button')].filter(b=> b.offsetParent).map(b=> b.textContent + (b.classList.contains('primary') ? '*' : '')));
+  ok(/Copies of “Prayers”/.test(mc) && /Old Prayers: last changed/.test(mc) && /read-only/.test(mc) && prim.includes('Use “Prayers”*') && prim.includes('Use “Old Prayers”'), 'two copies of one library: asked which, the read-only one marked, the one that can be saved in first (' + JSON.stringify(prim) + ')');
+  await clickText(p, '.modal button', '^Use “Prayers”$');
+  await waitLoaded(p);
+  await waitModal(p, /Libraries found/); await clickText(p, '.modal button', '^OK$'); await sleep(400);
+  const r2c = await roots(p), w2c = await p.evaluate(()=> ({tracks: window.__dbg.getRoot().library.length, list: window.__disk.readLibraryList().list.map(l=> l.name)}));
+  ok(r2c['lib-main'] === 'Music/37 Player Libraries/Prayers' && w2c.tracks === 1 && JSON.stringify(w2c.list) === JSON.stringify(['Prayers', 'Teachings']), 'the library opens from the copy in use, listed once (' + JSON.stringify([r2c['lib-main'], w2c]) + ')');
+  // Choosing the other copy: the library's folder is that one.
+  const used = await p.evaluate(async()=>{ await window.__TAURI_INTERNALS__.invoke('fs_root_use_found', {id: 'main', path: 'Music/37 Player Libraries/Old Prayers'}); return (await window.__TAURI_INTERNALS__.invoke('fs_roots'))['lib-main']; }).catch(e=> String(e));
+  const refused = await p.evaluate(async()=>{ try{ await window.__TAURI_INTERNALS__.invoke('fs_root_use_found', {id: 'teach1', path: 'Music/37 Player Libraries/Old Prayers'}); return 'used'; }catch(e){ return String(e); } });
+  ok(used === 'Music/37 Player Libraries/Old Prayers' && /not that library/.test(refused), 'a copy chosen becomes its folder; another library\'s folder is refused (' + [used, refused] + ')');
+  await p.evaluate(async()=>{
+    await window.__TAURI_INTERNALS__.invoke('fs_root_use_found', {id: 'main', path: 'Music/37 Player Libraries/Prayers'});
+    const libs = await (await (await (await navigator.storage.getDirectory()).getDirectoryHandle('fake-shell')).getDirectoryHandle('Music')).getDirectoryHandle('37 Player Libraries');
+    await libs.removeEntry('Old Prayers', {recursive: true});
+  });
 
   // ---- A folder that's gone (moved): asked about, found, never made again.
   await p.evaluate(async()=>{

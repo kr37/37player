@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.2.040">
+<meta name="app-version" content="2.2.041">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -3214,27 +3214,65 @@ async function desktopLibrariesAtStart(){
   try{ found = await desktopInvoke("fs_find_libraries") || []; }catch(err){ console.warn("Looking for library folders:", err); }
   desktopRootsCache = null;
   if(!found.length){ if(LIBRARY_LIST_WAS_EMPTY) await askDesktopPlace(); return false; }
+  let place = null; try{ place = await desktopInvoke("fs_place"); }catch(err){}
+  // Copies of one library (the same ID in two folders): the shell took one
+  // it can save in, the most recently changed; the person says which
+  // (2.2.041; Gen Rinzin's T470, 13 Nov 2026: a read-only copy, older, was
+  // taken because its folder's name came first).
+  const byId = new Map();
+  for(const f of found){ if(!byId.has(f.id)) byId.set(f.id, []); byId.get(f.id).push(f); }
+  for(const [id, copies] of byId){
+    if(copies.length > 1) await askWhichLibraryCopy(id, copies, (place && place.path) || "");
+  }
   // (The list readLibraryList makes when there's none holds an empty main
   // library: kept only if its folder was found.)
-  if(LIBRARY_LIST_WAS_EMPTY && !found.some(f=> f.id === MAIN_LIBRARY_ID)){ reg.list = reg.list.filter(l=> l.id !== MAIN_LIBRARY_ID); reg.mainDeleted = true; }
+  if(LIBRARY_LIST_WAS_EMPTY && !byId.has(MAIN_LIBRARY_ID)){ reg.list = reg.list.filter(l=> l.id !== MAIN_LIBRARY_ID); reg.mainDeleted = true; }
   let added = 0;
-  for(const f of found){
-    let e = reg.list.find(l=> l.id === f.id);
-    if(!e){ e = {id: f.id, name: f.name || ""}; reg.list.push(e); added++; }
-    if(!e.name && f.name) e.name = f.name;
+  for(const [id, copies] of byId){
+    const name = (copies.find(f=> f.name) || {}).name || "";
+    let e = reg.list.find(l=> l.id === id);
+    if(!e){ e = {id, name}; reg.list.push(e); added++; }
+    if(!e.name && name) e.name = name;
     e.desktopMade = true;
   }
   if(!reg.list.some(l=> l.id === reg.last)) reg.last = reg.list[0].id;
   writeLibraryList(reg);
   if(!LIBRARY_LIST_WAS_EMPTY) return added > 0;
-  let place = null; try{ place = await desktopInvoke("fs_place"); }catch(err){}
-  try{ sessionStorage.setItem("37player.desktopNote", t("desktopFoundToast", {count: found.length, path: (place && place.path) || ""})); }catch(err){}
+  // Said once the window is open, and kept until it's closed: a toast was
+  // missed under the first start's own messages (Gen Rinzin, 13 Nov 2026).
+  const names = [...byId.values()].map(c=> (c.find(f=> f.name) || {}).name || t("libRecoveredName"));
+  try{ sessionStorage.setItem("37player.desktopNote", JSON.stringify({names, path: (place && place.path) || ""})); }catch(err){}
   return true;
 }
-// After the start: what it found, said once.
-function showDesktopStartNote(){
+// Which of several folders holding one library is the library.
+async function askWhichLibraryCopy(id, copies, placePath){
+  let current = null;
+  try{ current = (await desktopRoots(true))[desktopRootOf(id)] || null; }catch(err){}
+  desktopRootsCache = null;
+  const folderOf = (f)=> String(f.path).split(/[\\/]/).filter(Boolean).pop() || f.path;
+  const name = (copies.find(f=> f.name) || {}).name || folderOf(copies[0]);
+  const lines = copies.map(f=>{
+    const date = f.changed ? new Date(f.changed).toLocaleString([], {dateStyle: "medium", timeStyle: "short"}) : "?";
+    return `<li>${escapeHtmlText(t("desktopCopyLine", {folder: folderOf(f), date}))}${f.writable === false ? ` <span style="color:var(--rust-bright);">(${escapeHtmlText(t("desktopCopyReadOnly"))})</span>` : ""}</li>`;
+  }).join("");
+  const buttons = copies.map(f=> ({label: t("desktopCopyUseBtn", {folder: folderOf(f)}), value: f.path, kind: f.path === current ? "primary" : "ghost"}));
+  const c = await askChoice(t("desktopCopiesTitle", {name}), `<p>${escapeHtmlText(t("desktopCopiesBody", {name, path: placePath}))}</p><ul>${lines}</ul>`, buttons);
+  // Closed without choosing: the shell's choice stands.
+  if(!c || c === current) return;
+  try{ await desktopInvoke("fs_root_use_found", {id, path: c}); }catch(err){ console.warn("Using that copy of the library:", err); }
+  desktopRootsCache = null;
+}
+// After the start: what it found, said once, after any other question.
+async function showDesktopStartNote(){
   let note = null; try{ note = sessionStorage.getItem("37player.desktopNote"); sessionStorage.removeItem("37player.desktopNote"); }catch(err){}
-  if(note) setTimeout(()=> showToast(note), 1200);
+  if(!note) return;
+  let n = null; try{ n = JSON.parse(note); }catch(err){ setTimeout(()=> showToast(note), 1200); return; }
+  if(!n || !Array.isArray(n.names) || !n.names.length) return;
+  await new Promise(r=> setTimeout(r, 1200));
+  while(backdrop.classList.contains("show")) await new Promise(r=> setTimeout(r, 700));
+  const body = n.names.length === 1 ? t("desktopFoundBodyOne", {path: n.path}) : t("desktopFoundBody", {count: n.names.length, path: n.path});
+  await askChoice(t("desktopFoundTitle"), `<p>${escapeHtmlText(body)}</p><ul>${n.names.map(x=> `<li>${escapeHtmlText(x)}</li>`).join("")}</ul><p class="settings-note">${escapeHtmlText(t("desktopFoundAfter"))}</p>`,
+    [{label: t("ok"), value: "ok", kind: "primary"}]);
 }
 // Find a library folder…: one anywhere, put on the list. The found entry,
 // or null.
@@ -4165,7 +4203,15 @@ const STRINGS = {
     "desktopPlaceUseBtn": "Use this place",
     "desktopPlaceChooseBtn": "Choose another place…",
     "desktopPlaceChooseTitle": "Where should 37 Player keep its libraries?",
-    "desktopFoundToast": "Found {count} libraries in {path}",
+    "desktopFoundTitle": "Libraries found",
+    "desktopFoundBody": "37 Player found {count} libraries in {path} and put them on its list:",
+    "desktopFoundBodyOne": "37 Player found a library in {path} and put it on its list:",
+    "desktopFoundAfter": "Open them from Settings → Library. A library kept somewhere else can be added there with Find a library folder…. A library joined to a shared library may ask, the first time it opens here, whether this is another device: if 37 Player also runs in a browser on this computer, it's the same device.",
+    "desktopCopiesTitle": "Copies of “{name}”",
+    "desktopCopiesBody": "These folders in {path} each hold the library “{name}”: copies of it, made with a file manager perhaps. 37 Player uses one of them and leaves the others as they are. Which one is the library? Once you're sure, the others can be moved somewhere else.",
+    "desktopCopyLine": "{folder}: last changed {date}",
+    "desktopCopyReadOnly": "read-only: 37 Player can't save in it",
+    "desktopCopyUseBtn": "Use “{folder}”",
     "desktopFolderMissingTitle": "Where is this library's folder?",
     "desktopFolderMissingBody": "37 Player can't find the folder of “{name}”. If it's on a drive that isn't plugged in, plug it in and try again; if the folder was moved, find it.",
     "desktopFindBtn": "Find a library folder…",
@@ -5408,6 +5454,7 @@ const STRINGS = {
     "notSavingTitle": "Changes here aren't being saved",
     "notSavingFullBody": "This device is out of storage space, so 37 Player can't save anything right now. Changes made here since {time} will be lost if 37 Player is closed, and nothing new can be stored (imports, files from a shared library). Playing what's already here still works. Free up some space (on an iPad: Settings → General → iPad Storage). 37 Player keeps trying, and saves everything as soon as there's room.",
     "notSavingOtherBody": "37 Player can't save on this device right now ({error}). Changes made here since {time} will be lost if 37 Player is closed. Playing what's already here still works. A full device is the usual cause: freeing up some space (on an iPad: Settings → General → iPad Storage) usually fixes it. 37 Player keeps trying, and saves everything as soon as it can.",
+    "notSavingDeniedBody": "37 Player isn't allowed to save in this library's folder ({error}). Changes made here since {time} will be lost if 37 Player is closed. Playing what's already here still works. The folder, or folders inside it, may be read-only, as happens with a copy from a backup drive or a download: give yourself permission to change them, or use another copy of the library (Settings → Library → Find a library folder…). 37 Player keeps trying, and saves everything as soon as it can.",
     "notSavingTryNow": "Try again now",
     "notSavingStill": "Still not saving.",
     "notLoadedTitle": "Your library didn't load",
@@ -6125,7 +6172,15 @@ const STRINGS = {
     "desktopPlaceUseBtn": "Usar este lugar",
     "desktopPlaceChooseBtn": "Elegir otro lugar…",
     "desktopPlaceChooseTitle": "¿Dónde debe guardar 37 Player sus bibliotecas?",
-    "desktopFoundToast": "Se encontraron {count} bibliotecas en {path}",
+    "desktopFoundTitle": "Bibliotecas encontradas",
+    "desktopFoundBody": "37 Player encontró {count} bibliotecas en {path} y las añadió a su lista:",
+    "desktopFoundBodyOne": "37 Player encontró una biblioteca en {path} y la añadió a su lista:",
+    "desktopFoundAfter": "Ábralas desde Ajustes → Biblioteca. Una biblioteca guardada en otro lugar se puede añadir allí con Buscar la carpeta de una biblioteca…. Una biblioteca unida a una biblioteca compartida puede preguntar, la primera vez que se abre aquí, si este es otro dispositivo: si 37 Player también funciona en un navegador de este ordenador, es el mismo dispositivo.",
+    "desktopCopiesTitle": "Copias de «{name}»",
+    "desktopCopiesBody": "Cada una de estas carpetas de {path} contiene la biblioteca «{name}»: son copias, hechas quizá con un gestor de archivos. 37 Player usa una y deja las demás como están. ¿Cuál es la biblioteca? Cuando esté seguro, puede mover las demás a otro lugar.",
+    "desktopCopyLine": "{folder}: último cambio {date}",
+    "desktopCopyReadOnly": "solo lectura: 37 Player no puede guardar en ella",
+    "desktopCopyUseBtn": "Usar «{folder}»",
     "desktopFolderMissingTitle": "¿Dónde está la carpeta de esta biblioteca?",
     "desktopFolderMissingBody": "37 Player no encuentra la carpeta de «{name}». Si está en un disco que no está conectado, conéctalo y vuelve a intentarlo; si la carpeta se movió, búscala.",
     "desktopFindBtn": "Buscar la carpeta de una biblioteca…",
@@ -7359,6 +7414,7 @@ const STRINGS = {
     "notSavingTitle": "Los cambios de aquí no se están guardando",
     "notSavingFullBody": "Este dispositivo se ha quedado sin espacio de almacenamiento, así que 37 Player no puede guardar nada ahora mismo. Los cambios hechos aquí desde las {time} se perderán si se cierra 37 Player, y no se puede guardar nada nuevo (importaciones, archivos de una biblioteca compartida). Reproducir lo que ya está aquí sigue funcionando. Libera algo de espacio (en un iPad: Ajustes → General → Almacenamiento del iPad). 37 Player sigue intentándolo y lo guarda todo en cuanto haya sitio.",
     "notSavingOtherBody": "37 Player no puede guardar en este dispositivo ahora mismo ({error}). Los cambios hechos aquí desde las {time} se perderán si se cierra 37 Player. Reproducir lo que ya está aquí sigue funcionando. La causa habitual es un dispositivo lleno: liberar algo de espacio (en un iPad: Ajustes → General → Almacenamiento del iPad) suele solucionarlo. 37 Player sigue intentándolo y lo guarda todo en cuanto pueda.",
+    "notSavingDeniedBody": "37 Player no tiene permiso para guardar en la carpeta de esta biblioteca ({error}). Los cambios hechos aquí desde las {time} se perderán si se cierra 37 Player. Reproducir lo que ya está aquí sigue funcionando. La carpeta, o carpetas dentro de ella, pueden ser de solo lectura, como ocurre con una copia desde un disco de copias de seguridad o una descarga: dese permiso para modificarlas, o use otra copia de la biblioteca (Ajustes → Biblioteca → Buscar la carpeta de una biblioteca…). 37 Player sigue intentándolo y lo guarda todo en cuanto puede.",
     "notSavingTryNow": "Intentar de nuevo",
     "notSavingStill": "Sigue sin guardarse.",
     "notLoadedTitle": "Tu biblioteca no se cargó",
@@ -8075,7 +8131,15 @@ const STRINGS = {
     "desktopPlaceUseBtn": "Utiliser cet endroit",
     "desktopPlaceChooseBtn": "Choisir un autre endroit…",
     "desktopPlaceChooseTitle": "Où 37 Player doit-il garder ses bibliothèques ?",
-    "desktopFoundToast": "{count} bibliothèques trouvées dans {path}",
+    "desktopFoundTitle": "Bibliothèques trouvées",
+    "desktopFoundBody": "37 Player a trouvé {count} bibliothèques dans {path} et les a ajoutées à sa liste :",
+    "desktopFoundBodyOne": "37 Player a trouvé une bibliothèque dans {path} et l'a ajoutée à sa liste :",
+    "desktopFoundAfter": "Ouvrez-les depuis Réglages → Bibliothèque. Une bibliothèque rangée ailleurs peut y être ajoutée avec Retrouver le dossier d'une bibliothèque…. Une bibliothèque reliée à une bibliothèque partagée peut demander, la première fois qu'elle s'ouvre ici, s'il s'agit d'un autre appareil : si 37 Player fonctionne aussi dans un navigateur sur cet ordinateur, c'est le même appareil.",
+    "desktopCopiesTitle": "Copies de « {name} »",
+    "desktopCopiesBody": "Chacun de ces dossiers dans {path} contient la bibliothèque « {name} » : ce sont des copies, faites peut-être avec un gestionnaire de fichiers. 37 Player en utilise un et laisse les autres tels quels. Lequel est la bibliothèque ? Une fois sûr, vous pourrez déplacer les autres ailleurs.",
+    "desktopCopyLine": "{folder} : modifié le {date}",
+    "desktopCopyReadOnly": "lecture seule : 37 Player ne peut pas y enregistrer",
+    "desktopCopyUseBtn": "Utiliser « {folder} »",
     "desktopFolderMissingTitle": "Où est le dossier de cette bibliothèque ?",
     "desktopFolderMissingBody": "37 Player ne trouve pas le dossier de « {name} ». S'il est sur un disque non branché, branchez-le et réessayez ; si le dossier a été déplacé, retrouvez-le.",
     "desktopFindBtn": "Retrouver le dossier d'une bibliothèque…",
@@ -9309,6 +9373,7 @@ const STRINGS = {
     "notSavingTitle": "Les modifications faites ici ne sont pas enregistrées",
     "notSavingFullBody": "Cet appareil n'a plus d'espace de stockage, donc 37 Player ne peut rien enregistrer pour l'instant. Les modifications faites ici depuis {time} seront perdues si 37 Player est fermé, et rien de nouveau ne peut être stocké (importations, fichiers d'une bibliothèque partagée). La lecture de ce qui est déjà ici fonctionne toujours. Libérez un peu d'espace (sur un iPad : Réglages → Général → Stockage iPad). 37 Player continue d'essayer et enregistre tout dès qu'il y a de la place.",
     "notSavingOtherBody": "37 Player ne peut pas enregistrer sur cet appareil pour l'instant ({error}). Les modifications faites ici depuis {time} seront perdues si 37 Player est fermé. La lecture de ce qui est déjà ici fonctionne toujours. La cause habituelle est un appareil plein : libérer un peu d'espace (sur un iPad : Réglages → Général → Stockage iPad) règle généralement le problème. 37 Player continue d'essayer et enregistre tout dès que possible.",
+    "notSavingDeniedBody": "37 Player n'a pas le droit d'enregistrer dans le dossier de cette bibliothèque ({error}). Les modifications faites ici depuis {time} seront perdues si 37 Player est fermé. La lecture de ce qui est déjà ici fonctionne toujours. Le dossier, ou des dossiers qu'il contient, sont peut-être en lecture seule, comme une copie venue d'un disque de sauvegarde ou d'un téléchargement : donnez-vous le droit de les modifier, ou utilisez une autre copie de la bibliothèque (Réglages → Bibliothèque → Retrouver le dossier d'une bibliothèque…). 37 Player continue d'essayer et enregistre tout dès qu'il le peut.",
     "notSavingTryNow": "Réessayer maintenant",
     "notSavingStill": "Toujours pas enregistré.",
     "notLoadedTitle": "Votre bibliothèque ne s'est pas chargée",
@@ -10025,7 +10090,15 @@ const STRINGS = {
     "desktopPlaceUseBtn": "Usar este lugar",
     "desktopPlaceChooseBtn": "Escolher outro lugar…",
     "desktopPlaceChooseTitle": "Onde deve o 37 Player guardar as suas bibliotecas?",
-    "desktopFoundToast": "Encontradas {count} bibliotecas em {path}",
+    "desktopFoundTitle": "Bibliotecas encontradas",
+    "desktopFoundBody": "O 37 Player encontrou {count} bibliotecas em {path} e acrescentou-as à sua lista:",
+    "desktopFoundBodyOne": "O 37 Player encontrou uma biblioteca em {path} e acrescentou-a à sua lista:",
+    "desktopFoundAfter": "Abra-as em Configurações → Biblioteca. Uma biblioteca guardada noutro lugar pode ser acrescentada aí com Procurar a pasta de uma biblioteca…. Uma biblioteca ligada a uma biblioteca partilhada pode perguntar, na primeira vez que abre aqui, se este é outro dispositivo: se o 37 Player também funciona num navegador neste computador, é o mesmo dispositivo.",
+    "desktopCopiesTitle": "Cópias de «{name}»",
+    "desktopCopiesBody": "Cada uma destas pastas em {path} contém a biblioteca «{name}»: são cópias, feitas talvez com um gestor de ficheiros. O 37 Player usa uma e deixa as outras como estão. Qual é a biblioteca? Quando tiver a certeza, as outras podem ser movidas para outro lugar.",
+    "desktopCopyLine": "{folder}: última alteração {date}",
+    "desktopCopyReadOnly": "só de leitura: o 37 Player não consegue guardar nela",
+    "desktopCopyUseBtn": "Usar «{folder}»",
     "desktopFolderMissingTitle": "Onde está a pasta desta biblioteca?",
     "desktopFolderMissingBody": "O 37 Player não encontra a pasta de «{name}». Se estiver num disco que não está ligado, ligue-o e tente de novo; se a pasta foi movida, procure-a.",
     "desktopFindBtn": "Procurar a pasta de uma biblioteca…",
@@ -11259,6 +11332,7 @@ const STRINGS = {
     "notSavingTitle": "As alterações feitas aqui não estão sendo salvas",
     "notSavingFullBody": "Este dispositivo ficou sem espaço de armazenamento, então o 37 Player não consegue salvar nada agora. As alterações feitas aqui desde {time} serão perdidas se o 37 Player for fechado, e nada novo pode ser guardado (importações, arquivos de uma biblioteca compartilhada). Tocar o que já está aqui continua funcionando. Libere algum espaço (no iPad: Ajustes → Geral → Armazenamento do iPad). O 37 Player continua tentando e salva tudo assim que houver espaço.",
     "notSavingOtherBody": "O 37 Player não consegue salvar neste dispositivo agora ({error}). As alterações feitas aqui desde {time} serão perdidas se o 37 Player for fechado. Tocar o que já está aqui continua funcionando. A causa mais comum é o dispositivo cheio: liberar algum espaço (no iPad: Ajustes → Geral → Armazenamento do iPad) costuma resolver. O 37 Player continua tentando e salva tudo assim que puder.",
+    "notSavingDeniedBody": "O 37 Player não tem permissão para guardar na pasta desta biblioteca ({error}). As alterações feitas aqui desde as {time} perdem-se se o 37 Player for fechado. Reproduzir o que já está aqui continua a funcionar. A pasta, ou pastas dentro dela, podem ser só de leitura, como acontece com uma cópia de um disco de cópias de segurança ou de uma transferência: dê a si mesmo permissão para as alterar, ou use outra cópia da biblioteca (Configurações → Biblioteca → Procurar a pasta de uma biblioteca…). O 37 Player continua a tentar e guarda tudo assim que puder.",
     "notSavingTryNow": "Tentar de novo agora",
     "notSavingStill": "Ainda não está salvando.",
     "notLoadedTitle": "Sua biblioteca não carregou",
@@ -11975,7 +12049,15 @@ const STRINGS = {
     "desktopPlaceUseBtn": "Diesen Ort verwenden",
     "desktopPlaceChooseBtn": "Anderen Ort wählen…",
     "desktopPlaceChooseTitle": "Wo soll 37 Player seine Bibliotheken aufbewahren?",
-    "desktopFoundToast": "{count} Bibliotheken in {path} gefunden",
+    "desktopFoundTitle": "Bibliotheken gefunden",
+    "desktopFoundBody": "37 Player hat {count} Bibliotheken in {path} gefunden und in seine Liste aufgenommen:",
+    "desktopFoundBodyOne": "37 Player hat eine Bibliothek in {path} gefunden und in seine Liste aufgenommen:",
+    "desktopFoundAfter": "Öffnen Sie sie unter Einstellungen → Bibliothek. Eine Bibliothek an einem anderen Ort lässt sich dort mit „Ordner einer Bibliothek suchen…“ hinzufügen. Eine Bibliothek, die einer gemeinsamen Bibliothek beigetreten ist, fragt beim ersten Öffnen hier vielleicht, ob dies ein anderes Gerät ist: Läuft 37 Player auf diesem Computer auch in einem Browser, ist es dasselbe Gerät.",
+    "desktopCopiesTitle": "Kopien von „{name}“",
+    "desktopCopiesBody": "Jeder dieser Ordner in {path} enthält die Bibliothek „{name}“: Kopien davon, vielleicht mit einem Dateimanager gemacht. 37 Player verwendet einen davon und lässt die anderen, wie sie sind. Welcher ist die Bibliothek? Wenn Sie sicher sind, können die anderen woandershin verschoben werden.",
+    "desktopCopyLine": "{folder}: zuletzt geändert {date}",
+    "desktopCopyReadOnly": "schreibgeschützt: 37 Player kann darin nicht speichern",
+    "desktopCopyUseBtn": "„{folder}“ verwenden",
     "desktopFolderMissingTitle": "Wo ist der Ordner dieser Bibliothek?",
     "desktopFolderMissingBody": "37 Player findet den Ordner von „{name}“ nicht. Liegt er auf einem Laufwerk, das nicht angeschlossen ist, schließen Sie es an und versuchen Sie es erneut; wurde der Ordner verschoben, suchen Sie ihn.",
     "desktopFindBtn": "Ordner einer Bibliothek suchen…",
@@ -13209,6 +13291,7 @@ const STRINGS = {
     "notSavingTitle": "Änderungen hier werden nicht gespeichert",
     "notSavingFullBody": "Auf diesem Gerät ist kein Speicherplatz mehr frei, daher kann 37 Player gerade nichts speichern. Änderungen, die hier seit {time} gemacht wurden, gehen verloren, wenn 37 Player geschlossen wird, und nichts Neues kann abgelegt werden (Importe, Dateien aus einer gemeinsamen Bibliothek). Abspielen, was schon hier ist, funktioniert weiterhin. Gib etwas Speicherplatz frei (auf einem iPad: Einstellungen → Allgemein → iPad-Speicher). 37 Player versucht es weiter und speichert alles, sobald Platz ist.",
     "notSavingOtherBody": "37 Player kann auf diesem Gerät gerade nicht speichern ({error}). Änderungen, die hier seit {time} gemacht wurden, gehen verloren, wenn 37 Player geschlossen wird. Abspielen, was schon hier ist, funktioniert weiterhin. Meist ist das Gerät voll: etwas Speicherplatz freigeben (auf einem iPad: Einstellungen → Allgemein → iPad-Speicher) behebt es in der Regel. 37 Player versucht es weiter und speichert alles, sobald es geht.",
+    "notSavingDeniedBody": "37 Player darf im Ordner dieser Bibliothek nicht speichern ({error}). Änderungen, die hier seit {time} gemacht wurden, gehen verloren, wenn 37 Player geschlossen wird. Was schon hier ist, lässt sich weiter abspielen. Der Ordner oder Ordner darin sind vielleicht schreibgeschützt, wie bei einer Kopie von einem Sicherungslaufwerk oder aus einem Download: Geben Sie sich die Berechtigung, sie zu ändern, oder verwenden Sie eine andere Kopie der Bibliothek (Einstellungen → Bibliothek → Ordner einer Bibliothek suchen…). 37 Player versucht es weiter und speichert alles, sobald es geht.",
     "notSavingTryNow": "Jetzt erneut versuchen",
     "notSavingStill": "Speichert immer noch nicht.",
     "notLoadedTitle": "Deine Bibliothek wurde nicht geladen",
@@ -13925,7 +14008,15 @@ const STRINGS = {
     "desktopPlaceUseBtn": "使用这个位置",
     "desktopPlaceChooseBtn": "选择其他位置…",
     "desktopPlaceChooseTitle": "37 Player 应把曲库放在哪里？",
-    "desktopFoundToast": "在 {path} 找到 {count} 个曲库",
+    "desktopFoundTitle": "找到的曲库",
+    "desktopFoundBody": "37 Player 在 {path} 找到 {count} 个曲库，并已加入列表：",
+    "desktopFoundBodyOne": "37 Player 在 {path} 找到一个曲库，并已加入列表：",
+    "desktopFoundAfter": "可在“设置 → 曲库”中打开它们。存放在别处的曲库，可在那里用“查找曲库文件夹…”加入。加入了共享曲库的曲库，第一次在这里打开时可能会问这是不是另一台设备：如果这台电脑的浏览器里也在使用 37 Player，那就是同一台设备。",
+    "desktopCopiesTitle": "“{name}”的副本",
+    "desktopCopiesBody": "{path} 中的这些文件夹都存有曲库“{name}”：它们是副本，可能是用文件管理器复制的。37 Player 只使用其中一个，其他的保持不动。哪一个才是这个曲库？确定之后，可以把其他的移到别处。",
+    "desktopCopyLine": "{folder}：最后更改于 {date}",
+    "desktopCopyReadOnly": "只读：37 Player 无法在其中保存",
+    "desktopCopyUseBtn": "使用“{folder}”",
     "desktopFolderMissingTitle": "这个曲库的文件夹在哪里？",
     "desktopFolderMissingBody": "37 Player 找不到“{name}”的文件夹。如果它在未连接的磁盘上，请连接后再试；如果文件夹被移动了，请找到它。",
     "desktopFindBtn": "查找曲库文件夹…",
@@ -15159,6 +15250,7 @@ const STRINGS = {
     "notSavingTitle": "这里的更改没有被保存",
     "notSavingFullBody": "此设备的存储空间已用完，所以 37 Player 现在无法保存任何内容。自 {time} 起在这里所做的更改，如果关闭 37 Player 就会丢失，而且无法存入任何新内容（导入、来自共享曲库的文件）。播放已有的内容仍然正常。请释放一些空间（iPad 上：设置 → 通用 → iPad 储存空间）。37 Player 会继续尝试，一有空间就保存全部内容。",
     "notSavingOtherBody": "37 Player 现在无法在此设备上保存（{error}）。自 {time} 起在这里所做的更改，如果关闭 37 Player 就会丢失。播放已有的内容仍然正常。常见原因是设备已满：释放一些空间（iPad 上：设置 → 通用 → iPad 储存空间）通常就能解决。37 Player 会继续尝试，一旦可以就保存全部内容。",
+    "notSavingDeniedBody": "37 Player 没有权限在这个曲库的文件夹中保存（{error}）。自 {time} 起在这里所做的更改，关闭 37 Player 后会丢失。已有的内容仍然可以播放。这个文件夹或其中的文件夹可能是只读的（例如从备份硬盘或下载中复制来的）：请给自己修改它们的权限，或使用这个曲库的另一个副本（设置 → 曲库 → 查找曲库文件夹…）。37 Player 会继续尝试，一旦可以就保存所有内容。",
     "notSavingTryNow": "立即重试",
     "notSavingStill": "仍然无法保存。",
     "notLoadedTitle": "你的曲库没有加载",
@@ -15875,7 +15967,15 @@ const STRINGS = {
     "desktopPlaceUseBtn": "Dùng nơi này",
     "desktopPlaceChooseBtn": "Chọn nơi khác…",
     "desktopPlaceChooseTitle": "37 Player nên giữ các thư viện ở đâu?",
-    "desktopFoundToast": "Đã tìm thấy {count} thư viện trong {path}",
+    "desktopFoundTitle": "Đã tìm thấy thư viện",
+    "desktopFoundBody": "37 Player đã tìm thấy {count} thư viện trong {path} và thêm chúng vào danh sách:",
+    "desktopFoundBodyOne": "37 Player đã tìm thấy một thư viện trong {path} và thêm nó vào danh sách:",
+    "desktopFoundAfter": "Mở chúng trong Cài đặt → Thư viện. Thư viện để ở nơi khác có thể được thêm ở đó bằng Tìm thư mục của một thư viện…. Thư viện đã tham gia một thư viện chung có thể hỏi, lần đầu mở ở đây, đây có phải là thiết bị khác không: nếu 37 Player cũng chạy trong trình duyệt trên máy tính này thì đó là cùng một thiết bị.",
+    "desktopCopiesTitle": "Các bản sao của “{name}”",
+    "desktopCopiesBody": "Mỗi thư mục này trong {path} đều chứa thư viện “{name}”: đó là các bản sao, có thể được tạo bằng trình quản lý tệp. 37 Player dùng một trong số đó và để nguyên các thư mục còn lại. Thư mục nào là thư viện? Khi đã chắc chắn, có thể chuyển các thư mục kia đi nơi khác.",
+    "desktopCopyLine": "{folder}: thay đổi lần cuối {date}",
+    "desktopCopyReadOnly": "chỉ đọc: 37 Player không lưu vào được",
+    "desktopCopyUseBtn": "Dùng “{folder}”",
     "desktopFolderMissingTitle": "Thư mục của thư viện này ở đâu?",
     "desktopFolderMissingBody": "37 Player không tìm thấy thư mục của “{name}”. Nếu nó nằm trên ổ chưa cắm, hãy cắm vào rồi thử lại; nếu thư mục đã bị chuyển đi, hãy tìm nó.",
     "desktopFindBtn": "Tìm thư mục của một thư viện…",
@@ -17109,6 +17209,7 @@ const STRINGS = {
     "notSavingTitle": "Các thay đổi ở đây không được lưu",
     "notSavingFullBody": "Thiết bị này đã hết dung lượng lưu trữ, nên 37 Player hiện không thể lưu gì. Các thay đổi làm ở đây từ {time} sẽ mất nếu đóng 37 Player, và không thể lưu thêm gì mới (nhập tệp, tệp từ thư viện dùng chung). Phát những gì đã có ở đây vẫn hoạt động. Hãy giải phóng bớt dung lượng (trên iPad: Cài đặt → Cài đặt chung → Dung lượng iPad). 37 Player sẽ tiếp tục thử và lưu tất cả ngay khi có chỗ.",
     "notSavingOtherBody": "37 Player hiện không thể lưu trên thiết bị này ({error}). Các thay đổi làm ở đây từ {time} sẽ mất nếu đóng 37 Player. Phát những gì đã có ở đây vẫn hoạt động. Nguyên nhân thường gặp là thiết bị đầy: giải phóng bớt dung lượng (trên iPad: Cài đặt → Cài đặt chung → Dung lượng iPad) thường sẽ khắc phục. 37 Player sẽ tiếp tục thử và lưu tất cả ngay khi có thể.",
+    "notSavingDeniedBody": "37 Player không được phép lưu vào thư mục của thư viện này ({error}). Những thay đổi ở đây từ {time} sẽ mất nếu đóng 37 Player. Vẫn phát được những gì đã có ở đây. Thư mục, hoặc các thư mục bên trong, có thể ở chế độ chỉ đọc, như bản sao từ ổ sao lưu hay từ tệp tải về: hãy cấp cho mình quyền thay đổi chúng, hoặc dùng một bản sao khác của thư viện (Cài đặt → Thư viện → Tìm thư mục của một thư viện…). 37 Player tiếp tục thử và lưu mọi thứ ngay khi có thể.",
     "notSavingTryNow": "Thử lại ngay",
     "notSavingStill": "Vẫn chưa lưu được.",
     "notLoadedTitle": "Thư viện của bạn chưa tải được",
@@ -17825,7 +17926,15 @@ const STRINGS = {
     "desktopPlaceUseBtn": "Χρήση αυτής της θέσης",
     "desktopPlaceChooseBtn": "Επιλογή άλλης θέσης…",
     "desktopPlaceChooseTitle": "Πού να κρατά το 37 Player τις βιβλιοθήκες του;",
-    "desktopFoundToast": "Βρέθηκαν {count} βιβλιοθήκες στο {path}",
+    "desktopFoundTitle": "Βρέθηκαν βιβλιοθήκες",
+    "desktopFoundBody": "Το 37 Player βρήκε {count} βιβλιοθήκες στο {path} και τις πρόσθεσε στη λίστα του:",
+    "desktopFoundBodyOne": "Το 37 Player βρήκε μια βιβλιοθήκη στο {path} και την πρόσθεσε στη λίστα του:",
+    "desktopFoundAfter": "Ανοίξτε τις από Ρυθμίσεις → Βιβλιοθήκη. Μια βιβλιοθήκη που βρίσκεται αλλού μπορεί να προστεθεί εκεί με την Εύρεση φακέλου βιβλιοθήκης…. Μια βιβλιοθήκη που έχει ενταχθεί σε κοινόχρηστη βιβλιοθήκη ίσως ρωτήσει, την πρώτη φορά που ανοίγει εδώ, αν πρόκειται για άλλη συσκευή: αν το 37 Player τρέχει και σε πρόγραμμα περιήγησης σε αυτόν τον υπολογιστή, είναι η ίδια συσκευή.",
+    "desktopCopiesTitle": "Αντίγραφα της «{name}»",
+    "desktopCopiesBody": "Καθένας από αυτούς τους φακέλους στο {path} περιέχει τη βιβλιοθήκη «{name}»: είναι αντίγραφά της, ίσως φτιαγμένα με διαχειριστή αρχείων. Το 37 Player χρησιμοποιεί έναν και αφήνει τους άλλους όπως είναι. Ποιος είναι η βιβλιοθήκη; Όταν είστε σίγουροι, οι άλλοι μπορούν να μετακινηθούν κάπου αλλού.",
+    "desktopCopyLine": "{folder}: τελευταία αλλαγή {date}",
+    "desktopCopyReadOnly": "μόνο για ανάγνωση: το 37 Player δεν μπορεί να αποθηκεύσει εκεί",
+    "desktopCopyUseBtn": "Χρήση του «{folder}»",
     "desktopFolderMissingTitle": "Πού είναι ο φάκελος αυτής της βιβλιοθήκης;",
     "desktopFolderMissingBody": "Το 37 Player δεν βρίσκει τον φάκελο της «{name}». Αν είναι σε δίσκο που δεν είναι συνδεδεμένος, συνδέστε τον και δοκιμάστε ξανά· αν ο φάκελος μετακινήθηκε, βρείτε τον.",
     "desktopFindBtn": "Εύρεση φακέλου βιβλιοθήκης…",
@@ -19059,6 +19168,7 @@ const STRINGS = {
     "notSavingTitle": "Οι αλλαγές εδώ δεν αποθηκεύονται",
     "notSavingFullBody": "Αυτή η συσκευή δεν έχει άλλο αποθηκευτικό χώρο, οπότε το 37 Player δεν μπορεί να αποθηκεύσει τίποτα αυτή τη στιγμή. Οι αλλαγές που έγιναν εδώ από τις {time} θα χαθούν αν κλείσει το 37 Player, και τίποτα νέο δεν μπορεί να αποθηκευτεί (εισαγωγές, αρχεία από κοινόχρηστη βιβλιοθήκη). Η αναπαραγωγή όσων υπάρχουν ήδη εδώ λειτουργεί κανονικά. Ελευθερώστε λίγο χώρο (σε iPad: Ρυθμίσεις → Γενικά → Αποθηκευτικός χώρος iPad). Το 37 Player συνεχίζει να προσπαθεί και αποθηκεύει τα πάντα μόλις υπάρξει χώρος.",
     "notSavingOtherBody": "Το 37 Player δεν μπορεί να αποθηκεύσει σε αυτή τη συσκευή αυτή τη στιγμή ({error}). Οι αλλαγές που έγιναν εδώ από τις {time} θα χαθούν αν κλείσει το 37 Player. Η αναπαραγωγή όσων υπάρχουν ήδη εδώ λειτουργεί κανονικά. Η συνηθισμένη αιτία είναι μια γεμάτη συσκευή: αν ελευθερώσετε λίγο χώρο (σε iPad: Ρυθμίσεις → Γενικά → Αποθηκευτικός χώρος iPad) συνήθως διορθώνεται. Το 37 Player συνεχίζει να προσπαθεί και αποθηκεύει τα πάντα μόλις μπορέσει.",
+    "notSavingDeniedBody": "Το 37 Player δεν έχει άδεια να αποθηκεύσει στον φάκελο αυτής της βιβλιοθήκης ({error}). Οι αλλαγές που έγιναν εδώ από τις {time} θα χαθούν αν κλείσει το 37 Player. Η αναπαραγωγή όσων υπάρχουν ήδη εδώ λειτουργεί κανονικά. Ο φάκελος, ή φάκελοι μέσα του, ίσως είναι μόνο για ανάγνωση, όπως ένα αντίγραφο από δίσκο αντιγράφων ασφαλείας ή από λήψη: δώστε στον εαυτό σας άδεια να τους αλλάξετε, ή χρησιμοποιήστε άλλο αντίγραφο της βιβλιοθήκης (Ρυθμίσεις → Βιβλιοθήκη → Εύρεση φακέλου βιβλιοθήκης…). Το 37 Player συνεχίζει να προσπαθεί και αποθηκεύει τα πάντα μόλις μπορέσει.",
     "notSavingTryNow": "Δοκιμή ξανά τώρα",
     "notSavingStill": "Ακόμα δεν αποθηκεύεται.",
     "notLoadedTitle": "Η βιβλιοθήκη σας δεν φορτώθηκε",
@@ -19775,7 +19885,15 @@ const STRINGS = {
     "desktopPlaceUseBtn": "Usa questo posto",
     "desktopPlaceChooseBtn": "Scegli un altro posto…",
     "desktopPlaceChooseTitle": "Dove deve tenere le sue librerie 37 Player?",
-    "desktopFoundToast": "Trovate {count} librerie in {path}",
+    "desktopFoundTitle": "Librerie trovate",
+    "desktopFoundBody": "37 Player ha trovato {count} librerie in {path} e le ha aggiunte al suo elenco:",
+    "desktopFoundBodyOne": "37 Player ha trovato una libreria in {path} e l'ha aggiunta al suo elenco:",
+    "desktopFoundAfter": "Aprile da Impostazioni → Libreria. Una libreria tenuta altrove si può aggiungere lì con Trova la cartella di una libreria…. Una libreria unita a una libreria condivisa può chiedere, la prima volta che si apre qui, se questo è un altro dispositivo: se 37 Player funziona anche in un browser su questo computer, è lo stesso dispositivo.",
+    "desktopCopiesTitle": "Copie di «{name}»",
+    "desktopCopiesBody": "Ognuna di queste cartelle in {path} contiene la libreria «{name}»: sono copie, fatte forse con un gestore di file. 37 Player ne usa una e lascia le altre come sono. Quale è la libreria? Quando ne sei sicuro, le altre si possono spostare altrove.",
+    "desktopCopyLine": "{folder}: ultima modifica {date}",
+    "desktopCopyReadOnly": "sola lettura: 37 Player non può salvarci",
+    "desktopCopyUseBtn": "Usa «{folder}»",
     "desktopFolderMissingTitle": "Dov'è la cartella di questa libreria?",
     "desktopFolderMissingBody": "37 Player non trova la cartella di «{name}». Se è su un disco non collegato, collegalo e riprova; se la cartella è stata spostata, trovala.",
     "desktopFindBtn": "Trova la cartella di una libreria…",
@@ -21009,6 +21127,7 @@ const STRINGS = {
     "notSavingTitle": "Le modifiche fatte qui non vengono salvate",
     "notSavingFullBody": "Questo dispositivo ha esaurito lo spazio di archiviazione, quindi 37 Player non può salvare niente al momento. Le modifiche fatte qui dalle {time} andranno perse se 37 Player viene chiuso, e non si può memorizzare nulla di nuovo (importazioni, file da una libreria condivisa). La riproduzione di ciò che è già qui funziona ancora. Libera un po' di spazio (su un iPad: Impostazioni → Generali → Spazio iPad). 37 Player continua a provare e salva tutto appena c'è posto.",
     "notSavingOtherBody": "37 Player non riesce a salvare su questo dispositivo al momento ({error}). Le modifiche fatte qui dalle {time} andranno perse se 37 Player viene chiuso. La riproduzione di ciò che è già qui funziona ancora. La causa più comune è un dispositivo pieno: liberare un po' di spazio (su un iPad: Impostazioni → Generali → Spazio iPad) di solito risolve. 37 Player continua a provare e salva tutto appena può.",
+    "notSavingDeniedBody": "37 Player non ha il permesso di salvare nella cartella di questa libreria ({error}). Le modifiche fatte qui dalle {time} andranno perse se 37 Player viene chiuso. La riproduzione di ciò che è già qui continua a funzionare. La cartella, o cartelle al suo interno, potrebbero essere di sola lettura, come una copia da un disco di backup o da un download: datti il permesso di modificarle, oppure usa un'altra copia della libreria (Impostazioni → Libreria → Trova la cartella di una libreria…). 37 Player continua a provare e salva tutto appena può.",
     "notSavingTryNow": "Riprova ora",
     "notSavingStill": "Ancora non salva.",
     "notLoadedTitle": "La tua libreria non è stata caricata",
@@ -22010,13 +22129,29 @@ let saveRetryTimer = null, saveFailExplained = false;
 const SAVE_RETRY_MS = 30000;
 function noteSaveFailed(err){
   const first = !saveFailing;
-  saveFailing = {since: first ? Date.now() : saveFailing.since, full: isQuotaError(err), text: errText(err)};
+  saveFailing = {since: first ? Date.now() : saveFailing.since, full: isQuotaError(err), denied: isDeniedError(err), text: errText(err)};
   if(first){ try{ sharedLog("saving on this device failed: " + saveFailing.text); }catch(e){} }
   updateNotSavingIndicator();
   clearTimeout(saveRetryTimer);
   saveRetryTimer = setTimeout(()=> saveState(), SAVE_RETRY_MS);
   let playing = true; try{ playing = anyWindowPlaying(); }catch(e){}
   if(first && !saveFailExplained && !playing && !backdrop.classList.contains("show")){ saveFailExplained = true; openNotSavingDialog(); }
+}
+// Not allowed to write (2.2.041): a read-only folder (EACCES, EROFS, from the
+// desktop app's shell), or a folder the browser no longer may change. Not a
+// full device, which the message had said (Gen Rinzin's T470, 13 Nov 2026).
+function isDeniedError(err){
+  if(err && (err.name === "NotAllowedError" || err.name === "NoModificationAllowedError")) return true;
+  return /permission denied|os error 13\b|os error 30\b|read-only file system|access is denied|os error 5\b|operation not permitted/i.test(errText(err));
+}
+// This library's folder as the person knows it: its path in the desktop app,
+// its name in a browser. "" when it isn't kept in a folder.
+async function libraryFolderShown(){
+  try{
+    if(STORAGE_KIND === "desktop") return (await desktopRoots())[desktopRootOf(LIBRARY_ID)] || "";
+    if(libStore && libStore.dir && libStore.dir.name) return libStore.dir.name;
+  }catch(err){}
+  return "";
 }
 function noteSaveWorked(){
   if(!saveFailing) return;
@@ -22038,11 +22173,12 @@ function updateNotSavingIndicator(){
 function openNotSavingDialog(){
   if(!saveFailing) return;
   const time = new Date(saveFailing.since).toLocaleTimeString([], {hour: "numeric", minute: "2-digit"});
-  const body = saveFailing.full ? t("notSavingFullBody", {time}) : t("notSavingOtherBody", {time, error: saveFailing.text});
+  const body = saveFailing.full ? t("notSavingFullBody", {time}) : t(saveFailing.denied ? "notSavingDeniedBody" : "notSavingOtherBody", {time, error: saveFailing.text});
   openModal(`<h3>${escapeHtmlText(t("notSavingTitle"))}</h3>
-    <p>${escapeHtmlText(body)}</p>
+    <p>${escapeHtmlText(body)}</p>${saveFailing.denied ? `<p><b id="notSavingFolder"></b></p>` : ""}
     <p class="settings-note" id="notSavingStatus"></p>
     <div class="modal-actions"><button class="btn ghost" id="notSavingRetry" type="button">${escapeHtmlText(t("notSavingTryNow"))}</button><button class="btn primary" data-close>${escapeHtmlText(t("ok"))}</button></div>`);
+  if(saveFailing.denied) libraryFolderShown().then(f=>{ const el = document.getElementById("notSavingFolder"); if(el) el.textContent = f; });
   document.getElementById("notSavingRetry").addEventListener("click", async ()=>{
     const st = document.getElementById("notSavingStatus");
     if(st) st.textContent = "…";
