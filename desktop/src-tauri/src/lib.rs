@@ -44,14 +44,25 @@ struct Quitting(AtomicBool);
 const BRIDGE: u32 = 2;
 
 #[derive(serde::Serialize)]
-struct ShellInfo { version: String, bridge: u32, pages: bool, device: bool, updates: bool }
+struct ShellInfo { version: String, bridge: u32, pages: bool, device: bool, updates: bool, zoom: bool }
 
 // The shell's version is the page's version as of the shell's own last
 // change (tauri.conf.json "version"), like sync.php's.
 #[tauri::command]
 fn p37_shell_info(app: tauri::AppHandle) -> ShellInfo {
     // updates: it can update itself (updates.rs, shell 2.2.3).
-    ShellInfo { version: app.package_info().version.to_string(), bridge: BRIDGE, pages: app.state::<Arc<pages::Pages>>().enabled(), device: true, updates: true }
+    // zoom: it sizes the page itself (p37_zoom, shell 2.4.0).
+    ShellInfo { version: app.package_info().version.to_string(), bridge: BRIDGE, pages: app.state::<Arc<pages::Pages>>().enabled(), device: true, updates: true, zoom: true }
+}
+
+// The display's Size, by the webview's own zoom (as Ctrl-plus in a browser)
+// rather than the page magnifying itself with a CSS transform: WebKitGTK
+// drew transformed text blurred (Gen Rinzin's T470, 13 Nov 2026), and this
+// way Settings, Help and dialogs follow the size too. Kept between 1 and 2.
+pub fn zoom_within(scale: f64) -> f64 { if scale.is_finite() { scale.clamp(1.0, 2.0) } else { 1.0 } }
+#[tauri::command]
+fn p37_zoom(window: tauri::WebviewWindow, scale: f64) -> Result<(), String> {
+    window.set_zoom(zoom_within(scale)).map_err(|e| e.to_string())
 }
 
 // The device's own settings (device.rs): read back, and kept.
@@ -256,7 +267,7 @@ pub fn run() {
             let _ = app;
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![p37_quit, p37_shell_info,
+        .invoke_handler(tauri::generate_handler![p37_quit, p37_shell_info, p37_zoom,
             p37_page_info, p37_page_check, p37_page_ok, p37_page_switch, p37_device_get, p37_device_put,
             files::fs_roots, files::fs_root_default, files::fs_root_choose, files::fs_root_forget,
             files::fs_place, files::fs_place_default, files::fs_root_info, files::fs_root_rename, files::fs_root_show, files::fs_places_restore, files::fs_remove_if_empty,
