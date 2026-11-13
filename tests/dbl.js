@@ -91,12 +91,16 @@ async function device(b, name, opts){
   }, pid);
   ok(t.head !== 'ID3' && t.type === 'audio/mpeg', 'a received split part (no ID3 tag) is stored as audio/mpeg (' + JSON.stringify(t) + ')');
   // One stored earlier as application/octet-stream is typed when played.
+  // (Each step says where it failed: WebKit on Linux said only "Load failed".)
   const u = await E.evaluate(async (id)=>{
-    const blob = await window.__dmg.get(id);
-    // The bytes first: WebKit can't read a Blob from IndexedDB once its record is written over ("Load failed").
-    await window.__dbg3.put('audio', {id, blob: new Blob([await blob.arrayBuffer()], {type: 'application/octet-stream'})});
-    const url = await window.__audioUrl(id);
-    return (await fetch(url)).headers.get('content-type');
+    let step = 'read';
+    try{
+      const blob = await window.__dmg.get(id);
+      step = 'bytes'; const bytes = await blob.arrayBuffer();
+      step = 'put'; await window.__dbg3.put('audio', {id, blob: new Blob([bytes], {type: 'application/octet-stream'})});
+      step = 'url'; const url = await window.__audioUrl(id);
+      step = 'fetch'; return (await fetch(url)).headers.get('content-type');
+    }catch(err){ return step + ': ' + err.message; }
   }, pid);
   ok(u === 'audio/mpeg', 'and one stored untyped earlier plays as audio/mpeg (' + u + ')');
   console.log(fails ? fails+' FAILED' : 'ALL OK');

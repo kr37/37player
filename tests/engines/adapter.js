@@ -42,7 +42,8 @@ class Page {
   screenshot(o){ return this.p.screenshot(o); }
   $(sel){ return this.p.$(sel).then(x=> x && new Element(x)); }
   $$(sel){ return this.p.$$(sel).then(xs=> xs.map(x=> new Element(x))); }
-  click(sel, o){ return this.p.click(sel, o); }
+  // A double click as Puppeteer gives it: a dblclick event too.
+  click(sel, o){ return o && o.clickCount === 2 ? this.p.dblclick(sel, {...o, clickCount: undefined}) : this.p.click(sel, o); }
   hover(sel){ return this.p.hover(sel); }
   select(sel, ...values){ return this.p.selectOption(sel, values); }
   $eval(sel, fn, ...args){ return this.p.$eval(sel, asFnOn(fn, args)); }
@@ -103,10 +104,10 @@ class Page {
           url: ()=> req.url(), method: ()=> req.method(), headers: ()=> req.headers(), resourceType: ()=> req.resourceType(),
           isInterceptResolutionHandled: ()=> settled,
           respond: (x)=> once(()=> route.fulfill({status: x.status || 200, contentType: x.contentType, headers: x.headers, body: x.body})),
-          continue: ()=> once(()=> route.continue()),
+          continue: ()=> once(()=> route.fallback()),
           abort: ()=> once(()=> route.abort()),
         };
-        if(!this.intercept || !this.requestHandlers.length) return route.continue();
+        if(!this.intercept || !this.requestHandlers.length) return route.fallback();
         for(const h of this.requestHandlers) h(r);
       });
     }
@@ -117,6 +118,26 @@ class Page {
   }
   off(ev, fn){ if(ev === 'request') this.requestHandlers = this.requestHandlers.filter(f=> f !== fn); else this.p.off(ev, fn); return this; }
   removeAllListeners(ev){ if(!ev || ev === 'request') this.requestHandlers = []; if(ev) this.p.removeAllListeners(ev); return this; }
+  // Chrome's network throttling, roughly: each request waits its latency,
+  // and one carrying a body waits as long as sending it would take at the
+  // upload speed (e2e's slow laptop: files still on their way when another
+  // device joins). Then the request goes on to any other handler.
+  async throttle(c){
+    this.throttling = c && !c.offline && (c.uploadThroughput > 0 || c.latency > 0) ? c : null;
+    if(this.throttling && !this.throttleRoute){
+      this.throttleRoute = async (route)=>{
+        const t = this.throttling;
+        if(t){
+          let n = 0; try{ const b = route.request().postDataBuffer(); n = b ? b.length : 0; }catch(e){}
+          const ms = (t.latency || 0) + (t.uploadThroughput > 0 ? n / t.uploadThroughput * 1000 : 0);
+          // Throttling turned off meanwhile: on at once, as in Chrome.
+          for(const end = Date.now() + ms; Date.now() < end && this.throttling; ) await new Promise(r=> setTimeout(r, Math.min(200, end - Date.now())));
+        }
+        return route.fallback().catch(()=>{});
+      };
+      await this.p.route('**/*', this.throttleRoute);
+    }
+  }
   cookies(...urls){ return this.ctx.c.cookies(urls.length ? urls : [this.p.url()]); }
   // Not Chrome, so no DevTools protocol: the few commands the tests send are
   // done Playwright's way (FakeCDP).
@@ -142,7 +163,9 @@ class FakeCDP {
       case 'DOM.getDocument': return {root: {nodeId: 'document'}};
       case 'DOM.querySelector': return {nodeId: params.selector};   // the selector stands in for the node
       case 'DOM.setFileInputFiles': await this.page.p.setInputFiles(params.nodeId, params.files); return {};
-      case 'Network.enable': case 'Network.disable': case 'Network.emulateNetworkConditions': return {};   // no throttling: the test runs at full speed
+      case 'Network.enable': return {};
+      case 'Network.disable': await this.page.throttle(null); return {};
+      case 'Network.emulateNetworkConditions': await this.page.throttle(params); return {};
       default: throw new Error('no ' + method + ' in ' + ENGINE);
     }
   }

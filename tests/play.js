@@ -68,7 +68,7 @@ const waitIdle = async (p)=>{ for(let k=0;k<400;k++){ const s = await p.evaluate
   await sleep(2000);
   const a3 = await B.evaluate(()=>window.__aud());
   console.log('playing:', JSON.stringify(a2), JSON.stringify(a3));
-  ok(!a3.paused && a3.t > a2.t, 'plays straight through');
+  ok(!a3.paused && a3.t > a2.t, 'plays straight through' + (!a3.paused && a3.t > a2.t ? '' : ' (' + JSON.stringify(a3) + ')'));
   const log = await B.evaluate(()=> (window.__dbg3.status().log || []).join('\n')).catch(()=> '');
   console.log(fails ? fails+' FAILED' : 'ALL OK');
   await b.close();

@@ -73,9 +73,9 @@ let fails=0; const ok=(c,m)=>{ console.log((c?'ok   ':'FAIL ')+m); if(!c) fails+
   await p.evaluate(()=> window.__ah.play()); await sleep(300);
   ok(!(await p.evaluate(()=>window.__st())).paused, 'a stray play while playing does not pause');
   await p.evaluate(()=> window.__ah.pause()); await sleep(300);
-  ok((await p.evaluate(()=>window.__st())).paused, 'pause pauses');
+  { const z = await p.evaluate(()=>window.__st()); ok(z.paused, 'pause pauses' + (z.paused ? '' : ' (' + JSON.stringify(z) + ')')); }
   await p.evaluate(()=> window.__ah.pause()); await sleep(300);
-  ok((await p.evaluate(()=>window.__st())).paused, 'a second pause stays paused');
+  { const z = await p.evaluate(()=>window.__st()); ok(z.paused, 'a second pause stays paused' + (z.paused ? '' : ' (' + JSON.stringify(z) + ')')); }
   await p.evaluate(()=> window.__ah.play()); await sleep(500);
   ok(!(await p.evaluate(()=>window.__st())).paused, 'play resumes');
   await p.evaluate(()=> window.__dbg4.settings()); await sleep(500);
