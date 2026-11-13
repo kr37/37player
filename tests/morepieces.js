@@ -4,6 +4,8 @@
 //   node morepieces.js     (servers from serve.sh; www/longfmt/ from make-fixtures.sh); ONLY=x.flac for one
 const puppeteer = require('puppeteer-core');
 const sleep = ms=>new Promise(r=>setTimeout(r,ms));
+// WebKit or Firefox (engines/adapter.js), not Chrome.
+const OTHER_ENGINE = !!process.env.ENGINE && process.env.ENGINE !== 'chromium';
 let fails = 0; const ok=(c,m)=>{ console.log((c?'ok   ':'FAIL ')+m); if(!c) fails++; };
 (async()=>{
   const b = await puppeteer.launch({executablePath: process.env.CHROME || '/usr/bin/google-chrome', args:['--no-sandbox'], protocolTimeout: 300000});
@@ -18,12 +20,13 @@ let fails = 0; const ok=(c,m)=>{ console.log((c?'ok   ':'FAIL ')+m); if(!c) fail
       let a; try{ a = await window.__pieces.more(blob, kind); }catch(err){ return {err: String(err && err.message || err)}; }
       const w = await window.__pieces.sameWay(blob);
       const ma = Math.max(...a.peaks), mw = Math.max(...w.peaks);
-      let worst = 0, at = -1; for(let i = 0; i < a.peaks.length; i++){ const d = Math.abs(a.peaks[i] / ma - w.peaks[i] / mw); if(d > worst){ worst = d; at = i; } }
-      return {worst, at, la: a.loudness && a.loudness.i, lw: w.loudness && w.loudness.i, da: a.duration, dw: w.duration};
+      // The last bucket on its own (end): engines differ on the encoder's padding at the very end.
+      let worst = 0, at = -1, end = 0; for(let i = 0; i < a.peaks.length; i++){ const d = Math.abs(a.peaks[i] / ma - w.peaks[i] / mw); if(i === a.peaks.length - 1){ end = d; continue; } if(d > worst){ worst = d; at = i; } }
+      return {worst, at, end, la: a.loudness && a.loudness.i, lw: w.loudness && w.loudness.i, da: a.duration, dw: w.duration};
     }, file, kind);
     console.log(file, JSON.stringify(r));
     if(r.err){ ok(false, file + ': ' + r.err); continue; }
-    ok(r.worst < 0.02, file + ': waveform matches the whole file\'s, within 2% (' + r.worst.toFixed(4) + ' at ' + r.at + ')');
+    ok(r.worst < 0.02 && (OTHER_ENGINE || r.end < 0.02), file + ': waveform matches the whole file\'s, within 2% (' + r.worst.toFixed(4) + ' at ' + r.at + '; the last bucket ' + r.end.toFixed(4) + (OTHER_ENGINE ? ', not counted in ' + process.env.ENGINE : '') + ')');
     ok(r.la != null && Math.abs(r.la - r.lw) < 0.2, file + ': loudness within 0.2 LU (' + r.la + ' vs ' + r.lw + ')');
     ok(Math.abs(r.da - r.dw) < 0.2, file + ': same length (' + r.da.toFixed(3) + ' vs ' + r.dw.toFixed(3) + ')');
   }

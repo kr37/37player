@@ -14,7 +14,7 @@ window.__dbg4 = {settings: openSettingsPage, help: openHelpPage, section: goToSe
 window.__rv = {rows: syncReviewRows, classify: (r,m)=>syncClassifyPartial(r,m,new Set()), def: syncDefaultChoice, set: (st)=>{ const page=document.createElement("div"); page.id="reviewPage"; page.className="settings-page rv-page"; placeOverlayPage(page, closeSharedReview); page.innerHTML='<div class="rv-scroll" id="rvScroll"></div><div class="rv-foot" id="rvFoot"></div>'; document.body.appendChild(page); sharedReviewState=st; renderSharedReview(); }};
 window.__aa = {analyze: analyzeAudio};
 // files this browser can't play (conv.js)
-window.__conv = {importFiles, recheck: recheckStoredAudio, cantPlay: trackCantPlay, describe: describeFormatProblem,
+window.__conv = {importFiles, recheck: recheckStoredAudio, cantPlay: trackCantPlay, describe: describeFormatProblem, isAlac: isAppleLosslessFile,
   convert: (ids)=>convertTracks(ids), state: ()=>({queue: convertQueue.slice(), running: convertRunning, worker: !!converterWorker, bar: activeOperation && activeOperation.text}), stored: ()=>converterStored().then(r=>!!r), libPreview: (id)=>playLibraryPreview(id), overlay: (id)=>openPlaylistOverlay(id), put: (js, wasm, version)=> mainStatePut({key: "converter", version, js, wasm, size: js.size + wasm.size, at: Date.now()}).then(()=>{ converterRecCache = undefined; converterRefetched = false; }), version: ()=> converterStored().then(r=> r && r.version), stop: ()=> converterStop(), garbleProbes: (n)=>{ const real = window.__realConverterAsk || (window.__realConverterAsk = converterAsk); let left = n; converterAsk = (msg)=>{ if(left > 0 && msg && msg.file && !msg.outName){ left--; msg = Object.assign({}, msg, {file: new File([new Uint8Array(msg.file.size).fill(0x5a)], msg.file.name)}); } return real(msg); }; },
   musicEntries: (ids, convert)=>buildMusicEntries(new Set(ids), null, {convert: !!convert}), dropOriginal: (id)=>dropKeptOriginal(findLibraryTrack(id)), policy: ()=>formatPolicy(), matches: (id)=>trackMatchesPolicy(findLibraryTrack(id)), queueRecord: ()=>idbGet("state", "convertQueue").then(r=> r && r.value || null)};
 // No quiet converter download 20 s after opening, unless a test asks for it.
@@ -34,8 +34,8 @@ window.__dropAudio = (id)=> libStore.del("audio", [id]);
 // playback
 window.__play = (id)=>playItem(id);
 window.__pause = ()=> togglePlay();
-window.__aud = ()=>({src: audioEl.src, paused: audioEl.paused, t: audioEl.currentTime});
-window.__st = ()=>({src: audioEl.src, paused: audioEl.paused, t: audioEl.currentTime, d: audioEl.duration,
+window.__aud = ()=>({src: audioEl.src, paused: audioEl.paused, t: audioEl.currentTime, rs: audioEl.readyState, ns: audioEl.networkState, err: audioEl.error ? audioEl.error.code + " " + (audioEl.error.message || "") : null});
+window.__st = ()=>({src: audioEl.src, paused: audioEl.paused, t: audioEl.currentTime, d: audioEl.duration, rs: audioEl.readyState, ns: audioEl.networkState, err: audioEl.error ? audioEl.error.code + " " + (audioEl.error.message || "") : null,
   bridge: playBridge, ka: silentKeepAliveEl ? !silentKeepAliveEl.paused : null, sil: silenceState.active, cur: currentItemId,
   ms: navigator.mediaSession && navigator.mediaSession.playbackState, hold: loopHold, stopHold, pauseHold,
   title: navigator.mediaSession && navigator.mediaSession.metadata && navigator.mediaSession.metadata.title,

@@ -7,14 +7,15 @@ The first time 37 Player opens, it asks for your language, then **Try it out** o
 
 Wherever 37 Player isn't installed, an **Install** button stays in the top bar and opens the same steps. For why they matter, see 'Reliability'.
 
-### Mac and Windows: the desktop app
+### Mac, Windows and Linux: the desktop app
 
-On a Mac or a Windows computer, Install offers the **desktop app**, downloaded straight from the steps. Its library is ordinary files in a folder, it updates itself, and it doesn't have to repeatedly prompt for permissions.
+On a Mac, a Windows computer or Linux, Install offers the **desktop app**, downloaded straight from the steps. Its library is ordinary files in a folder, it updates itself, and it doesn't have to repeatedly prompt for permissions.
 
-The app isn't signed yet, so the computer warns the first time:
+The first time:
 
-- **Mac:** open the downloaded file and drag **37 Player** into **Applications**. In Applications, Control-click (or right-click) 37 Player, choose **Open**, then **Open** again. If there's no Open button, close the warning, open **System Settings → Privacy & Security**, scroll down, and choose **Open Anyway** beside 37 Player.
-- **Windows:** Windows warns twice. First, in Edge's downloads the file is marked as not commonly downloaded: point at it, click **…** and choose **Keep**; then, in **Make sure you trust…**, click the arrow **▾** inside the black **Delete** button and choose **Keep anyway**. (In Chrome, choose to keep the file.) Then, when it opens, **Windows protected your PC** appears: click **More info**, then **Run anyway**.
+- **Mac:** open the downloaded file and drag **37 Player** into **Applications**, then open it from there. The app is signed and checked by Apple, so macOS only asks whether to open an app downloaded from the internet: choose **Open**.
+- **Windows:** the app isn't signed yet, so Windows warns twice. First, in Edge's downloads the file is marked as not commonly downloaded: point at it, click **…** and choose **Keep**; then, in **Make sure you trust…**, click the arrow **▾** inside the black **Delete** button and choose **Keep anyway**. (In Chrome, choose to keep the file.) Then, when it opens, **Windows protected your PC** appears: click **More info**, then **Run anyway**.
+- **Linux:** open the .deb (Ubuntu 22.04, Debian 12 or newer, Mint and the like) or the .rpm (Fedora, openSUSE) to install it with the software centre, or in a terminal: `sudo apt install ./37-Player-linux-amd64.deb`. The app's pages keep themselves up to date; for a newer app itself, download it again now and then.
 
 A computer where apps can't be installed: choose **I can't install apps on this computer**, and the steps show the Chrome or Edge way instead.
 

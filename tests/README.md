@@ -130,6 +130,8 @@ By hand: `./serve.sh` in one terminal (servers on ports 8861 and 8870), then
 | volume | The Playing volume is kept per device (a reload doesn't put it back to full) and squared (half way is -6 dB) |
 | lazyconv | The converter reads a file of the desktop app's by its address, a block at a time (the page never reads it whole); an address it can't read that way: the file read whole first, as before, and the log says so |
 | shellupd | The desktop app updating itself: offered once a start when nothing would be stopped; Update and restart has the shell install it; Not now until the next start; Check for updates offers it again; nothing asked on an older shell |
+| denied | A save refused (a read-only library folder, "Permission denied (os error 13)") says 37 Player isn't allowed to save in the library's folder, not that the device is full; a full device keeps its own message |
+| stuckpause | Pause still pauses after a passing error on the player (it used to mark any track "stuck", and Pause then played) |
 
 ## The converter test page (tests/convert/)
 

@@ -8,7 +8,7 @@
 // storage is persistent, and by making indexedDB.open never answer.
 const puppeteer = require('puppeteer-core');
 const fs = require('fs'), path = require('path'); const sleep = ms=>new Promise(r=>setTimeout(r,ms));
-const URL = 'http://localhost:8861/37-player.html', OTHER = 'http://localhost:8861/manifest.webmanifest';
+const URL = 'http://localhost:8861/37-player.html', OTHER = 'http://localhost:8861/no-such-page'; // another page of the site (its 404 page): the manifest, before, was a download in Firefox
 const clickText = (p, sel, src) => p.evaluate((sel, src)=>{ const re=new RegExp(src); const el=[...document.querySelectorAll(sel)].find(e=>e.offsetParent!==null && re.test(e.textContent.trim())); if(el){ el.click(); return true; } return false; }, sel, src);
 const STARTER = fs.readFileSync(path.join(__dirname, 'fixtures', 'starter.mp3')).toString('base64');
 let fails = 0; const ok=(c,m)=>{ console.log((c?'ok   ':'FAIL ')+m); if(!c) fails++; };
@@ -93,7 +93,9 @@ const rootRecord = p=> p.evaluate(()=> new Promise(res=>{ const q = indexedDB.op
   await p.evaluate(()=>{ localStorage.clear(); localStorage.setItem('__persisted', '1'); });
   await loseDatabase(p);
   await p.goto(URL, {waitUntil:'networkidle0'}); await sleep(1500);
-  ok(!/didn't load/.test(await dialog(p)), 'Chrome: storage persistent, the database new, the list gone (a fresh incognito window): no warning');
+  // (Chrome's own case: its incognito window borrows the profile's persistence. Not asked elsewhere.)
+  if(!process.env.ENGINE || process.env.ENGINE === 'chromium') ok(!/didn't load/.test(await dialog(p)), 'Chrome: storage persistent, the database new, the list gone (a fresh incognito window): no warning');
+  else console.log('(Chrome only, skipped in ' + process.env.ENGINE + ': storage persistent, the database new, the list gone)');
   await settle(p);
   // In WebKit (Safari, the iPad) it's a lost library.
   await p.evaluate(()=>{ localStorage.clear(); localStorage.setItem('__persisted', '1'); localStorage.setItem('__webkit', '1'); });

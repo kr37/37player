@@ -13,6 +13,10 @@ async function reloading(p, fn){ const nav = p.waitForNavigation({waitUntil:'net
   const p = await b.newPage(); await p.setViewport({width:1300,height:900});
   const alerts = []; p.on('dialog', async d=>{ alerts.push(d.message()); await d.accept(); });
   p.on('pageerror', e=>console.log('PAGE ERROR:', e.message));
+  // OPFS handles have no permission prompt; a real folder's would. WebKit's
+  // and Firefox's have no requestPermission at all (nor a folder picker), so
+  // the stand-in is there from every load, not just this one.
+  await p.evaluateOnNewDocument(()=>{ if(window.FileSystemDirectoryHandle && !FileSystemDirectoryHandle.prototype.requestPermission) FileSystemDirectoryHandle.prototype.requestPermission = async ()=> 'granted'; });
   await p.goto(APP, {waitUntil:'networkidle0'}); await sleep(800);
   await settle(p);
 

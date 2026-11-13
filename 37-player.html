@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.2.040">
+<meta name="app-version" content="2.3.004">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -3214,27 +3214,65 @@ async function desktopLibrariesAtStart(){
   try{ found = await desktopInvoke("fs_find_libraries") || []; }catch(err){ console.warn("Looking for library folders:", err); }
   desktopRootsCache = null;
   if(!found.length){ if(LIBRARY_LIST_WAS_EMPTY) await askDesktopPlace(); return false; }
+  let place = null; try{ place = await desktopInvoke("fs_place"); }catch(err){}
+  // Copies of one library (the same ID in two folders): the shell took one
+  // it can save in, the most recently changed; the person says which
+  // (2.2.041; Gen Rinzin's T470, 13 Nov 2026: a read-only copy, older, was
+  // taken because its folder's name came first).
+  const byId = new Map();
+  for(const f of found){ if(!byId.has(f.id)) byId.set(f.id, []); byId.get(f.id).push(f); }
+  for(const [id, copies] of byId){
+    if(copies.length > 1) await askWhichLibraryCopy(id, copies, (place && place.path) || "");
+  }
   // (The list readLibraryList makes when there's none holds an empty main
   // library: kept only if its folder was found.)
-  if(LIBRARY_LIST_WAS_EMPTY && !found.some(f=> f.id === MAIN_LIBRARY_ID)){ reg.list = reg.list.filter(l=> l.id !== MAIN_LIBRARY_ID); reg.mainDeleted = true; }
+  if(LIBRARY_LIST_WAS_EMPTY && !byId.has(MAIN_LIBRARY_ID)){ reg.list = reg.list.filter(l=> l.id !== MAIN_LIBRARY_ID); reg.mainDeleted = true; }
   let added = 0;
-  for(const f of found){
-    let e = reg.list.find(l=> l.id === f.id);
-    if(!e){ e = {id: f.id, name: f.name || ""}; reg.list.push(e); added++; }
-    if(!e.name && f.name) e.name = f.name;
+  for(const [id, copies] of byId){
+    const name = (copies.find(f=> f.name) || {}).name || "";
+    let e = reg.list.find(l=> l.id === id);
+    if(!e){ e = {id, name}; reg.list.push(e); added++; }
+    if(!e.name && name) e.name = name;
     e.desktopMade = true;
   }
   if(!reg.list.some(l=> l.id === reg.last)) reg.last = reg.list[0].id;
   writeLibraryList(reg);
   if(!LIBRARY_LIST_WAS_EMPTY) return added > 0;
-  let place = null; try{ place = await desktopInvoke("fs_place"); }catch(err){}
-  try{ sessionStorage.setItem("37player.desktopNote", t("desktopFoundToast", {count: found.length, path: (place && place.path) || ""})); }catch(err){}
+  // Said once the window is open, and kept until it's closed: a toast was
+  // missed under the first start's own messages (Gen Rinzin, 13 Nov 2026).
+  const names = [...byId.values()].map(c=> (c.find(f=> f.name) || {}).name || t("libRecoveredName"));
+  try{ sessionStorage.setItem("37player.desktopNote", JSON.stringify({names, path: (place && place.path) || ""})); }catch(err){}
   return true;
 }
-// After the start: what it found, said once.
-function showDesktopStartNote(){
+// Which of several folders holding one library is the library.
+async function askWhichLibraryCopy(id, copies, placePath){
+  let current = null;
+  try{ current = (await desktopRoots(true))[desktopRootOf(id)] || null; }catch(err){}
+  desktopRootsCache = null;
+  const folderOf = (f)=> String(f.path).split(/[\\/]/).filter(Boolean).pop() || f.path;
+  const name = (copies.find(f=> f.name) || {}).name || folderOf(copies[0]);
+  const lines = copies.map(f=>{
+    const date = f.changed ? new Date(f.changed).toLocaleString([], {dateStyle: "medium", timeStyle: "short"}) : "?";
+    return `<li>${escapeHtmlText(t("desktopCopyLine", {folder: folderOf(f), date}))}${f.writable === false ? ` <span style="color:var(--rust-bright);">(${escapeHtmlText(t("desktopCopyReadOnly"))})</span>` : ""}</li>`;
+  }).join("");
+  const buttons = copies.map(f=> ({label: t("desktopCopyUseBtn", {folder: folderOf(f)}), value: f.path, kind: f.path === current ? "primary" : "ghost"}));
+  const c = await askChoice(t("desktopCopiesTitle", {name}), `<p>${escapeHtmlText(t("desktopCopiesBody", {name, path: placePath}))}</p><ul>${lines}</ul>`, buttons);
+  // Closed without choosing: the shell's choice stands.
+  if(!c || c === current) return;
+  try{ await desktopInvoke("fs_root_use_found", {id, path: c}); }catch(err){ console.warn("Using that copy of the library:", err); }
+  desktopRootsCache = null;
+}
+// After the start: what it found, said once, after any other question.
+async function showDesktopStartNote(){
   let note = null; try{ note = sessionStorage.getItem("37player.desktopNote"); sessionStorage.removeItem("37player.desktopNote"); }catch(err){}
-  if(note) setTimeout(()=> showToast(note), 1200);
+  if(!note) return;
+  let n = null; try{ n = JSON.parse(note); }catch(err){ setTimeout(()=> showToast(note), 1200); return; }
+  if(!n || !Array.isArray(n.names) || !n.names.length) return;
+  await new Promise(r=> setTimeout(r, 1200));
+  while(backdrop.classList.contains("show")) await new Promise(r=> setTimeout(r, 700));
+  const body = n.names.length === 1 ? t("desktopFoundBodyOne", {path: n.path}) : t("desktopFoundBody", {count: n.names.length, path: n.path});
+  await askChoice(t("desktopFoundTitle"), `<p>${escapeHtmlText(body)}</p><ul>${n.names.map(x=> `<li>${escapeHtmlText(x)}</li>`).join("")}</ul><p class="settings-note">${escapeHtmlText(t("desktopFoundAfter"))}</p>`,
+    [{label: t("ok"), value: "ok", kind: "primary"}]);
 }
 // Find a library folder…: one anywhere, put on the list. The found entry,
 // or null.
@@ -3548,7 +3586,19 @@ function watchPlaceDrive(el, getTrackId){
     el.pause();
     showAudioMissing(id);
   };
-  el.addEventListener("error", ()=>{ if(getTrackId()){ el.dataset.p37stuck = "1"; check(); } });
+  // Only a track used in place can be stuck this way (2.3.001): the mark on
+  // any other track's error was never taken off, and from then on Pause, the
+  // space bar and the lock screen's pause played instead (WebKit, which
+  // reports passing errors more readily: the engine tests, 13 Nov 2026).
+  el.addEventListener("error", async ()=>{
+    const id = getTrackId();
+    if(!id || STORAGE_KIND !== "desktop") return; // only the desktop app uses recordings in place
+    try{ await libStore.placeRefs(); }catch(err){}
+    if(!placeOfTrack(id) || id !== getTrackId()) return;
+    el.dataset.p37stuck = "1"; check();
+  });
+  // Playing, or loading something new, it isn't stuck.
+  ["playing", "loadstart"].forEach(ev=> el.addEventListener(ev, ()=>{ delete el.dataset.p37stuck; }));
   ["waiting", "stalled"].forEach(ev=> el.addEventListener(ev, ()=>{ if(!timer && !el.paused){ lastT = el.currentTime; timer = setTimeout(()=>{ if(el.currentTime === lastT) check(); else timer = null; }, 3000); } }));
   el.addEventListener("playing", ()=>{ if(timer){ clearTimeout(timer); timer = null; } });
 }
@@ -4165,7 +4215,15 @@ const STRINGS = {
     "desktopPlaceUseBtn": "Use this place",
     "desktopPlaceChooseBtn": "Choose another place…",
     "desktopPlaceChooseTitle": "Where should 37 Player keep its libraries?",
-    "desktopFoundToast": "Found {count} libraries in {path}",
+    "desktopFoundTitle": "Libraries found",
+    "desktopFoundBody": "37 Player found {count} libraries in {path} and put them on its list:",
+    "desktopFoundBodyOne": "37 Player found a library in {path} and put it on its list:",
+    "desktopFoundAfter": "Open them from Settings → Library. A library kept somewhere else can be added there with Find a library folder…. A library joined to a shared library may ask, the first time it opens here, whether this is another device: if 37 Player also runs in a browser on this computer, it's the same device.",
+    "desktopCopiesTitle": "Copies of “{name}”",
+    "desktopCopiesBody": "These folders in {path} each hold the library “{name}”: copies of it, made with a file manager perhaps. 37 Player uses one of them and leaves the others as they are. Which one is the library? Once you're sure, the others can be moved somewhere else.",
+    "desktopCopyLine": "{folder}: last changed {date}",
+    "desktopCopyReadOnly": "read-only: 37 Player can't save in it",
+    "desktopCopyUseBtn": "Use “{folder}”",
     "desktopFolderMissingTitle": "Where is this library's folder?",
     "desktopFolderMissingBody": "37 Player can't find the folder of “{name}”. If it's on a drive that isn't plugged in, plug it in and try again; if the folder was moved, find it.",
     "desktopFindBtn": "Find a library folder…",
@@ -4365,7 +4423,11 @@ const STRINGS = {
     "sgDesktopStep": "<strong>Get the desktop app.</strong> On this computer, 37 Player is best as an app: the library is ordinary files in a folder, the app updates itself, and it doesn't have to repeatedly prompt for permissions.",
     "sgDownloadMac": "Download for Mac",
     "sgDownloadWin": "Download for Windows",
-    "sgWarnMac": "<strong>Getting past the warning.</strong> The app isn't signed by Apple yet, so the first time, macOS says it can't check it. Open the downloaded file and drag <strong>37 Player</strong> into <strong>Applications</strong>. In Applications, Control-click (or right-click) 37 Player, choose <strong>Open</strong>, then <strong>Open</strong> again. If there's no Open button: close the warning, open <strong>System Settings → Privacy &amp; Security</strong>, scroll down, and choose <strong>Open Anyway</strong> beside 37 Player.",
+    "sgDownloadLinux": "Download .deb (Ubuntu, Debian, Mint…)",
+    "sgDownloadLinuxRpm": "Download .rpm (Fedora, openSUSE)",
+    "sgDesktopStepLinux": "<strong>Get the desktop app.</strong> On this computer, 37 Player is best as an app: the library is ordinary files in a folder, and it doesn't have to repeatedly prompt for permissions.",
+    "sgWarnLinux": "<strong>Installing it.</strong> The .deb is for Ubuntu 22.04, Debian 12 or newer and the systems built on them (Mint, Pop!_OS, elementary, Zorin, KDE neon); the .rpm is for Fedora and openSUSE. Open the downloaded file to install it with your software centre, or in a terminal, in the folder it was downloaded to: <code>sudo apt install ./37-Player-linux-amd64.deb</code> (or <code>sudo dnf install ./37-Player-linux-x86_64.rpm</code>). 37 Player's pages keep themselves up to date; for a newer app, download it again now and then.",
+    "sgWarnMac": "<strong>Installing it.</strong> Open the downloaded file and drag <strong>37 Player</strong> into <strong>Applications</strong>, then open it from there. The app is signed and checked by Apple; the first time, macOS asks whether to open an app downloaded from the internet: choose <strong>Open</strong>.",
     "sgWarnWin": "<strong>Getting past the warnings.</strong> The app isn't signed yet, so Windows warns about it twice.<br><strong>In Edge's downloads,</strong> the file is marked as not commonly downloaded: point at it, click <strong>…</strong> and choose <strong>Keep</strong>. Then, in <strong>Make sure you trust…</strong>, click the arrow <strong>▾</strong> inside the black <strong>Delete</strong> button and choose <strong>Keep anyway</strong>. (In Chrome, choose to keep the file.)<br><strong>When it opens,</strong> <strong>Windows protected your PC</strong> appears: click <strong>More info</strong>, then <strong>Run anyway</strong>.",
     "sgCantInstall": "I can't install apps on this computer",
     "sgBringShared": "<strong>Bring this library along:</strong> it's in the shared library “{name}”. In {where}, join it too ({how}), and everything arrives there by itself.",
@@ -5408,6 +5470,7 @@ const STRINGS = {
     "notSavingTitle": "Changes here aren't being saved",
     "notSavingFullBody": "This device is out of storage space, so 37 Player can't save anything right now. Changes made here since {time} will be lost if 37 Player is closed, and nothing new can be stored (imports, files from a shared library). Playing what's already here still works. Free up some space (on an iPad: Settings → General → iPad Storage). 37 Player keeps trying, and saves everything as soon as there's room.",
     "notSavingOtherBody": "37 Player can't save on this device right now ({error}). Changes made here since {time} will be lost if 37 Player is closed. Playing what's already here still works. A full device is the usual cause: freeing up some space (on an iPad: Settings → General → iPad Storage) usually fixes it. 37 Player keeps trying, and saves everything as soon as it can.",
+    "notSavingDeniedBody": "37 Player isn't allowed to save in this library's folder ({error}). Changes made here since {time} will be lost if 37 Player is closed. Playing what's already here still works. The folder, or folders inside it, may be read-only, as happens with a copy from a backup drive or a download: give yourself permission to change them, or use another copy of the library (Settings → Library → Find a library folder…). 37 Player keeps trying, and saves everything as soon as it can.",
     "notSavingTryNow": "Try again now",
     "notSavingStill": "Still not saving.",
     "notLoadedTitle": "Your library didn't load",
@@ -6125,7 +6188,15 @@ const STRINGS = {
     "desktopPlaceUseBtn": "Usar este lugar",
     "desktopPlaceChooseBtn": "Elegir otro lugar…",
     "desktopPlaceChooseTitle": "¿Dónde debe guardar 37 Player sus bibliotecas?",
-    "desktopFoundToast": "Se encontraron {count} bibliotecas en {path}",
+    "desktopFoundTitle": "Bibliotecas encontradas",
+    "desktopFoundBody": "37 Player encontró {count} bibliotecas en {path} y las añadió a su lista:",
+    "desktopFoundBodyOne": "37 Player encontró una biblioteca en {path} y la añadió a su lista:",
+    "desktopFoundAfter": "Ábralas desde Ajustes → Biblioteca. Una biblioteca guardada en otro lugar se puede añadir allí con Buscar la carpeta de una biblioteca…. Una biblioteca unida a una biblioteca compartida puede preguntar, la primera vez que se abre aquí, si este es otro dispositivo: si 37 Player también funciona en un navegador de este ordenador, es el mismo dispositivo.",
+    "desktopCopiesTitle": "Copias de «{name}»",
+    "desktopCopiesBody": "Cada una de estas carpetas de {path} contiene la biblioteca «{name}»: son copias, hechas quizá con un gestor de archivos. 37 Player usa una y deja las demás como están. ¿Cuál es la biblioteca? Cuando esté seguro, puede mover las demás a otro lugar.",
+    "desktopCopyLine": "{folder}: último cambio {date}",
+    "desktopCopyReadOnly": "solo lectura: 37 Player no puede guardar en ella",
+    "desktopCopyUseBtn": "Usar «{folder}»",
     "desktopFolderMissingTitle": "¿Dónde está la carpeta de esta biblioteca?",
     "desktopFolderMissingBody": "37 Player no encuentra la carpeta de «{name}». Si está en un disco que no está conectado, conéctalo y vuelve a intentarlo; si la carpeta se movió, búscala.",
     "desktopFindBtn": "Buscar la carpeta de una biblioteca…",
@@ -6316,7 +6387,11 @@ const STRINGS = {
     "sgDesktopStep": "<strong>Descargue la app de escritorio.</strong> En este ordenador, 37 Player funciona mejor como app: la biblioteca son archivos normales en una carpeta, la app se actualiza sola y no tiene que pedir permisos una y otra vez.",
     "sgDownloadMac": "Descargar para Mac",
     "sgDownloadWin": "Descargar para Windows",
-    "sgWarnMac": "<strong>Cómo pasar el aviso.</strong> La app aún no está firmada por Apple, así que la primera vez macOS dice que no puede comprobarla. Abra el archivo descargado y arrastre <strong>37 Player</strong> a <strong>Aplicaciones</strong>. En Aplicaciones, haga Control-clic (o clic derecho) en 37 Player, elija <strong>Abrir</strong> y otra vez <strong>Abrir</strong>. Si no hay botón Abrir: cierre el aviso, abra <strong>Ajustes del Sistema → Privacidad y seguridad</strong>, baje y elija <strong>Abrir igualmente</strong> junto a 37 Player.",
+    "sgDownloadLinux": "Descargar .deb (Ubuntu, Debian, Mint…)",
+    "sgDownloadLinuxRpm": "Descargar .rpm (Fedora, openSUSE)",
+    "sgDesktopStepLinux": "<strong>Instale la aplicación de escritorio.</strong> En este ordenador, 37 Player funciona mejor como aplicación: la biblioteca son archivos normales en una carpeta y no tiene que pedir permisos una y otra vez.",
+    "sgWarnLinux": "<strong>Instalarla.</strong> El .deb es para Ubuntu 22.04, Debian 12 o posteriores y los sistemas basados en ellos (Mint, Pop!_OS, elementary, Zorin, KDE neon); el .rpm, para Fedora y openSUSE. Abra el archivo descargado para instalarlo con su centro de software, o en una terminal, en la carpeta donde se descargó: <code>sudo apt install ./37-Player-linux-amd64.deb</code> (o <code>sudo dnf install ./37-Player-linux-x86_64.rpm</code>). Las páginas de 37 Player se actualizan solas; para una aplicación más nueva, descárguela de nuevo de vez en cuando.",
+    "sgWarnMac": "<strong>Instalarla.</strong> Abra el archivo descargado y arrastre <strong>37 Player</strong> a <strong>Aplicaciones</strong>; luego ábrala desde allí. La aplicación está firmada y verificada por Apple; la primera vez, macOS pregunta si desea abrir una aplicación descargada de internet: elija <strong>Abrir</strong>.",
     "sgWarnWin": "<strong>Cómo pasar los avisos.</strong> La app aún no está firmada, así que Windows avisa dos veces.<br><strong>En las descargas de Edge,</strong> el archivo aparece como poco descargado: señálelo, haga clic en <strong>…</strong> y elija <strong>Conservar</strong>. Luego, en <strong>Asegúrese de que confía en…</strong>, haga clic en la flecha <strong>▾</strong> dentro del botón negro <strong>Eliminar</strong> y elija <strong>Conservar de todos modos</strong>. (En Chrome, elija conservar el archivo.)<br><strong>Al abrirla,</strong> aparece <strong>Windows protegió su PC</strong>: haga clic en <strong>Más información</strong> y luego en <strong>Ejecutar de todas formas</strong>.",
     "sgCantInstall": "No puedo instalar apps en este ordenador",
     "sgBringShared": "<strong>Llévese esta biblioteca:</strong> está en la biblioteca compartida “{name}”. En {where}, únase también ({how}) y todo llegará allí solo.",
@@ -7359,6 +7434,7 @@ const STRINGS = {
     "notSavingTitle": "Los cambios de aquí no se están guardando",
     "notSavingFullBody": "Este dispositivo se ha quedado sin espacio de almacenamiento, así que 37 Player no puede guardar nada ahora mismo. Los cambios hechos aquí desde las {time} se perderán si se cierra 37 Player, y no se puede guardar nada nuevo (importaciones, archivos de una biblioteca compartida). Reproducir lo que ya está aquí sigue funcionando. Libera algo de espacio (en un iPad: Ajustes → General → Almacenamiento del iPad). 37 Player sigue intentándolo y lo guarda todo en cuanto haya sitio.",
     "notSavingOtherBody": "37 Player no puede guardar en este dispositivo ahora mismo ({error}). Los cambios hechos aquí desde las {time} se perderán si se cierra 37 Player. Reproducir lo que ya está aquí sigue funcionando. La causa habitual es un dispositivo lleno: liberar algo de espacio (en un iPad: Ajustes → General → Almacenamiento del iPad) suele solucionarlo. 37 Player sigue intentándolo y lo guarda todo en cuanto pueda.",
+    "notSavingDeniedBody": "37 Player no tiene permiso para guardar en la carpeta de esta biblioteca ({error}). Los cambios hechos aquí desde las {time} se perderán si se cierra 37 Player. Reproducir lo que ya está aquí sigue funcionando. La carpeta, o carpetas dentro de ella, pueden ser de solo lectura, como ocurre con una copia desde un disco de copias de seguridad o una descarga: dese permiso para modificarlas, o use otra copia de la biblioteca (Ajustes → Biblioteca → Buscar la carpeta de una biblioteca…). 37 Player sigue intentándolo y lo guarda todo en cuanto puede.",
     "notSavingTryNow": "Intentar de nuevo",
     "notSavingStill": "Sigue sin guardarse.",
     "notLoadedTitle": "Tu biblioteca no se cargó",
@@ -8075,7 +8151,15 @@ const STRINGS = {
     "desktopPlaceUseBtn": "Utiliser cet endroit",
     "desktopPlaceChooseBtn": "Choisir un autre endroit…",
     "desktopPlaceChooseTitle": "Où 37 Player doit-il garder ses bibliothèques ?",
-    "desktopFoundToast": "{count} bibliothèques trouvées dans {path}",
+    "desktopFoundTitle": "Bibliothèques trouvées",
+    "desktopFoundBody": "37 Player a trouvé {count} bibliothèques dans {path} et les a ajoutées à sa liste :",
+    "desktopFoundBodyOne": "37 Player a trouvé une bibliothèque dans {path} et l'a ajoutée à sa liste :",
+    "desktopFoundAfter": "Ouvrez-les depuis Réglages → Bibliothèque. Une bibliothèque rangée ailleurs peut y être ajoutée avec Retrouver le dossier d'une bibliothèque…. Une bibliothèque reliée à une bibliothèque partagée peut demander, la première fois qu'elle s'ouvre ici, s'il s'agit d'un autre appareil : si 37 Player fonctionne aussi dans un navigateur sur cet ordinateur, c'est le même appareil.",
+    "desktopCopiesTitle": "Copies de « {name} »",
+    "desktopCopiesBody": "Chacun de ces dossiers dans {path} contient la bibliothèque « {name} » : ce sont des copies, faites peut-être avec un gestionnaire de fichiers. 37 Player en utilise un et laisse les autres tels quels. Lequel est la bibliothèque ? Une fois sûr, vous pourrez déplacer les autres ailleurs.",
+    "desktopCopyLine": "{folder} : modifié le {date}",
+    "desktopCopyReadOnly": "lecture seule : 37 Player ne peut pas y enregistrer",
+    "desktopCopyUseBtn": "Utiliser « {folder} »",
     "desktopFolderMissingTitle": "Où est le dossier de cette bibliothèque ?",
     "desktopFolderMissingBody": "37 Player ne trouve pas le dossier de « {name} ». S'il est sur un disque non branché, branchez-le et réessayez ; si le dossier a été déplacé, retrouvez-le.",
     "desktopFindBtn": "Retrouver le dossier d'une bibliothèque…",
@@ -8266,7 +8350,11 @@ const STRINGS = {
     "sgDesktopStep": "<strong>Prenez l'application de bureau.</strong> Sur cet ordinateur, 37 Player est au mieux en application : la bibliothèque est faite de fichiers ordinaires dans un dossier, l'application se met à jour toute seule et n'a pas à redemander sans cesse des autorisations.",
     "sgDownloadMac": "Télécharger pour Mac",
     "sgDownloadWin": "Télécharger pour Windows",
-    "sgWarnMac": "<strong>Passer l'avertissement.</strong> L'application n'est pas encore signée par Apple, donc la première fois macOS dit qu'il ne peut pas la vérifier. Ouvrez le fichier téléchargé et faites glisser <strong>37 Player</strong> dans <strong>Applications</strong>. Dans Applications, Contrôle-clic (ou clic droit) sur 37 Player, choisissez <strong>Ouvrir</strong>, puis encore <strong>Ouvrir</strong>. S'il n'y a pas de bouton Ouvrir : fermez l'avertissement, ouvrez <strong>Réglages Système → Confidentialité et sécurité</strong>, descendez et choisissez <strong>Ouvrir quand même</strong> à côté de 37 Player.",
+    "sgDownloadLinux": "Télécharger le .deb (Ubuntu, Debian, Mint…)",
+    "sgDownloadLinuxRpm": "Télécharger le .rpm (Fedora, openSUSE)",
+    "sgDesktopStepLinux": "<strong>Installez l'application de bureau.</strong> Sur cet ordinateur, 37 Player fonctionne mieux comme application : la bibliothèque est faite de fichiers ordinaires dans un dossier, et elle n'a pas à redemander sans cesse des autorisations.",
+    "sgWarnLinux": "<strong>L'installer.</strong> Le .deb est pour Ubuntu 22.04, Debian 12 ou plus récents et les systèmes qui en dérivent (Mint, Pop!_OS, elementary, Zorin, KDE neon) ; le .rpm pour Fedora et openSUSE. Ouvrez le fichier téléchargé pour l'installer avec votre logithèque, ou dans un terminal, dans le dossier où il a été téléchargé : <code>sudo apt install ./37-Player-linux-amd64.deb</code> (ou <code>sudo dnf install ./37-Player-linux-x86_64.rpm</code>). Les pages de 37 Player se mettent à jour d'elles-mêmes ; pour une application plus récente, téléchargez-la de nouveau de temps en temps.",
+    "sgWarnMac": "<strong>L'installer.</strong> Ouvrez le fichier téléchargé et faites glisser <strong>37 Player</strong> dans <strong>Applications</strong>, puis ouvrez-la depuis là. L'application est signée et vérifiée par Apple ; la première fois, macOS demande s'il faut ouvrir une application téléchargée sur Internet : choisissez <strong>Ouvrir</strong>.",
     "sgWarnWin": "<strong>Passer les avertissements.</strong> L'application n'est pas encore signée, donc Windows avertit deux fois.<br><strong>Dans les téléchargements d'Edge,</strong> le fichier est signalé comme rarement téléchargé : pointez-le, cliquez sur <strong>…</strong> et choisissez <strong>Conserver</strong>. Puis, dans <strong>Assurez-vous de faire confiance à…</strong>, cliquez sur la flèche <strong>▾</strong> dans le bouton noir <strong>Supprimer</strong> et choisissez <strong>Conserver quand même</strong>. (Dans Chrome, choisissez de conserver le fichier.)<br><strong>À l'ouverture,</strong> <strong>Windows a protégé votre ordinateur</strong> apparaît : cliquez sur <strong>Informations complémentaires</strong>, puis <strong>Exécuter quand même</strong>.",
     "sgCantInstall": "Je ne peux pas installer d'applications sur cet ordinateur",
     "sgBringShared": "<strong>Emportez cette bibliothèque :</strong> elle est dans la bibliothèque partagée « {name} ». Dans {where}, rejoignez-la aussi ({how}), et tout y arrive tout seul.",
@@ -9309,6 +9397,7 @@ const STRINGS = {
     "notSavingTitle": "Les modifications faites ici ne sont pas enregistrées",
     "notSavingFullBody": "Cet appareil n'a plus d'espace de stockage, donc 37 Player ne peut rien enregistrer pour l'instant. Les modifications faites ici depuis {time} seront perdues si 37 Player est fermé, et rien de nouveau ne peut être stocké (importations, fichiers d'une bibliothèque partagée). La lecture de ce qui est déjà ici fonctionne toujours. Libérez un peu d'espace (sur un iPad : Réglages → Général → Stockage iPad). 37 Player continue d'essayer et enregistre tout dès qu'il y a de la place.",
     "notSavingOtherBody": "37 Player ne peut pas enregistrer sur cet appareil pour l'instant ({error}). Les modifications faites ici depuis {time} seront perdues si 37 Player est fermé. La lecture de ce qui est déjà ici fonctionne toujours. La cause habituelle est un appareil plein : libérer un peu d'espace (sur un iPad : Réglages → Général → Stockage iPad) règle généralement le problème. 37 Player continue d'essayer et enregistre tout dès que possible.",
+    "notSavingDeniedBody": "37 Player n'a pas le droit d'enregistrer dans le dossier de cette bibliothèque ({error}). Les modifications faites ici depuis {time} seront perdues si 37 Player est fermé. La lecture de ce qui est déjà ici fonctionne toujours. Le dossier, ou des dossiers qu'il contient, sont peut-être en lecture seule, comme une copie venue d'un disque de sauvegarde ou d'un téléchargement : donnez-vous le droit de les modifier, ou utilisez une autre copie de la bibliothèque (Réglages → Bibliothèque → Retrouver le dossier d'une bibliothèque…). 37 Player continue d'essayer et enregistre tout dès qu'il le peut.",
     "notSavingTryNow": "Réessayer maintenant",
     "notSavingStill": "Toujours pas enregistré.",
     "notLoadedTitle": "Votre bibliothèque ne s'est pas chargée",
@@ -10025,7 +10114,15 @@ const STRINGS = {
     "desktopPlaceUseBtn": "Usar este lugar",
     "desktopPlaceChooseBtn": "Escolher outro lugar…",
     "desktopPlaceChooseTitle": "Onde deve o 37 Player guardar as suas bibliotecas?",
-    "desktopFoundToast": "Encontradas {count} bibliotecas em {path}",
+    "desktopFoundTitle": "Bibliotecas encontradas",
+    "desktopFoundBody": "O 37 Player encontrou {count} bibliotecas em {path} e acrescentou-as à sua lista:",
+    "desktopFoundBodyOne": "O 37 Player encontrou uma biblioteca em {path} e acrescentou-a à sua lista:",
+    "desktopFoundAfter": "Abra-as em Configurações → Biblioteca. Uma biblioteca guardada noutro lugar pode ser acrescentada aí com Procurar a pasta de uma biblioteca…. Uma biblioteca ligada a uma biblioteca partilhada pode perguntar, na primeira vez que abre aqui, se este é outro dispositivo: se o 37 Player também funciona num navegador neste computador, é o mesmo dispositivo.",
+    "desktopCopiesTitle": "Cópias de «{name}»",
+    "desktopCopiesBody": "Cada uma destas pastas em {path} contém a biblioteca «{name}»: são cópias, feitas talvez com um gestor de ficheiros. O 37 Player usa uma e deixa as outras como estão. Qual é a biblioteca? Quando tiver a certeza, as outras podem ser movidas para outro lugar.",
+    "desktopCopyLine": "{folder}: última alteração {date}",
+    "desktopCopyReadOnly": "só de leitura: o 37 Player não consegue guardar nela",
+    "desktopCopyUseBtn": "Usar «{folder}»",
     "desktopFolderMissingTitle": "Onde está a pasta desta biblioteca?",
     "desktopFolderMissingBody": "O 37 Player não encontra a pasta de «{name}». Se estiver num disco que não está ligado, ligue-o e tente de novo; se a pasta foi movida, procure-a.",
     "desktopFindBtn": "Procurar a pasta de uma biblioteca…",
@@ -10216,7 +10313,11 @@ const STRINGS = {
     "sgDesktopStep": "<strong>Obtenha a app para computador.</strong> Neste computador, o 37 Player funciona melhor como app: a biblioteca são ficheiros normais numa pasta, a app atualiza-se sozinha e não tem de pedir permissões repetidamente.",
     "sgDownloadMac": "Transferir para Mac",
     "sgDownloadWin": "Transferir para Windows",
-    "sgWarnMac": "<strong>Ultrapassar o aviso.</strong> A app ainda não está assinada pela Apple, por isso na primeira vez o macOS diz que não a consegue verificar. Abra o ficheiro transferido e arraste o <strong>37 Player</strong> para <strong>Aplicações</strong>. Em Aplicações, faça Control-clique (ou clique direito) no 37 Player, escolha <strong>Abrir</strong> e outra vez <strong>Abrir</strong>. Se não houver botão Abrir: feche o aviso, abra <strong>Definições do Sistema → Privacidade e segurança</strong>, desça e escolha <strong>Abrir mesmo assim</strong> junto ao 37 Player.",
+    "sgDownloadLinux": "Transferir .deb (Ubuntu, Debian, Mint…)",
+    "sgDownloadLinuxRpm": "Transferir .rpm (Fedora, openSUSE)",
+    "sgDesktopStepLinux": "<strong>Instale a aplicação para computador.</strong> Neste computador, o 37 Player funciona melhor como aplicação: a biblioteca são ficheiros normais numa pasta e não precisa de pedir permissões repetidamente.",
+    "sgWarnLinux": "<strong>Instalá-la.</strong> O .deb é para Ubuntu 22.04, Debian 12 ou mais recentes e os sistemas baseados neles (Mint, Pop!_OS, elementary, Zorin, KDE neon); o .rpm é para Fedora e openSUSE. Abra o ficheiro transferido para o instalar com o seu centro de software, ou num terminal, na pasta para onde foi transferido: <code>sudo apt install ./37-Player-linux-amd64.deb</code> (ou <code>sudo dnf install ./37-Player-linux-x86_64.rpm</code>). As páginas do 37 Player atualizam-se sozinhas; para uma aplicação mais recente, transfira-a de novo de vez em quando.",
+    "sgWarnMac": "<strong>Instalá-la.</strong> Abra o ficheiro transferido e arraste o <strong>37 Player</strong> para <strong>Aplicações</strong>; depois abra-o a partir daí. A aplicação é assinada e verificada pela Apple; na primeira vez, o macOS pergunta se quer abrir uma aplicação transferida da internet: escolha <strong>Abrir</strong>.",
     "sgWarnWin": "<strong>Ultrapassar os avisos.</strong> A app ainda não está assinada, por isso o Windows avisa duas vezes.<br><strong>Nas transferências do Edge,</strong> o ficheiro aparece como pouco transferido: aponte para ele, clique em <strong>…</strong> e escolha <strong>Manter</strong>. Depois, em <strong>Certifique-se de que confia em…</strong>, clique na seta <strong>▾</strong> dentro do botão preto <strong>Eliminar</strong> e escolha <strong>Manter mesmo assim</strong>. (No Chrome, escolha manter o ficheiro.)<br><strong>Ao abrir,</strong> aparece <strong>O Windows protegeu o seu PC</strong>: clique em <strong>Mais informações</strong> e depois em <strong>Executar mesmo assim</strong>.",
     "sgCantInstall": "Não posso instalar apps neste computador",
     "sgBringShared": "<strong>Leve esta biblioteca consigo:</strong> está na biblioteca partilhada “{name}”. Em {where}, junte-se também ({how}) e tudo chega lá sozinho.",
@@ -11259,6 +11360,7 @@ const STRINGS = {
     "notSavingTitle": "As alterações feitas aqui não estão sendo salvas",
     "notSavingFullBody": "Este dispositivo ficou sem espaço de armazenamento, então o 37 Player não consegue salvar nada agora. As alterações feitas aqui desde {time} serão perdidas se o 37 Player for fechado, e nada novo pode ser guardado (importações, arquivos de uma biblioteca compartilhada). Tocar o que já está aqui continua funcionando. Libere algum espaço (no iPad: Ajustes → Geral → Armazenamento do iPad). O 37 Player continua tentando e salva tudo assim que houver espaço.",
     "notSavingOtherBody": "O 37 Player não consegue salvar neste dispositivo agora ({error}). As alterações feitas aqui desde {time} serão perdidas se o 37 Player for fechado. Tocar o que já está aqui continua funcionando. A causa mais comum é o dispositivo cheio: liberar algum espaço (no iPad: Ajustes → Geral → Armazenamento do iPad) costuma resolver. O 37 Player continua tentando e salva tudo assim que puder.",
+    "notSavingDeniedBody": "O 37 Player não tem permissão para guardar na pasta desta biblioteca ({error}). As alterações feitas aqui desde as {time} perdem-se se o 37 Player for fechado. Reproduzir o que já está aqui continua a funcionar. A pasta, ou pastas dentro dela, podem ser só de leitura, como acontece com uma cópia de um disco de cópias de segurança ou de uma transferência: dê a si mesmo permissão para as alterar, ou use outra cópia da biblioteca (Configurações → Biblioteca → Procurar a pasta de uma biblioteca…). O 37 Player continua a tentar e guarda tudo assim que puder.",
     "notSavingTryNow": "Tentar de novo agora",
     "notSavingStill": "Ainda não está salvando.",
     "notLoadedTitle": "Sua biblioteca não carregou",
@@ -11975,7 +12077,15 @@ const STRINGS = {
     "desktopPlaceUseBtn": "Diesen Ort verwenden",
     "desktopPlaceChooseBtn": "Anderen Ort wählen…",
     "desktopPlaceChooseTitle": "Wo soll 37 Player seine Bibliotheken aufbewahren?",
-    "desktopFoundToast": "{count} Bibliotheken in {path} gefunden",
+    "desktopFoundTitle": "Bibliotheken gefunden",
+    "desktopFoundBody": "37 Player hat {count} Bibliotheken in {path} gefunden und in seine Liste aufgenommen:",
+    "desktopFoundBodyOne": "37 Player hat eine Bibliothek in {path} gefunden und in seine Liste aufgenommen:",
+    "desktopFoundAfter": "Öffnen Sie sie unter Einstellungen → Bibliothek. Eine Bibliothek an einem anderen Ort lässt sich dort mit „Ordner einer Bibliothek suchen…“ hinzufügen. Eine Bibliothek, die einer gemeinsamen Bibliothek beigetreten ist, fragt beim ersten Öffnen hier vielleicht, ob dies ein anderes Gerät ist: Läuft 37 Player auf diesem Computer auch in einem Browser, ist es dasselbe Gerät.",
+    "desktopCopiesTitle": "Kopien von „{name}“",
+    "desktopCopiesBody": "Jeder dieser Ordner in {path} enthält die Bibliothek „{name}“: Kopien davon, vielleicht mit einem Dateimanager gemacht. 37 Player verwendet einen davon und lässt die anderen, wie sie sind. Welcher ist die Bibliothek? Wenn Sie sicher sind, können die anderen woandershin verschoben werden.",
+    "desktopCopyLine": "{folder}: zuletzt geändert {date}",
+    "desktopCopyReadOnly": "schreibgeschützt: 37 Player kann darin nicht speichern",
+    "desktopCopyUseBtn": "„{folder}“ verwenden",
     "desktopFolderMissingTitle": "Wo ist der Ordner dieser Bibliothek?",
     "desktopFolderMissingBody": "37 Player findet den Ordner von „{name}“ nicht. Liegt er auf einem Laufwerk, das nicht angeschlossen ist, schließen Sie es an und versuchen Sie es erneut; wurde der Ordner verschoben, suchen Sie ihn.",
     "desktopFindBtn": "Ordner einer Bibliothek suchen…",
@@ -12166,7 +12276,11 @@ const STRINGS = {
     "sgDesktopStep": "<strong>Holen Sie sich die Desktop-App.</strong> Auf diesem Computer ist 37 Player als App am besten: Die Bibliothek besteht aus gewöhnlichen Dateien in einem Ordner, die App aktualisiert sich selbst und muss nicht ständig erneut um Erlaubnis fragen.",
     "sgDownloadMac": "Für Mac laden",
     "sgDownloadWin": "Für Windows laden",
-    "sgWarnMac": "<strong>An der Warnung vorbei.</strong> Die App ist noch nicht von Apple signiert, daher sagt macOS beim ersten Mal, es könne sie nicht prüfen. Öffnen Sie die geladene Datei und ziehen Sie <strong>37 Player</strong> in <strong>Programme</strong>. Klicken Sie dort bei gedrückter Ctrl-Taste (oder mit rechts) auf 37 Player, wählen Sie <strong>Öffnen</strong> und nochmals <strong>Öffnen</strong>. Gibt es keine Schaltfläche Öffnen: Warnung schließen, <strong>Systemeinstellungen → Datenschutz &amp; Sicherheit</strong> öffnen, nach unten scrollen und neben 37 Player <strong>Dennoch öffnen</strong> wählen.",
+    "sgDownloadLinux": ".deb laden (Ubuntu, Debian, Mint…)",
+    "sgDownloadLinuxRpm": ".rpm laden (Fedora, openSUSE)",
+    "sgDesktopStepLinux": "<strong>Holen Sie sich die Desktop-App.</strong> Auf diesem Computer ist 37 Player als App am besten: Die Bibliothek besteht aus gewöhnlichen Dateien in einem Ordner, und sie muss nicht immer wieder um Berechtigungen bitten.",
+    "sgWarnLinux": "<strong>Installieren.</strong> Die .deb ist für Ubuntu 22.04, Debian 12 oder neuer und darauf aufbauende Systeme (Mint, Pop!_OS, elementary, Zorin, KDE neon); die .rpm für Fedora und openSUSE. Öffnen Sie die geladene Datei, um sie mit Ihrer Softwareverwaltung zu installieren, oder in einem Terminal im Ordner, in den sie geladen wurde: <code>sudo apt install ./37-Player-linux-amd64.deb</code> (oder <code>sudo dnf install ./37-Player-linux-x86_64.rpm</code>). Die Seiten von 37 Player halten sich selbst aktuell; für eine neuere App laden Sie sie ab und zu neu.",
+    "sgWarnMac": "<strong>Installieren.</strong> Öffnen Sie die geladene Datei und ziehen Sie <strong>37 Player</strong> in <strong>Programme</strong>, dann öffnen Sie es von dort. Die App ist von Apple signiert und geprüft; beim ersten Mal fragt macOS, ob eine aus dem Internet geladene App geöffnet werden soll: Wählen Sie <strong>Öffnen</strong>.",
     "sgWarnWin": "<strong>An den Warnungen vorbei.</strong> Die App ist noch nicht signiert, daher warnt Windows zweimal.<br><strong>In den Downloads von Edge</strong> ist die Datei als selten heruntergeladen markiert: Zeigen Sie darauf, klicken Sie auf <strong>…</strong> und wählen Sie <strong>Behalten</strong>. Klicken Sie dann unter <strong>Stellen Sie sicher, dass Sie … vertrauen</strong> auf den Pfeil <strong>▾</strong> in der schwarzen Schaltfläche <strong>Löschen</strong> und wählen Sie <strong>Trotzdem beibehalten</strong>. (In Chrome: die Datei behalten.)<br><strong>Beim Öffnen</strong> erscheint <strong>Der Computer wurde durch Windows geschützt</strong>: Klicken Sie auf <strong>Weitere Informationen</strong>, dann <strong>Trotzdem ausführen</strong>.",
     "sgCantInstall": "Ich kann auf diesem Computer keine Apps installieren",
     "sgBringShared": "<strong>Diese Bibliothek mitnehmen:</strong> Sie ist in der geteilten Bibliothek „{name}“. Treten Sie ihr in {where} ebenfalls bei ({how}), dann kommt alles von selbst dort an.",
@@ -13209,6 +13323,7 @@ const STRINGS = {
     "notSavingTitle": "Änderungen hier werden nicht gespeichert",
     "notSavingFullBody": "Auf diesem Gerät ist kein Speicherplatz mehr frei, daher kann 37 Player gerade nichts speichern. Änderungen, die hier seit {time} gemacht wurden, gehen verloren, wenn 37 Player geschlossen wird, und nichts Neues kann abgelegt werden (Importe, Dateien aus einer gemeinsamen Bibliothek). Abspielen, was schon hier ist, funktioniert weiterhin. Gib etwas Speicherplatz frei (auf einem iPad: Einstellungen → Allgemein → iPad-Speicher). 37 Player versucht es weiter und speichert alles, sobald Platz ist.",
     "notSavingOtherBody": "37 Player kann auf diesem Gerät gerade nicht speichern ({error}). Änderungen, die hier seit {time} gemacht wurden, gehen verloren, wenn 37 Player geschlossen wird. Abspielen, was schon hier ist, funktioniert weiterhin. Meist ist das Gerät voll: etwas Speicherplatz freigeben (auf einem iPad: Einstellungen → Allgemein → iPad-Speicher) behebt es in der Regel. 37 Player versucht es weiter und speichert alles, sobald es geht.",
+    "notSavingDeniedBody": "37 Player darf im Ordner dieser Bibliothek nicht speichern ({error}). Änderungen, die hier seit {time} gemacht wurden, gehen verloren, wenn 37 Player geschlossen wird. Was schon hier ist, lässt sich weiter abspielen. Der Ordner oder Ordner darin sind vielleicht schreibgeschützt, wie bei einer Kopie von einem Sicherungslaufwerk oder aus einem Download: Geben Sie sich die Berechtigung, sie zu ändern, oder verwenden Sie eine andere Kopie der Bibliothek (Einstellungen → Bibliothek → Ordner einer Bibliothek suchen…). 37 Player versucht es weiter und speichert alles, sobald es geht.",
     "notSavingTryNow": "Jetzt erneut versuchen",
     "notSavingStill": "Speichert immer noch nicht.",
     "notLoadedTitle": "Deine Bibliothek wurde nicht geladen",
@@ -13925,7 +14040,15 @@ const STRINGS = {
     "desktopPlaceUseBtn": "使用这个位置",
     "desktopPlaceChooseBtn": "选择其他位置…",
     "desktopPlaceChooseTitle": "37 Player 应把曲库放在哪里？",
-    "desktopFoundToast": "在 {path} 找到 {count} 个曲库",
+    "desktopFoundTitle": "找到的曲库",
+    "desktopFoundBody": "37 Player 在 {path} 找到 {count} 个曲库，并已加入列表：",
+    "desktopFoundBodyOne": "37 Player 在 {path} 找到一个曲库，并已加入列表：",
+    "desktopFoundAfter": "可在“设置 → 曲库”中打开它们。存放在别处的曲库，可在那里用“查找曲库文件夹…”加入。加入了共享曲库的曲库，第一次在这里打开时可能会问这是不是另一台设备：如果这台电脑的浏览器里也在使用 37 Player，那就是同一台设备。",
+    "desktopCopiesTitle": "“{name}”的副本",
+    "desktopCopiesBody": "{path} 中的这些文件夹都存有曲库“{name}”：它们是副本，可能是用文件管理器复制的。37 Player 只使用其中一个，其他的保持不动。哪一个才是这个曲库？确定之后，可以把其他的移到别处。",
+    "desktopCopyLine": "{folder}：最后更改于 {date}",
+    "desktopCopyReadOnly": "只读：37 Player 无法在其中保存",
+    "desktopCopyUseBtn": "使用“{folder}”",
     "desktopFolderMissingTitle": "这个曲库的文件夹在哪里？",
     "desktopFolderMissingBody": "37 Player 找不到“{name}”的文件夹。如果它在未连接的磁盘上，请连接后再试；如果文件夹被移动了，请找到它。",
     "desktopFindBtn": "查找曲库文件夹…",
@@ -14116,7 +14239,11 @@ const STRINGS = {
     "sgDesktopStep": "<strong>下载桌面应用。</strong>在这台电脑上，37 Player 作为应用最好用：曲库是一个文件夹里的普通文件，应用会自动更新，也不必反复请求权限。",
     "sgDownloadMac": "下载 Mac 版",
     "sgDownloadWin": "下载 Windows 版",
-    "sgWarnMac": "<strong>如何通过警告。</strong>这个应用还没有经过 Apple 签名，所以第一次打开时 macOS 会说无法检查它。打开下载的文件，把 <strong>37 Player</strong> 拖到<strong>应用程序</strong>。在应用程序中，按住 Control 点按（或右键点按）37 Player，选择<strong>打开</strong>，再选一次<strong>打开</strong>。如果没有“打开”按钮：关闭警告，打开<strong>系统设置 → 隐私与安全性</strong>，向下滚动，在 37 Player 旁选择<strong>仍要打开</strong>。",
+    "sgDownloadLinux": "下载 .deb（Ubuntu、Debian、Mint…）",
+    "sgDownloadLinuxRpm": "下载 .rpm（Fedora、openSUSE）",
+    "sgDesktopStepLinux": "<strong>安装桌面应用。</strong>在这台电脑上，37 Player 作为应用使用最好：曲库就是文件夹中的普通文件，也不必一再请求权限。",
+    "sgWarnLinux": "<strong>安装。</strong>.deb 适用于 Ubuntu 22.04、Debian 12 或更新版本，以及基于它们的系统（Mint、Pop!_OS、elementary、Zorin、KDE neon）；.rpm 适用于 Fedora 和 openSUSE。打开下载的文件，用软件中心安装；或者在终端里、在下载所在的文件夹中运行：<code>sudo apt install ./37-Player-linux-amd64.deb</code>（或 <code>sudo dnf install ./37-Player-linux-x86_64.rpm</code>）。37 Player 的页面会自动更新；想要更新的应用，请不时重新下载。",
+    "sgWarnMac": "<strong>安装。</strong>打开下载的文件，把 <strong>37 Player</strong> 拖到<strong>“应用程序”</strong>，然后从那里打开它。这个应用经过 Apple 签名和检查；第一次打开时，macOS 会问是否打开从互联网下载的应用：选择<strong>“打开”</strong>。",
     "sgWarnWin": "<strong>如何通过警告。</strong>这个应用还没有签名，所以 Windows 会警告两次。<br><strong>在 Edge 的下载列表中，</strong>文件会被标为不常被下载：指向它，点击<strong>…</strong>，选择<strong>保留</strong>。然后在<strong>请确保你信任…</strong>中，点击黑色<strong>删除</strong>按钮里的箭头 <strong>▾</strong>，选择<strong>仍然保留</strong>。（在 Chrome 中，选择保留文件。）<br><strong>打开时，</strong>会出现 <strong>Windows 已保护你的电脑</strong>：点击<strong>更多信息</strong>，然后点击<strong>仍要运行</strong>。",
     "sgCantInstall": "我不能在这台电脑上安装应用",
     "sgBringShared": "<strong>把这个曲库带过去：</strong>它在共享曲库“{name}”中。在{where}里也加入它（{how}），所有内容会自动到达。",
@@ -15159,6 +15286,7 @@ const STRINGS = {
     "notSavingTitle": "这里的更改没有被保存",
     "notSavingFullBody": "此设备的存储空间已用完，所以 37 Player 现在无法保存任何内容。自 {time} 起在这里所做的更改，如果关闭 37 Player 就会丢失，而且无法存入任何新内容（导入、来自共享曲库的文件）。播放已有的内容仍然正常。请释放一些空间（iPad 上：设置 → 通用 → iPad 储存空间）。37 Player 会继续尝试，一有空间就保存全部内容。",
     "notSavingOtherBody": "37 Player 现在无法在此设备上保存（{error}）。自 {time} 起在这里所做的更改，如果关闭 37 Player 就会丢失。播放已有的内容仍然正常。常见原因是设备已满：释放一些空间（iPad 上：设置 → 通用 → iPad 储存空间）通常就能解决。37 Player 会继续尝试，一旦可以就保存全部内容。",
+    "notSavingDeniedBody": "37 Player 没有权限在这个曲库的文件夹中保存（{error}）。自 {time} 起在这里所做的更改，关闭 37 Player 后会丢失。已有的内容仍然可以播放。这个文件夹或其中的文件夹可能是只读的（例如从备份硬盘或下载中复制来的）：请给自己修改它们的权限，或使用这个曲库的另一个副本（设置 → 曲库 → 查找曲库文件夹…）。37 Player 会继续尝试，一旦可以就保存所有内容。",
     "notSavingTryNow": "立即重试",
     "notSavingStill": "仍然无法保存。",
     "notLoadedTitle": "你的曲库没有加载",
@@ -15875,7 +16003,15 @@ const STRINGS = {
     "desktopPlaceUseBtn": "Dùng nơi này",
     "desktopPlaceChooseBtn": "Chọn nơi khác…",
     "desktopPlaceChooseTitle": "37 Player nên giữ các thư viện ở đâu?",
-    "desktopFoundToast": "Đã tìm thấy {count} thư viện trong {path}",
+    "desktopFoundTitle": "Đã tìm thấy thư viện",
+    "desktopFoundBody": "37 Player đã tìm thấy {count} thư viện trong {path} và thêm chúng vào danh sách:",
+    "desktopFoundBodyOne": "37 Player đã tìm thấy một thư viện trong {path} và thêm nó vào danh sách:",
+    "desktopFoundAfter": "Mở chúng trong Cài đặt → Thư viện. Thư viện để ở nơi khác có thể được thêm ở đó bằng Tìm thư mục của một thư viện…. Thư viện đã tham gia một thư viện chung có thể hỏi, lần đầu mở ở đây, đây có phải là thiết bị khác không: nếu 37 Player cũng chạy trong trình duyệt trên máy tính này thì đó là cùng một thiết bị.",
+    "desktopCopiesTitle": "Các bản sao của “{name}”",
+    "desktopCopiesBody": "Mỗi thư mục này trong {path} đều chứa thư viện “{name}”: đó là các bản sao, có thể được tạo bằng trình quản lý tệp. 37 Player dùng một trong số đó và để nguyên các thư mục còn lại. Thư mục nào là thư viện? Khi đã chắc chắn, có thể chuyển các thư mục kia đi nơi khác.",
+    "desktopCopyLine": "{folder}: thay đổi lần cuối {date}",
+    "desktopCopyReadOnly": "chỉ đọc: 37 Player không lưu vào được",
+    "desktopCopyUseBtn": "Dùng “{folder}”",
     "desktopFolderMissingTitle": "Thư mục của thư viện này ở đâu?",
     "desktopFolderMissingBody": "37 Player không tìm thấy thư mục của “{name}”. Nếu nó nằm trên ổ chưa cắm, hãy cắm vào rồi thử lại; nếu thư mục đã bị chuyển đi, hãy tìm nó.",
     "desktopFindBtn": "Tìm thư mục của một thư viện…",
@@ -16066,7 +16202,11 @@ const STRINGS = {
     "sgDesktopStep": "<strong>Tải ứng dụng máy tính.</strong> Trên máy tính này, 37 Player tốt nhất là dùng dạng ứng dụng: thư viện là các tệp bình thường trong một thư mục, ứng dụng tự cập nhật và không phải hỏi quyền lặp đi lặp lại.",
     "sgDownloadMac": "Tải cho Mac",
     "sgDownloadWin": "Tải cho Windows",
-    "sgWarnMac": "<strong>Vượt qua cảnh báo.</strong> Ứng dụng chưa được Apple ký, nên lần đầu macOS báo không thể kiểm tra nó. Mở tệp đã tải và kéo <strong>37 Player</strong> vào <strong>Ứng dụng</strong>. Trong Ứng dụng, Control-bấm (hoặc bấm chuột phải) vào 37 Player, chọn <strong>Mở</strong>, rồi <strong>Mở</strong> lần nữa. Nếu không có nút Mở: đóng cảnh báo, mở <strong>Cài đặt hệ thống → Quyền riêng tư &amp; bảo mật</strong>, cuộn xuống và chọn <strong>Vẫn mở</strong> bên cạnh 37 Player.",
+    "sgDownloadLinux": "Tải .deb (Ubuntu, Debian, Mint…)",
+    "sgDownloadLinuxRpm": "Tải .rpm (Fedora, openSUSE)",
+    "sgDesktopStepLinux": "<strong>Cài ứng dụng máy tính.</strong> Trên máy tính này, 37 Player tốt nhất là dùng dạng ứng dụng: thư viện là các tệp bình thường trong một thư mục, và không phải hỏi quyền nhiều lần.",
+    "sgWarnLinux": "<strong>Cài đặt.</strong> Tệp .deb dành cho Ubuntu 22.04, Debian 12 trở lên và các hệ thống dựa trên chúng (Mint, Pop!_OS, elementary, Zorin, KDE neon); tệp .rpm dành cho Fedora và openSUSE. Mở tệp đã tải để cài bằng trung tâm phần mềm, hoặc trong cửa sổ dòng lệnh, ở thư mục chứa tệp đã tải: <code>sudo apt install ./37-Player-linux-amd64.deb</code> (hoặc <code>sudo dnf install ./37-Player-linux-x86_64.rpm</code>). Các trang của 37 Player tự cập nhật; muốn có ứng dụng mới hơn, thỉnh thoảng hãy tải lại.",
+    "sgWarnMac": "<strong>Cài đặt.</strong> Mở tệp đã tải và kéo <strong>37 Player</strong> vào <strong>Ứng dụng</strong>, rồi mở nó từ đó. Ứng dụng đã được Apple ký và kiểm tra; lần đầu, macOS hỏi có mở ứng dụng tải từ internet không: chọn <strong>Mở</strong>.",
     "sgWarnWin": "<strong>Vượt qua các cảnh báo.</strong> Ứng dụng chưa được ký, nên Windows cảnh báo hai lần.<br><strong>Trong danh sách tải xuống của Edge,</strong> tệp bị đánh dấu là ít được tải: trỏ vào nó, bấm <strong>…</strong> và chọn <strong>Giữ</strong>. Sau đó, trong <strong>Hãy đảm bảo bạn tin tưởng…</strong>, bấm mũi tên <strong>▾</strong> bên trong nút đen <strong>Xóa</strong> và chọn <strong>Vẫn giữ</strong>. (Trong Chrome, chọn giữ tệp.)<br><strong>Khi mở,</strong> thấy <strong>Windows đã bảo vệ PC của bạn</strong>: bấm <strong>Thêm thông tin</strong>, rồi <strong>Vẫn chạy</strong>.",
     "sgCantInstall": "Tôi không thể cài ứng dụng trên máy tính này",
     "sgBringShared": "<strong>Mang thư viện này theo:</strong> nó nằm trong thư viện dùng chung “{name}”. Trong {where}, hãy tham gia nó nữa ({how}), và mọi thứ sẽ tự đến đó.",
@@ -17109,6 +17249,7 @@ const STRINGS = {
     "notSavingTitle": "Các thay đổi ở đây không được lưu",
     "notSavingFullBody": "Thiết bị này đã hết dung lượng lưu trữ, nên 37 Player hiện không thể lưu gì. Các thay đổi làm ở đây từ {time} sẽ mất nếu đóng 37 Player, và không thể lưu thêm gì mới (nhập tệp, tệp từ thư viện dùng chung). Phát những gì đã có ở đây vẫn hoạt động. Hãy giải phóng bớt dung lượng (trên iPad: Cài đặt → Cài đặt chung → Dung lượng iPad). 37 Player sẽ tiếp tục thử và lưu tất cả ngay khi có chỗ.",
     "notSavingOtherBody": "37 Player hiện không thể lưu trên thiết bị này ({error}). Các thay đổi làm ở đây từ {time} sẽ mất nếu đóng 37 Player. Phát những gì đã có ở đây vẫn hoạt động. Nguyên nhân thường gặp là thiết bị đầy: giải phóng bớt dung lượng (trên iPad: Cài đặt → Cài đặt chung → Dung lượng iPad) thường sẽ khắc phục. 37 Player sẽ tiếp tục thử và lưu tất cả ngay khi có thể.",
+    "notSavingDeniedBody": "37 Player không được phép lưu vào thư mục của thư viện này ({error}). Những thay đổi ở đây từ {time} sẽ mất nếu đóng 37 Player. Vẫn phát được những gì đã có ở đây. Thư mục, hoặc các thư mục bên trong, có thể ở chế độ chỉ đọc, như bản sao từ ổ sao lưu hay từ tệp tải về: hãy cấp cho mình quyền thay đổi chúng, hoặc dùng một bản sao khác của thư viện (Cài đặt → Thư viện → Tìm thư mục của một thư viện…). 37 Player tiếp tục thử và lưu mọi thứ ngay khi có thể.",
     "notSavingTryNow": "Thử lại ngay",
     "notSavingStill": "Vẫn chưa lưu được.",
     "notLoadedTitle": "Thư viện của bạn chưa tải được",
@@ -17825,7 +17966,15 @@ const STRINGS = {
     "desktopPlaceUseBtn": "Χρήση αυτής της θέσης",
     "desktopPlaceChooseBtn": "Επιλογή άλλης θέσης…",
     "desktopPlaceChooseTitle": "Πού να κρατά το 37 Player τις βιβλιοθήκες του;",
-    "desktopFoundToast": "Βρέθηκαν {count} βιβλιοθήκες στο {path}",
+    "desktopFoundTitle": "Βρέθηκαν βιβλιοθήκες",
+    "desktopFoundBody": "Το 37 Player βρήκε {count} βιβλιοθήκες στο {path} και τις πρόσθεσε στη λίστα του:",
+    "desktopFoundBodyOne": "Το 37 Player βρήκε μια βιβλιοθήκη στο {path} και την πρόσθεσε στη λίστα του:",
+    "desktopFoundAfter": "Ανοίξτε τις από Ρυθμίσεις → Βιβλιοθήκη. Μια βιβλιοθήκη που βρίσκεται αλλού μπορεί να προστεθεί εκεί με την Εύρεση φακέλου βιβλιοθήκης…. Μια βιβλιοθήκη που έχει ενταχθεί σε κοινόχρηστη βιβλιοθήκη ίσως ρωτήσει, την πρώτη φορά που ανοίγει εδώ, αν πρόκειται για άλλη συσκευή: αν το 37 Player τρέχει και σε πρόγραμμα περιήγησης σε αυτόν τον υπολογιστή, είναι η ίδια συσκευή.",
+    "desktopCopiesTitle": "Αντίγραφα της «{name}»",
+    "desktopCopiesBody": "Καθένας από αυτούς τους φακέλους στο {path} περιέχει τη βιβλιοθήκη «{name}»: είναι αντίγραφά της, ίσως φτιαγμένα με διαχειριστή αρχείων. Το 37 Player χρησιμοποιεί έναν και αφήνει τους άλλους όπως είναι. Ποιος είναι η βιβλιοθήκη; Όταν είστε σίγουροι, οι άλλοι μπορούν να μετακινηθούν κάπου αλλού.",
+    "desktopCopyLine": "{folder}: τελευταία αλλαγή {date}",
+    "desktopCopyReadOnly": "μόνο για ανάγνωση: το 37 Player δεν μπορεί να αποθηκεύσει εκεί",
+    "desktopCopyUseBtn": "Χρήση του «{folder}»",
     "desktopFolderMissingTitle": "Πού είναι ο φάκελος αυτής της βιβλιοθήκης;",
     "desktopFolderMissingBody": "Το 37 Player δεν βρίσκει τον φάκελο της «{name}». Αν είναι σε δίσκο που δεν είναι συνδεδεμένος, συνδέστε τον και δοκιμάστε ξανά· αν ο φάκελος μετακινήθηκε, βρείτε τον.",
     "desktopFindBtn": "Εύρεση φακέλου βιβλιοθήκης…",
@@ -18016,7 +18165,11 @@ const STRINGS = {
     "sgDesktopStep": "<strong>Πάρτε την εφαρμογή υπολογιστή.</strong> Σε αυτόν τον υπολογιστή το 37 Player είναι καλύτερο ως εφαρμογή: η βιβλιοθήκη είναι συνηθισμένα αρχεία σε έναν φάκελο, η εφαρμογή ενημερώνεται μόνη της και δεν χρειάζεται να ζητά συνεχώς άδειες.",
     "sgDownloadMac": "Λήψη για Mac",
     "sgDownloadWin": "Λήψη για Windows",
-    "sgWarnMac": "<strong>Πώς να περάσετε την προειδοποίηση.</strong> Η εφαρμογή δεν έχει ακόμη υπογραφή της Apple, οπότε την πρώτη φορά το macOS λέει ότι δεν μπορεί να την ελέγξει. Ανοίξτε το αρχείο που κατεβάσατε και σύρετε το <strong>37 Player</strong> στις <strong>Εφαρμογές</strong>. Εκεί, Control-κλικ (ή δεξί κλικ) στο 37 Player, επιλέξτε <strong>Άνοιγμα</strong> και ξανά <strong>Άνοιγμα</strong>. Αν δεν υπάρχει κουμπί Άνοιγμα: κλείστε την προειδοποίηση, ανοίξτε <strong>Ρυθμίσεις συστήματος → Απόρρητο και ασφάλεια</strong>, κυλήστε κάτω και επιλέξτε <strong>Άνοιγμα παρ' όλα αυτά</strong> δίπλα στο 37 Player.",
+    "sgDownloadLinux": "Λήψη .deb (Ubuntu, Debian, Mint…)",
+    "sgDownloadLinuxRpm": "Λήψη .rpm (Fedora, openSUSE)",
+    "sgDesktopStepLinux": "<strong>Αποκτήστε την εφαρμογή υπολογιστή.</strong> Σε αυτόν τον υπολογιστή, το 37 Player λειτουργεί καλύτερα ως εφαρμογή: η βιβλιοθήκη είναι συνηθισμένα αρχεία σε έναν φάκελο και δεν χρειάζεται να ζητά ξανά και ξανά άδειες.",
+    "sgWarnLinux": "<strong>Εγκατάσταση.</strong> Το .deb είναι για Ubuntu 22.04, Debian 12 ή νεότερα και τα συστήματα που βασίζονται σε αυτά (Mint, Pop!_OS, elementary, Zorin, KDE neon)· το .rpm για Fedora και openSUSE. Ανοίξτε το αρχείο που κατεβάσατε για να το εγκαταστήσετε με το κέντρο λογισμικού, ή σε ένα τερματικό, στον φάκελο όπου κατέβηκε: <code>sudo apt install ./37-Player-linux-amd64.deb</code> (ή <code>sudo dnf install ./37-Player-linux-x86_64.rpm</code>). Οι σελίδες του 37 Player ενημερώνονται μόνες τους· για νεότερη εφαρμογή, κατεβάστε την ξανά πού και πού.",
+    "sgWarnMac": "<strong>Εγκατάσταση.</strong> Ανοίξτε το αρχείο που κατεβάσατε και σύρετε το <strong>37 Player</strong> στις <strong>Εφαρμογές</strong>, και ανοίξτε το από εκεί. Η εφαρμογή είναι υπογεγραμμένη και ελεγμένη από την Apple· την πρώτη φορά, το macOS ρωτά αν θέλετε να ανοίξετε μια εφαρμογή που κατεβάσατε από το διαδίκτυο: επιλέξτε <strong>Άνοιγμα</strong>.",
     "sgWarnWin": "<strong>Πώς να περάσετε τις προειδοποιήσεις.</strong> Η εφαρμογή δεν έχει ακόμη υπογραφή, οπότε τα Windows προειδοποιούν δύο φορές.<br><strong>Στις λήψεις του Edge,</strong> το αρχείο σημειώνεται ως σπάνια ληφθέν: δείξτε το, πατήστε <strong>…</strong> και επιλέξτε <strong>Διατήρηση</strong>. Μετά, στο <strong>Βεβαιωθείτε ότι εμπιστεύεστε…</strong>, πατήστε το βελάκι <strong>▾</strong> μέσα στο μαύρο κουμπί <strong>Διαγραφή</strong> και επιλέξτε <strong>Διατήρηση ούτως ή άλλως</strong>. (Στο Chrome, επιλέξτε να κρατήσετε το αρχείο.)<br><strong>Όταν ανοίξει,</strong> εμφανίζεται <strong>Τα Windows προστάτευσαν τον υπολογιστή σας</strong>: πατήστε <strong>Περισσότερες πληροφορίες</strong> και μετά <strong>Εκτέλεση ούτως ή άλλως</strong>.",
     "sgCantInstall": "Δεν μπορώ να εγκαταστήσω εφαρμογές σε αυτόν τον υπολογιστή",
     "sgBringShared": "<strong>Πάρτε μαζί αυτή τη βιβλιοθήκη:</strong> βρίσκεται στην κοινόχρηστη βιβλιοθήκη «{name}». Στην {where} συμμετάσχετε κι εκεί ({how}), και όλα φτάνουν μόνα τους.",
@@ -19059,6 +19212,7 @@ const STRINGS = {
     "notSavingTitle": "Οι αλλαγές εδώ δεν αποθηκεύονται",
     "notSavingFullBody": "Αυτή η συσκευή δεν έχει άλλο αποθηκευτικό χώρο, οπότε το 37 Player δεν μπορεί να αποθηκεύσει τίποτα αυτή τη στιγμή. Οι αλλαγές που έγιναν εδώ από τις {time} θα χαθούν αν κλείσει το 37 Player, και τίποτα νέο δεν μπορεί να αποθηκευτεί (εισαγωγές, αρχεία από κοινόχρηστη βιβλιοθήκη). Η αναπαραγωγή όσων υπάρχουν ήδη εδώ λειτουργεί κανονικά. Ελευθερώστε λίγο χώρο (σε iPad: Ρυθμίσεις → Γενικά → Αποθηκευτικός χώρος iPad). Το 37 Player συνεχίζει να προσπαθεί και αποθηκεύει τα πάντα μόλις υπάρξει χώρος.",
     "notSavingOtherBody": "Το 37 Player δεν μπορεί να αποθηκεύσει σε αυτή τη συσκευή αυτή τη στιγμή ({error}). Οι αλλαγές που έγιναν εδώ από τις {time} θα χαθούν αν κλείσει το 37 Player. Η αναπαραγωγή όσων υπάρχουν ήδη εδώ λειτουργεί κανονικά. Η συνηθισμένη αιτία είναι μια γεμάτη συσκευή: αν ελευθερώσετε λίγο χώρο (σε iPad: Ρυθμίσεις → Γενικά → Αποθηκευτικός χώρος iPad) συνήθως διορθώνεται. Το 37 Player συνεχίζει να προσπαθεί και αποθηκεύει τα πάντα μόλις μπορέσει.",
+    "notSavingDeniedBody": "Το 37 Player δεν έχει άδεια να αποθηκεύσει στον φάκελο αυτής της βιβλιοθήκης ({error}). Οι αλλαγές που έγιναν εδώ από τις {time} θα χαθούν αν κλείσει το 37 Player. Η αναπαραγωγή όσων υπάρχουν ήδη εδώ λειτουργεί κανονικά. Ο φάκελος, ή φάκελοι μέσα του, ίσως είναι μόνο για ανάγνωση, όπως ένα αντίγραφο από δίσκο αντιγράφων ασφαλείας ή από λήψη: δώστε στον εαυτό σας άδεια να τους αλλάξετε, ή χρησιμοποιήστε άλλο αντίγραφο της βιβλιοθήκης (Ρυθμίσεις → Βιβλιοθήκη → Εύρεση φακέλου βιβλιοθήκης…). Το 37 Player συνεχίζει να προσπαθεί και αποθηκεύει τα πάντα μόλις μπορέσει.",
     "notSavingTryNow": "Δοκιμή ξανά τώρα",
     "notSavingStill": "Ακόμα δεν αποθηκεύεται.",
     "notLoadedTitle": "Η βιβλιοθήκη σας δεν φορτώθηκε",
@@ -19775,7 +19929,15 @@ const STRINGS = {
     "desktopPlaceUseBtn": "Usa questo posto",
     "desktopPlaceChooseBtn": "Scegli un altro posto…",
     "desktopPlaceChooseTitle": "Dove deve tenere le sue librerie 37 Player?",
-    "desktopFoundToast": "Trovate {count} librerie in {path}",
+    "desktopFoundTitle": "Librerie trovate",
+    "desktopFoundBody": "37 Player ha trovato {count} librerie in {path} e le ha aggiunte al suo elenco:",
+    "desktopFoundBodyOne": "37 Player ha trovato una libreria in {path} e l'ha aggiunta al suo elenco:",
+    "desktopFoundAfter": "Aprile da Impostazioni → Libreria. Una libreria tenuta altrove si può aggiungere lì con Trova la cartella di una libreria…. Una libreria unita a una libreria condivisa può chiedere, la prima volta che si apre qui, se questo è un altro dispositivo: se 37 Player funziona anche in un browser su questo computer, è lo stesso dispositivo.",
+    "desktopCopiesTitle": "Copie di «{name}»",
+    "desktopCopiesBody": "Ognuna di queste cartelle in {path} contiene la libreria «{name}»: sono copie, fatte forse con un gestore di file. 37 Player ne usa una e lascia le altre come sono. Quale è la libreria? Quando ne sei sicuro, le altre si possono spostare altrove.",
+    "desktopCopyLine": "{folder}: ultima modifica {date}",
+    "desktopCopyReadOnly": "sola lettura: 37 Player non può salvarci",
+    "desktopCopyUseBtn": "Usa «{folder}»",
     "desktopFolderMissingTitle": "Dov'è la cartella di questa libreria?",
     "desktopFolderMissingBody": "37 Player non trova la cartella di «{name}». Se è su un disco non collegato, collegalo e riprova; se la cartella è stata spostata, trovala.",
     "desktopFindBtn": "Trova la cartella di una libreria…",
@@ -19966,7 +20128,11 @@ const STRINGS = {
     "sgDesktopStep": "<strong>Scarica l'app per computer.</strong> Su questo computer 37 Player funziona meglio come app: la libreria è fatta di file normali in una cartella, l'app si aggiorna da sola e non deve chiedere permessi in continuazione.",
     "sgDownloadMac": "Scarica per Mac",
     "sgDownloadWin": "Scarica per Windows",
-    "sgWarnMac": "<strong>Superare l'avviso.</strong> L'app non è ancora firmata da Apple, quindi la prima volta macOS dice che non può verificarla. Apri il file scaricato e trascina <strong>37 Player</strong> in <strong>Applicazioni</strong>. In Applicazioni, fai Control-clic (o clic destro) su 37 Player, scegli <strong>Apri</strong>, poi di nuovo <strong>Apri</strong>. Se non c'è il pulsante Apri: chiudi l'avviso, apri <strong>Impostazioni di Sistema → Privacy e sicurezza</strong>, scorri in basso e scegli <strong>Apri comunque</strong> accanto a 37 Player.",
+    "sgDownloadLinux": "Scarica il .deb (Ubuntu, Debian, Mint…)",
+    "sgDownloadLinuxRpm": "Scarica il .rpm (Fedora, openSUSE)",
+    "sgDesktopStepLinux": "<strong>Installa l'app per computer.</strong> Su questo computer 37 Player funziona meglio come app: la libreria è fatta di normali file in una cartella, e non deve chiedere di continuo le autorizzazioni.",
+    "sgWarnLinux": "<strong>Installarla.</strong> Il .deb è per Ubuntu 22.04, Debian 12 o successivi e i sistemi basati su di essi (Mint, Pop!_OS, elementary, Zorin, KDE neon); il .rpm per Fedora e openSUSE. Apri il file scaricato per installarlo con il tuo gestore del software, oppure in un terminale, nella cartella dove è stato scaricato: <code>sudo apt install ./37-Player-linux-amd64.deb</code> (o <code>sudo dnf install ./37-Player-linux-x86_64.rpm</code>). Le pagine di 37 Player si aggiornano da sole; per un'app più recente, scaricala di nuovo ogni tanto.",
+    "sgWarnMac": "<strong>Installarla.</strong> Apri il file scaricato e trascina <strong>37 Player</strong> in <strong>Applicazioni</strong>, poi aprila da lì. L'app è firmata e verificata da Apple; la prima volta, macOS chiede se aprire un'app scaricata da Internet: scegli <strong>Apri</strong>.",
     "sgWarnWin": "<strong>Superare gli avvisi.</strong> L'app non è ancora firmata, quindi Windows avvisa due volte.<br><strong>Nei download di Edge,</strong> il file è segnato come scaricato raramente: puntalo, fai clic su <strong>…</strong> e scegli <strong>Mantieni</strong>. Poi, in <strong>Assicurati di considerare attendibile…</strong>, fai clic sulla freccia <strong>▾</strong> dentro il pulsante nero <strong>Elimina</strong> e scegli <strong>Mantieni comunque</strong>. (In Chrome, scegli di mantenere il file.)<br><strong>All'apertura</strong> compare <strong>PC protetto da Windows</strong>: fai clic su <strong>Ulteriori informazioni</strong>, poi su <strong>Esegui comunque</strong>.",
     "sgCantInstall": "Non posso installare app su questo computer",
     "sgBringShared": "<strong>Porta con te questa libreria:</strong> è nella libreria condivisa “{name}”. In {where}, unisciti anche lì ({how}), e tutto arriva da solo.",
@@ -21009,6 +21175,7 @@ const STRINGS = {
     "notSavingTitle": "Le modifiche fatte qui non vengono salvate",
     "notSavingFullBody": "Questo dispositivo ha esaurito lo spazio di archiviazione, quindi 37 Player non può salvare niente al momento. Le modifiche fatte qui dalle {time} andranno perse se 37 Player viene chiuso, e non si può memorizzare nulla di nuovo (importazioni, file da una libreria condivisa). La riproduzione di ciò che è già qui funziona ancora. Libera un po' di spazio (su un iPad: Impostazioni → Generali → Spazio iPad). 37 Player continua a provare e salva tutto appena c'è posto.",
     "notSavingOtherBody": "37 Player non riesce a salvare su questo dispositivo al momento ({error}). Le modifiche fatte qui dalle {time} andranno perse se 37 Player viene chiuso. La riproduzione di ciò che è già qui funziona ancora. La causa più comune è un dispositivo pieno: liberare un po' di spazio (su un iPad: Impostazioni → Generali → Spazio iPad) di solito risolve. 37 Player continua a provare e salva tutto appena può.",
+    "notSavingDeniedBody": "37 Player non ha il permesso di salvare nella cartella di questa libreria ({error}). Le modifiche fatte qui dalle {time} andranno perse se 37 Player viene chiuso. La riproduzione di ciò che è già qui continua a funzionare. La cartella, o cartelle al suo interno, potrebbero essere di sola lettura, come una copia da un disco di backup o da un download: datti il permesso di modificarle, oppure usa un'altra copia della libreria (Impostazioni → Libreria → Trova la cartella di una libreria…). 37 Player continua a provare e salva tutto appena può.",
     "notSavingTryNow": "Riprova ora",
     "notSavingStill": "Ancora non salva.",
     "notLoadedTitle": "La tua libreria non è stata caricata",
@@ -22010,13 +22177,29 @@ let saveRetryTimer = null, saveFailExplained = false;
 const SAVE_RETRY_MS = 30000;
 function noteSaveFailed(err){
   const first = !saveFailing;
-  saveFailing = {since: first ? Date.now() : saveFailing.since, full: isQuotaError(err), text: errText(err)};
+  saveFailing = {since: first ? Date.now() : saveFailing.since, full: isQuotaError(err), denied: isDeniedError(err), text: errText(err)};
   if(first){ try{ sharedLog("saving on this device failed: " + saveFailing.text); }catch(e){} }
   updateNotSavingIndicator();
   clearTimeout(saveRetryTimer);
   saveRetryTimer = setTimeout(()=> saveState(), SAVE_RETRY_MS);
   let playing = true; try{ playing = anyWindowPlaying(); }catch(e){}
   if(first && !saveFailExplained && !playing && !backdrop.classList.contains("show")){ saveFailExplained = true; openNotSavingDialog(); }
+}
+// Not allowed to write (2.2.041): a read-only folder (EACCES, EROFS, from the
+// desktop app's shell), or a folder the browser no longer may change. Not a
+// full device, which the message had said (Gen Rinzin's T470, 13 Nov 2026).
+function isDeniedError(err){
+  if(err && (err.name === "NotAllowedError" || err.name === "NoModificationAllowedError")) return true;
+  return /permission denied|os error 13\b|os error 30\b|read-only file system|access is denied|os error 5\b|operation not permitted/i.test(errText(err));
+}
+// This library's folder as the person knows it: its path in the desktop app,
+// its name in a browser. "" when it isn't kept in a folder.
+async function libraryFolderShown(){
+  try{
+    if(STORAGE_KIND === "desktop") return (await desktopRoots())[desktopRootOf(LIBRARY_ID)] || "";
+    if(libStore && libStore.dir && libStore.dir.name) return libStore.dir.name;
+  }catch(err){}
+  return "";
 }
 function noteSaveWorked(){
   if(!saveFailing) return;
@@ -22038,11 +22221,12 @@ function updateNotSavingIndicator(){
 function openNotSavingDialog(){
   if(!saveFailing) return;
   const time = new Date(saveFailing.since).toLocaleTimeString([], {hour: "numeric", minute: "2-digit"});
-  const body = saveFailing.full ? t("notSavingFullBody", {time}) : t("notSavingOtherBody", {time, error: saveFailing.text});
+  const body = saveFailing.full ? t("notSavingFullBody", {time}) : t(saveFailing.denied ? "notSavingDeniedBody" : "notSavingOtherBody", {time, error: saveFailing.text});
   openModal(`<h3>${escapeHtmlText(t("notSavingTitle"))}</h3>
-    <p>${escapeHtmlText(body)}</p>
+    <p>${escapeHtmlText(body)}</p>${saveFailing.denied ? `<p><b id="notSavingFolder"></b></p>` : ""}
     <p class="settings-note" id="notSavingStatus"></p>
     <div class="modal-actions"><button class="btn ghost" id="notSavingRetry" type="button">${escapeHtmlText(t("notSavingTryNow"))}</button><button class="btn primary" data-close>${escapeHtmlText(t("ok"))}</button></div>`);
+  if(saveFailing.denied) libraryFolderShown().then(f=>{ const el = document.getElementById("notSavingFolder"); if(el) el.textContent = f; });
   document.getElementById("notSavingRetry").addEventListener("click", async ()=>{
     const st = document.getElementById("notSavingStatus");
     if(st) st.textContent = "…";
@@ -28009,7 +28193,7 @@ let convertQueue = [], convertRunning = false, convertStopped = false, convertDo
 // format settings would convert.
 function trackCanBeConverted(tr){
   if(!tr || tr.needsConvert === NEEDS_CONVERT_PLAYLIST) return false;
-  return !!tr.needsConvert || !(tr.duration > 0) || trackMatchesPolicy(tr);
+  return !!tr.needsConvert || !(tr.duration > 0) || alacImported.has(tr.id) || trackMatchesPolicy(tr);
 }
 // A file too big to convert without being asked (BIG_FILE_BYTES).
 function trackIsBigFile(tr){ return !!tr && (tr.fileSize || 0) > BIG_FILE_BYTES; }
@@ -28261,9 +28445,37 @@ fetchConverterWhenIdle(20000);
 // Tracks just imported that are about to be converted: their files aren't
 // sent to a shared library meanwhile (sharedUploadFiles), only the result.
 const convertSoon = new Set();
+// Apple Lossless plays in WebKit (Safari, iPads, the Mac app) but not in
+// Chrome, Edge or the Windows app, so it's converted wherever it's imported,
+// as Chrome must, and every device of a shared library can play it (2.3.003,
+// Gen Rinzin, 13 Nov 2026: one conversion where the original is, rather
+// than each other device converting the same file and sending it back).
+// Where it plays, it isn't marked as unplayable: just converted after the
+// import, the original kept as for any conversion.
+const alacImported = new Set();
+async function isAppleLosslessFile(blob){
+  try{
+    if(!blob || blob.size < 64) return false;
+    const head = new Uint8Array(await blob.slice(0, 12).arrayBuffer());
+    if(String.fromCharCode(head[4], head[5], head[6], head[7]) !== "ftyp") return false;
+    // The sample description ("stsd", its first entry's codec 16 bytes on)
+    // sits in the moov box, near the start or the end of the file.
+    const look = async (from, to)=>{
+      const u = new Uint8Array(await blob.slice(from, to).arrayBuffer());
+      for(let i = 0; i + 20 <= u.length; i++){
+        if(u[i] === 0x73 && u[i+1] === 0x74 && u[i+2] === 0x73 && u[i+3] === 0x64 && String.fromCharCode(u[i+16], u[i+17], u[i+18], u[i+19]) === "alac") return true;
+      }
+      return false;
+    };
+    const SPAN = 8 * 1024 * 1024;
+    if(await look(0, Math.min(blob.size, SPAN))) return true;
+    return blob.size > SPAN && await look(Math.max(SPAN - 32, blob.size - SPAN), blob.size);
+  }catch(err){ return false; }
+}
 async function convertAfterImport(names, importedIds){
   const unplayable = names.ids || [];
-  const byPolicy = (importedIds || []).filter(id=> !unplayable.includes(id) && trackMatchesPolicy(findLibraryTrack(id)));
+  const byPolicy = (importedIds || []).filter(id=> !unplayable.includes(id) && (alacImported.has(id) || trackMatchesPolicy(findLibraryTrack(id))));
+  // (The mark stays until the converted file is in place: the queue asks trackCanBeConverted again.)
   if(!unplayable.length && !byPolicy.length){ if(names.length) showUnplayableFilesWarning(names); return; }
   const ids = unplayable.concat(byPolicy);
   ids.forEach(id=> convertSoon.add(id));
@@ -28319,6 +28531,7 @@ async function applyConvertedAudio(id, blob, original, kind){
   const newName = (stem || tr.name || "track") + kind.ext;
   await idbPut("audio", {id, blob: new File([blob], newName, {type: kind.mime, lastModified: Date.now()})});
   tr.filename = newName; tr.fileSize = blob.size; tr.fileModified = Date.now();
+  alacImported.delete(id);
   tr.duration = a.duration; tr.peaks = a.peaks;
   if(a.sampleRate) tr.sampleRate = a.sampleRate;
   if(a.channels) tr.channels = a.channels;
@@ -28383,6 +28596,7 @@ async function importOneAudioFile(file, precomputedAnalysis, precomputedTags){
   const id = uid();
   await idbPut("audio", {id, blob:file});
   const {duration, peaks, sampleRate, channels, loudness, likelyUnplayable} = precomputedAnalysis || await analyzeAudio(file);
+  if(!likelyUnplayable && await isAppleLosslessFile(file)) alacImported.add(id);
   const tags = precomputedTags!==undefined ? precomputedTags : await parseAudioTags(file);
   const name = (tags && tags.title) ? tags.title : file.name.replace(/\.[^.]+$/,"");
   const pathGuess = deriveArtistAlbumFromPath(file.webkitRelativePath || file.name);
@@ -28414,6 +28628,7 @@ async function overwriteLibraryTrackAudio(track, file, precomputedAnalysis){
   track.filename = file.name; track.fileSize = file.size; track.fileModified = file.lastModified||null;
   track.fileTags = librarySnapshot({}, null); // the library's values are the ones to keep: written into this file (see effectiveTagMeta)
   if(likelyUnplayable) await markNeedsConvert(track, file); else delete track.needsConvert;
+  if(!likelyUnplayable && await isAppleLosslessFile(file)) alacImported.add(track.id); else alacImported.delete(track.id);
   if(objectUrlCache[track.id]){ URL.revokeObjectURL(objectUrlCache[track.id]); delete objectUrlCache[track.id]; }
   return {likelyUnplayable};
 }
@@ -36101,7 +36316,7 @@ const HELP_TOPICS = [
   {
     "id": "setup",
     "title": "Setup",
-    "bodyHtml": "\u003cp>The first time 37 Player opens, it asks for your language, then \u003cstrong>Try it out\u003c/strong> or \u003cstrong>Install\u003c/strong>. The home page (37player.com) offers the same two.\u003c/p>\n\u003cul>\n\u003cli>\u003cstrong>Try it out\u003c/strong> starts straight away, with nothing to set up. For two days, or until your fifth import, 37 Player asks nothing about where the library is kept or about backups. Then it asks once, \u003cstrong>Done trying it out?\u003c/strong>, and shows the way to set it up on this device. On a computer in Safari or Firefox it first suggests Chrome or Edge, since a library doesn't move from one browser to another by itself.\u003c/li>\n\u003cli>\u003cstrong>Install\u003c/strong> looks at the device you're using and shows only the best way to keep a library on it, a step at a time.\u003c/li>\n\u003c/ul>\n\u003cp>Wherever 37 Player isn't installed, an \u003cstrong>Install\u003c/strong> button stays in the top bar and opens the same steps. For why they matter, see 'Reliability'.\u003c/p>\n\u003ch3>Mac and Windows: the desktop app\u003c/h3>\n\u003cp>On a Mac or a Windows computer, Install offers the \u003cstrong>desktop app\u003c/strong>, downloaded straight from the steps. Its library is ordinary files in a folder, it updates itself, and it doesn't have to repeatedly prompt for permissions.\u003c/p>\n\u003cp>The app isn't signed yet, so the computer warns the first time:\u003c/p>\n\u003cul>\n\u003cli>\u003cstrong>Mac:\u003c/strong> open the downloaded file and drag \u003cstrong>37 Player\u003c/strong> into \u003cstrong>Applications\u003c/strong>. In Applications, Control-click (or right-click) 37 Player, choose \u003cstrong>Open\u003c/strong>, then \u003cstrong>Open\u003c/strong> again. If there's no Open button, close the warning, open \u003cstrong>System Settings → Privacy &amp; Security\u003c/strong>, scroll down, and choose \u003cstrong>Open Anyway\u003c/strong> beside 37 Player.\u003c/li>\n\u003cli>\u003cstrong>Windows:\u003c/strong> Windows warns twice. First, in Edge's downloads the file is marked as not commonly downloaded: point at it, click \u003cstrong>…\u003c/strong> and choose \u003cstrong>Keep\u003c/strong>; then, in \u003cstrong>Make sure you trust…\u003c/strong>, click the arrow \u003cstrong>▾\u003c/strong> inside the black \u003cstrong>Delete\u003c/strong> button and choose \u003cstrong>Keep anyway\u003c/strong>. (In Chrome, choose to keep the file.) Then, when it opens, \u003cstrong>Windows protected your PC\u003c/strong> appears: click \u003cstrong>More info\u003c/strong>, then \u003cstrong>Run anyway\u003c/strong>.\u003c/li>\n\u003c/ul>\n\u003cp>A computer where apps can't be installed: choose \u003cstrong>I can't install apps on this computer\u003c/strong>, and the steps show the Chrome or Edge way instead.\u003c/p>\n\u003ch3>Other computers: Chrome or Edge\u003c/h3>\n\u003cp>On Linux or a Chromebook (or a computer that can't install apps), 37 Player keeps its library safely only in \u003cstrong>Chrome or Edge\u003c/strong>. Most browsers built on the same engine can too; in Brave, first turn on \"File System Access API\" at brave://flags. From Firefox or Safari, the steps copy the address to paste into Chrome or Edge, and carry on there. Then:\u003c/p>\n\u003col>\n\u003cli>\u003cstrong>Install 37 Player\u003c/strong> as an app from the browser (the install icon in the address bar, or the browser's menu). The installed app keeps its permission for the library's folder, and the browser doesn't clear its storage when space runs low. The steps carry on in the app's window.\u003c/li>\n\u003cli>\u003cstrong>Keep the library in a folder:\u003c/strong> one copy, as ordinary files, in a folder you choose. Back that folder up with the rest of the computer.\u003c/li>\n\u003cli>\u003cstrong>A shared library,\u003c/strong> if you like: it works well for multiple devices, and keeps a copy away from this one.\u003c/li>\n\u003c/ol>\n\u003cp>A library kept in the browser's storage can still have an automatic backup folder: Settings → \u003cstrong>Backups\u003c/strong>.\u003c/p>\n\u003ch3>iPad and iPhone: the Home Screen\u003c/h3>\n\u003cp>On an iPad or iPhone, Safari erases a website's data after 7 days without a visit, so a Safari tab is for testing only. Added to the Home Screen, 37 Player keeps its library. The Home Screen app has a library of its own, separate from Safari's, so add it \u003cstrong>before\u003c/strong> importing anything; if there's already something to keep in Safari, the steps say how to bring it along. In the Home Screen app, choose Install again to finish: a shared library in Google Drive if you use it, or backups by hand, kept few. See 'Phones and tablets'.\u003c/p>\n\u003ch3>Android: install it as an app\u003c/h3>\n\u003cp>On Android, Install offers to install 37 Player as an app (or use Chrome's ⋮ menu → Add to Home screen). Chrome then keeps the library safe rather than clearing it when space runs low. The app and the website share one library, so it can be done at any time. Then, as on an iPad: Google Drive, or backups by hand.\u003c/p>\n\u003ch3>Choose one home for your library\u003c/h3>\n\u003cp>Your library lives in one place, so decide where 37 Player will live and stay with it:\u003c/p>\n\u003cul>\n\u003cli>\u003cstrong>One browser.\u003c/strong> Chrome, Edge, Firefox and Safari each keep their own library. So do two installations of the same browser: on Linux, for example, a Flatpak Chrome and a Chrome installed from a .deb package are two separate browsers.\u003c/li>\n\u003cli>\u003cstrong>One address.\u003c/strong> The website (37player.com) and a 37-player.html file opened from your disk are separate libraries, with separate backups.\u003c/li>\n\u003c/ul>\n\u003cp>Settings → \u003cstrong>Library\u003c/strong> shows where the library you're looking at lives: the folder or browser it's kept in, the shared library it syncs with, and where it's backed up. To move a library somewhere else later, see 'Multiple instances'.\u003c/p>\n\u003cp>Browsers are more likely to mark an installed app's storage \u003cstrong>persistent\u003c/strong>, protected from being cleared when the disk fills up. 37 Player asks for persistent storage every time it starts; if the browser shows a prompt about it, choose \u003cstrong>Allow\u003c/strong>. To check whether it's been granted, open Settings → \u003cstrong>Library info\u003c/strong>.\u003c/p>\n\u003ch3>Opening audio files with 37 Player\u003c/h3>\n\u003cp>Installed as an app, 37 Player can open audio files from outside it:\u003c/p>\n\u003cul>\n\u003cli>\u003cstrong>On a computer\u003c/strong> (Chrome, Edge or Brave): it's offered under \u003cstrong>Open with\u003c/strong> for MP3, M4A, WAV, FLAC and the other audio types. It can be made the default for a type the usual way: Default apps on Windows, Get Info → Open with → Change All on a Mac, or the file manager's settings on Linux. The first time, the browser asks once whether to allow it.\u003c/li>\n\u003cli>\u003cstrong>On Android:\u003c/strong> it's in the \u003cstrong>Share\u003c/strong> menu, so a recording can be shared to it from Files, a chat, or a recorder app.\u003c/li>\n\u003c/ul>\n\u003cp>Either way, 37 Player asks: \u003cstrong>Play it now\u003c/strong> (in a little player of its own; the library stays as it is, and anything playing in 37 Player is paused first), \u003cstrong>Import\u003c/strong> (the usual import, behind the PIN), or \u003cstrong>Play and import\u003c/strong> (imported, then played from the Library). This isn't possible on an iPad or iPhone, in Safari on a Mac, or in Firefox.\u003c/p>\n\u003ch3>The new address\u003c/h3>\n\u003cp>37 Player moved from player.37dakinis.net to \u003cstrong>37player.com\u003c/strong> in October 2026. Because the browser keeps a library separately for each address, a device that used the old address still has its library there. The old address shows \u003cstrong>37 Player has moved\u003c/strong> in the top bar, with the way across for the open library: a shared library is simply joined again at 37player.com; any other library is exported there and imported at 37player.com, or restored from its backup folder. On an iPad or phone, the Home Screen app is then removed and added again from the new address.\u003c/p>"
+    "bodyHtml": "\u003cp>The first time 37 Player opens, it asks for your language, then \u003cstrong>Try it out\u003c/strong> or \u003cstrong>Install\u003c/strong>. The home page (37player.com) offers the same two.\u003c/p>\n\u003cul>\n\u003cli>\u003cstrong>Try it out\u003c/strong> starts straight away, with nothing to set up. For two days, or until your fifth import, 37 Player asks nothing about where the library is kept or about backups. Then it asks once, \u003cstrong>Done trying it out?\u003c/strong>, and shows the way to set it up on this device. On a computer in Safari or Firefox it first suggests Chrome or Edge, since a library doesn't move from one browser to another by itself.\u003c/li>\n\u003cli>\u003cstrong>Install\u003c/strong> looks at the device you're using and shows only the best way to keep a library on it, a step at a time.\u003c/li>\n\u003c/ul>\n\u003cp>Wherever 37 Player isn't installed, an \u003cstrong>Install\u003c/strong> button stays in the top bar and opens the same steps. For why they matter, see 'Reliability'.\u003c/p>\n\u003ch3>Mac, Windows and Linux: the desktop app\u003c/h3>\n\u003cp>On a Mac, a Windows computer or Linux, Install offers the \u003cstrong>desktop app\u003c/strong>, downloaded straight from the steps. Its library is ordinary files in a folder, it updates itself, and it doesn't have to repeatedly prompt for permissions.\u003c/p>\n\u003cp>The first time:\u003c/p>\n\u003cul>\n\u003cli>\u003cstrong>Mac:\u003c/strong> open the downloaded file and drag \u003cstrong>37 Player\u003c/strong> into \u003cstrong>Applications\u003c/strong>, then open it from there. The app is signed and checked by Apple, so macOS only asks whether to open an app downloaded from the internet: choose \u003cstrong>Open\u003c/strong>.\u003c/li>\n\u003cli>\u003cstrong>Windows:\u003c/strong> the app isn't signed yet, so Windows warns twice. First, in Edge's downloads the file is marked as not commonly downloaded: point at it, click \u003cstrong>…\u003c/strong> and choose \u003cstrong>Keep\u003c/strong>; then, in \u003cstrong>Make sure you trust…\u003c/strong>, click the arrow \u003cstrong>▾\u003c/strong> inside the black \u003cstrong>Delete\u003c/strong> button and choose \u003cstrong>Keep anyway\u003c/strong>. (In Chrome, choose to keep the file.) Then, when it opens, \u003cstrong>Windows protected your PC\u003c/strong> appears: click \u003cstrong>More info\u003c/strong>, then \u003cstrong>Run anyway\u003c/strong>.\u003c/li>\n\u003cli>\u003cstrong>Linux:\u003c/strong> open the .deb (Ubuntu 22.04, Debian 12 or newer, Mint and the like) or the .rpm (Fedora, openSUSE) to install it with the software centre, or in a terminal: \u003ccode>sudo apt install ./37-Player-linux-amd64.deb\u003c/code>. The app's pages keep themselves up to date; for a newer app itself, download it again now and then.\u003c/li>\n\u003c/ul>\n\u003cp>A computer where apps can't be installed: choose \u003cstrong>I can't install apps on this computer\u003c/strong>, and the steps show the Chrome or Edge way instead.\u003c/p>\n\u003ch3>Other computers: Chrome or Edge\u003c/h3>\n\u003cp>On Linux or a Chromebook (or a computer that can't install apps), 37 Player keeps its library safely only in \u003cstrong>Chrome or Edge\u003c/strong>. Most browsers built on the same engine can too; in Brave, first turn on \"File System Access API\" at brave://flags. From Firefox or Safari, the steps copy the address to paste into Chrome or Edge, and carry on there. Then:\u003c/p>\n\u003col>\n\u003cli>\u003cstrong>Install 37 Player\u003c/strong> as an app from the browser (the install icon in the address bar, or the browser's menu). The installed app keeps its permission for the library's folder, and the browser doesn't clear its storage when space runs low. The steps carry on in the app's window.\u003c/li>\n\u003cli>\u003cstrong>Keep the library in a folder:\u003c/strong> one copy, as ordinary files, in a folder you choose. Back that folder up with the rest of the computer.\u003c/li>\n\u003cli>\u003cstrong>A shared library,\u003c/strong> if you like: it works well for multiple devices, and keeps a copy away from this one.\u003c/li>\n\u003c/ol>\n\u003cp>A library kept in the browser's storage can still have an automatic backup folder: Settings → \u003cstrong>Backups\u003c/strong>.\u003c/p>\n\u003ch3>iPad and iPhone: the Home Screen\u003c/h3>\n\u003cp>On an iPad or iPhone, Safari erases a website's data after 7 days without a visit, so a Safari tab is for testing only. Added to the Home Screen, 37 Player keeps its library. The Home Screen app has a library of its own, separate from Safari's, so add it \u003cstrong>before\u003c/strong> importing anything; if there's already something to keep in Safari, the steps say how to bring it along. In the Home Screen app, choose Install again to finish: a shared library in Google Drive if you use it, or backups by hand, kept few. See 'Phones and tablets'.\u003c/p>\n\u003ch3>Android: install it as an app\u003c/h3>\n\u003cp>On Android, Install offers to install 37 Player as an app (or use Chrome's ⋮ menu → Add to Home screen). Chrome then keeps the library safe rather than clearing it when space runs low. The app and the website share one library, so it can be done at any time. Then, as on an iPad: Google Drive, or backups by hand.\u003c/p>\n\u003ch3>Choose one home for your library\u003c/h3>\n\u003cp>Your library lives in one place, so decide where 37 Player will live and stay with it:\u003c/p>\n\u003cul>\n\u003cli>\u003cstrong>One browser.\u003c/strong> Chrome, Edge, Firefox and Safari each keep their own library. So do two installations of the same browser: on Linux, for example, a Flatpak Chrome and a Chrome installed from a .deb package are two separate browsers.\u003c/li>\n\u003cli>\u003cstrong>One address.\u003c/strong> The website (37player.com) and a 37-player.html file opened from your disk are separate libraries, with separate backups.\u003c/li>\n\u003c/ul>\n\u003cp>Settings → \u003cstrong>Library\u003c/strong> shows where the library you're looking at lives: the folder or browser it's kept in, the shared library it syncs with, and where it's backed up. To move a library somewhere else later, see 'Multiple instances'.\u003c/p>\n\u003cp>Browsers are more likely to mark an installed app's storage \u003cstrong>persistent\u003c/strong>, protected from being cleared when the disk fills up. 37 Player asks for persistent storage every time it starts; if the browser shows a prompt about it, choose \u003cstrong>Allow\u003c/strong>. To check whether it's been granted, open Settings → \u003cstrong>Library info\u003c/strong>.\u003c/p>\n\u003ch3>Opening audio files with 37 Player\u003c/h3>\n\u003cp>Installed as an app, 37 Player can open audio files from outside it:\u003c/p>\n\u003cul>\n\u003cli>\u003cstrong>On a computer\u003c/strong> (Chrome, Edge or Brave): it's offered under \u003cstrong>Open with\u003c/strong> for MP3, M4A, WAV, FLAC and the other audio types. It can be made the default for a type the usual way: Default apps on Windows, Get Info → Open with → Change All on a Mac, or the file manager's settings on Linux. The first time, the browser asks once whether to allow it.\u003c/li>\n\u003cli>\u003cstrong>On Android:\u003c/strong> it's in the \u003cstrong>Share\u003c/strong> menu, so a recording can be shared to it from Files, a chat, or a recorder app.\u003c/li>\n\u003c/ul>\n\u003cp>Either way, 37 Player asks: \u003cstrong>Play it now\u003c/strong> (in a little player of its own; the library stays as it is, and anything playing in 37 Player is paused first), \u003cstrong>Import\u003c/strong> (the usual import, behind the PIN), or \u003cstrong>Play and import\u003c/strong> (imported, then played from the Library). This isn't possible on an iPad or iPhone, in Safari on a Mac, or in Firefox.\u003c/p>\n\u003ch3>The new address\u003c/h3>\n\u003cp>37 Player moved from player.37dakinis.net to \u003cstrong>37player.com\u003c/strong> in October 2026. Because the browser keeps a library separately for each address, a device that used the old address still has its library there. The old address shows \u003cstrong>37 Player has moved\u003c/strong> in the top bar, with the way across for the open library: a shared library is simply joined again at 37player.com; any other library is exported there and imported at 37player.com, or restored from its backup folder. On an iPad or phone, the Home Screen app is then removed and added again from the new address.\u003c/p>"
   },
   {
     "id": "itunes-music-app",
@@ -40792,10 +41007,16 @@ function deviceOs(){
   if(/CrOS/.test(ua)) return "chromeos";
   return "linux";
 }
-function desktopDownloadUrl(os){
+// file: "rpm" for Linux's other package (Fedora, openSUSE); else the usual one.
+function desktopDownloadUrl(os, file){
   const tag = /^test\./.test(location.hostname) ? "desktop-latest-dev" : "desktop-latest"; // the test site's builds follow dev
-  return "https://github.com/kr37/37player/releases/download/" + tag + "/" + (os === "mac" ? "37-Player-mac.dmg" : "37-Player-windows-setup.exe");
+  const name = os === "mac" ? "37-Player-mac.dmg" : os === "linux" ? (file === "rpm" ? "37-Player-linux-x86_64.rpm" : "37-Player-linux-amd64.deb") : "37-Player-windows-setup.exe";
+  return "https://github.com/kr37/37player/releases/download/" + tag + "/" + name;
 }
+// The desktop app is offered on a Mac, Windows and Linux (2.3.000, Gen
+// Rinzin, 13 Nov 2026: the .deb works on his T470); Linux on ARM (a
+// Raspberry Pi, when the browser says so) has no build, so Chrome's way.
+function desktopAppOffered(os){ return os === "mac" || os === "windows" || (os === "linux" && !/aarch64|armv\d|arm64/i.test(navigator.userAgent || "")); }
 // This page's address with a step to carry on from (a copy opened from a
 // file: the website's).
 function setupAddress(hash){
@@ -40900,9 +41121,11 @@ function openSetupGuide(opts){
       };
       const shared = ()=> cfg ? {id: "shared", done: true, html: P(t("sgSharedDone", {name: escapeHtmlText(libName)}))} : {id: "shared", html: P(t("sgSharedStep")), btns: [{label: t("setupJoinBtn"), act: "join"}]};
       if(IN_DESKTOP_APP){ out.push({id: "here", done: true, html: P(t("sgDesktopHere"))}, shared()); return out; }
-      if((os === "mac" || os === "windows") && !chromeWay){
-        out.push({id: "desktop", html: P(t("sgDesktopStep")), btns: [{label: t(os === "mac" ? "sgDownloadMac" : "sgDownloadWin"), act: "download"}]});
-        out.push({id: "warn", html: P(t(os === "mac" ? "sgWarnMac" : "sgWarnWin"))});
+      if(desktopAppOffered(os) && !chromeWay){
+        const dl = os === "linux" ? [{label: t("sgDownloadLinux"), act: "download"}, {label: t("sgDownloadLinuxRpm"), act: "download", file: "rpm", ghost: true}]
+          : [{label: t(os === "mac" ? "sgDownloadMac" : "sgDownloadWin"), act: "download"}];
+        out.push({id: "desktop", html: P(t(os === "linux" ? "sgDesktopStepLinux" : "sgDesktopStep")), btns: dl});
+        out.push({id: "warn", html: P(t(os === "mac" ? "sgWarnMac" : os === "linux" ? "sgWarnLinux" : "sgWarnWin"))});
         out.push(carry("sgWhereDesktop"));
         return out;
       }
@@ -40941,9 +41164,9 @@ function openSetupGuide(opts){
       setupGuideRedraw = render;
       const list = steps().filter(Boolean);
       const rows = list.map((s, i)=> `<div class="heads-up-step${s.done ? " done" : ""}" data-step="${s.id}">${stepBox(s.done ? "✓" : i + 1)}<div class="heads-up-text">${s.html}${notes[s.id] ? `<p class="settings-note">${notes[s.id]}</p>` : ""}${(s.btns || []).length ? `<div class="heads-up-btns">${s.btns.map(b=> b.act === "download"
-          ? `<a class="btn primary" href="${desktopDownloadUrl(os)}" data-act="download">${escapeHtmlText(b.label)}</a>`
+          ? `<a class="btn ${b.ghost ? "ghost" : "primary"}" href="${desktopDownloadUrl(os, b.file)}" data-act="download">${escapeHtmlText(b.label)}</a>`
           : `<button class="btn ghost" type="button" data-act="${b.act}">${escapeHtmlText(b.label)}</button>`).join("")}</div>` : ""}</div></div>`).join("");
-      const desktopWay = !IN_DESKTOP_APP && (os === "mac" || os === "windows") && !chromeWay;
+      const desktopWay = !IN_DESKTOP_APP && desktopAppOffered(os) && !chromeWay;
       const chromeOnly = !IN_DESKTOP_APP && !env.mobile && !desktopWay && !env.folder;
       const link = desktopWay ? `<a href="#" class="heads-up-quick" id="sgCantInstall">${escapeHtmlText(t("sgCantInstall"))}</a>`
         : chromeOnly ? `<a href="#" class="heads-up-quick" id="sgTryHere">${escapeHtmlText(t("sgTryHereLink"))}</a>` : "";
