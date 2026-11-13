@@ -105,6 +105,20 @@ const waitModal = async (p, re, ms)=>{ for(let i=0; i<(ms||15000)/200; i++){ con
   const m3u = Object.entries(pl).filter(([k])=> k.endsWith('.m3u8'));
   ok(m3u.length >= 1 && m3u.some(([, v])=> /^#EXTM3U/.test(v) && /\.\.\/(\.\.\/)*music\/Test Artist\/Test Album\/07 Renamed tone\.mp3/.test(v)), 'playlists/ has the playlists as .m3u8, pointing into music/ (' + m3u.map(([k])=> k).join(', ') + ')');
   ok(/"music"/.test(pl.README) && /"playlists"/.test(pl.README), 'and the README says what\'s where');
+  // The album renamed again, with the details written into the file (as the edit dialog does): the
+  // recording is written anew under its new name, and the old one goes a minute later, once nothing
+  // plays it, not after a day at the next opening (2.2.033; Gen Rinzin: each rename left a whole copy).
+  await p.evaluate(async()=>{ const tr = window.__dbg.getRoot().library.find(t=> t.name === 'Renamed tone'); tr.album = 'Other Album'; await window.__dbg.saveState(); await window.__retag(tr.id); await window.__dbg.saveState(); });
+  await sleep(4500);
+  const both = await ls(after.folder);
+  ok(both.includes('music/Test Artist/Other Album/07 Renamed tone.mp3') && both.includes('music/Test Artist/Test Album/07 Renamed tone.mp3'), 'renamed with its details written in: the new file is there, the old one kept for a minute (' + both.join(', ') + ')');
+  const dropped = await p.evaluate(()=> window.__disk.libStore().dropSuperseded());
+  const left = await ls(after.folder);
+  ok(dropped === 1 && !left.some(n=> n.startsWith('music/Test Artist/Test Album/')), 'then the old one goes, and its album folder with it (' + dropped + '; ' + left.join(', ') + ')');
+  const ledger = await p.evaluate(async (folder)=>{ const d = await (await (await navigator.storage.getDirectory()).getDirectoryHandle('picked')).getDirectoryHandle(folder); let own = d; try{ own = await d.getDirectoryHandle("37 Player's own files"); }catch(e){} try{ return Object.keys(JSON.parse(await (await (await own.getFileHandle('orphans.json')).getFile()).text())); }catch(e){ return []; } }, after.folder);
+  ok(!ledger.some(k=> k.includes('Test Album')), 'and it\'s off the waiting list (' + ledger.join(', ') + ')');
+  const plays3 = await p.evaluate(async ()=>{ const tr = window.__dbg.getRoot().library.find(t=> t.name === 'Renamed tone'); const u = await window.__audioUrl(tr.id); return (await (await fetch(u)).blob()).size; });
+  ok(plays3 > 100000, 'and the track plays from the new file (' + plays3 + ' bytes)');
 
   // Permission to ask for again.
   await p.evaluate(()=> localStorage.setItem('__permPrompt', '1'));

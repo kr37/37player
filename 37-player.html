@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.2.032">
+<meta name="app-version" content="2.2.040">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -2102,6 +2102,7 @@ async function webkitOwnBytes(blob){
   return own;
 }
 
+const ROOT_REV_KEY = "rootRev"; // the library record's revision on its own (IdbLibraryStore.keepRootRev)
 class IdbLibraryStore {
   // opts.gone(): this library was deleted from another window, so its
   // database mustn't be opened again (that would make a new, empty one).
@@ -2165,17 +2166,29 @@ class IdbLibraryStore {
   }
   putNow(store, record){
     return this.run(d=> new Promise((resolve, reject)=>{
-      const tx = d.transaction(store, "readwrite");
-      const r = tx.objectStore(store).put(record);
+      const tx = d.transaction(store, "readwrite"), os = tx.objectStore(store);
+      const r = os.put(record);
+      IdbLibraryStore.keepRootRev(os, store, record, null);
       settleTx(tx, resolve, reject, ()=> r.result);
     }));
+  }
+  // "rootRev" holds only the library record's revision, written with it in
+  // the same transaction, so writeRootIfCurrent can check the revision
+  // without reading the whole library back (2.2.035: that read was a third
+  // of a save's time with a big library). Anything that writes "root"
+  // writes it too; anything that deletes "root" deletes it. It's trusted
+  // only when it equals the revision expected; otherwise "root" is read.
+  static keepRootRev(os, store, putRec, delKey){
+    if(store !== "state") return;
+    if(putRec && putRec.key === "root") os.put({key: ROOT_REV_KEY, rev: putRec.rev || 0});
+    if(delKey === "root") os.delete(ROOT_REV_KEY);
   }
   del(store, keys){
     keys = Array.isArray(keys) ? keys : [keys];
     if(!keys.length) return Promise.resolve();
     return this.run(d=> new Promise((resolve, reject)=>{
       const tx = d.transaction(store, "readwrite"), os = tx.objectStore(store);
-      keys.forEach(k=> os.delete(k));
+      keys.forEach(k=>{ os.delete(k); IdbLibraryStore.keepRootRev(os, store, null, k); });
       settleTx(tx, resolve, reject);
     }));
   }
@@ -2201,8 +2214,8 @@ class IdbLibraryStore {
       let left = keys.length, out;
       const apply = ()=>{
         const r = fn(recs) || {};
-        (r.put || []).forEach(rec=> os.put(rec));
-        (r.del || []).forEach(k=> os.delete(k));
+        (r.put || []).forEach(rec=>{ os.put(rec); IdbLibraryStore.keepRootRev(os, store, rec, null); });
+        (r.del || []).forEach(k=>{ os.delete(k); IdbLibraryStore.keepRootRev(os, store, null, k); });
         out = r.result;
       };
       keys.forEach((k, i)=>{ const g = os.get(k); g.onsuccess = ()=>{ recs[i] = g.result; if(--left === 0) apply(); }; });
@@ -2218,7 +2231,7 @@ class IdbLibraryStore {
     req.onsuccess = ()=>{
       const cursor = req.result;
       if(!cursor) return;
-      if(!keep.includes(cursor.key)) store.delete(cursor.key);
+      if(cursor.key === ROOT_REV_KEY ? !keep.includes("root") : !keep.includes(cursor.key)) store.delete(cursor.key); // rootRev goes with root
       cursor.continue();
     };
   }
@@ -2255,27 +2268,31 @@ class IdbLibraryStore {
       const tx = d.transaction("state", "readwrite");
       const store = tx.objectStore("state");
       let result = {ok:false};
-      const replace = ()=>{
-        store.delete("root");
-        store.put({key:"root", value, rev: expectedRev + 1});
-        result = {ok:true, rev: expectedRev + 1};
+      const write = rev=>{ store.put({key:"root", value, rev}); store.put({key: ROOT_REV_KEY, rev}); result = {ok:true, rev}; };
+      if(force){ store.delete("root"); write(expectedRev + 1); return settleTx(tx, resolve, reject, ()=> result); }
+      // The whole library record, read to see its revision: only when the
+      // small revision record doesn't say what's expected (see keepRootRev).
+      const readRoot = ()=>{
+        const get = store.get("root");
+        // The stored record can't be read (damaged — see loadState). Only
+        // overwritten once the person has chosen how to recover.
+        get.onerror = (e)=>{
+          e.preventDefault(); // keeps the transaction alive
+          result = {ok:false, unreadable:true};
+        };
+        get.onsuccess = ()=>{
+          const cur = get.result;
+          const curRev = cur ? (cur.rev||0) : null;
+          if(cur && curRev!==expectedRev) return; // someone else saved since this window loaded
+          write((curRev==null ? expectedRev : curRev) + 1);
+        };
       };
-      if(force){ replace(); return settleTx(tx, resolve, reject, ()=> result); }
-      const get = store.get("root");
-      // The stored record can't be read (damaged — see loadState). Only
-      // overwritten once the person has chosen how to recover.
-      get.onerror = (e)=>{
-        e.preventDefault(); // keeps the transaction alive
-        if(!force){ result = {ok:false, unreadable:true}; return; }
-        replace();
-      };
-      get.onsuccess = ()=>{
-        const cur = get.result;
-        const curRev = cur ? (cur.rev||0) : null;
-        if(cur && curRev!==expectedRev) return; // someone else saved since this window loaded
-        const newRev = (curRev==null ? expectedRev : curRev) + 1;
-        store.put({key:"root", value, rev:newRev});
-        result = {ok:true, rev:newRev};
+      const quick = store.get(ROOT_REV_KEY);
+      quick.onerror = (e)=>{ e.preventDefault(); readRoot(); };
+      quick.onsuccess = ()=>{
+        const q = quick.result;
+        if(q && q.rev === expectedRev) write(expectedRev + 1);
+        else readRoot();
       };
       settleTx(tx, resolve, reject, ()=> result);
     }));
@@ -2319,6 +2336,8 @@ class IdbLibraryStore {
    so one left by an interrupted write is still tidied; nothing in the
    folder that 37 Player didn't write is ever deleted. */
 const FILES_GRACE_MS = 24*60*60*1000;
+const FILES_SUPERSEDED_MS = 60*1000;   // a recording replaced by a new version of it (noteSuperseded)
+const FILES_TIDY_EVERY_MS = 6*60*60*1000; // the tidy again while the library stays open (2.2.033)
 const OWN_FILES_FOLDER = "37 Player's own files";
 // One part of a recording's path (an artist, an album, a file name): what
 // Windows and the Mac refuse becomes "-" (as in the portable export,
@@ -2394,7 +2413,13 @@ class FolderLibraryStore {
       let own = await folderChild(dir, OWN_FILES_FOLDER, false);
       if(!own) own = (await folderChild(dir, "state", false)) || !(this.opts.recordingPath || this.opts.ownFiles) ? dir : await folderChild(dir, OWN_FILES_FOLDER, true);
       this.dir = dir; this.own = own; this.subs = {};
-      if(!this.tidied){ this.tidied = true; setTimeout(()=> this.tidy().then(()=> this.renameRecordings()).then(()=>{ if(this === libStore) return syncPlaylistFiles(); }).catch(err=> console.warn("Tidying the library's files:", err)), 20000); }
+      if(!this.tidied){
+        this.tidied = true;
+        setTimeout(()=> this.tidy().then(()=> this.renameRecordings()).then(()=>{ if(this === libStore) return syncPlaylistFiles(); }).catch(err=> console.warn("Tidying the library's files:", err)), 20000);
+        // And every few hours while it stays open: a window open for days
+        // otherwise kept every file on the waiting list (2.2.033).
+        const again = setInterval(()=>{ if(this !== libStore){ clearInterval(again); return; } this.tidy().catch(err=> console.warn("Tidying the library's files:", err)); }, FILES_TIDY_EVERY_MS);
+      }
     }
     return this.dir;
   }
@@ -2572,7 +2597,7 @@ class FolderLibraryStore {
     catch(err){ return {}; }
   }
   put(store, record){
-    return this.locked(async()=>{ await this.addOrphans(await this.writeRecord(store, record)); return record[STORE_KEYPATH[store]]; });
+    return this.locked(async()=>{ const gone = await this.writeRecord(store, record); await this.addOrphans(gone); this.noteSuperseded(store, record, gone); return record[STORE_KEYPATH[store]]; });
   }
   del(store, keys){
     keys = Array.isArray(keys) ? keys : [keys];
@@ -2614,9 +2639,11 @@ class FolderLibraryStore {
       for(const k of keys) recs.push(await this.get(store, k));
       const r = fn(recs) || {};
       let gone = [];
-      for(const rec of (r.put || [])) gone = gone.concat(await this.writeRecord(store, rec));
+      const replaced = [];
+      for(const rec of (r.put || [])){ const g = await this.writeRecord(store, rec); gone = gone.concat(g); replaced.push([rec, g]); }
       for(const k of (r.del || [])) gone = gone.concat(await this.removeRecord(store, k));
       await this.addOrphans(gone);
+      for(const [rec, g] of replaced) this.noteSuperseded(store, rec, g);
       return r.result;
     });
   }
@@ -2638,14 +2665,32 @@ class FolderLibraryStore {
     return this.locked(async()=>{
       let rev = expectedRev + 1;
       if(!force){
-        let cur;
-        try{ cur = await this.readRaw("state", "root"); }
-        catch(err){ return {ok:false, unreadable:true}; } // see loadState: overwritten only once the person chooses
-        if(cur){ const curRev = cur.rev || 0; if(curRev !== expectedRev) return {ok:false}; rev = curRev + 1; }
+        const quick = await this.rootRevQuick();
+        if(quick !== expectedRev){
+          let cur;
+          try{ cur = await this.readRaw("state", "root"); }
+          catch(err){ return {ok:false, unreadable:true}; } // see loadState: overwritten only once the person chooses
+          if(cur){ const curRev = cur.rev || 0; if(curRev !== expectedRev) return {ok:false}; rev = curRev + 1; }
+        }
       }
-      await this.addOrphans(await this.writeRecord("state", {key:"root", value, rev}));
+      // The revision before the library, so the next save can read it from
+      // the file's first bytes (rootRevQuick).
+      await this.addOrphans(await this.writeRecord("state", {key:"root", rev, value}));
       return {ok:true, rev};
     });
+  }
+  // The library record's revision from the first bytes of root.json, if it
+  // was written with the revision first (2.2.035); null otherwise (an older
+  // version wrote it last), and then the whole record is read. Parsing the
+  // whole file at every save just for its revision was a third of the time
+  // a save took with a big library.
+  async rootRevQuick(){
+    try{
+      const dir = await this.sub("state");
+      const f = await (await dir.getFileHandle(fileKeyOf("root") + ".json")).getFile();
+      const m = /^\{"key":"root","rev":(\d+),"value":/.exec(await f.slice(0, 64).text());
+      return m ? Number(m[1]) : null;
+    }catch(err){ return null; }
   }
   // Gives every recording the readable name its details call for (1.4.174):
   // after an edit, an Undo, or for an older library's recordings still in
@@ -2736,6 +2781,48 @@ class FolderLibraryStore {
       for(const path of Object.keys(before)) if(!(path in now)) await this.removePath(path).catch(()=>{});
       mem[prefix] = now;
       await writeWholeFile(this.own, "written.json", JSON.stringify(mem));
+    });
+  }
+  // A readable recording replaced by a new version of the same track (its
+  // details written into it again: an album renamed, say) goes about a
+  // minute later, once no player here holds it, instead of after the day's
+  // grace (2.2.033; Gen Rinzin, 12 Nov 2026: each rename of an album left a
+  // whole copy of it in the folder, and the T470 stays open for days). The
+  // record already points at the new file. A deleted track's recording
+  // still waits its day. (Another window playing the old version would
+  // lose it: two windows on one library playing the same track while it's
+  // edited is rare enough.)
+  noteSuperseded(store, record, gone){
+    if(store !== "audio" || !record || !gone || !gone.length) return;
+    const paths = gone.filter(p=> p.startsWith("/"));
+    if(!paths.length) return;
+    if(!this.superseded) this.superseded = new Map();
+    paths.forEach(p=> this.superseded.set(p, record.id));
+    this.scheduleSupersededDrop();
+  }
+  scheduleSupersededDrop(){
+    if(this.supersededTimer) return;
+    this.supersededTimer = setTimeout(()=>{ this.supersededTimer = null; this.dropSuperseded().catch(err=> console.warn("Removing replaced recordings:", err)); }, FILES_SUPERSEDED_MS);
+  }
+  dropSuperseded(){
+    if(!this.superseded || !this.superseded.size) return Promise.resolve(0);
+    return this.locked(async()=>{
+      const ledger = await this.readLedger();
+      let dropped = 0, changed = false;
+      for(const [p, id] of [...this.superseded]){
+        if(this.opts.canMove && !this.opts.canMove(id)) continue; // still playing: next time
+        let raw = null;
+        try{ raw = await this.readRaw("audio", id); }catch(err){}
+        const now = raw && raw.blob && typeof raw.blob.$path === "string" ? "/" + raw.blob.$path : null;
+        this.superseded.delete(p);
+        if(now && now.toLowerCase() === p.toLowerCase()) continue; // in use again (an Undo): keep it
+        try{ await this.removePath(p.slice(1)); }catch(err){ if(!err || err.name !== "NotFoundError") continue; }
+        if(ledger[p]){ delete ledger[p]; changed = true; }
+        dropped++;
+      }
+      if(changed) await writeWholeFile(this.own, "orphans.json", JSON.stringify(ledger));
+      if(this.superseded.size) this.scheduleSupersededDrop();
+      return dropped;
     });
   }
   // Removes files whose grace is over, and puts any file no record uses
@@ -3667,6 +3754,34 @@ class JoinedBlob {
 // The converter's input is a real File, handed to its worker: a file read
 // where it lies is read whole for it (its memory, as before 2.0).
 async function converterFile(blob, name){ return new File([await realBlob(blob)], name); }
+// What the converter is given for a file (2.2.039; Gen Rinzin's 8 GB Mac
+// mini, 11 Nov 2026: converting a 2.7 GB WAV after a 1 GB one, WebKit's
+// Networking process held 4–6 GB, the inputs read whole into Blobs, and
+// macOS restarted itself). A file of the desktop app's, read where it lies
+// (a DiskBlob), goes as its address: the worker reads it from the disk a
+// block at a time, synchronously, as ffmpeg asks for bytes (lazyInput in
+// converterWorkerMain), and holds one block. Anything else, or if this
+// webview can't read the address that way (tried once, on the file's first
+// bytes; then not again until reloaded), a real File, as before. Call once
+// the converter has started.
+let converterLazyOff = false;
+async function converterInput(blob, name){
+  if(isDiskBlob(blob) && !converterLazyOff && blob.size > 0){
+    const url = window.__p37FileUrl ? await window.__p37FileUrl(blob.p37root, blob.p37path) : window.__TAURI__.core.convertFileSrc(blob.p37root + "/" + blob.p37path, "p37lib");
+    const input = {p37lazy: true, name, size: blob.size, start: blob.start || 0, url};
+    try{
+      const r = await converterAsk({type: "probe", file: input});
+      if(r && r.head && r.head.length >= Math.min(16, blob.size * 2)){ if(!converterLazySaid){ converterLazySaid = true; playLog("the converter reads files from the disk as it goes"); } return input; }
+      throw new Error("no bytes came back");
+    }catch(err){
+      if(err && err.interrupted) throw err;
+      converterLazyOff = true;
+      playLog("the converter can't read files from the disk as it goes here (" + (err && err.message || err) + "): it reads each one whole first");
+    }
+  }
+  return converterFile(blob, name);
+}
+let converterLazySaid = false;
 // What a library can be given as a file's bytes: a Blob, or the desktop
 // app's stand-ins for one.
 function isBlobLike(v){ return v instanceof Blob || v instanceof DiskBlob || v instanceof JoinedBlob; }
@@ -3999,6 +4114,11 @@ const STRINGS = {
     "desktopShellOldBody": "This version of 37 Player needs a newer desktop app than this one ({shell}). Download it from github.com/kr37/37player/releases. Until then, some things may not work.",
     "desktopUpdatesBody": "This is a test build of the desktop app, with 37 Player {version}. For now, a newer version comes as a new download from github.com/kr37/37player/releases; updating by itself comes later.",
     "desktopNeedsAppBody": "Version {version} needs a newer desktop app than this one. Download it from github.com/kr37/37player/releases; until then, this one keeps working as it is.",
+    "shellUpdateTitle": "A new version of the desktop app",
+    "shellUpdateBody": "Version {version} of the 37 Player app is ready to install (this one is {current}). Installing it restarts 37 Player; your libraries and playlists stay as they are.",
+    "shellUpdateBtn": "Update and restart",
+    "shellUpdateBusy": "Downloading and installing the new version… 37 Player restarts by itself when it's done.",
+    "shellUpdateFailed": "The app couldn't update itself ({error}). You can download the new version from 37player.com instead.",
     "driveNotInDesktop": "Google Drive isn't available in the desktop app yet. Use a shared library on the droplet, or Google Drive from 37player.com in a browser.",
     "driveSignInBrowser": "Signing in to Google in your browser: come back here when it says Done.",
     "closeAppTitle": "Close 37 Player?",
@@ -5257,6 +5377,7 @@ const STRINGS = {
     "folderImportPlLeftOutOne": "1 playlist left out.",
     "folderImportPlLeftOutMany": "{n} playlists left out.",
     "analyzingFolderProgress": "Checked {done} of {total}…",
+    "analyzingBar": "Checking what to import: {done} of {total}…",
     "tooltipImportExport": "Import / Export",
     "importExportTitle": "Import / Export",
     "openBtn": "Open",
@@ -5953,6 +6074,11 @@ const STRINGS = {
     "desktopShellOldBody": "Esta versión de 37 Player necesita una aplicación de escritorio más nueva que esta ({shell}). Descárguela desde github.com/kr37/37player/releases. Mientras tanto, algunas cosas pueden no funcionar.",
     "desktopUpdatesBody": "Esta es una versión de prueba de la aplicación de escritorio, con 37 Player {version}. Por ahora, una versión más nueva se descarga de nuevo desde github.com/kr37/37player/releases; la actualización automática vendrá más adelante.",
     "desktopNeedsAppBody": "La versión {version} necesita una aplicación de escritorio más nueva que esta. Descárguela de github.com/kr37/37player/releases; mientras tanto, esta sigue funcionando como está.",
+    "shellUpdateTitle": "Una nueva versión de la aplicación de escritorio",
+    "shellUpdateBody": "La versión {version} de la aplicación 37 Player está lista para instalarse (esta es la {current}). Al instalarla, 37 Player se reinicia; tus bibliotecas y listas siguen como están.",
+    "shellUpdateBtn": "Actualizar y reiniciar",
+    "shellUpdateBusy": "Descargando e instalando la nueva versión… 37 Player se reinicia solo al terminar.",
+    "shellUpdateFailed": "La aplicación no pudo actualizarse ({error}). Puedes descargar la nueva versión desde 37player.com.",
     "driveNotInDesktop": "Google Drive aún no está disponible en la aplicación de escritorio. Use una biblioteca compartida en el servidor, o Google Drive desde 37player.com en un navegador.",
     "driveSignInBrowser": "Iniciando sesión en Google en tu navegador: vuelve aquí cuando diga que ha terminado.",
     "closeAppTitle": "¿Cerrar 37 Player?",
@@ -7202,6 +7328,7 @@ const STRINGS = {
     "folderImportPlLeftOutOne": "1 lista omitida.",
     "folderImportPlLeftOutMany": "{n} listas omitidas.",
     "analyzingFolderProgress": "Revisados {done} de {total}…",
+    "analyzingBar": "Comprobando qué importar: {done} de {total}…",
     "tooltipImportExport": "Importar / Exportar",
     "importExportTitle": "Importar / Exportar",
     "openBtn": "Abrir",
@@ -7897,6 +8024,11 @@ const STRINGS = {
     "desktopShellOldBody": "Cette version de 37 Player demande une application de bureau plus récente que celle-ci ({shell}). Téléchargez-la depuis github.com/kr37/37player/releases. En attendant, certaines choses peuvent ne pas fonctionner.",
     "desktopUpdatesBody": "Ceci est une version d'essai de l'application de bureau, avec 37 Player {version}. Pour l'instant, une version plus récente se télécharge à nouveau depuis github.com/kr37/37player/releases ; la mise à jour automatique viendra plus tard.",
     "desktopNeedsAppBody": "La version {version} a besoin d'une application de bureau plus récente que celle-ci. Téléchargez-la sur github.com/kr37/37player/releases ; d'ici là, celle-ci continue de fonctionner telle quelle.",
+    "shellUpdateTitle": "Une nouvelle version de l'application de bureau",
+    "shellUpdateBody": "La version {version} de l'application 37 Player est prête à être installée (celle-ci est la {current}). L'installer redémarre 37 Player ; vos bibliothèques et listes restent telles quelles.",
+    "shellUpdateBtn": "Mettre à jour et redémarrer",
+    "shellUpdateBusy": "Téléchargement et installation de la nouvelle version… 37 Player redémarre tout seul une fois terminé.",
+    "shellUpdateFailed": "L'application n'a pas pu se mettre à jour ({error}). Vous pouvez télécharger la nouvelle version sur 37player.com.",
     "driveNotInDesktop": "Google Drive n'est pas encore disponible dans l'application de bureau. Utilisez une bibliothèque partagée sur le serveur, ou Google Drive depuis 37player.com dans un navigateur.",
     "driveSignInBrowser": "Connexion à Google dans votre navigateur : revenez ici quand il indique que c'est fait.",
     "closeAppTitle": "Fermer 37 Player ?",
@@ -9146,6 +9278,7 @@ const STRINGS = {
     "folderImportPlLeftOutOne": "1 playlist laissée de côté.",
     "folderImportPlLeftOutMany": "{n} playlists laissées de côté.",
     "analyzingFolderProgress": "{done} sur {total} vérifiés…",
+    "analyzingBar": "Vérification avant l'import : {done} sur {total}…",
     "tooltipImportExport": "Importer / Exporter",
     "importExportTitle": "Importer / Exporter",
     "openBtn": "Ouvrir",
@@ -9841,6 +9974,11 @@ const STRINGS = {
     "desktopShellOldBody": "Esta versão do 37 Player precisa de um aplicativo de computador mais novo que este ({shell}). Baixe-o em github.com/kr37/37player/releases. Até lá, algumas coisas podem não funcionar.",
     "desktopUpdatesBody": "Esta é uma versão de teste do aplicativo de computador, com o 37 Player {version}. Por enquanto, uma versão mais nova é um novo download em github.com/kr37/37player/releases; a atualização automática virá depois.",
     "desktopNeedsAppBody": "A versão {version} precisa de um aplicativo de desktop mais novo que este. Baixe-o em github.com/kr37/37player/releases; até lá, este continua funcionando como está.",
+    "shellUpdateTitle": "Uma nova versão do aplicativo para computador",
+    "shellUpdateBody": "A versão {version} do aplicativo 37 Player está pronta para instalar (esta é a {current}). Ao instalá-la, o 37 Player reinicia; suas bibliotecas e listas continuam como estão.",
+    "shellUpdateBtn": "Atualizar e reiniciar",
+    "shellUpdateBusy": "Baixando e instalando a nova versão… O 37 Player reinicia sozinho quando terminar.",
+    "shellUpdateFailed": "O aplicativo não conseguiu se atualizar ({error}). Você pode baixar a nova versão em 37player.com.",
     "driveNotInDesktop": "O Google Drive ainda não está disponível no aplicativo de computador. Use uma biblioteca compartilhada no servidor, ou o Google Drive a partir de 37player.com num navegador.",
     "driveSignInBrowser": "A iniciar sessão no Google no seu navegador: volte aqui quando disser que terminou.",
     "closeAppTitle": "Fechar o 37 Player?",
@@ -11090,6 +11228,7 @@ const STRINGS = {
     "folderImportPlLeftOutOne": "1 lista deixada de fora.",
     "folderImportPlLeftOutMany": "{n} listas deixadas de fora.",
     "analyzingFolderProgress": "Verificados {done} de {total}…",
+    "analyzingBar": "Verificando o que importar: {done} de {total}…",
     "tooltipImportExport": "Importar / Exportar",
     "importExportTitle": "Importar / Exportar",
     "openBtn": "Abrir",
@@ -11785,6 +11924,11 @@ const STRINGS = {
     "desktopShellOldBody": "Diese Version von 37 Player braucht eine neuere Desktop-App als diese ({shell}). Laden Sie sie von github.com/kr37/37player/releases herunter. Bis dahin funktioniert manches vielleicht nicht.",
     "desktopUpdatesBody": "Dies ist eine Testversion der Desktop-App mit 37 Player {version}. Vorerst kommt eine neuere Version als neuer Download von github.com/kr37/37player/releases; automatische Aktualisierung kommt später.",
     "desktopNeedsAppBody": "Version {version} braucht eine neuere Desktop-App als diese. Laden Sie sie von github.com/kr37/37player/releases herunter; bis dahin funktioniert diese weiter wie bisher.",
+    "shellUpdateTitle": "Eine neue Version der Desktop-App",
+    "shellUpdateBody": "Version {version} der 37-Player-App ist bereit zur Installation (diese ist {current}). Beim Installieren startet 37 Player neu; Ihre Bibliotheken und Playlists bleiben, wie sie sind.",
+    "shellUpdateBtn": "Aktualisieren und neu starten",
+    "shellUpdateBusy": "Die neue Version wird geladen und installiert… 37 Player startet danach von selbst neu.",
+    "shellUpdateFailed": "Die App konnte sich nicht aktualisieren ({error}). Sie können die neue Version stattdessen von 37player.com laden.",
     "driveNotInDesktop": "Google Drive ist in der Desktop-App noch nicht verfügbar. Nutzen Sie eine gemeinsame Bibliothek auf dem Server oder Google Drive über 37player.com in einem Browser.",
     "driveSignInBrowser": "Anmeldung bei Google in Ihrem Browser: Kommen Sie hierher zurück, wenn dort „Fertig“ steht.",
     "closeAppTitle": "37 Player schließen?",
@@ -13034,6 +13178,7 @@ const STRINGS = {
     "folderImportPlLeftOutOne": "1 Playlist ausgelassen.",
     "folderImportPlLeftOutMany": "{n} Playlists ausgelassen.",
     "analyzingFolderProgress": "{done} von {total} geprüft…",
+    "analyzingBar": "Prüfen, was importiert wird: {done} von {total}…",
     "tooltipImportExport": "Importieren / Exportieren",
     "importExportTitle": "Importieren / Exportieren",
     "openBtn": "Öffnen",
@@ -13729,6 +13874,11 @@ const STRINGS = {
     "desktopShellOldBody": "这个版本的 37 Player 需要比当前（{shell}）更新的桌面应用。请从 github.com/kr37/37player/releases 下载。在此之前，有些功能可能无法使用。",
     "desktopUpdatesBody": "这是桌面应用的测试版，含 37 Player {version}。目前，更新版本需要从 github.com/kr37/37player/releases 重新下载；自动更新以后再提供。",
     "desktopNeedsAppBody": "版本 {version} 需要比这个更新的桌面应用。请从 github.com/kr37/37player/releases 下载；在此之前，这个应用照常可用。",
+    "shellUpdateTitle": "桌面应用有新版本",
+    "shellUpdateBody": "37 Player 应用的 {version} 版已可安装（当前为 {current}）。安装后 37 Player 会重新启动；您的音乐库和播放列表保持不变。",
+    "shellUpdateBtn": "更新并重启",
+    "shellUpdateBusy": "正在下载并安装新版本… 完成后 37 Player 会自动重启。",
+    "shellUpdateFailed": "应用无法自行更新（{error}）。您可以改从 37player.com 下载新版本。",
     "driveNotInDesktop": "桌面应用中暂时还不能使用 Google Drive。请使用服务器上的共享曲库，或在浏览器中通过 37player.com 使用 Google Drive。",
     "driveSignInBrowser": "正在浏览器中登录 Google：显示完成后请回到这里。",
     "closeAppTitle": "关闭 37 Player？",
@@ -14978,6 +15128,7 @@ const STRINGS = {
     "folderImportPlLeftOutOne": "1 个播放列表未导入。",
     "folderImportPlLeftOutMany": "{n} 个播放列表未导入。",
     "analyzingFolderProgress": "已检查 {done}/{total}…",
+    "analyzingBar": "正在检查要导入的内容：{done} / {total}…",
     "tooltipImportExport": "导入/导出",
     "importExportTitle": "导入/导出",
     "openBtn": "打开",
@@ -15673,6 +15824,11 @@ const STRINGS = {
     "desktopShellOldBody": "Phiên bản 37 Player này cần ứng dụng máy tính mới hơn bản hiện có ({shell}). Hãy tải về từ github.com/kr37/37player/releases. Trong lúc chờ, một số thứ có thể không hoạt động.",
     "desktopUpdatesBody": "Đây là bản thử nghiệm của ứng dụng máy tính, với 37 Player {version}. Hiện tại, bản mới hơn là một lần tải về mới từ github.com/kr37/37player/releases; tự cập nhật sẽ có sau.",
     "desktopNeedsAppBody": "Phiên bản {version} cần ứng dụng máy tính mới hơn ứng dụng này. Hãy tải về từ github.com/kr37/37player/releases; trong lúc chờ, ứng dụng này vẫn hoạt động như cũ.",
+    "shellUpdateTitle": "Có phiên bản mới của ứng dụng máy tính",
+    "shellUpdateBody": "Phiên bản {version} của ứng dụng 37 Player đã sẵn sàng để cài (bản này là {current}). Khi cài, 37 Player sẽ khởi động lại; thư viện và danh sách phát của bạn vẫn giữ nguyên.",
+    "shellUpdateBtn": "Cập nhật và khởi động lại",
+    "shellUpdateBusy": "Đang tải và cài phiên bản mới… 37 Player sẽ tự khởi động lại khi xong.",
+    "shellUpdateFailed": "Ứng dụng không tự cập nhật được ({error}). Bạn có thể tải phiên bản mới từ 37player.com.",
     "driveNotInDesktop": "Ứng dụng máy tính chưa dùng được Google Drive. Hãy dùng thư viện dùng chung trên máy chủ, hoặc Google Drive từ 37player.com trong trình duyệt.",
     "driveSignInBrowser": "Đang đăng nhập Google trong trình duyệt của bạn: quay lại đây khi trang báo đã xong.",
     "closeAppTitle": "Đóng 37 Player?",
@@ -16922,6 +17078,7 @@ const STRINGS = {
     "folderImportPlLeftOutOne": "Đã bỏ qua 1 danh sách phát.",
     "folderImportPlLeftOutMany": "Đã bỏ qua {n} danh sách phát.",
     "analyzingFolderProgress": "Đã kiểm tra {done}/{total}…",
+    "analyzingBar": "Đang kiểm tra những gì sẽ nhập: {done}/{total}…",
     "tooltipImportExport": "Nhập / Xuất",
     "importExportTitle": "Nhập / Xuất",
     "openBtn": "Mở",
@@ -17617,6 +17774,11 @@ const STRINGS = {
     "desktopShellOldBody": "Αυτή η έκδοση του 37 Player χρειάζεται νεότερη εφαρμογή υπολογιστή από αυτήν ({shell}). Κατεβάστε τη από το github.com/kr37/37player/releases. Ως τότε, κάποια πράγματα ίσως δεν λειτουργούν.",
     "desktopUpdatesBody": "Αυτή είναι δοκιμαστική έκδοση της εφαρμογής υπολογιστή, με το 37 Player {version}. Προς το παρόν, μια νεότερη έκδοση είναι νέα λήψη από το github.com/kr37/37player/releases· η αυτόματη ενημέρωση έρχεται αργότερα.",
     "desktopNeedsAppBody": "Η έκδοση {version} χρειάζεται νεότερη εφαρμογή υπολογιστή από αυτήν. Κατεβάστε τη από το github.com/kr37/37player/releases· μέχρι τότε, αυτή συνεχίζει να λειτουργεί όπως είναι.",
+    "shellUpdateTitle": "Νέα έκδοση της εφαρμογής υπολογιστή",
+    "shellUpdateBody": "Η έκδοση {version} της εφαρμογής 37 Player είναι έτοιμη για εγκατάσταση (αυτή είναι η {current}). Η εγκατάσταση επανεκκινεί το 37 Player· οι βιβλιοθήκες και οι λίστες σας μένουν ως έχουν.",
+    "shellUpdateBtn": "Ενημέρωση και επανεκκίνηση",
+    "shellUpdateBusy": "Λήψη και εγκατάσταση της νέας έκδοσης… Το 37 Player επανεκκινείται μόνο του όταν τελειώσει.",
+    "shellUpdateFailed": "Η εφαρμογή δεν μπόρεσε να ενημερωθεί ({error}). Μπορείτε να κατεβάσετε τη νέα έκδοση από το 37player.com.",
     "driveNotInDesktop": "Το Google Drive δεν είναι ακόμη διαθέσιμο στην εφαρμογή υπολογιστή. Χρησιμοποιήστε κοινόχρηστη βιβλιοθήκη στον διακομιστή, ή το Google Drive από το 37player.com σε πρόγραμμα περιήγησης.",
     "driveSignInBrowser": "Σύνδεση στο Google στο πρόγραμμα περιήγησής σας: επιστρέψτε εδώ όταν γράψει ότι τελείωσε.",
     "closeAppTitle": "Κλείσιμο του 37 Player;",
@@ -18866,6 +19028,7 @@ const STRINGS = {
     "folderImportPlLeftOutOne": "1 λίστα παραλείφθηκε.",
     "folderImportPlLeftOutMany": "{n} λίστες παραλείφθηκαν.",
     "analyzingFolderProgress": "Ελέγχθηκαν {done} από {total}…",
+    "analyzingBar": "Έλεγχος του τι θα εισαχθεί: {done} από {total}…",
     "tooltipImportExport": "Εισαγωγή / Εξαγωγή",
     "importExportTitle": "Εισαγωγή / Εξαγωγή",
     "openBtn": "Άνοιγμα",
@@ -19561,6 +19724,11 @@ const STRINGS = {
     "desktopShellOldBody": "Questa versione di 37 Player ha bisogno di un'app per computer più recente di questa ({shell}). Scaricala da github.com/kr37/37player/releases. Nel frattempo, alcune cose potrebbero non funzionare.",
     "desktopUpdatesBody": "Questa è una versione di prova dell'app per computer, con 37 Player {version}. Per ora, una versione più nuova è un nuovo download da github.com/kr37/37player/releases; l'aggiornamento automatico arriverà più avanti.",
     "desktopNeedsAppBody": "La versione {version} richiede un'app desktop più recente di questa. Scaricala da github.com/kr37/37player/releases; nel frattempo questa continua a funzionare così com'è.",
+    "shellUpdateTitle": "Una nuova versione dell'app desktop",
+    "shellUpdateBody": "La versione {version} dell'app 37 Player è pronta da installare (questa è la {current}). L'installazione riavvia 37 Player; le tue librerie e playlist restano come sono.",
+    "shellUpdateBtn": "Aggiorna e riavvia",
+    "shellUpdateBusy": "Download e installazione della nuova versione… 37 Player si riavvia da solo al termine.",
+    "shellUpdateFailed": "L'app non è riuscita ad aggiornarsi ({error}). Puoi scaricare la nuova versione da 37player.com.",
     "driveNotInDesktop": "Google Drive non è ancora disponibile nell'app per computer. Usa una libreria condivisa sul server, o Google Drive da 37player.com in un browser.",
     "driveSignInBrowser": "Accesso a Google nel tuo browser: torna qui quando dice che è fatto.",
     "closeAppTitle": "Chiudere 37 Player?",
@@ -20810,6 +20978,7 @@ const STRINGS = {
     "folderImportPlLeftOutOne": "1 playlist lasciata fuori.",
     "folderImportPlLeftOutMany": "{n} playlist lasciate fuori.",
     "analyzingFolderProgress": "Controllati {done} di {total}…",
+    "analyzingBar": "Controllo di cosa importare: {done} di {total}…",
     "tooltipImportExport": "Importa / Esporta",
     "importExportTitle": "Importa / Esporta",
     "openBtn": "Apri",
@@ -21571,7 +21740,25 @@ function hashString(s){
   return (h2>>>0).toString(16) + (h1>>>0).toString(16);
 }
 function libraryPartOf(r){ const v = {library:r.library, tree:r.tree, standardizeTargetRate:r.standardizeTargetRate||null, formatPolicy:r.formatPolicy||null, storageRev:r.storageRev||0}; if(r.backupKeepers && Object.keys(r.backupKeepers).length) v.backupKeepers = r.backupKeepers; return v; }
-function libraryHashOf(r){ return hashString(JSON.stringify(libraryPartOf(r))); }
+// A waveform counts by a fingerprint of it, made once per array (2.2.035):
+// turning every waveform into text at each save was most of a save's time
+// (720 numbers a track; 33 MB for 2,500 tracks, about a third of a second
+// on a fast computer and several times that on the T470, all of it holding
+// up the page). A waveform is never changed in place, only replaced by a
+// new array (analyzeAudio, the splitter, a conversion), so a remembered
+// fingerprint can't go stale.
+const peaksPrints = new WeakMap();
+function peaksPrint(pk){
+  if(!pk || typeof pk !== "object") return pk;
+  let h = peaksPrints.get(pk);
+  if(h === undefined){ h = "~" + pk.length + ":" + hashString(JSON.stringify(Array.from(pk))); peaksPrints.set(pk, h); }
+  return h;
+}
+function libraryHashOf(r){
+  const part = libraryPartOf(r);
+  const library = (part.library || []).map(t=> t && t.peaks ? Object.assign({}, t, {peaks: peaksPrint(t.peaks)}) : t);
+  return hashString(JSON.stringify(Object.assign({}, part, {library})));
+}
 // Writes the library only if the stored revision is still expectedRev.
 // Resolves {ok:true, rev} or {ok:false}.
 function idbWriteLibraryIfCurrent(value, expectedRev){
@@ -21711,7 +21898,7 @@ function scheduleSpareLibrary(value, rev){
 // kept once per device (localStorage) and laid over whichever library's own
 // settings are open, so switching library never changes the language, the
 // look, or how playback behaves with the screen off.
-const DEVICE_SETTING_KEYS = ["language", "theme", "uiScale", "moreContrast", "density", "wrapNames", "showAlbumColumn", "showTrackWaveforms", "showLoudness", "showPlayLoudness", "columnWidths", "narrowColumnWidths", "keepScreenOn", "stopLockScreen", "showEdPreviewBar", "standardizeOnlyWhenIdle", "updateUrl", "librariesUrl", "sharedLastDevice", "sharedLastUrl", "feedbackReply"];
+const DEVICE_SETTING_KEYS = ["volume", "language", "theme", "uiScale", "moreContrast", "density", "wrapNames", "showAlbumColumn", "showTrackWaveforms", "showLoudness", "showPlayLoudness", "columnWidths", "narrowColumnWidths", "keepScreenOn", "stopLockScreen", "showEdPreviewBar", "standardizeOnlyWhenIdle", "updateUrl", "librariesUrl", "sharedLastDevice", "sharedLastUrl", "feedbackReply"];
 function readDeviceSettings(){ try{ const v = JSON.parse(localStorage.getItem(DEVICE_SETTINGS_KEY) || "null"); return v && typeof v === "object" ? v : null; }catch(err){ return null; } }
 function applyDeviceSettings(settings){
   const dev = readDeviceSettings();
@@ -24902,104 +25089,48 @@ function renderPlayer(){
    recordings) simply won't have anything to read — that's expected, not
    a failure, and the fields stay editable by hand either way.
 */
-function readId3Int(view, offset, synchsafe){
-  if(synchsafe){
-    return ((view.getUint8(offset)&0x7f)<<21) | ((view.getUint8(offset+1)&0x7f)<<14) | ((view.getUint8(offset+2)&0x7f)<<7) | (view.getUint8(offset+3)&0x7f);
-  }
-  return view.getUint32(offset, false);
-}
-// The end marker (a zero byte, or two in UTF-16) is optional, and iTunes
-// leaves it out. It's removed after decoding, as characters: removing zero
-// bytes before decoding cut the last letter of a UTF-16 text in half
-// ("Liberating Praye\uFFFD"), since in UTF-16 an English letter's second
-// byte is itself a zero.
-function decodeId3Text(bytes){
-  if(!bytes || bytes.length===0) return "";
-  const enc = bytes[0];
-  const body = bytes.subarray(1);
-  let str;
-  try{
-    if(enc===0) str = new TextDecoder("iso-8859-1").decode(body);
-    else if(enc===1){
-      const le = !(body[0]===0xFE && body[1]===0xFF);
-      const hasBom = (body[0]===0xFF && body[1]===0xFE) || (body[0]===0xFE && body[1]===0xFF);
-      str = new TextDecoder(le ? "utf-16le" : "utf-16be").decode(body.subarray(hasBom ? 2 : 0));
-    }
-    else if(enc===2) str = new TextDecoder("utf-16be").decode(body);
-    else str = new TextDecoder("utf-8").decode(body);
-  }catch(e){ return ""; }
-  const first = str.split("\0").find(x=> x.trim() !== "");
-  return (first || "").trim();
-}
-// APIC frame: encoding byte, then MIME type (always Latin-1, single-null-terminated),
-// then picture type byte, then description (terminator width depends on encoding),
-// then the raw image bytes for the rest of the frame.
-function parseApicFrame(frameBytes){
-  try{
-    const enc = frameBytes[0];
-    let pos = 1;
-    let mimeEnd = pos;
-    while(mimeEnd<frameBytes.length && frameBytes[mimeEnd]!==0) mimeEnd++;
-    const mime = (new TextDecoder("iso-8859-1").decode(frameBytes.subarray(pos,mimeEnd)) || "").trim() || "image/jpeg";
-    pos = mimeEnd+1;
-    pos += 1; // picture type byte
-    if(enc===1 || enc===2){
-      let descEnd = pos;
-      while(descEnd+1<frameBytes.length && !(frameBytes[descEnd]===0 && frameBytes[descEnd+1]===0)) descEnd+=2;
-      pos = descEnd+2;
-    } else {
-      let descEnd = pos;
-      while(descEnd<frameBytes.length && frameBytes[descEnd]!==0) descEnd++;
-      pos = descEnd+1;
-    }
-    const imageBytes = frameBytes.subarray(pos);
-    if(imageBytes.length<10) return null;
-    return { mime, bytes: imageBytes };
-  }catch(e){ return null; }
-}
+// Reads an MP3's details: ID3v2 at the start (through parseId3Block, the
+// same reader the tag writer uses: v2.2's three-letter frames, unsynchronised
+// tags, an extended header, v2.4's frame flags and its wrongly-sized frames),
+// then any field still empty from ID3v1 at the end. Before 2.2.034 the import
+// had its own reader that knew only v2.3/v2.4 plain frames, so a file tagged
+// any other way came in with no title, artist, album or picture (Gen Rinzin,
+// 12 Nov 2026: Rak-ma's album, where only the first track got them).
 async function parseId3Tags(blob){
+  const result = {title:"", artist:"", album:"", artwork:null, trackNo:null};
   try{
-    const headBuf = await blob.slice(0,10).arrayBuffer();
-    const head = new Uint8Array(headBuf);
-    if(head[0]===0x49 && head[1]===0x44 && head[2]===0x33){ // "ID3"
-      const version = head[3];
-      const headDv = new DataView(headBuf);
-      const tagSize = readId3Int(headDv, 6, true); // header size field is always synchsafe
-      const tagBuf = await blob.slice(10, 10+tagSize).arrayBuffer();
-      const dv = new DataView(tagBuf);
-      const bytes = new Uint8Array(tagBuf);
-      const result = {title:"", artist:"", album:"", artwork:null, trackNo:null};
-      let offset = 0;
-      const sizeIsSynchsafe = version>=4;
-      while(offset+10 <= bytes.length){
-        const id = String.fromCharCode(bytes[offset],bytes[offset+1],bytes[offset+2],bytes[offset+3]);
-        if(id==="\u0000\u0000\u0000\u0000") break;
-        const size = readId3Int(dv, offset+4, sizeIsSynchsafe);
-        if(size<=0 || offset+10+size>bytes.length) break;
-        const frame = bytes.subarray(offset+10, offset+10+size);
-        if(id==="TIT2") result.title = decodeId3Text(frame);
-        else if(id==="TPE1") result.artist = decodeId3Text(frame);
-        else if(id==="TALB") result.album = decodeId3Text(frame);
-        else if(id==="TRCK") result.trackNo = parseInt(decodeId3Text(frame),10) || null; // format is "N" or "N/total"
-        else if(id==="APIC" && !result.artwork) result.artwork = parseApicFrame(frame);
-        offset += 10+size;
+    const head = new Uint8Array(await blob.slice(0, 10).arrayBuffer());
+    if(head.length === 10 && head[0]===0x49 && head[1]===0x44 && head[2]===0x33){ // "ID3"
+      const block = parseId3Block(new Uint8Array(await blob.slice(0, id3TotalSize(head)).arrayBuffer()));
+      if(block && block.frames){
+        const v = block.version, text = id=>{ const f = block.frames.find(x=> x.id === id); const vals = f ? id3TextValues(v, f) : null; return vals && vals.length ? vals[0].trim() : ""; };
+        const ids = v === 2 ? {title: "TT2", artist: "TP1", albumArtist: "TP2", album: "TAL", track: "TRK", pic: "PIC"} : {title: "TIT2", artist: "TPE1", albumArtist: "TPE2", album: "TALB", track: "TRCK", pic: "APIC"};
+        result.title = text(ids.title);
+        result.artist = text(ids.artist) || text(ids.albumArtist);
+        result.album = text(ids.album);
+        result.trackNo = parseInt(text(ids.track), 10) || null; // "N" or "N/total"
+        // The front cover if there's one, else the first picture.
+        const pics = block.frames.filter(f=> f.id === ids.pic).map(f=>{ try{ return parseId3Picture(v, f); }catch(err){ return null; } }).filter(x=> x && x.bytes && x.bytes.length);
+        const pic = pics.find(x=> x.type === 3) || pics[0];
+        if(pic) result.artwork = {bytes: pic.bytes, mime: pic.mime};
       }
-      if(result.title || result.artist || result.album || result.artwork) return result;
     }
-    if(blob.size>=128){
-      const tailBuf = await blob.slice(blob.size-128, blob.size).arrayBuffer();
-      const tail = new Uint8Array(tailBuf);
-      if(tail[0]===0x54 && tail[1]===0x41 && tail[2]===0x47){ // "TAG"
+    if((!result.title || !result.artist || !result.album) && blob.size >= 128){
+      const tail = new Uint8Array(await blob.slice(blob.size-128, blob.size).arrayBuffer());
+      if(tail[0]===0x54 && tail[1]===0x41 && tail[2]===0x47){ // "TAG": ID3v1, no artwork; a track number in v1.1
         const dec = (start,len)=>{
-          let end=start+len;
-          while(end>start && tail[end-1]===0) end--;
+          let end = start;
+          while(end < start + len && tail[end] !== 0) end++;
           return new TextDecoder("iso-8859-1").decode(tail.subarray(start,end)).trim();
         };
-        return { title: dec(3,30), artist: dec(33,30), album: dec(63,30), artwork:null, trackNo:null }; // ID3v1 has no artwork or track number
+        result.title = result.title || dec(3,30);
+        result.artist = result.artist || dec(33,30);
+        result.album = result.album || dec(63,30);
+        if(result.trackNo == null && tail[125] === 0 && tail[126]) result.trackNo = tail[126];
       }
     }
   }catch(e){ console.warn("ID3 read failed", e); }
-  return null;
+  return (result.title || result.artist || result.album || result.artwork) ? result : null;
 }
 
 /* M4A/MP4 uses a completely different container format — nested "atoms"
@@ -27025,7 +27156,7 @@ function setActiveOperationProgress(text, stop, key, opts){
   const prev = activeOps.get(key);
   const dialog = pendingOperationDialog || (prev && prev.dialog) || null;
   pendingOperationDialog = null;
-  activeOps.set(key, {text, stop, dialog, stopping: !!(prev && prev.stopping), waiting: !!(opts && opts.waiting)});
+  activeOps.set(key, {text, stop, dialog, stopping: !!(prev && prev.stopping), waiting: !!(opts && opts.waiting), links: (opts && opts.links) || (prev && prev.links) || null});
   activeOperation = [...activeOps.values()].filter(o=> !o.waiting).pop() || null;
   renderOperationBar();
 }
@@ -27073,6 +27204,14 @@ function renderOperationBar(){
       });
       part.appendChild(btn);
     }
+    // More buttons after Stop (opts.links: [{label, fn}]), e.g. converting's
+    // Settings and Help (2.2.038, Gen Rinzin).
+    (op.links || []).forEach(l=>{
+      const b = document.createElement("button");
+      b.className = "btn ghost"; b.type = "button"; b.textContent = l.label;
+      b.addEventListener("click", (e)=>{ e.stopPropagation(); l.fn(); });
+      part.appendChild(b);
+    });
     bar.appendChild(part);
   });
 }
@@ -27546,6 +27685,58 @@ async function removeConverter(){
 // The worker's own code, turned into a Blob URL (see converterStart).
 function converterWorkerMain(){
   let core = null, logLines = [];
+  // A file read by its address (converterInput): ffmpeg's reads are served
+  // from one block of LAZY_BLOCK bytes, fetched synchronously with a Range
+  // request (a worker may wait; ffmpeg can't be made to) and replaced by
+  // the next as it reads on. No Blob is made for them: in WebKit a Blob's
+  // bytes live in the Networking process until the collector gets to it.
+  const LAZY_BLOCK = 4 << 20; // the shell serves at most 4 MB per request
+  function lazyInput(f){
+    let block = null;
+    const fetchBlock = (p)=>{
+      const want = Math.min(f.size, p + LAZY_BLOCK) - p;
+      const x = new XMLHttpRequest();
+      x.open("GET", f.url, false);
+      x.setRequestHeader("Range", "bytes=" + (f.start + p) + "-" + (f.start + p + want - 1));
+      let binary = true;
+      try{ x.responseType = "arraybuffer"; }catch(e){ binary = false; x.overrideMimeType("text/plain; charset=x-user-defined"); }
+      x.send();
+      if(x.status !== 206 && !(x.status === 200 && f.start + p === 0 && want === f.size)) throw new Error("reading the file: HTTP " + x.status);
+      const cr = x.getResponseHeader("Content-Range"), m = cr && /bytes (\d+)-/.exec(cr);
+      if(m && +m[1] !== f.start + p) throw new Error("reading the file: the wrong bytes came back");
+      let bytes;
+      if(binary && x.response) bytes = new Uint8Array(x.response);
+      else { const t = x.responseText || ""; bytes = new Uint8Array(t.length); for(let i = 0; i < t.length; i++) bytes[i] = t.charCodeAt(i) & 255; }
+      if(!bytes.length) throw new Error("reading the file: nothing came back");
+      block = {start: p, bytes: bytes.length > want ? bytes.subarray(0, want) : bytes};
+    };
+    return {name: f.name, size: f.size, lastModifiedDate: new Date(),
+      p37ReadInto(buffer, offset, length, position){
+        if(position >= f.size) return 0;
+        length = Math.min(length, f.size - position);
+        let done = 0;
+        while(done < length){
+          const p = position + done;
+          if(!block || p < block.start || p >= block.start + block.bytes.length) fetchBlock(p);
+          const at = p - block.start, n = Math.min(length - done, block.bytes.length - at);
+          buffer.set(block.bytes.subarray(at, at + n), offset + done);
+          done += n;
+        }
+        return done;
+      }};
+  }
+  // WORKERFS reads its files through FileReaderSync; one that can read
+  // itself (lazyInput) is asked directly. Patched once per worker.
+  function readsFromAddress(){
+    const W = core.FS.filesystems.WORKERFS;
+    if(W.p37Patched) return;
+    W.p37Patched = true;
+    const orig = W.stream_ops.read;
+    W.stream_ops.read = function(stream, buffer, offset, length, position){
+      const c = stream.node.contents;
+      return c && c.p37ReadInto ? c.p37ReadInto(buffer, offset, length, position) : orig.apply(this, arguments);
+    };
+  }
   self.onmessage = async ({data})=>{
     try{
       if(data.type === "load"){
@@ -27556,15 +27747,26 @@ function converterWorkerMain(){
         self.postMessage({type: "loaded"});
         return;
       }
+      if(data.type === "probe"){
+        // Can this worker read the file by its address? Its first bytes.
+        const c = lazyInput(data.file), b = new Uint8Array(Math.min(8, data.file.size));
+        c.p37ReadInto(b, 0, b.length, 0);
+        self.postMessage({type: "done", ret: 0, head: Array.from(b, x=> x.toString(16).padStart(2, "0")).join("")});
+        return;
+      }
       logLines = [];
       try{ core.FS.mkdir("/in"); }catch(e){}
       try{ core.FS.mkdir("/out"); }catch(e){}
+      const file = data.file.p37lazy ? lazyInput(data.file) : data.file;
       // The file's first bytes as this worker reads them, for the error when
       // ffmpeg can't make sense of it (WebKit, 5 Nov 2026).
       let head = "";
-      try{ head = Array.from(new Uint8Array(new FileReaderSync().readAsArrayBuffer(data.file.slice(0, 8))), b=> b.toString(16).padStart(2, "0")).join(""); }
-      catch(e){ head = "error " + (e && e.name || e); }
-      core.FS.mount(core.FS.filesystems.WORKERFS, {files: [data.file]}, "/in");
+      try{
+        const b = file.p37ReadInto ? (()=>{ const x = new Uint8Array(Math.min(8, file.size)); file.p37ReadInto(x, 0, x.length, 0); return x; })() : new Uint8Array(new FileReaderSync().readAsArrayBuffer(file.slice(0, 8)));
+        head = Array.from(b, x=> x.toString(16).padStart(2, "0")).join("");
+      }catch(e){ head = "error " + (e && e.name || e); }
+      readsFromAddress();
+      core.FS.mount(core.FS.filesystems.WORKERFS, {files: [file]}, "/in");
       let ret, out = null;
       try{
         core.exec(...data.args);
@@ -27663,7 +27865,7 @@ async function converterConvert(blob, sourceName, onFraction, target){
   const kind = FORMAT_KINDS[target.format];
   await converterStart();
   const ext = (String(sourceName || "").match(/\.[a-z0-9]{1,5}$/i) || [""])[0].toLowerCase();
-  const file = await converterFile(blob, "source" + ext);
+  const file = await converterInput(blob, "source" + ext);
   const probe = await converterAsk({type: "run", file, args: ["-hide_banner", "-nostdin", "-i", "/in/" + file.name]});
   const info = converterReadInput(probe.log);
   if(!info.hasAudio) throw converterNoAudioError(probe.log, {page: await blobHeadHex(blob), worker: probe.head, size: blob.size});
@@ -27917,7 +28119,7 @@ async function runConvertQueue(){
     while(convertQueue.length && !convertStopped){
       // Never alongside playback.
       if(convertShouldWait()){
-        setActiveOperationProgress(t("convertWaiting", {n: convertQueue.length}), stopConverting);
+        setActiveOperationProgress(t("convertWaiting", {n: convertQueue.length}), stopConverting, undefined, {links: convertBarLinks()});
         await new Promise(r=> setTimeout(r, 1500));
         continue;
       }
@@ -27925,7 +28127,7 @@ async function runConvertQueue(){
       const tr = findLibraryTrack(id);
       if(!trackCanBeConverted(tr) || (trackIsBigFile(tr) && !convertBigOk.has(id))){ convertQueue.shift(); convertDone++; continue; }
       const name = tr.name || tr.filename || "";
-      setActiveOperationProgress(convertBarText(name, null), stopConverting);
+      setActiveOperationProgress(convertBarText(name, null), stopConverting, undefined, {links: convertBarLinks()});
       let rec = null;
       try{ rec = await idbGet("audio", id); }catch(err){}
       if(!rec || !rec.blob || !rec.blob.size){ convertQueue.shift(); convertDone++; convertFailures.push({name, reason: t(placeOfTrack(id) ? "convertPlaceGone" : "convertNoAudioHere")}); continue; }
@@ -27933,7 +28135,7 @@ async function runConvertQueue(){
       const watch = setInterval(()=>{ if(convertShouldWait()) converterStop(); }, 1000);
       try{
         const wasBig = trackIsBigFile(tr);
-        const out = await converterConvert(rec.blob, tr.filename, (f)=> setActiveOperationProgress(convertBarText(name, f), stopConverting));
+        const out = await converterConvert(rec.blob, tr.filename, (f)=> setActiveOperationProgress(convertBarText(name, f), stopConverting, undefined, {links: convertBarLinks()}));
         clearInterval(watch);
         await applyConvertedAudio(id, out.blob, rec.blob, out.kind);
         convertQueue.shift(); convertDone++;
@@ -27971,6 +28173,15 @@ async function runConvertQueue(){
     if(kept.length && formatPolicy().when !== "untouched") whenNoModal(()=> showKeepOriginals(kept, failures)); // "Don't touch my files": kept, no question
     else if(failures.length) whenNoModal(()=> showConvertFailures(failures));
   }
+}
+// Converting's line in the status bar: Settings (File format, where the
+// preferred format is chosen) and Help (where converting is explained),
+// after Stop (2.2.038, Gen Rinzin).
+function convertBarLinks(){
+  return [
+    {label: t("settingsTitle"), fn: ()=>{ closeHelpPage(); openSettingsPage(); goToSettingsSection("standardization"); }},
+    {label: t("tabHelp"), fn: ()=>{ if(settingsPageOpen()) closeSettingsPage(); closeHelpPage(); selectedHelpTopicId = "itunes-music-app"; openHelpPage(); }},
+  ];
 }
 function stopConverting(){
   convertStopped = true;
@@ -28530,7 +28741,7 @@ async function splitViaConverter(sourceTrack, blob, fmt, segs, ids, mode, step, 
   const run = async ()=>{
     await converterStart();
     const ext = fileExt(sourceTrack.filename) || (fmt.ext || ".bin").replace(/^\./, "");
-    const file = await converterFile(blob, "source." + ext);
+    const file = await converterInput(blob, "source." + ext);
     const probe = await converterAsk({type: "run", file, args: ["-hide_banner", "-nostdin", "-i", "/in/" + file.name]});
     const info = converterReadInput(probe.log);
     if(!info.hasAudio) throw converterNoAudioError(probe.log);
@@ -30042,9 +30253,26 @@ function folderPlaylistOrder(resolvedEntries, trackIdFor){
 // each entry's own path reference against the files actually present in
 // this selection. Nothing is committed until the review dialog is confirmed.
 async function analyzeFolderImport(audioFiles, m3u8Files, imageFiles, xmlFiles){
-  openModal(`<h3>${t(importingLooseFiles ? "analyzingFilesTitle" : "analyzingFolderTitle")}</h3><p id="analyzingFolderFile" class="import-file-line"></p><p id="analyzingFolderStatus">${t("analyzingFolderBody")}</p>`, "wide");
+  openModal(`<h3>${t(importingLooseFiles ? "analyzingFilesTitle" : "analyzingFolderTitle")}</h3><p id="analyzingFolderFile" class="import-file-line"></p><p id="analyzingFolderStatus">${t("analyzingFolderBody")}</p><div class="modal-actions"><button class="btn ghost" id="analyzingFolderStop" type="button">${t("stopBtn")}</button></div>`, "wide");
   const analyzeStatusEl = document.getElementById("analyzingFolderStatus");
   const analyzeFileEl = document.getElementById("analyzingFolderFile");
+  // Clicked away, it goes on in the status bar, and clicking there brings it
+  // back; Stop (here or there) ends it with nothing imported (2.2.037; Gen
+  // Rinzin: on a big folder of near-duplicates it was easy to dismiss and
+  // seemed lost, then the review turned up many minutes later).
+  let analyzeStopped = false;
+  const analyzeKey = "analyze:" + uid();
+  const analyzeStop = ()=>{ analyzeStopped = true; markOperationStopping(analyzeKey); };
+  document.getElementById("analyzingFolderStop").addEventListener("click", analyzeStop);
+  rememberOperationDialog();
+  setActiveOperationProgress(t("analyzingBar", {done: 0, total: audioFiles.length}), analyzeStop, analyzeKey);
+  try{
+    return await analyzeFolderImportSteps();
+  } finally {
+    clearActiveOperation(analyzeKey);
+    closeOwnModal("#analyzingFolderFile");
+  }
+  async function analyzeFolderImportSteps(){
   const suffixIndex = buildSuffixIndex(audioFiles);
   if(xmlFiles && xmlFiles.length){
     const rootName = ((audioFiles[0] && audioFiles[0].webkitRelativePath) || "").split("/")[0] || "Music";
@@ -30072,8 +30300,11 @@ async function analyzeFolderImport(audioFiles, m3u8Files, imageFiles, xmlFiles){
   function bumpAnalyzeProgress(){
     analyzed++;
     analyzeStatusEl.textContent = t("analyzingFolderProgress",{done:analyzed, total:audioFiles.length});
+    setActiveOperationProgress(t("analyzingBar", {done: analyzed, total: audioFiles.length}), analyzeStop, analyzeKey);
   }
   for(const file of audioFiles){
+    if(analyzeStopped) return;
+    if(window.__p37SlowAnalyze) await new Promise(r=> setTimeout(r, window.__p37SlowAnalyze)); // tests (analyzebar.js): slow enough to click away
     // Named as it starts: one big file (a 2-hour recording) can take a while,
     // and a bare count sitting at 0 looks stuck.
     analyzeFileEl.textContent = analyzeFileEl.title = t("checkingFileLine", {name: file.name});
@@ -30145,6 +30376,7 @@ async function analyzeFolderImport(audioFiles, m3u8Files, imageFiles, xmlFiles){
 
   const playlistPlans = [];
   for(const m3u8File of m3u8Files){
+    if(analyzeStopped) return;
     let text;
     try{ text = await m3u8File.text(); }catch(err){ continue; }
     const entries = parseM3u8(text);
@@ -30200,6 +30432,7 @@ async function analyzeFolderImport(audioFiles, m3u8Files, imageFiles, xmlFiles){
   // picture inside its first audio file (or none).
   const artPreview = [], seenDirs = new Set();
   for(const plan of audioPlan){
+    if(analyzeStopped) return;
     const path = plan.file.webkitRelativePath || plan.file.name;
     const dir = path.replace(/[^\/]*$/, "");
     if(seenDirs.has(dir.toLowerCase())) continue;
@@ -30211,10 +30444,14 @@ async function analyzeFolderImport(audioFiles, m3u8Files, imageFiles, xmlFiles){
     artPreview.push({label: segs.slice(-1)[0] || path, title: segs.join(" / "), blob: art && art.blob});
   }
   const folderPlans = importingLooseFiles ? [] : folderPlaylistPlans(audioFiles);
-  closeModal();
+  if(analyzeStopped) return;
+  // Its own dialog only: a dialog opened meanwhile stays (it used to be
+  // closed here too). The review waits its turn (showFolderImportReview).
+  closeOwnModal("#analyzingFolderFile");
   // Folders become playlists by default only when the folder brings no
   // playlists of its own: then it's most likely albums or a session's tracks.
   showFolderImportReview({audioPlan, playlistPlans, folderPlans, makeFolderPlaylists: folderPlans.length > 0 && !playlistPlans.length, folderCovers: covers, artPreview, addArtwork: true});
+  }
 }
 async function showFolderImportReview(analysis){
   await myModalTurn(t("folderImportReviewTitle"), "#analyzingFolderFile");
@@ -31729,7 +31966,7 @@ async function analyzeWithConverter(blob){
   const run = async ()=>{
     await converterStart();
     const fmt = await sniffAudioFormat(blob).catch(()=> ({}));
-    const file = await converterFile(blob, "source" + (fmt.ext || ""));
+    const file = await converterInput(blob, "source" + (fmt.ext || ""));
     const probe = await converterAsk({type: "run", file, args: ["-hide_banner", "-nostdin", "-i", "/in/" + file.name]});
     const info = converterReadInput(probe.log);
     if(!info.hasAudio || !(info.duration > 0)) throw new Error("the converter found no sound with a length");
@@ -33258,11 +33495,16 @@ function fmtDb(v){ return (v > 0 ? "+" : v < 0 ? "\u2212" : "") + (Math.round(Ma
    once the context is already running; until then the track simply plays
    without the boost (or with what the volume slider has room for). */
 const LEVEL_REFERENCE_LUFS = -18;
-let mainVolume = 1; // the Playing volume slider (0..1)
+// The Playing volume slider (0..1). Kept per device with the theme and the
+// like (2.2.038; Gen Rinzin: a page update put it back to full, since it
+// wasn't kept anywhere and every reload started at 1).
+let mainVolume = (()=>{ const d = readDeviceSettings(), v = d && d.volume; return typeof v === "number" && v >= 0 && v <= 1 ? v : 1; })();
 // The slider's position isn't the gain: hearing goes by ratios, so a straight
-// line felt unchanged until the bottom 40%. Cubing it is the usual stand-in for
-// a dB taper (0.9 is about -3 dB, 0.6 about -13 dB, 0.3 about -31 dB), and 0 is still silence.
-function mainVolumeGain(){ return mainVolume * mainVolume * mainVolume; }
+// line felt unchanged until the bottom 40%. Squared (2.2.038): cubed, the
+// bottom half went silent too soon (Gen Rinzin; half way was -18 dB, a
+// quarter -36 dB). Squared, three quarters is about -2.5 dB, half way -6 dB,
+// a quarter -12 dB, a tenth -20 dB, and 0 is still silence.
+function mainVolumeGain(){ return mainVolume * mainVolume; }
 let levelCtx = null;
 const levelGains = new WeakMap(); // element → its gain node, once routed
 function levelMode(){ return (root.settings && root.settings.levelMode) || "off"; }
@@ -33422,10 +33664,15 @@ function applyLevel(el, trackId, atStart){
 function refreshAllLevels(){
   [audioEl, ...levelPreviewEls()].forEach(el=>{ if(el && el._levelTrack) applyLevel(el, el._levelTrack, false); });
 }
+let volumeSaveTimer = null;
 function setMainVolume(v){
   mainVolume = Math.min(1, Math.max(0, v));
   if(audioEl._levelTrack) applyLevel(audioEl, audioEl._levelTrack, false);
   else audioEl.volume = mainVolumeGain();
+  // Kept for this device a moment after the slider stops (mainVolume, above).
+  if(root && root.settings) root.settings.volume = mainVolume;
+  clearTimeout(volumeSaveTimer);
+  volumeSaveTimer = setTimeout(()=>{ if(root && root.settings) saveDeviceSettings(root.settings); }, 400);
 }
 
 function standardizeProblemLabel(category, track){
@@ -34810,9 +35057,18 @@ function openLibTableColumns(){
   document.getElementById("libColsReset").addEventListener("click", ()=>{ libTable.hidden = LIB_TABLE_DEFAULT.hidden.slice(); saveLibTable(); renderLibraryTable(); draw(); });
 }
 
+// Redrawn once typing pauses (2.2.036; Gen Rinzin: typing in Table's
+// search lagged on the T470). A redraw takes 30–45 ms with 2,500 tracks on a
+// fast computer, several times that on an old laptop, and one per letter
+// held up the letters themselves. Emptying the box redraws at once.
+let libSearchTimer = null;
+const LIB_SEARCH_PAUSE_MS = 150;
 document.getElementById("libSearchInput").addEventListener("input",(e)=>{
-  libSearchQuery = e.target.value.trim();
-  renderLibraryScreen();
+  const box = e.target;
+  clearTimeout(libSearchTimer);
+  // What the box says when it fires (it may have been emptied meanwhile).
+  const go = ()=>{ libSearchTimer = null; const q = box.value.trim(); if(q === libSearchQuery) return; libSearchQuery = q; renderLibraryScreen(); };
+  if(!box.value.trim()) go(); else libSearchTimer = setTimeout(go, LIB_SEARCH_PAUSE_MS);
 });
 
 /* ===================== Edit Playlists: bottom preview player =====================
@@ -36916,7 +37172,7 @@ function openPlaylistDetails(playlist){
       <label id="pdNotesLabel" for="pdNotes"></label>
       <button class="btn ghost" id="pdDismissBtn" style="display:none; font-size:12.5px; padding:3px 10px;"></button>
     </div>
-    <textarea id="pdNotes" rows="20" style="width:100%; min-height:420px; resize:vertical; font-family:inherit; font-size:14px; line-height:1.5; padding:10px 12px; border-radius:8px; border:1px solid var(--line); background:var(--bg-panel-raised); color:var(--text);"></textarea>
+    <textarea id="pdNotes" rows="6" style="width:100%; min-height:120px; resize:vertical; font-family:inherit; font-size:14px; line-height:1.5; padding:10px 12px; border-radius:8px; border:1px solid var(--line); background:var(--bg-deep); color:var(--text);"></textarea>
     <div class="modal-actions">
       <button class="btn ghost" data-close>${t("cancel")}</button>
       <button class="btn primary" id="pdSaveBtn">${t("save")}</button>
@@ -36945,6 +37201,8 @@ function openPlaylistDetails(playlist){
     saveState();
   });
   nameInp.focus(); nameInp.select();
+  // Enter in the name saves (2.2.038, Gen Rinzin); in the notes it's a new line.
+  nameInp.addEventListener("keydown", (e)=>{ if(e.key === "Enter" && !e.isComposing){ e.preventDefault(); document.getElementById("pdSaveBtn").click(); } });
   document.getElementById("pdSaveBtn").addEventListener("click", ()=>{
     const newName = nameInp.value.trim();
     const newNotes = notesInp.value;
@@ -41117,7 +41375,62 @@ document.getElementById("btnUpdate").addEventListener("click", ()=> performAppUp
 // asks the published file which version it is, and offers to update. The
 // website copy updates by reloading (the page always comes fresh from the
 // site when online); a copy opened from a file rewrites itself as above.
+/* The desktop app updating itself (2.2.040, with shell 2.2.3; planned in
+   desktop/PAGE-UPDATES.md, item 6, once the builds were signed; Gen Rinzin,
+   13 Nov 2026: "is that possible to make it earlier for folks?"). A shell
+   that says `updates` looks on its channel's release for a newer version of
+   itself (p37_shell_update_check: latest.json, signed with the page key),
+   and installs it and restarts (p37_shell_update_install). It's asked about
+   once a start, a minute and a half in, when nothing would be stopped
+   (closingWouldStop) and no dialog is open; "Not now" until the next start.
+   Check for updates (About) looks for one first. Saved before installing. */
+const desktopShellUpdates = ()=> IN_DESKTOP_APP && !!(desktopShell && desktopShell.updates) && !!(window.__TAURI__ && window.__TAURI__.core);
+let shellUpdateAsked = false;
+async function shellUpdateCheck(){
+  if(!desktopShellUpdates()) return null;
+  try{
+    const u = await desktopCall("p37_shell_update_check");
+    if(u) playLog("a newer desktop app is ready: " + u.version + " (this one is " + u.current + ")");
+    return u || null;
+  }catch(err){ playLog("checking for a newer desktop app: " + (err && err.message || err)); return null; }
+}
+async function offerShellUpdate(u){
+  const what = closingWouldStop();
+  const c = await askChoice(t("shellUpdateTitle"), `<p>${escapeHtmlText(t("shellUpdateBody", {version: u.version, current: u.current}))}</p>${what.length ? `<ul>${what.map(w=> `<li>${escapeHtmlText(w)}</li>`).join("")}</ul>` : ""}`,
+    [{label: t("shellUpdateBtn"), value: "go", kind: "primary"}, {label: t("notNowBtn"), value: null}]);
+  if(c !== "go") return;
+  openModal(`<h3>${t("shellUpdateTitle")}</h3><p id="shellUpdating">${escapeHtmlText(t("shellUpdateBusy"))}</p>`);
+  try{ await saveState(); }catch(err){}
+  playLog("the desktop app is updating itself to " + u.version);
+  try{ await desktopCall("p37_shell_update_install"); }
+  catch(err){
+    closeOwnModal("#shellUpdating");
+    const msg = err && err.message || String(err);
+    playLog("the desktop app couldn't update itself: " + msg);
+    alert(t("shellUpdateFailed", {error: msg}));
+  }
+}
+function shellUpdateLater(){
+  if(!desktopShellUpdates()) return;
+  setTimeout(async ()=>{
+    if(shellUpdateAsked) return;
+    const u = await shellUpdateCheck();
+    if(!u) return;
+    const ask = ()=>{
+      if(shellUpdateAsked) return;
+      if(closingWouldStop().length){ setTimeout(ask, 60000); return; }
+      shellUpdateAsked = true;
+      showWhenFree("", ()=> offerShellUpdate(u));
+    };
+    ask();
+  }, window.__shellUpdateDelay || 90000);
+}
 async function checkForUpdatesNow(){
+  // A newer desktop app first (it brings its own page with it).
+  if(desktopShellUpdates()){
+    const u = await shellUpdateCheck();
+    if(u){ shellUpdateAsked = true; await offerShellUpdate(u); return; }
+  }
   // The desktop app carries its own copy of the page: a newer one comes as a
   // new download for now (updating itself comes later; NOTES.md, v2.0).
   if(IN_DESKTOP_APP && !desktopPages()){ await askChoice(t("checkUpdatesBtn"), `<p>${escapeHtmlText(t("desktopUpdatesBody", {version: APP_VERSION}))}</p>`, [{label: t("ok"), value: null, kind: "primary"}]); return; }
@@ -48974,7 +49287,7 @@ if(IN_DESKTOP_APP){
   window.addEventListener("resize", fitHeight);
 }
 const DESKTOP_BRIDGE_NEEDED = +((document.querySelector('meta[name="desktop-bridge"]') || {}).content || 1);
-let desktopShell = null; // {version, bridge}
+let desktopShell = null; // {version, bridge, pages, device, updates}
 async function desktopShellCheck(){
   if(!IN_DESKTOP_APP || !window.__TAURI__ || !window.__TAURI__.core) return;
   try{ desktopShell = await window.__TAURI__.core.invoke("p37_shell_info"); }catch(err){ desktopShell = {version: "?", bridge: 0}; }
@@ -49029,6 +49342,7 @@ if(IN_DESKTOP_APP && window.__TAURI__ && window.__TAURI__.event && window.__TAUR
   const driveSignInResult = driveTakeSignInResult(); // first, so the tokens leave the address at once
   if(MOVED_TO && !driveSignInResult && await neverUsedHere()){ location.replace(movedUrl() + location.hash); return; }
   await desktopShellCheck();
+  shellUpdateLater();
   // The desktop app (2.0): libraries found, moved out of browser storage,
   // and this one's folder there, before it opens.
   if(await desktopLibrariesAtStart()){ leavingOnPurpose = true; location.reload(); return; }

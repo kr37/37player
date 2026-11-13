@@ -123,6 +123,13 @@ By hand: `./serve.sh` in one terminal (servers on ports 8861 and 8870), then
 | exportfile | Exporting without a zip: one track as just its file, several as separate files into a chosen folder (a stand-in), a name already there kept |
 | allsettings | Settings → All settings: grouped by whose setting it is; theme, a switch, loudness and language changed in the table take effect; PIN links to its page |
 | big413 | A file the server refuses as too big isn't sent again at every sync, and the status says so |
+| id3read | An import reads an MP3's details however it's tagged: ID3v2.2, v2.3, v2.4 with frame flags, an extended header, unsynchronised, UTF-16, album artist only, and ID3v1 for what's missing |
+| savefast | Saving a big library is quick (2,000 tracks: nothing changed in a few ms), and its checks still work: a new waveform is a change, a stale window is refused, a library saved by an older version (no rootRev; root.json with its revision last) is read as before |
+| analyzebar | A folder import's looking-through, clicked away, goes on in the status bar; the bar brings it back; a dialog opened meanwhile isn't closed, and the review waits for it; Stop in the bar or the dialog imports nothing |
+| pldetails | Playlist details: a notes box of a few lines, with the name field's background, and Enter in the name saves |
+| volume | The Playing volume is kept per device (a reload doesn't put it back to full) and squared (half way is -6 dB) |
+| lazyconv | The converter reads a file of the desktop app's by its address, a block at a time (the page never reads it whole); an address it can't read that way: the file read whole first, as before, and the log says so |
+| shellupd | The desktop app updating itself: offered once a start when nothing would be stopped; Update and restart has the shell install it; Not now until the next start; Check for updates offers it again; nothing asked on an older shell |
 
 ## The converter test page (tests/convert/)
 
