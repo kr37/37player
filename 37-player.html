@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.4.000">
+<meta name="app-version" content="2.4.001">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -45596,7 +45596,7 @@ function sharedSetStatus(patch){
     const tr = sharedStatus.transfer;
     setActiveOperationProgress(sharedStatus.paused ? t(sharedStatus.paused === "review" ? "sharedBarPausedReview" : "sharedBarPaused")
       : tr.kind === "up" ? t("sharedBarUploading", {done: workingOn(tr.done, tr.total), total: tr.total}) + (tr.part && tr.part.total ? " (" + fmtBytes(tr.part.have) + " / " + fmtBytes(tr.part.total) + ")" : "") + " " + t("sharedBarKeepOpen")
-      : t("sharedBarDownloading", {done: workingOn(tr.done, tr.total), total: tr.total}), null, "shared");
+      : t("sharedBarDownloading", {done: workingOn(tr.done, tr.total), total: tr.total}) + (tr.name ? ": " + tr.name : ""), null, "shared");
   } else clearActiveOperation("shared");
 }
 
@@ -46381,7 +46381,8 @@ async function sharedDownloadPendingHere(cfg){
     if(list.length) sharedLog("receiving " + list.length + " files" + (waiting ? ", " + waiting + " still on their way" : ""));
     let done = 0;
     for(const [kind, id] of list){
-      if(list.length > 1) sharedSetStatus({transfer: {kind: "down", done, total: list.length}});
+      // With the track's name (2.4.001, Gen Rinzin, 13 Nov 2026: a long download, and no way to tell which file).
+      if(list.length > 1){ const nt = findLibraryTrack(id); sharedSetStatus({transfer: {kind: "down", done, total: list.length, name: nt && nt.name ? nt.name : ""}}); }
       await sharedWaitForTransfers();
       if(!sharedConfig()) break;
       try{ await sharedFetchFile(cfg, kind, id); }
