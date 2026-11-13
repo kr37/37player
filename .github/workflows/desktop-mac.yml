@@ -17,7 +17,7 @@ on:
         options: [dev, main]
         default: dev
   push:
-    branches: [tauri-spike]
+    branches: [desktop]   # called tauri-spike until 13 Nov 2026
     paths: ["desktop/**", "37-player.html", ".github/workflows/desktop-mac.yml"]
 permissions:
   contents: write
