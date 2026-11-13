@@ -1,8 +1,10 @@
 # Builds the desktop app (Tauri) for testing: a .dmg for the Mac (Intel and
-# Apple Silicon) and Windows installers (.exe and .msi), published together
-# as a pre-release anyone can download without signing in. Unsigned: on a
-# Mac open it with right-click → Open; on Windows SmartScreen's "Run anyway".
-# The shell's own tests (cargo test) run first, on each.
+# Apple Silicon), Windows installers (.exe and .msi) and, since 12 Nov 2026,
+# a Linux .deb (64-bit Intel/AMD; Ubuntu 22.04 and newer, Debian 12, Mint
+# 21 and the like), published together as a pre-release anyone can download
+# without signing in. Unsigned: on a Mac open it with right-click → Open; on
+# Windows SmartScreen's "Run anyway". The shell's own tests (cargo test) run
+# first, on each. A Linux build that fails doesn't hold up the others.
 name: Desktop app (test builds)
 on:
   # A push makes a build that follows dev's pages ("d"); one started by hand
@@ -63,8 +65,34 @@ jobs:
           cp src-tauri/target/release/bundle/msi/*.msi ../37-Player-windows-test.msi
       - uses: actions/upload-artifact@v4
         with: { name: windows, path: "37-Player-windows-test*" }
+  linux:
+    # 22.04, the oldest Ubuntu with WebKitGTK 4.1 (Tauri 2's), so the .deb
+    # needs no newer libraries than most current Linux computers have.
+    runs-on: ubuntu-22.04
+    env: { P37_PAGE_CHANNEL: "${{ inputs.channel == 'main' && 'latest' || 'test' }}" }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Libraries
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev libxdo-dev libssl-dev patchelf file > /dev/null
+      - name: Build
+        working-directory: desktop
+        run: |
+          npm ci
+          node copy-app.mjs
+          (cd src-tauri && cargo test)
+          npx tauri build --bundles deb
+          cp src-tauri/target/release/bundle/deb/*.deb ../37-Player-linux-test.deb
+      - uses: actions/upload-artifact@v4
+        with: { name: linux, path: "37-Player-linux-test*" }
   publish:
-    needs: [mac, windows]
+    needs: [mac, windows, linux]
+    # The Mac and Windows builds go out even if the Linux one failed.
+    if: ${{ always() && needs.mac.result == 'success' && needs.windows.result == 'success' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4
@@ -85,7 +113,9 @@ jobs:
           mv 37-Player-windows-test.msi "37-Player-$v-windows.msi"
           syms=""
           if [ -f 37-Player-mac-test-symbols.zip ]; then mv 37-Player-mac-test-symbols.zip "37-Player-$v-mac-symbols.zip"; syms="37-Player-$v-mac-symbols.zip"; fi
-          gh release create "$tag" "37-Player-$v-mac.dmg" "37-Player-$v-windows-setup.exe" "37-Player-$v-windows.msi" $syms \
+          deb=""
+          if [ -f 37-Player-linux-test.deb ]; then mv 37-Player-linux-test.deb "37-Player-$v-linux-amd64.deb"; deb="37-Player-$v-linux-amd64.deb"; fi
+          gh release create "$tag" "37-Player-$v-mac.dmg" "37-Player-$v-windows-setup.exe" "37-Player-$v-windows.msi" $deb $syms \
             --repo "${{ github.repository }}" --prerelease --target "${{ github.sha }}" \
             --title "37 Player $v for computers (build $n, app $sv)" \
-            --notes "The desktop app, not signed yet, from branch ${{ github.ref_name }}; its pages follow ${{ inputs.channel == 'main' && 'main (37player.com)' || 'dev (test.37player.com)' }}. Mac: right-click → Open. Windows: SmartScreen → More info → Run anyway."
+            --notes "The desktop app, not signed yet, from branch ${{ github.ref_name }}; its pages follow ${{ inputs.channel == 'main' && 'main (37player.com)' || 'dev (test.37player.com)' }}. Mac: right-click → Open. Windows: SmartScreen → More info → Run anyway. Linux (the .deb, Ubuntu 22.04 or newer and the like): sudo apt install ./37-Player-…-linux-amd64.deb"
