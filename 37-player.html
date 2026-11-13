@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.3.000">
+<meta name="app-version" content="2.3.001">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -3586,7 +3586,19 @@ function watchPlaceDrive(el, getTrackId){
     el.pause();
     showAudioMissing(id);
   };
-  el.addEventListener("error", ()=>{ if(getTrackId()){ el.dataset.p37stuck = "1"; check(); } });
+  // Only a track used in place can be stuck this way (2.3.001): the mark on
+  // any other track's error was never taken off, and from then on Pause, the
+  // space bar and the lock screen's pause played instead (WebKit, which
+  // reports passing errors more readily: the engine tests, 13 Nov 2026).
+  el.addEventListener("error", async ()=>{
+    const id = getTrackId();
+    if(!id || STORAGE_KIND !== "desktop") return; // only the desktop app uses recordings in place
+    try{ await libStore.placeRefs(); }catch(err){}
+    if(!placeOfTrack(id) || id !== getTrackId()) return;
+    el.dataset.p37stuck = "1"; check();
+  });
+  // Playing, or loading something new, it isn't stuck.
+  ["playing", "loadstart"].forEach(ev=> el.addEventListener(ev, ()=>{ delete el.dataset.p37stuck; }));
   ["waiting", "stalled"].forEach(ev=> el.addEventListener(ev, ()=>{ if(!timer && !el.paused){ lastT = el.currentTime; timer = setTimeout(()=>{ if(el.currentTime === lastT) check(); else timer = null; }, 3000); } }));
   el.addEventListener("playing", ()=>{ if(timer){ clearTimeout(timer); timer = null; } });
 }

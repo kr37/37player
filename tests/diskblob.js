@@ -52,7 +52,7 @@ const clickText = (p, sel, src) => p.evaluate((sel, src)=>{ const re=new RegExp(
     // meanwhile, its record of the library's own values, say.)
     window.__fakeShellPaths.length = 0;
     await idbPut('audio', {id: 'dbt3', blob: rec.blob});
-    out.copyCalls = window.__fakeShellPaths.filter(c=> /^fs_copy /.test(c) || (/^fs_read /.test(c) && /dbt1|dbt3/.test(c))).map(c=> c.split(' ')[0]).join(',');
+    out.copyCalls = window.__fakeShellPaths.filter(c=> /^fs_copy /.test(c) || (/^fs_read /.test(c) && /dbt1|dbt3/.test(c) && !/\.json$/.test(c)) /* a track's record (audio/dbt1.json) isn't its recording: Firefox's timing reads one meanwhile */).map(c=> c.split(' ')[0]).join(',');
     out.otherReads = window.__fakeShellPaths.filter(c=> /^fs_read /.test(c)).join(' ; ');
     out.allPaths = window.__fakeShellPaths.slice(0, 12).join(' ; ');
     out.same3 = (await hash((await idbGet('audio', 'dbt3')).blob)) === want;

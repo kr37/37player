@@ -41,7 +41,9 @@ class Page {
   evaluateOnNewDocument(fn, ...args){ return this.p.addInitScript(typeof fn === 'string' ? fn : `(${fn.toString()})(...${JSON.stringify(args)})`); }
   waitForFunction(fn, o, ...args){ return this.p.waitForFunction(typeof fn === 'string' ? fn : asFn(fn, args), undefined, o); }
   waitForSelector(sel, o){ return this.p.waitForSelector(sel, o).then(x=> x && new Element(x)); }
-  waitForNavigation(o){ return this.p.waitForLoadState((o && o.waitUntil === 'networkidle0') ? 'networkidle' : 'load'); }
+  // A navigation still to come, as Puppeteer's (waitForLoadState answered at
+  // once for the page already loaded: drive's sign-in round trip).
+  waitForNavigation(o){ return this.p.waitForNavigation(waitOpts(o)); }
   setViewport(v){ return this.p.setViewportSize({width: v.width, height: v.height}); }
   screenshot(o){ return this.p.screenshot(o); }
   $(sel){ return this.p.$(sel).then(x=> x && new Element(x)); }

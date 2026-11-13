@@ -7,7 +7,7 @@ const puppeteer = require('puppeteer-core'); const sleep = ms=>new Promise(r=>se
 const APP = 'http://localhost:8861/37-player.html';
 let fails = 0; const ok=(c,m)=>{ console.log((c?'ok   ':'FAIL ')+m); if(!c) fails++; };
 const clickText = (p, sel, src) => p.evaluate((sel, src)=>{ const re=new RegExp(src); const el=[...document.querySelectorAll(sel)].find(e=>e.offsetParent!==null && re.test(e.textContent.trim())); if(el){ el.click(); return true; } return false; }, sel, src);
-const row = (p, name)=> p.evaluate((name)=>{ const tr = [...document.querySelectorAll('.all-settings tbody tr')].find(r=> r.querySelector('.all-name')?.textContent === name); return tr ? {value: tr.children[1].innerText.trim(), about: tr.children[2].innerText.trim(), sel: !!tr.querySelector('select'), sw: !!tr.querySelector('input[type=checkbox]')} : null; }, name);
+const row = (p, name)=> p.evaluate((name)=>{ const tr = [...document.querySelectorAll('.all-settings tbody tr')].find(r=> r.querySelector('.all-name')?.textContent === name); const sl = tr && tr.children[1].querySelector('select'); return tr ? {value: sl ? [...sl.options].map(o=> o.textContent).join(' ') : tr.children[1].innerText.trim(), /* a select's text: Firefox's innerText leaves its options out */ about: tr.children[2].innerText.trim(), sel: !!tr.querySelector('select'), sw: !!tr.querySelector('input[type=checkbox]')} : null; }, name);
 (async()=>{
   const b = await puppeteer.launch({executablePath: process.env.CHROME || '/usr/bin/google-chrome', args: ['--no-sandbox']});
   const p = await b.newPage(); await p.setViewport({width: 1300, height: 900});

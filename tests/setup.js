@@ -20,6 +20,9 @@ async function open(b, name, {ua, noFolder, touch, standalone, hash, welcome = t
   if(ua) await p.setUserAgent(ua);
   await p.evaluateOnNewDocument((o)=>{
     if(o.noFolder) delete window.showDirectoryPicker;
+    // Chrome's folder picker where the engine has none (WebKit, Firefox: engines/adapter.js),
+    // so a Chrome case is Chrome's; the browser's private folder stands in for the one chosen.
+    else if(!window.showDirectoryPicker && navigator.storage && navigator.storage.getDirectory) window.showDirectoryPicker = async ()=> navigator.storage.getDirectory();
     if(o.touch) Object.defineProperty(navigator, 'maxTouchPoints', {get: ()=> 5});
     if(o.standalone){ Object.defineProperty(navigator, 'standalone', {get: ()=> true}); const mm = window.matchMedia.bind(window); window.matchMedia = q=> /display-mode: standalone/.test(q) ? {matches: true, addEventListener(){}, removeEventListener(){}} : mm(q); }
     // A tab that can become the installed app later, as Chrome's Install does
