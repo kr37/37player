@@ -164,8 +164,12 @@ jobs:
           npm ci
           node copy-app.mjs
           (cd src-tauri && cargo test)
-          npx tauri build --bundles deb
+          # The .deb (Debian, Ubuntu, Mint…) and the .rpm (Fedora, openSUSE):
+          # between them most Linux computers (Gen Rinzin, 13 Nov 2026).
+          sudo apt-get install -y -qq rpm > /dev/null
+          npx tauri build --bundles deb,rpm
           cp src-tauri/target/release/bundle/deb/*.deb ../37-Player-linux-test.deb
+          cp src-tauri/target/release/bundle/rpm/*.rpm ../37-Player-linux-test.rpm
       - uses: actions/upload-artifact@v4
         with: { name: linux, path: "37-Player-linux-test*" }
   publish:
@@ -200,6 +204,7 @@ jobs:
           fi
           deb=""
           if [ -f 37-Player-linux-test.deb ]; then mv 37-Player-linux-test.deb "37-Player-$v-linux-amd64.deb"; deb="37-Player-$v-linux-amd64.deb"; fi
+          if [ -f 37-Player-linux-test.rpm ]; then mv 37-Player-linux-test.rpm "37-Player-$v-linux-x86_64.rpm"; deb="$deb 37-Player-$v-linux-x86_64.rpm"; fi
           # The shell's update packages and signatures (updates.rs), when made.
           upd=""
           for f in mac-test.app.tar.gz mac-test.app.tar.gz.sig windows-test-setup.exe.sig; do
