@@ -28,6 +28,10 @@
   },
   "bundle": {
     "active": true,
+    "license": "MIT",
+    "homepage": "https://37player.com",
+    "category": "Music",
+    "shortDescription": "Audio player with a waveform seekbar and playlists",
     "targets": [
       "msi",
       "nsis"
