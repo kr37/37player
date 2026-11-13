@@ -68,13 +68,23 @@ jobs:
           # Tauri notarizes the signed app with these (and APPLE_API_KEY_PATH).
           APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
           APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+          # The shell's own updates (updates.rs) are signed with the key that
+          # signs the pages; the app checks them with page-key.pub.
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         run: |
           npm ci
           node copy-app.mjs
           (cd src-tauri && cargo test)
           if [ -z "$P37_SIGNED" ]; then unset APPLE_API_KEY APPLE_API_ISSUER; fi
-          npx tauri build --target universal-apple-darwin --bundles dmg
+          upd=""; [ -n "$TAURI_SIGNING_PRIVATE_KEY" ] && upd='{"bundle":{"createUpdaterArtifacts":true}}'
+          npx tauri build --target universal-apple-darwin --bundles app,dmg ${upd:+--config "$upd"}
           cp src-tauri/target/universal-apple-darwin/release/bundle/dmg/*.dmg ../37-Player-mac-test.dmg
+          # The update package (the .app, signed and notarized, as .tar.gz) and its signature.
+          if [ -n "$upd" ]; then
+            cp src-tauri/target/universal-apple-darwin/release/bundle/macos/*.app.tar.gz ../37-Player-mac-test.app.tar.gz
+            cp src-tauri/target/universal-apple-darwin/release/bundle/macos/*.app.tar.gz.sig ../37-Player-mac-test.app.tar.gz.sig
+          fi
           if [ -n "$P37_SIGNED" ]; then
             # The .dmg too: notarized and stapled, so a downloaded one opens
             # without a warning even offline (the app inside already is).
@@ -100,13 +110,19 @@ jobs:
       - name: Build
         working-directory: desktop
         shell: bash
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         run: |
           npm ci
           node copy-app.mjs
           (cd src-tauri && cargo test)
-          npx tauri build
+          upd=""; [ -n "$TAURI_SIGNING_PRIVATE_KEY" ] && upd='{"bundle":{"createUpdaterArtifacts":true}}'
+          npx tauri build ${upd:+--config "$upd"}
           cp src-tauri/target/release/bundle/nsis/*.exe ../37-Player-windows-test-setup.exe
           cp src-tauri/target/release/bundle/msi/*.msi ../37-Player-windows-test.msi
+          # The update package is the installer itself; this is its signature.
+          if [ -n "$upd" ]; then cp src-tauri/target/release/bundle/nsis/*.exe.sig ../37-Player-windows-test-setup.exe.sig; fi
       - uses: actions/upload-artifact@v4
         with: { name: windows, path: "37-Player-windows-test*" }
   linux:
@@ -161,7 +177,12 @@ jobs:
           if [ -f 37-Player-mac-test-signed.txt ]; then rm 37-Player-mac-test-signed.txt; macnote="Mac: signed and notarized, opens normally."; fi
           deb=""
           if [ -f 37-Player-linux-test.deb ]; then mv 37-Player-linux-test.deb "37-Player-$v-linux-amd64.deb"; deb="37-Player-$v-linux-amd64.deb"; fi
-          gh release create "$tag" "37-Player-$v-mac.dmg" "37-Player-$v-windows-setup.exe" "37-Player-$v-windows.msi" $deb $syms \
+          # The shell's update packages and signatures (updates.rs), when made.
+          upd=""
+          for f in mac-test.app.tar.gz mac-test.app.tar.gz.sig windows-test-setup.exe.sig; do
+            if [ -f "37-Player-$f" ]; then n="37-Player-$v-${f/-test/}"; mv "37-Player-$f" "$n"; upd="$upd $n"; fi
+          done
+          gh release create "$tag" "37-Player-$v-mac.dmg" "37-Player-$v-windows-setup.exe" "37-Player-$v-windows.msi" $deb $upd $syms \
             --repo "${{ github.repository }}" --prerelease --target "${{ github.sha }}" \
             --title "37 Player $v for computers (build $n, app $sv)" \
             --notes "The desktop app (Windows not signed yet), from branch ${{ github.ref_name }}; its pages follow ${{ inputs.channel == 'main' && 'main (37player.com)' || 'dev (test.37player.com)' }}. $macnote Windows: SmartScreen → More info → Run anyway. Linux (the .deb, Ubuntu 22.04 or newer and the like): sudo apt install ./37-Player-…-linux-amd64.deb"

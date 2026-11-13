@@ -22,6 +22,7 @@ mod device;
 mod files;
 mod oauth;
 mod pages;
+mod updates;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use tauri::{Emitter, Manager, RunEvent, WindowEvent};
@@ -43,13 +44,14 @@ struct Quitting(AtomicBool);
 const BRIDGE: u32 = 2;
 
 #[derive(serde::Serialize)]
-struct ShellInfo { version: String, bridge: u32, pages: bool, device: bool }
+struct ShellInfo { version: String, bridge: u32, pages: bool, device: bool, updates: bool }
 
 // The shell's version is the page's version as of the shell's own last
 // change (tauri.conf.json "version"), like sync.php's.
 #[tauri::command]
 fn p37_shell_info(app: tauri::AppHandle) -> ShellInfo {
-    ShellInfo { version: app.package_info().version.to_string(), bridge: BRIDGE, pages: app.state::<Arc<pages::Pages>>().enabled(), device: true }
+    // updates: it can update itself (updates.rs, shell 2.2.3).
+    ShellInfo { version: app.package_info().version.to_string(), bridge: BRIDGE, pages: app.state::<Arc<pages::Pages>>().enabled(), device: true, updates: true }
 }
 
 // The device's own settings (device.rs): read back, and kept.
@@ -236,6 +238,10 @@ pub fn run() {
         .manage(device.clone())
         .plugin(tauri::plugin::Builder::<tauri::Wry, ()>::new("p37device").js_init_script(device_script).build())
         .plugin(tauri_plugin_dialog::init())
+        // The shell updating itself (updates.rs): its signatures checked with
+        // the key that signs the pages.
+        .plugin(tauri_plugin_updater::Builder::new().pubkey(PAGE_KEY.trim()).build())
+        .manage(updates::Pending::default())
         .register_asynchronous_uri_scheme_protocol("p37lib", |ctx, req, responder| {
             let app = ctx.app_handle().clone();
             std::thread::spawn(move || responder.respond(files::serve(&app, &req)));
@@ -255,7 +261,8 @@ pub fn run() {
             files::fs_roots, files::fs_root_default, files::fs_root_choose, files::fs_root_forget,
             files::fs_place, files::fs_place_default, files::fs_root_info, files::fs_root_rename, files::fs_root_show, files::fs_places_restore, files::fs_remove_if_empty,
             oauth::p37_google_signin, oauth::p37_open_url, files::fs_find_libraries, files::fs_root_choose_library,
-            files::fs_list, files::fs_stat, files::fs_read, files::fs_write, files::fs_copy, files::fs_rename, files::fs_remove, files::fs_mkdir])
+            files::fs_list, files::fs_stat, files::fs_read, files::fs_write, files::fs_copy, files::fs_rename, files::fs_remove, files::fs_mkdir,
+            updates::p37_shell_update_check, updates::p37_shell_update_install])
         .on_window_event(|window, event| {
             if let WindowEvent::CloseRequested { api, .. } = event {
                 if !window.app_handle().state::<Quitting>().0.load(Ordering::SeqCst) {

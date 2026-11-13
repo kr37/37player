@@ -125,7 +125,9 @@ next start, as the web version does.
 6. **The shell itself.** Updates to the Rust shell (rare) could use Tauri's
    updater later, which wants signed builds; that fits with the Apple account
    when it comes. Until then a new shell is a download from the Releases page,
-   as now.
+   as now. **Done, shell 2.2.3 (13 Nov 2026):** `updates.rs` with Tauri's
+   updater plugin, its packages signed with this same key; the page asks
+   before installing (NOTES.md, "The desktop app updates itself").
 
 ## What changes for Gen Rinzin
 
