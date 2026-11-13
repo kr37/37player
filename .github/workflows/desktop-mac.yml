@@ -203,7 +203,7 @@ jobs:
           # The shell's update packages and signatures (updates.rs), when made.
           upd=""
           for f in mac-test.app.tar.gz mac-test.app.tar.gz.sig windows-test-setup.exe.sig; do
-            if [ -f "37-Player-$f" ]; then n="37-Player-$v-${f/-test/}"; mv "37-Player-$f" "$n"; upd="$upd $n"; fi
+            if [ -f "37-Player-$f" ]; then to="37-Player-$v-${f/-test/}"; mv "37-Player-$f" "$to"; upd="$upd $to"; fi
           done
           gh release create "$tag" "37-Player-$v-mac.dmg" "37-Player-$v-windows-setup.exe" "37-Player-$v-windows.msi" $deb $upd $syms \
             --repo "${{ github.repository }}" --prerelease --target "${{ github.sha }}" \
