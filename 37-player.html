@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.4.002">
+<meta name="app-version" content="2.4.003">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -3235,6 +3235,8 @@ async function desktopLibrariesAtStart(){
   for(const [id, copies] of byId){
     const name = (copies.find(f=> f.name) || {}).name || "";
     let e = reg.list.find(l=> l.id === id);
+    // One taken off the list on purpose stays off (Find a library folder… brings it back); a first start lists all.
+    if(!e && !LIBRARY_LIST_WAS_EMPTY && (reg.deleted || []).includes(id)) continue;
     if(!e){ e = {id, name}; reg.list.push(e); added++; }
     if(!e.name && name) e.name = name;
     e.desktopMade = true;
@@ -4986,6 +4988,12 @@ const STRINGS = {
     "sdSameBtn": "This is still “{device}”",
     "sdNameNeeded": "Type a name for this device, different from “{device}”.",
     "sdHeldStatus": "Not syncing until you say which device this is: press Sync now.",
+    "libForgetBtn": "Remove from list…",
+    "libForgetTitle": "Remove “{name}” from the list?",
+    "libForgetBody": "37 Player forgets this library. Its folder and everything in it, recordings included, stay on this computer; the shared library, if it’s joined to one, isn’t touched. Find a library folder… brings it back.",
+    "libForgetConfirmBtn": "Remove from the list",
+    "sdLaterBtn": "Decide later (it won’t sync until then)",
+    "sdHeldIndicator": "Not syncing",
     "sharedJoinBtn": "Join",
     "sharedJoining": "Connecting…",
     "sharedJoiningNamed": "Joining “{name}”…",
@@ -6951,6 +6959,12 @@ const STRINGS = {
     "sdSameBtn": "Sigue siendo “{device}”",
     "sdNameNeeded": "Escriba un nombre para este dispositivo, distinto de “{device}”.",
     "sdHeldStatus": "No se sincroniza hasta que diga qué dispositivo es este: pulse Sincronizar ahora.",
+    "libForgetBtn": "Quitar de la lista…",
+    "libForgetTitle": "¿Quitar «{name}» de la lista?",
+    "libForgetBody": "37 Player olvida esta biblioteca. Su carpeta y todo lo que contiene, incluidas las grabaciones, se quedan en este ordenador; la biblioteca compartida, si está unida a una, no se toca. Buscar la carpeta de una biblioteca… la recupera.",
+    "libForgetConfirmBtn": "Quitar de la lista",
+    "sdLaterBtn": "Decidir más tarde (no se sincroniza hasta entonces)",
+    "sdHeldIndicator": "Sin sincronizar",
     "sharedJoinBtn": "Unirse",
     "sharedJoining": "Conectando…",
     "sharedJoiningNamed": "Uniéndose a «{name}»…",
@@ -8915,6 +8929,12 @@ const STRINGS = {
     "sdSameBtn": "C'est toujours « {device} »",
     "sdNameNeeded": "Tapez un nom pour cet appareil, différent de « {device} ».",
     "sdHeldStatus": "Pas de synchronisation tant que vous n'avez pas dit quel appareil c'est : appuyez sur Synchroniser.",
+    "libForgetBtn": "Retirer de la liste…",
+    "libForgetTitle": "Retirer « {name} » de la liste ?",
+    "libForgetBody": "37 Player oublie cette bibliothèque. Son dossier et tout ce qu’il contient, enregistrements compris, restent sur cet ordinateur ; la bibliothèque partagée, si elle y est reliée, n’est pas touchée. Retrouver le dossier d’une bibliothèque… la fait revenir.",
+    "libForgetConfirmBtn": "Retirer de la liste",
+    "sdLaterBtn": "Décider plus tard (pas de synchronisation d’ici là)",
+    "sdHeldIndicator": "Pas de synchronisation",
     "sharedJoinBtn": "Rejoindre",
     "sharedJoining": "Connexion…",
     "sharedJoiningNamed": "Connexion à « {name} »…",
@@ -10879,6 +10899,12 @@ const STRINGS = {
     "sdSameBtn": "Continua a ser “{device}”",
     "sdNameNeeded": "Escreva um nome para este dispositivo, diferente de “{device}”.",
     "sdHeldStatus": "Não sincroniza até dizer que dispositivo é este: carregue em Sincronizar agora.",
+    "libForgetBtn": "Retirar da lista…",
+    "libForgetTitle": "Retirar «{name}» da lista?",
+    "libForgetBody": "O 37 Player esquece esta biblioteca. A pasta e tudo o que contém, incluindo as gravações, ficam neste computador; a biblioteca partilhada, se estiver ligada a uma, não é tocada. Procurar a pasta de uma biblioteca… trá-la de volta.",
+    "libForgetConfirmBtn": "Retirar da lista",
+    "sdLaterBtn": "Decidir mais tarde (não sincroniza até lá)",
+    "sdHeldIndicator": "Sem sincronizar",
     "sharedJoinBtn": "Aderir",
     "sharedJoining": "A ligar…",
     "sharedJoiningNamed": "Entrando em “{name}”…",
@@ -12843,6 +12869,12 @@ const STRINGS = {
     "sdSameBtn": "Das ist weiterhin „{device}“",
     "sdNameNeeded": "Geben Sie einen Namen für dieses Gerät ein, anders als „{device}“.",
     "sdHeldStatus": "Keine Synchronisierung, bis Sie sagen, welches Gerät dies ist: „Jetzt abgleichen“ drücken.",
+    "libForgetBtn": "Aus der Liste nehmen…",
+    "libForgetTitle": "„{name}“ aus der Liste nehmen?",
+    "libForgetBody": "37 Player vergisst diese Bibliothek. Ihr Ordner und alles darin, auch die Aufnahmen, bleiben auf diesem Computer; die gemeinsame Bibliothek, falls sie einer beigetreten ist, wird nicht berührt. „Ordner einer Bibliothek suchen…“ holt sie zurück.",
+    "libForgetConfirmBtn": "Aus der Liste nehmen",
+    "sdLaterBtn": "Später entscheiden (bis dahin keine Synchronisierung)",
+    "sdHeldIndicator": "Keine Synchronisierung",
     "sharedJoinBtn": "Beitreten",
     "sharedJoining": "Verbinde…",
     "sharedJoiningNamed": "„{name}“ wird beigetreten …",
@@ -14807,6 +14839,12 @@ const STRINGS = {
     "sdSameBtn": "这仍然是“{device}”",
     "sdNameNeeded": "请为本设备输入一个与“{device}”不同的名称。",
     "sdHeldStatus": "在您说明这是哪台设备之前不会同步：请按“立即同步”。",
+    "libForgetBtn": "从列表中移除…",
+    "libForgetTitle": "把“{name}”从列表中移除？",
+    "libForgetBody": "37 Player 会忘记这个曲库。它的文件夹和其中的一切（包括录音）都留在这台电脑上；如果它加入了共享曲库，共享曲库不受影响。用“查找曲库文件夹…”可以把它找回来。",
+    "libForgetConfirmBtn": "从列表中移除",
+    "sdLaterBtn": "稍后决定（在此之前不同步）",
+    "sdHeldIndicator": "未同步",
     "sharedJoinBtn": "加入",
     "sharedJoining": "正在连接…",
     "sharedJoiningNamed": "正在加入“{name}”…",
@@ -16771,6 +16809,12 @@ const STRINGS = {
     "sdSameBtn": "Đây vẫn là “{device}”",
     "sdNameNeeded": "Hãy nhập tên cho thiết bị này, khác với “{device}”.",
     "sdHeldStatus": "Không đồng bộ cho đến khi bạn cho biết đây là thiết bị nào: hãy bấm Đồng bộ ngay.",
+    "libForgetBtn": "Bỏ khỏi danh sách…",
+    "libForgetTitle": "Bỏ “{name}” khỏi danh sách?",
+    "libForgetBody": "37 Player quên thư viện này. Thư mục của nó và mọi thứ bên trong, kể cả các bản ghi, vẫn ở trên máy tính này; thư viện chung, nếu nó đã tham gia, không bị đụng đến. Tìm thư mục của một thư viện… sẽ đưa nó trở lại.",
+    "libForgetConfirmBtn": "Bỏ khỏi danh sách",
+    "sdLaterBtn": "Quyết định sau (chưa đồng bộ cho đến lúc đó)",
+    "sdHeldIndicator": "Chưa đồng bộ",
     "sharedJoinBtn": "Tham gia",
     "sharedJoining": "Đang kết nối…",
     "sharedJoiningNamed": "Đang tham gia “{name}”…",
@@ -18735,6 +18779,12 @@ const STRINGS = {
     "sdSameBtn": "Είναι ακόμη η «{device}»",
     "sdNameNeeded": "Πληκτρολογήστε όνομα για αυτή τη συσκευή, διαφορετικό από «{device}».",
     "sdHeldStatus": "Δεν γίνεται συγχρονισμός μέχρι να πείτε ποια συσκευή είναι αυτή: πατήστε Συγχρονισμός τώρα.",
+    "libForgetBtn": "Αφαίρεση από τη λίστα…",
+    "libForgetTitle": "Αφαίρεση της «{name}» από τη λίστα;",
+    "libForgetBody": "Το 37 Player ξεχνά αυτή τη βιβλιοθήκη. Ο φάκελός της και ό,τι περιέχει, μαζί με τις ηχογραφήσεις, μένουν σε αυτόν τον υπολογιστή· η κοινόχρηστη βιβλιοθήκη, αν έχει ενταχθεί σε κάποια, δεν αγγίζεται. Η Εύρεση φακέλου βιβλιοθήκης… τη φέρνει πίσω.",
+    "libForgetConfirmBtn": "Αφαίρεση από τη λίστα",
+    "sdLaterBtn": "Απόφαση αργότερα (δεν συγχρονίζεται ως τότε)",
+    "sdHeldIndicator": "Χωρίς συγχρονισμό",
     "sharedJoinBtn": "Συμμετοχή",
     "sharedJoining": "Σύνδεση…",
     "sharedJoiningNamed": "Σύνδεση με «{name}»…",
@@ -20699,6 +20749,12 @@ const STRINGS = {
     "sdSameBtn": "È sempre “{device}”",
     "sdNameNeeded": "Scrivi un nome per questo dispositivo, diverso da “{device}”.",
     "sdHeldStatus": "Nessuna sincronizzazione finché non dici quale dispositivo è questo: premi Sincronizza ora.",
+    "libForgetBtn": "Togli dall’elenco…",
+    "libForgetTitle": "Togliere «{name}» dall’elenco?",
+    "libForgetBody": "37 Player dimentica questa libreria. La sua cartella e tutto ciò che contiene, registrazioni comprese, restano su questo computer; la libreria condivisa, se è unita a una, non viene toccata. Trova la cartella di una libreria… la riporta.",
+    "libForgetConfirmBtn": "Togli dall’elenco",
+    "sdLaterBtn": "Decidi più tardi (fino ad allora non si sincronizza)",
+    "sdHeldIndicator": "Nessuna sincronizzazione",
     "sharedJoinBtn": "Unisciti",
     "sharedJoining": "Connessione…",
     "sharedJoiningNamed": "Accesso a «{name}»…",
@@ -40696,6 +40752,9 @@ function updateBackupIndicator(){
   btn.style.display = "";
   const lastTip = backupInfo.lastBackupAt ? t("backupLastTooltip",{time: new Date(backupInfo.lastBackupAt).toLocaleString()}) : t("backupNeverTooltip");
   if(sharedConfig() && sharedConfig().kind === "gdrive" && driveNeedsSignIn){ label = t("driveSignInShort"); cls = "warn"; title = t("driveSignInNeeded"); }
+  // Held until the person says which device this is (askSharedDeviceCopy):
+  // not "In sync" or "In a folder", which read as if all were well (2.4.003).
+  else if(sharedConfig() && sharedDeviceUnconfirmed()){ label = t("sdHeldIndicator"); cls = "warn"; title = t("sdHeldStatus"); }
   // (A desktop library in a shared library shows how its syncing stands.)
   else if((libraryFolderName(LIBRARY_ID) || (libraryInDesktopFolder(LIBRARY_ID) && !sharedConfig())) && !syncStuck()){ label = t("folderLibIndicator"); cls = "ok"; title = t("folderLibIndicatorTip", {name: libraryFolderLabel()}); }
   else if(backupRunning){ label = (backupProgress && backupProgress.total > 20) ? t("backupIndicatorProgress", {done: workingOn(backupProgress.done, backupProgress.total), total: backupProgress.total}) : t("backupIndicatorRunning"); cls = "busy"; title = lastTip; }
@@ -47114,11 +47173,11 @@ async function askSharedDeviceCopy(){
       const asked = askChoice(t("sdCopyTitle"), `<p>${escapeHtmlText(t("sdCopyBody", {lib: cfg.libraryName || sharedStatus.libraryName || "", device: old}))}</p>
         <label for="sdName" class="join-field">${escapeHtmlText(t("sharedDeviceLabel"))}</label><input type="text" id="sdName" maxlength="60">`
         + (note ? `<p class="settings-note" style="color:var(--rust-bright);">${escapeHtmlText(note)}</p>` : ""),
-        [{label: t("sdNewBtn"), value: "new", kind: "primary"}, {label: t("sdSameBtn", {device: old}), value: "same"}]);
+        [{label: t("sdNewBtn"), value: "new", kind: "primary"}, {label: t("sdSameBtn", {device: old}), value: "same"}, {label: t("sdLaterBtn"), value: "later", kind: "ghost"}]);
       const input = document.getElementById("sdName");
       if(input){ input.value = name; input.addEventListener("input", ()=>{ name = input.value; }); setTimeout(()=> input.focus(), 50); }
       const c = await asked;
-      if(!c) return; // closed: asked again at Sync now, or the next start
+      if(!c || c === "later"){ updateBackupIndicator(); return; } // closed, or "Decide later": asked again at Sync now, or the next start
       const now = sharedConfig();
       if(!now || !sharedDeviceUnconfirmed()) return;
       if(c === "same"){
@@ -49183,6 +49242,11 @@ async function deleteLibrary(id){
   await new Promise(r=> setTimeout(r, 400));
   const scoped = name=> id === MAIN_LIBRARY_ID ? name : name + "~" + id;
   try{ localStorage.removeItem(scoped("37player.analyzing")); localStorage.removeItem(scoped("37player.sharedLog")); }catch(err){}
+  // The desktop app only forgets a library, the first one too: its folder,
+  // records and recordings stay (2.4.003: the first library went through
+  // the clearing below, which emptied its folder's records; found while
+  // answering Gen Rinzin's "would that delete any audio?", 13 Nov 2026).
+  if(libraryInDesktopFolder(id)){ await storageRemove(id); return; }
   if(id === MAIN_LIBRARY_ID){
     // Everything but the converter (backup and libraryInfo go too).
     const d = storageOpen(MAIN_LIBRARY_ID);
@@ -49252,7 +49316,7 @@ function renderLibrariesSection(body){
       <div class="library-row-actions">
         ${l.id === LIBRARY_ID ? `<span class="library-open-tag">${escapeHtmlText(t("libOpenNow"))}</span>` : `<button class="btn primary" data-act="open" type="button">${escapeHtmlText(t("libOpenBtn"))}</button>`}
         <button class="btn" data-act="rename" type="button">${escapeHtmlText(t("libRenameBtn"))}</button>
-        ${l.id === LIBRARY_ID ? "" : `<button class="btn danger" data-act="delete" type="button">${escapeHtmlText(t("libDeleteBtn"))}</button>`}
+        ${l.id === LIBRARY_ID ? "" : `<button class="btn danger" data-act="delete" type="button">${escapeHtmlText(t(l.folder || libraryInDesktopFolder(l.id) ? "libForgetBtn" : "libDeleteBtn"))}</button>`}
       </div>`;
     row.querySelector(".library-row-name").textContent = libraryDisplayName(l);
     row.querySelector(".library-row-meta").textContent = parts.join(" · ");
@@ -49272,11 +49336,15 @@ function renderLibrariesSection(body){
         const folder = bk && bk.handle && bk.handle.kind === "directory" ? bk.handle : null;
         const hadFiles = !folder && bk && (bk.manualBase || bk.lastBackupAt);
         let wantBackup = false;
-        const asked = askChoice(t("libDeleteTitle", {name: libraryDisplayName(l)}), `<p>${escapeHtmlText(t("libDeleteBody"))}</p>`
+        // A library kept in a folder (always, in the desktop app) is only
+        // forgotten: its folder and recordings stay, and the wording says so
+        // (2.4.003, Gen Rinzin, 13 Nov 2026: "would that delete any audio?").
+        const kept = !!l.folder || libraryInDesktopFolder(l.id);
+        const asked = askChoice(t(kept ? "libForgetTitle" : "libDeleteTitle", {name: libraryDisplayName(l)}), `<p>${escapeHtmlText(t(kept ? "libForgetBody" : "libDeleteBody"))}</p>`
           + (folder ? `<label class="join-partial" style="font-weight:normal;"><input type="checkbox" id="libDelBackup"> ${escapeHtmlText(t("libDeleteBackupCheck", {folder: folder.name}))}</label>` : "")
           + (hadFiles ? `<p class="settings-note">${escapeHtmlText(t("libDeleteBackupFiles", {name: fileSlug(libraryDisplayName(l)) || "…"}))}</p>` : "")
           + (l.folder ? `<p class="settings-note">${escapeHtmlText(t("folderLibDeleteNote", {name: l.folder}))}</p>` : ""),
-          [{label: t("libDeleteConfirmBtn"), value: "delete", kind: "danger"}, {label: t("cancel"), value: null}]);
+          [{label: t(kept ? "libForgetConfirmBtn" : "libDeleteConfirmBtn"), value: "delete", kind: "danger"}, {label: t("cancel"), value: null}]);
         const box = document.getElementById("libDelBackup");
         if(box) box.addEventListener("change", ()=>{ wantBackup = box.checked; });
         const ok = await asked;

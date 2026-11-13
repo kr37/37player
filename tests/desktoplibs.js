@@ -178,6 +178,24 @@ const wipeWebview = (p)=> p.evaluate(async()=>{
   await p.evaluate(()=> document.getElementById('libFindFolder')?.click()); await sleep(1200);
   const w4 = await p.evaluate(()=> ({list: window.__disk.readLibraryList().list.map(l=> l.name), toast: [...document.querySelectorAll('.toast')].map(t=> t.textContent).join(' | ')}));
   ok(JSON.stringify(w4.list) === JSON.stringify(['Prayers', 'Teachings', 'Chants']) && /“Chants” is on your list of libraries/.test(w4.toast), 'which adds a library folder from anywhere (' + JSON.stringify(w4) + ')');
+  // ---- Taking a library off the list (2.4.003): the wording says its folder
+  // and recordings stay, and they do.
+  await p.evaluate(()=>{ window.__dbg.setMode('editing'); window.__dbg4.settings(); }); await sleep(300);
+  await p.evaluate(()=> window.__dbg4.section('library')); await sleep(800);
+  const rowBtn = await p.evaluate(()=>{ const b = [...document.querySelectorAll('button[data-act="delete"]')]; if(b[0]) b[0].click(); return b.map(x=> x.textContent.trim()).join('|'); });
+  const mf = await waitModal(p, /from the list\?/);
+  ok(/^Remove from list…/.test(rowBtn) && /forgets this library/.test(mf) && /recordings included, stay on this computer/.test(mf) && !/removed from this device/.test(mf), 'a library is "removed from the list", and the question says its folder and recordings stay (' + mf.replace(/\n+/g, ' | ').slice(0, 200) + ')');
+  const before = Object.keys(await roots(p)).length;
+  await clickText(p, '.modal button', '^Remove from the list$'); await sleep(1500);
+  const kept = await p.evaluate(async()=>{ const top = await (await navigator.storage.getDirectory()).getDirectoryHandle('fake-shell'); const names = []; const walk = async (d, pre, depth)=>{ for await (const [n, h] of d.entries()){ if(h.kind === 'directory'){ names.push(pre + n); if(depth < 2) await walk(h, pre + n + '/', depth + 1); } } }; await walk(top, '', 0); return names; });
+  // Its records and recordings are untouched (the first library's were emptied before 2.4.003).
+  const inside = await p.evaluate(async()=>{ const top = await (await navigator.storage.getDirectory()).getDirectoryHandle('fake-shell'); let d = top; for(const part of 'Music/37 Player Libraries/Prayers'.split('/')) d = await d.getDirectoryHandle(part); let n = 0, root = false; const walk = async (h, pre)=>{ for await (const [name, e] of h.entries()){ if(e.kind === 'directory') await walk(e, pre + name + '/'); else { n++; if(name === 'root.json') root = true; } } }; await walk(d, ''); return {files: n, root}; });
+  ok(inside.root && inside.files >= 4, 'the first library\'s records and recordings are all still in its folder (' + JSON.stringify(inside) + ')');
+  const after = await roots(p), listNow = await p.evaluate(()=> window.__disk.readLibraryList().list.length);
+  ok(listNow === 2, 'it leaves the list (' + listNow + ' left; folders remembered before ' + before + ', after ' + Object.keys(after).length + ': ' + Object.keys(after).join(',') + ')');
+  ok(['Music/37 Player Libraries/Prayers', 'USB/Teachings', 'Elsewhere/Chants'].filter(f=> kept.includes(f)).length >= 2 && kept.some(f=> /Chants$|Teachings$|Prayers$/.test(f)), 'and every library folder is still on the disk (' + kept.filter(f=> /Prayers$|Teachings$|Chants$/.test(f)).join(', ') + ')');
+  await p.evaluate(()=> document.querySelectorAll('.modal [data-close]').forEach(x=> x.click()));
+
   // ---- Another computer: Choose another place….
   const p2 = await (await b.createBrowserContext()).newPage(); await p2.setViewport({width: 1300, height: 900});
   p2.on('dialog', async d=>{ console.log('ALERT:', d.message()); await d.accept(); });
