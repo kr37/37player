@@ -105,7 +105,13 @@ const importOne = async (p)=>{
   await p.evaluate(async()=>{ backupInfoForTest().trial.at = Date.now() - 3 * 86400000; await window.__dbg.saveState(); await saveBackupInfoForTest(); });
   await p.reload({waitUntil: 'networkidle0'});
   m = await waitModal(p, /Done trying it out/, 9000);
-  ok(/Done trying it out/.test(m) && /Install 37 Player as an app/.test(m) && /Keep the library in a folder/.test(m), 'two days later, at the start: the guide, Chrome\'s way on Linux (' + short(m) + ')');
+  // Linux has the desktop app too (2.2.042): the .deb, and the .rpm.
+  ok(/Done trying it out/.test(m) && /Get the desktop app/.test(m) && /Download \.deb/.test(m) && /Download \.rpm/.test(m) && /Ubuntu 22\.04/.test(m), 'two days later, at the start: the guide, the desktop app on Linux (' + short(m) + ')');
+  const hrefs = await p.evaluate(()=> [...document.querySelectorAll('.modal a[data-act="download"]')].map(a=> a.getAttribute('href')));
+  ok(hrefs.length === 2 && /37-Player-linux-amd64\.deb$/.test(hrefs[0]) && /37-Player-linux-x86_64\.rpm$/.test(hrefs[1]), 'its downloads (' + hrefs.join(' ') + ')');
+  await clickText(p, '.modal a', "^I can't install apps on this computer$"); await sleep(400);
+  m = await modal(p);
+  ok(/Install 37 Player as an app/.test(m) && /Keep the library in a folder/.test(m), 'and Chrome\'s way, if apps can\'t be installed (' + short(m) + ')');
   await clickText(p, '.modal button', '^Close$');
   await p.browserContext().close();
 
@@ -113,7 +119,10 @@ const importOne = async (p)=>{
   p = await open(b, 'linuxff', {ua: LINUX_FF, noFolder: true});
   await clickText(p, '.modal button', '^Install$');
   m = await waitModal(p, /Install 37 Player/);
-  ok(/Open 37 Player in Chrome or Edge/.test(m) && /Get Chrome/.test(m) && /Get Edge/.test(m) && !/desktop app/.test(m) && !/Keep the library in a folder/.test(m), 'Linux, Firefox: Chrome or Edge only (' + short(m) + ')');
+  ok(/Get the desktop app/.test(m), 'Linux, Firefox: the desktop app first (' + short(m) + ')');
+  await clickText(p, '.modal a', "^I can't install apps on this computer$"); await sleep(400);
+  m = await modal(p);
+  ok(/Open 37 Player in Chrome or Edge/.test(m) && /Get Chrome/.test(m) && /Get Edge/.test(m) && !/desktop app/.test(m) && !/Keep the library in a folder/.test(m), 'Linux, Firefox, apps can\'t be installed: Chrome or Edge only (' + short(m) + ')');
   await p.evaluate(()=> document.querySelector('.modal [data-act="copy"]').click()); await sleep(500);
   m = await modal(p);
   ok(/#setup/.test(m) || /paste it into the address bar/.test(m), 'Copy the address: the guide\'s own address, to carry on there');
@@ -143,6 +152,8 @@ const importOne = async (p)=>{
   // ---- Linux, installed Chrome app: the folder step can be done here.
   p = await open(b, 'linuxapp', {ua: LINUX_CHROME, standalone: true});
   m = await waitModal(p, /Install 37 Player/);
+  await clickText(p, '.modal a', "^I can't install apps on this computer$"); await sleep(400);
+  m = await modal(p);
   const choose = await p.evaluate(()=> !!document.querySelector('.modal [data-act="folder"]'));
   ok(/Keep the library in a folder/.test(m) && !/once 37 Player is installed/.test(m) && choose && !/Install 37 Player as an app/.test(m), 'Linux, installed: the folder step, with Choose where… (' + short(m) + ')');
   await clickText(p, '.modal button', '^Close$');
@@ -154,6 +165,8 @@ const importOne = async (p)=>{
   await p.screenshot({path: 'shots/setup-welcome.png'});
   await clickText(p, '.modal button', '^Install$');
   m = await waitModal(p, /Install 37 Player/);
+  await clickText(p, '.modal a', "^I can't install apps on this computer$"); await sleep(400);
+  m = await modal(p);
   ok(/Install 37 Player as an app/.test(m) && await p.evaluate(()=> getComputedStyle(document.getElementById('btnInstall')).display !== 'none'), 'in the tab: the Install step, and Install in the top bar');
   await p.evaluate(()=>{ window.__isApp = true; window.__dmListeners.forEach(f=> f({matches: true})); }); await sleep(400);
   m = await modal(p);
@@ -162,6 +175,7 @@ const importOne = async (p)=>{
   await clickText(p, '.modal button', '^Close$');
   await p.evaluate(async()=>{ const r = window.__dbg.getRoot(); r.settings.sharedLibrary = {url: 'x', code: 'demo', deviceName: 'T', libraryName: 'Rinzin\'s library', installs: [localStorage.getItem('37player.install')]}; });
   await p.evaluate(()=>{ window.openSetupGuideForTest(); }); await sleep(500);
+  await clickText(p, '.modal a', "^I can't install apps on this computer$"); await sleep(400);
   ok(await p.evaluate(()=> getComputedStyle(document.querySelector('.heads-up-step.done .step-n')).fontWeight) >= 700, 'a done step\'s ✓ is bold');
   await p.screenshot({path: 'shots/setup-done.png'});
   await clickText(p, '.modal button', '^Close$');

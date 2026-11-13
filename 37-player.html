@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.2.041">
+<meta name="app-version" content="2.3.000">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -4411,6 +4411,10 @@ const STRINGS = {
     "sgDesktopStep": "<strong>Get the desktop app.</strong> On this computer, 37 Player is best as an app: the library is ordinary files in a folder, the app updates itself, and it doesn't have to repeatedly prompt for permissions.",
     "sgDownloadMac": "Download for Mac",
     "sgDownloadWin": "Download for Windows",
+    "sgDownloadLinux": "Download .deb (Ubuntu, Debian, Mint…)",
+    "sgDownloadLinuxRpm": "Download .rpm (Fedora, openSUSE)",
+    "sgDesktopStepLinux": "<strong>Get the desktop app.</strong> On this computer, 37 Player is best as an app: the library is ordinary files in a folder, and it doesn't have to repeatedly prompt for permissions.",
+    "sgWarnLinux": "<strong>Installing it.</strong> The .deb is for Ubuntu 22.04, Debian 12 or newer and the systems built on them (Mint, Pop!_OS, elementary, Zorin, KDE neon); the .rpm is for Fedora and openSUSE. Open the downloaded file to install it with your software centre, or in a terminal, in the folder it was downloaded to: <code>sudo apt install ./37-Player-linux-amd64.deb</code> (or <code>sudo dnf install ./37-Player-linux-x86_64.rpm</code>). 37 Player's pages keep themselves up to date; for a newer app, download it again now and then.",
     "sgWarnMac": "<strong>Getting past the warning.</strong> The app isn't signed by Apple yet, so the first time, macOS says it can't check it. Open the downloaded file and drag <strong>37 Player</strong> into <strong>Applications</strong>. In Applications, Control-click (or right-click) 37 Player, choose <strong>Open</strong>, then <strong>Open</strong> again. If there's no Open button: close the warning, open <strong>System Settings → Privacy &amp; Security</strong>, scroll down, and choose <strong>Open Anyway</strong> beside 37 Player.",
     "sgWarnWin": "<strong>Getting past the warnings.</strong> The app isn't signed yet, so Windows warns about it twice.<br><strong>In Edge's downloads,</strong> the file is marked as not commonly downloaded: point at it, click <strong>…</strong> and choose <strong>Keep</strong>. Then, in <strong>Make sure you trust…</strong>, click the arrow <strong>▾</strong> inside the black <strong>Delete</strong> button and choose <strong>Keep anyway</strong>. (In Chrome, choose to keep the file.)<br><strong>When it opens,</strong> <strong>Windows protected your PC</strong> appears: click <strong>More info</strong>, then <strong>Run anyway</strong>.",
     "sgCantInstall": "I can't install apps on this computer",
@@ -6371,6 +6375,10 @@ const STRINGS = {
     "sgDesktopStep": "<strong>Descargue la app de escritorio.</strong> En este ordenador, 37 Player funciona mejor como app: la biblioteca son archivos normales en una carpeta, la app se actualiza sola y no tiene que pedir permisos una y otra vez.",
     "sgDownloadMac": "Descargar para Mac",
     "sgDownloadWin": "Descargar para Windows",
+    "sgDownloadLinux": "Descargar .deb (Ubuntu, Debian, Mint…)",
+    "sgDownloadLinuxRpm": "Descargar .rpm (Fedora, openSUSE)",
+    "sgDesktopStepLinux": "<strong>Instale la aplicación de escritorio.</strong> En este ordenador, 37 Player funciona mejor como aplicación: la biblioteca son archivos normales en una carpeta y no tiene que pedir permisos una y otra vez.",
+    "sgWarnLinux": "<strong>Instalarla.</strong> El .deb es para Ubuntu 22.04, Debian 12 o posteriores y los sistemas basados en ellos (Mint, Pop!_OS, elementary, Zorin, KDE neon); el .rpm, para Fedora y openSUSE. Abra el archivo descargado para instalarlo con su centro de software, o en una terminal, en la carpeta donde se descargó: <code>sudo apt install ./37-Player-linux-amd64.deb</code> (o <code>sudo dnf install ./37-Player-linux-x86_64.rpm</code>). Las páginas de 37 Player se actualizan solas; para una aplicación más nueva, descárguela de nuevo de vez en cuando.",
     "sgWarnMac": "<strong>Cómo pasar el aviso.</strong> La app aún no está firmada por Apple, así que la primera vez macOS dice que no puede comprobarla. Abra el archivo descargado y arrastre <strong>37 Player</strong> a <strong>Aplicaciones</strong>. En Aplicaciones, haga Control-clic (o clic derecho) en 37 Player, elija <strong>Abrir</strong> y otra vez <strong>Abrir</strong>. Si no hay botón Abrir: cierre el aviso, abra <strong>Ajustes del Sistema → Privacidad y seguridad</strong>, baje y elija <strong>Abrir igualmente</strong> junto a 37 Player.",
     "sgWarnWin": "<strong>Cómo pasar los avisos.</strong> La app aún no está firmada, así que Windows avisa dos veces.<br><strong>En las descargas de Edge,</strong> el archivo aparece como poco descargado: señálelo, haga clic en <strong>…</strong> y elija <strong>Conservar</strong>. Luego, en <strong>Asegúrese de que confía en…</strong>, haga clic en la flecha <strong>▾</strong> dentro del botón negro <strong>Eliminar</strong> y elija <strong>Conservar de todos modos</strong>. (En Chrome, elija conservar el archivo.)<br><strong>Al abrirla,</strong> aparece <strong>Windows protegió su PC</strong>: haga clic en <strong>Más información</strong> y luego en <strong>Ejecutar de todas formas</strong>.",
     "sgCantInstall": "No puedo instalar apps en este ordenador",
@@ -8330,6 +8338,10 @@ const STRINGS = {
     "sgDesktopStep": "<strong>Prenez l'application de bureau.</strong> Sur cet ordinateur, 37 Player est au mieux en application : la bibliothèque est faite de fichiers ordinaires dans un dossier, l'application se met à jour toute seule et n'a pas à redemander sans cesse des autorisations.",
     "sgDownloadMac": "Télécharger pour Mac",
     "sgDownloadWin": "Télécharger pour Windows",
+    "sgDownloadLinux": "Télécharger le .deb (Ubuntu, Debian, Mint…)",
+    "sgDownloadLinuxRpm": "Télécharger le .rpm (Fedora, openSUSE)",
+    "sgDesktopStepLinux": "<strong>Installez l'application de bureau.</strong> Sur cet ordinateur, 37 Player fonctionne mieux comme application : la bibliothèque est faite de fichiers ordinaires dans un dossier, et elle n'a pas à redemander sans cesse des autorisations.",
+    "sgWarnLinux": "<strong>L'installer.</strong> Le .deb est pour Ubuntu 22.04, Debian 12 ou plus récents et les systèmes qui en dérivent (Mint, Pop!_OS, elementary, Zorin, KDE neon) ; le .rpm pour Fedora et openSUSE. Ouvrez le fichier téléchargé pour l'installer avec votre logithèque, ou dans un terminal, dans le dossier où il a été téléchargé : <code>sudo apt install ./37-Player-linux-amd64.deb</code> (ou <code>sudo dnf install ./37-Player-linux-x86_64.rpm</code>). Les pages de 37 Player se mettent à jour d'elles-mêmes ; pour une application plus récente, téléchargez-la de nouveau de temps en temps.",
     "sgWarnMac": "<strong>Passer l'avertissement.</strong> L'application n'est pas encore signée par Apple, donc la première fois macOS dit qu'il ne peut pas la vérifier. Ouvrez le fichier téléchargé et faites glisser <strong>37 Player</strong> dans <strong>Applications</strong>. Dans Applications, Contrôle-clic (ou clic droit) sur 37 Player, choisissez <strong>Ouvrir</strong>, puis encore <strong>Ouvrir</strong>. S'il n'y a pas de bouton Ouvrir : fermez l'avertissement, ouvrez <strong>Réglages Système → Confidentialité et sécurité</strong>, descendez et choisissez <strong>Ouvrir quand même</strong> à côté de 37 Player.",
     "sgWarnWin": "<strong>Passer les avertissements.</strong> L'application n'est pas encore signée, donc Windows avertit deux fois.<br><strong>Dans les téléchargements d'Edge,</strong> le fichier est signalé comme rarement téléchargé : pointez-le, cliquez sur <strong>…</strong> et choisissez <strong>Conserver</strong>. Puis, dans <strong>Assurez-vous de faire confiance à…</strong>, cliquez sur la flèche <strong>▾</strong> dans le bouton noir <strong>Supprimer</strong> et choisissez <strong>Conserver quand même</strong>. (Dans Chrome, choisissez de conserver le fichier.)<br><strong>À l'ouverture,</strong> <strong>Windows a protégé votre ordinateur</strong> apparaît : cliquez sur <strong>Informations complémentaires</strong>, puis <strong>Exécuter quand même</strong>.",
     "sgCantInstall": "Je ne peux pas installer d'applications sur cet ordinateur",
@@ -10289,6 +10301,10 @@ const STRINGS = {
     "sgDesktopStep": "<strong>Obtenha a app para computador.</strong> Neste computador, o 37 Player funciona melhor como app: a biblioteca são ficheiros normais numa pasta, a app atualiza-se sozinha e não tem de pedir permissões repetidamente.",
     "sgDownloadMac": "Transferir para Mac",
     "sgDownloadWin": "Transferir para Windows",
+    "sgDownloadLinux": "Transferir .deb (Ubuntu, Debian, Mint…)",
+    "sgDownloadLinuxRpm": "Transferir .rpm (Fedora, openSUSE)",
+    "sgDesktopStepLinux": "<strong>Instale a aplicação para computador.</strong> Neste computador, o 37 Player funciona melhor como aplicação: a biblioteca são ficheiros normais numa pasta e não precisa de pedir permissões repetidamente.",
+    "sgWarnLinux": "<strong>Instalá-la.</strong> O .deb é para Ubuntu 22.04, Debian 12 ou mais recentes e os sistemas baseados neles (Mint, Pop!_OS, elementary, Zorin, KDE neon); o .rpm é para Fedora e openSUSE. Abra o ficheiro transferido para o instalar com o seu centro de software, ou num terminal, na pasta para onde foi transferido: <code>sudo apt install ./37-Player-linux-amd64.deb</code> (ou <code>sudo dnf install ./37-Player-linux-x86_64.rpm</code>). As páginas do 37 Player atualizam-se sozinhas; para uma aplicação mais recente, transfira-a de novo de vez em quando.",
     "sgWarnMac": "<strong>Ultrapassar o aviso.</strong> A app ainda não está assinada pela Apple, por isso na primeira vez o macOS diz que não a consegue verificar. Abra o ficheiro transferido e arraste o <strong>37 Player</strong> para <strong>Aplicações</strong>. Em Aplicações, faça Control-clique (ou clique direito) no 37 Player, escolha <strong>Abrir</strong> e outra vez <strong>Abrir</strong>. Se não houver botão Abrir: feche o aviso, abra <strong>Definições do Sistema → Privacidade e segurança</strong>, desça e escolha <strong>Abrir mesmo assim</strong> junto ao 37 Player.",
     "sgWarnWin": "<strong>Ultrapassar os avisos.</strong> A app ainda não está assinada, por isso o Windows avisa duas vezes.<br><strong>Nas transferências do Edge,</strong> o ficheiro aparece como pouco transferido: aponte para ele, clique em <strong>…</strong> e escolha <strong>Manter</strong>. Depois, em <strong>Certifique-se de que confia em…</strong>, clique na seta <strong>▾</strong> dentro do botão preto <strong>Eliminar</strong> e escolha <strong>Manter mesmo assim</strong>. (No Chrome, escolha manter o ficheiro.)<br><strong>Ao abrir,</strong> aparece <strong>O Windows protegeu o seu PC</strong>: clique em <strong>Mais informações</strong> e depois em <strong>Executar mesmo assim</strong>.",
     "sgCantInstall": "Não posso instalar apps neste computador",
@@ -12248,6 +12264,10 @@ const STRINGS = {
     "sgDesktopStep": "<strong>Holen Sie sich die Desktop-App.</strong> Auf diesem Computer ist 37 Player als App am besten: Die Bibliothek besteht aus gewöhnlichen Dateien in einem Ordner, die App aktualisiert sich selbst und muss nicht ständig erneut um Erlaubnis fragen.",
     "sgDownloadMac": "Für Mac laden",
     "sgDownloadWin": "Für Windows laden",
+    "sgDownloadLinux": ".deb laden (Ubuntu, Debian, Mint…)",
+    "sgDownloadLinuxRpm": ".rpm laden (Fedora, openSUSE)",
+    "sgDesktopStepLinux": "<strong>Holen Sie sich die Desktop-App.</strong> Auf diesem Computer ist 37 Player als App am besten: Die Bibliothek besteht aus gewöhnlichen Dateien in einem Ordner, und sie muss nicht immer wieder um Berechtigungen bitten.",
+    "sgWarnLinux": "<strong>Installieren.</strong> Die .deb ist für Ubuntu 22.04, Debian 12 oder neuer und darauf aufbauende Systeme (Mint, Pop!_OS, elementary, Zorin, KDE neon); die .rpm für Fedora und openSUSE. Öffnen Sie die geladene Datei, um sie mit Ihrer Softwareverwaltung zu installieren, oder in einem Terminal im Ordner, in den sie geladen wurde: <code>sudo apt install ./37-Player-linux-amd64.deb</code> (oder <code>sudo dnf install ./37-Player-linux-x86_64.rpm</code>). Die Seiten von 37 Player halten sich selbst aktuell; für eine neuere App laden Sie sie ab und zu neu.",
     "sgWarnMac": "<strong>An der Warnung vorbei.</strong> Die App ist noch nicht von Apple signiert, daher sagt macOS beim ersten Mal, es könne sie nicht prüfen. Öffnen Sie die geladene Datei und ziehen Sie <strong>37 Player</strong> in <strong>Programme</strong>. Klicken Sie dort bei gedrückter Ctrl-Taste (oder mit rechts) auf 37 Player, wählen Sie <strong>Öffnen</strong> und nochmals <strong>Öffnen</strong>. Gibt es keine Schaltfläche Öffnen: Warnung schließen, <strong>Systemeinstellungen → Datenschutz &amp; Sicherheit</strong> öffnen, nach unten scrollen und neben 37 Player <strong>Dennoch öffnen</strong> wählen.",
     "sgWarnWin": "<strong>An den Warnungen vorbei.</strong> Die App ist noch nicht signiert, daher warnt Windows zweimal.<br><strong>In den Downloads von Edge</strong> ist die Datei als selten heruntergeladen markiert: Zeigen Sie darauf, klicken Sie auf <strong>…</strong> und wählen Sie <strong>Behalten</strong>. Klicken Sie dann unter <strong>Stellen Sie sicher, dass Sie … vertrauen</strong> auf den Pfeil <strong>▾</strong> in der schwarzen Schaltfläche <strong>Löschen</strong> und wählen Sie <strong>Trotzdem beibehalten</strong>. (In Chrome: die Datei behalten.)<br><strong>Beim Öffnen</strong> erscheint <strong>Der Computer wurde durch Windows geschützt</strong>: Klicken Sie auf <strong>Weitere Informationen</strong>, dann <strong>Trotzdem ausführen</strong>.",
     "sgCantInstall": "Ich kann auf diesem Computer keine Apps installieren",
@@ -14207,6 +14227,10 @@ const STRINGS = {
     "sgDesktopStep": "<strong>下载桌面应用。</strong>在这台电脑上，37 Player 作为应用最好用：曲库是一个文件夹里的普通文件，应用会自动更新，也不必反复请求权限。",
     "sgDownloadMac": "下载 Mac 版",
     "sgDownloadWin": "下载 Windows 版",
+    "sgDownloadLinux": "下载 .deb（Ubuntu、Debian、Mint…）",
+    "sgDownloadLinuxRpm": "下载 .rpm（Fedora、openSUSE）",
+    "sgDesktopStepLinux": "<strong>安装桌面应用。</strong>在这台电脑上，37 Player 作为应用使用最好：曲库就是文件夹中的普通文件，也不必一再请求权限。",
+    "sgWarnLinux": "<strong>安装。</strong>.deb 适用于 Ubuntu 22.04、Debian 12 或更新版本，以及基于它们的系统（Mint、Pop!_OS、elementary、Zorin、KDE neon）；.rpm 适用于 Fedora 和 openSUSE。打开下载的文件，用软件中心安装；或者在终端里、在下载所在的文件夹中运行：<code>sudo apt install ./37-Player-linux-amd64.deb</code>（或 <code>sudo dnf install ./37-Player-linux-x86_64.rpm</code>）。37 Player 的页面会自动更新；想要更新的应用，请不时重新下载。",
     "sgWarnMac": "<strong>如何通过警告。</strong>这个应用还没有经过 Apple 签名，所以第一次打开时 macOS 会说无法检查它。打开下载的文件，把 <strong>37 Player</strong> 拖到<strong>应用程序</strong>。在应用程序中，按住 Control 点按（或右键点按）37 Player，选择<strong>打开</strong>，再选一次<strong>打开</strong>。如果没有“打开”按钮：关闭警告，打开<strong>系统设置 → 隐私与安全性</strong>，向下滚动，在 37 Player 旁选择<strong>仍要打开</strong>。",
     "sgWarnWin": "<strong>如何通过警告。</strong>这个应用还没有签名，所以 Windows 会警告两次。<br><strong>在 Edge 的下载列表中，</strong>文件会被标为不常被下载：指向它，点击<strong>…</strong>，选择<strong>保留</strong>。然后在<strong>请确保你信任…</strong>中，点击黑色<strong>删除</strong>按钮里的箭头 <strong>▾</strong>，选择<strong>仍然保留</strong>。（在 Chrome 中，选择保留文件。）<br><strong>打开时，</strong>会出现 <strong>Windows 已保护你的电脑</strong>：点击<strong>更多信息</strong>，然后点击<strong>仍要运行</strong>。",
     "sgCantInstall": "我不能在这台电脑上安装应用",
@@ -16166,6 +16190,10 @@ const STRINGS = {
     "sgDesktopStep": "<strong>Tải ứng dụng máy tính.</strong> Trên máy tính này, 37 Player tốt nhất là dùng dạng ứng dụng: thư viện là các tệp bình thường trong một thư mục, ứng dụng tự cập nhật và không phải hỏi quyền lặp đi lặp lại.",
     "sgDownloadMac": "Tải cho Mac",
     "sgDownloadWin": "Tải cho Windows",
+    "sgDownloadLinux": "Tải .deb (Ubuntu, Debian, Mint…)",
+    "sgDownloadLinuxRpm": "Tải .rpm (Fedora, openSUSE)",
+    "sgDesktopStepLinux": "<strong>Cài ứng dụng máy tính.</strong> Trên máy tính này, 37 Player tốt nhất là dùng dạng ứng dụng: thư viện là các tệp bình thường trong một thư mục, và không phải hỏi quyền nhiều lần.",
+    "sgWarnLinux": "<strong>Cài đặt.</strong> Tệp .deb dành cho Ubuntu 22.04, Debian 12 trở lên và các hệ thống dựa trên chúng (Mint, Pop!_OS, elementary, Zorin, KDE neon); tệp .rpm dành cho Fedora và openSUSE. Mở tệp đã tải để cài bằng trung tâm phần mềm, hoặc trong cửa sổ dòng lệnh, ở thư mục chứa tệp đã tải: <code>sudo apt install ./37-Player-linux-amd64.deb</code> (hoặc <code>sudo dnf install ./37-Player-linux-x86_64.rpm</code>). Các trang của 37 Player tự cập nhật; muốn có ứng dụng mới hơn, thỉnh thoảng hãy tải lại.",
     "sgWarnMac": "<strong>Vượt qua cảnh báo.</strong> Ứng dụng chưa được Apple ký, nên lần đầu macOS báo không thể kiểm tra nó. Mở tệp đã tải và kéo <strong>37 Player</strong> vào <strong>Ứng dụng</strong>. Trong Ứng dụng, Control-bấm (hoặc bấm chuột phải) vào 37 Player, chọn <strong>Mở</strong>, rồi <strong>Mở</strong> lần nữa. Nếu không có nút Mở: đóng cảnh báo, mở <strong>Cài đặt hệ thống → Quyền riêng tư &amp; bảo mật</strong>, cuộn xuống và chọn <strong>Vẫn mở</strong> bên cạnh 37 Player.",
     "sgWarnWin": "<strong>Vượt qua các cảnh báo.</strong> Ứng dụng chưa được ký, nên Windows cảnh báo hai lần.<br><strong>Trong danh sách tải xuống của Edge,</strong> tệp bị đánh dấu là ít được tải: trỏ vào nó, bấm <strong>…</strong> và chọn <strong>Giữ</strong>. Sau đó, trong <strong>Hãy đảm bảo bạn tin tưởng…</strong>, bấm mũi tên <strong>▾</strong> bên trong nút đen <strong>Xóa</strong> và chọn <strong>Vẫn giữ</strong>. (Trong Chrome, chọn giữ tệp.)<br><strong>Khi mở,</strong> thấy <strong>Windows đã bảo vệ PC của bạn</strong>: bấm <strong>Thêm thông tin</strong>, rồi <strong>Vẫn chạy</strong>.",
     "sgCantInstall": "Tôi không thể cài ứng dụng trên máy tính này",
@@ -18125,6 +18153,10 @@ const STRINGS = {
     "sgDesktopStep": "<strong>Πάρτε την εφαρμογή υπολογιστή.</strong> Σε αυτόν τον υπολογιστή το 37 Player είναι καλύτερο ως εφαρμογή: η βιβλιοθήκη είναι συνηθισμένα αρχεία σε έναν φάκελο, η εφαρμογή ενημερώνεται μόνη της και δεν χρειάζεται να ζητά συνεχώς άδειες.",
     "sgDownloadMac": "Λήψη για Mac",
     "sgDownloadWin": "Λήψη για Windows",
+    "sgDownloadLinux": "Λήψη .deb (Ubuntu, Debian, Mint…)",
+    "sgDownloadLinuxRpm": "Λήψη .rpm (Fedora, openSUSE)",
+    "sgDesktopStepLinux": "<strong>Αποκτήστε την εφαρμογή υπολογιστή.</strong> Σε αυτόν τον υπολογιστή, το 37 Player λειτουργεί καλύτερα ως εφαρμογή: η βιβλιοθήκη είναι συνηθισμένα αρχεία σε έναν φάκελο και δεν χρειάζεται να ζητά ξανά και ξανά άδειες.",
+    "sgWarnLinux": "<strong>Εγκατάσταση.</strong> Το .deb είναι για Ubuntu 22.04, Debian 12 ή νεότερα και τα συστήματα που βασίζονται σε αυτά (Mint, Pop!_OS, elementary, Zorin, KDE neon)· το .rpm για Fedora και openSUSE. Ανοίξτε το αρχείο που κατεβάσατε για να το εγκαταστήσετε με το κέντρο λογισμικού, ή σε ένα τερματικό, στον φάκελο όπου κατέβηκε: <code>sudo apt install ./37-Player-linux-amd64.deb</code> (ή <code>sudo dnf install ./37-Player-linux-x86_64.rpm</code>). Οι σελίδες του 37 Player ενημερώνονται μόνες τους· για νεότερη εφαρμογή, κατεβάστε την ξανά πού και πού.",
     "sgWarnMac": "<strong>Πώς να περάσετε την προειδοποίηση.</strong> Η εφαρμογή δεν έχει ακόμη υπογραφή της Apple, οπότε την πρώτη φορά το macOS λέει ότι δεν μπορεί να την ελέγξει. Ανοίξτε το αρχείο που κατεβάσατε και σύρετε το <strong>37 Player</strong> στις <strong>Εφαρμογές</strong>. Εκεί, Control-κλικ (ή δεξί κλικ) στο 37 Player, επιλέξτε <strong>Άνοιγμα</strong> και ξανά <strong>Άνοιγμα</strong>. Αν δεν υπάρχει κουμπί Άνοιγμα: κλείστε την προειδοποίηση, ανοίξτε <strong>Ρυθμίσεις συστήματος → Απόρρητο και ασφάλεια</strong>, κυλήστε κάτω και επιλέξτε <strong>Άνοιγμα παρ' όλα αυτά</strong> δίπλα στο 37 Player.",
     "sgWarnWin": "<strong>Πώς να περάσετε τις προειδοποιήσεις.</strong> Η εφαρμογή δεν έχει ακόμη υπογραφή, οπότε τα Windows προειδοποιούν δύο φορές.<br><strong>Στις λήψεις του Edge,</strong> το αρχείο σημειώνεται ως σπάνια ληφθέν: δείξτε το, πατήστε <strong>…</strong> και επιλέξτε <strong>Διατήρηση</strong>. Μετά, στο <strong>Βεβαιωθείτε ότι εμπιστεύεστε…</strong>, πατήστε το βελάκι <strong>▾</strong> μέσα στο μαύρο κουμπί <strong>Διαγραφή</strong> και επιλέξτε <strong>Διατήρηση ούτως ή άλλως</strong>. (Στο Chrome, επιλέξτε να κρατήσετε το αρχείο.)<br><strong>Όταν ανοίξει,</strong> εμφανίζεται <strong>Τα Windows προστάτευσαν τον υπολογιστή σας</strong>: πατήστε <strong>Περισσότερες πληροφορίες</strong> και μετά <strong>Εκτέλεση ούτως ή άλλως</strong>.",
     "sgCantInstall": "Δεν μπορώ να εγκαταστήσω εφαρμογές σε αυτόν τον υπολογιστή",
@@ -20084,6 +20116,10 @@ const STRINGS = {
     "sgDesktopStep": "<strong>Scarica l'app per computer.</strong> Su questo computer 37 Player funziona meglio come app: la libreria è fatta di file normali in una cartella, l'app si aggiorna da sola e non deve chiedere permessi in continuazione.",
     "sgDownloadMac": "Scarica per Mac",
     "sgDownloadWin": "Scarica per Windows",
+    "sgDownloadLinux": "Scarica il .deb (Ubuntu, Debian, Mint…)",
+    "sgDownloadLinuxRpm": "Scarica il .rpm (Fedora, openSUSE)",
+    "sgDesktopStepLinux": "<strong>Installa l'app per computer.</strong> Su questo computer 37 Player funziona meglio come app: la libreria è fatta di normali file in una cartella, e non deve chiedere di continuo le autorizzazioni.",
+    "sgWarnLinux": "<strong>Installarla.</strong> Il .deb è per Ubuntu 22.04, Debian 12 o successivi e i sistemi basati su di essi (Mint, Pop!_OS, elementary, Zorin, KDE neon); il .rpm per Fedora e openSUSE. Apri il file scaricato per installarlo con il tuo gestore del software, oppure in un terminale, nella cartella dove è stato scaricato: <code>sudo apt install ./37-Player-linux-amd64.deb</code> (o <code>sudo dnf install ./37-Player-linux-x86_64.rpm</code>). Le pagine di 37 Player si aggiornano da sole; per un'app più recente, scaricala di nuovo ogni tanto.",
     "sgWarnMac": "<strong>Superare l'avviso.</strong> L'app non è ancora firmata da Apple, quindi la prima volta macOS dice che non può verificarla. Apri il file scaricato e trascina <strong>37 Player</strong> in <strong>Applicazioni</strong>. In Applicazioni, fai Control-clic (o clic destro) su 37 Player, scegli <strong>Apri</strong>, poi di nuovo <strong>Apri</strong>. Se non c'è il pulsante Apri: chiudi l'avviso, apri <strong>Impostazioni di Sistema → Privacy e sicurezza</strong>, scorri in basso e scegli <strong>Apri comunque</strong> accanto a 37 Player.",
     "sgWarnWin": "<strong>Superare gli avvisi.</strong> L'app non è ancora firmata, quindi Windows avvisa due volte.<br><strong>Nei download di Edge,</strong> il file è segnato come scaricato raramente: puntalo, fai clic su <strong>…</strong> e scegli <strong>Mantieni</strong>. Poi, in <strong>Assicurati di considerare attendibile…</strong>, fai clic sulla freccia <strong>▾</strong> dentro il pulsante nero <strong>Elimina</strong> e scegli <strong>Mantieni comunque</strong>. (In Chrome, scegli di mantenere il file.)<br><strong>All'apertura</strong> compare <strong>PC protetto da Windows</strong>: fai clic su <strong>Ulteriori informazioni</strong>, poi su <strong>Esegui comunque</strong>.",
     "sgCantInstall": "Non posso installare app su questo computer",
@@ -40928,10 +40964,16 @@ function deviceOs(){
   if(/CrOS/.test(ua)) return "chromeos";
   return "linux";
 }
-function desktopDownloadUrl(os){
+// file: "rpm" for Linux's other package (Fedora, openSUSE); else the usual one.
+function desktopDownloadUrl(os, file){
   const tag = /^test\./.test(location.hostname) ? "desktop-latest-dev" : "desktop-latest"; // the test site's builds follow dev
-  return "https://github.com/kr37/37player/releases/download/" + tag + "/" + (os === "mac" ? "37-Player-mac.dmg" : "37-Player-windows-setup.exe");
+  const name = os === "mac" ? "37-Player-mac.dmg" : os === "linux" ? (file === "rpm" ? "37-Player-linux-x86_64.rpm" : "37-Player-linux-amd64.deb") : "37-Player-windows-setup.exe";
+  return "https://github.com/kr37/37player/releases/download/" + tag + "/" + name;
 }
+// The desktop app is offered on a Mac, Windows and Linux (2.3.000, Gen
+// Rinzin, 13 Nov 2026: the .deb works on his T470); Linux on ARM (a
+// Raspberry Pi, when the browser says so) has no build, so Chrome's way.
+function desktopAppOffered(os){ return os === "mac" || os === "windows" || (os === "linux" && !/aarch64|armv\d|arm64/i.test(navigator.userAgent || "")); }
 // This page's address with a step to carry on from (a copy opened from a
 // file: the website's).
 function setupAddress(hash){
@@ -41036,9 +41078,11 @@ function openSetupGuide(opts){
       };
       const shared = ()=> cfg ? {id: "shared", done: true, html: P(t("sgSharedDone", {name: escapeHtmlText(libName)}))} : {id: "shared", html: P(t("sgSharedStep")), btns: [{label: t("setupJoinBtn"), act: "join"}]};
       if(IN_DESKTOP_APP){ out.push({id: "here", done: true, html: P(t("sgDesktopHere"))}, shared()); return out; }
-      if((os === "mac" || os === "windows") && !chromeWay){
-        out.push({id: "desktop", html: P(t("sgDesktopStep")), btns: [{label: t(os === "mac" ? "sgDownloadMac" : "sgDownloadWin"), act: "download"}]});
-        out.push({id: "warn", html: P(t(os === "mac" ? "sgWarnMac" : "sgWarnWin"))});
+      if(desktopAppOffered(os) && !chromeWay){
+        const dl = os === "linux" ? [{label: t("sgDownloadLinux"), act: "download"}, {label: t("sgDownloadLinuxRpm"), act: "download", file: "rpm", ghost: true}]
+          : [{label: t(os === "mac" ? "sgDownloadMac" : "sgDownloadWin"), act: "download"}];
+        out.push({id: "desktop", html: P(t(os === "linux" ? "sgDesktopStepLinux" : "sgDesktopStep")), btns: dl});
+        out.push({id: "warn", html: P(t(os === "mac" ? "sgWarnMac" : os === "linux" ? "sgWarnLinux" : "sgWarnWin"))});
         out.push(carry("sgWhereDesktop"));
         return out;
       }
@@ -41077,9 +41121,9 @@ function openSetupGuide(opts){
       setupGuideRedraw = render;
       const list = steps().filter(Boolean);
       const rows = list.map((s, i)=> `<div class="heads-up-step${s.done ? " done" : ""}" data-step="${s.id}">${stepBox(s.done ? "✓" : i + 1)}<div class="heads-up-text">${s.html}${notes[s.id] ? `<p class="settings-note">${notes[s.id]}</p>` : ""}${(s.btns || []).length ? `<div class="heads-up-btns">${s.btns.map(b=> b.act === "download"
-          ? `<a class="btn primary" href="${desktopDownloadUrl(os)}" data-act="download">${escapeHtmlText(b.label)}</a>`
+          ? `<a class="btn ${b.ghost ? "ghost" : "primary"}" href="${desktopDownloadUrl(os, b.file)}" data-act="download">${escapeHtmlText(b.label)}</a>`
           : `<button class="btn ghost" type="button" data-act="${b.act}">${escapeHtmlText(b.label)}</button>`).join("")}</div>` : ""}</div></div>`).join("");
-      const desktopWay = !IN_DESKTOP_APP && (os === "mac" || os === "windows") && !chromeWay;
+      const desktopWay = !IN_DESKTOP_APP && desktopAppOffered(os) && !chromeWay;
       const chromeOnly = !IN_DESKTOP_APP && !env.mobile && !desktopWay && !env.folder;
       const link = desktopWay ? `<a href="#" class="heads-up-quick" id="sgCantInstall">${escapeHtmlText(t("sgCantInstall"))}</a>`
         : chromeOnly ? `<a href="#" class="heads-up-quick" id="sgTryHere">${escapeHtmlText(t("sgTryHereLink"))}</a>` : "";

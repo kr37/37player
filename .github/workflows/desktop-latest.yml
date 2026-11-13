@@ -63,6 +63,11 @@ jobs:
             mv ./*.deb 37-Player-linux-amd64.deb; files="$files 37-Player-linux-amd64.deb"
             notes="$notes On Linux (Ubuntu 22.04 or newer and the like): sudo apt install ./37-Player-linux-amd64.deb"
           fi
+          # And the .rpm (Fedora, openSUSE), in builds since 13 Nov 2026.
+          if gh release download "$from" --repo "$REPO" -p '*.rpm' 2>/dev/null && ls ./*.rpm > /dev/null 2>&1; then
+            mv ./*.rpm 37-Player-linux-x86_64.rpm; files="$files 37-Player-linux-x86_64.rpm"
+            notes="$notes On Fedora or openSUSE: sudo dnf install ./37-Player-linux-x86_64.rpm"
+          fi
           # The shell's update packages, and latest.json, which the app reads
           # to update itself (updates.rs, shell 2.2.3 on; 13 Nov 2026). Its
           # version is the app's (the "app x.y.z" in the build's title).
