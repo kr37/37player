@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.4.001">
+<meta name="app-version" content="2.4.002">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -5107,6 +5107,7 @@ const STRINGS = {
     "sharedLeaveBtn": "Leave shared library",
     "sharedLeaveConfirm": "Stop syncing this device? Its library stays as it is now.",
     "sharedLeaveMissingNote": "{n} of its tracks never arrived on this device. Leaving removes them, then asks what to do with the playlists that use them.",
+    "sharedLeaveUnsentNote": "{n} of this device's tracks were never fully sent. Leaving takes them out of the shared library, so the other devices stop waiting for them. They stay in this library.",
     "leaveCleanTitle": "Tidying up after leaving",
     "leaveRemovedTracks": "Tracks whose recordings never arrived on this device: {n}. They've been removed from the library.",
     "leaveEmptyBody": "These playlists are left with no tracks:",
@@ -7071,6 +7072,7 @@ const STRINGS = {
     "sharedLeaveBtn": "Salir de la biblioteca compartida",
     "sharedLeaveConfirm": "¿Dejar de sincronizar este dispositivo? Su biblioteca queda como está.",
     "sharedLeaveMissingNote": "{n} de sus pistas nunca llegaron a este dispositivo. Al salir se eliminan, y luego se le pregunta qué hacer con las listas que las usan.",
+    "sharedLeaveUnsentNote": "{n} pistas de este dispositivo nunca se enviaron por completo. Al salir se quitan de la biblioteca compartida, para que los demás dispositivos dejen de esperarlas. Se quedan en esta biblioteca.",
     "leaveCleanTitle": "Ordenando después de salir",
     "leaveRemovedTracks": "Pistas cuyas grabaciones nunca llegaron a este dispositivo: {n}. Se han eliminado de la biblioteca.",
     "leaveEmptyBody": "Estas listas se quedan sin pistas:",
@@ -9034,6 +9036,7 @@ const STRINGS = {
     "sharedLeaveBtn": "Quitter la bibliothèque partagée",
     "sharedLeaveConfirm": "Arrêter de synchroniser cet appareil ? Sa bibliothèque reste telle quelle.",
     "sharedLeaveMissingNote": "{n} de ses pistes ne sont jamais arrivées sur cet appareil. Quitter les supprime, puis demande quoi faire des listes qui les utilisent.",
+    "sharedLeaveUnsentNote": "{n} pistes de cet appareil n'ont jamais été entièrement envoyées. En quittant, elles sont retirées de la bibliothèque partagée, pour que les autres appareils cessent de les attendre. Elles restent dans cette bibliothèque.",
     "leaveCleanTitle": "Rangement après le départ",
     "leaveRemovedTracks": "Pistes dont l'enregistrement n'est jamais arrivé sur cet appareil : {n}. Elles ont été retirées de la bibliothèque.",
     "leaveEmptyBody": "Ces listes n'ont plus de pistes :",
@@ -10997,6 +11000,7 @@ const STRINGS = {
     "sharedLeaveBtn": "Sair da biblioteca partilhada",
     "sharedLeaveConfirm": "Deixar de sincronizar este dispositivo? A sua biblioteca fica como está.",
     "sharedLeaveMissingNote": "{n} das suas faixas nunca chegaram a este dispositivo. Sair remove-as e depois pergunta o que fazer com as listas que as usam.",
+    "sharedLeaveUnsentNote": "{n} faixas deste dispositivo nunca foram enviadas por completo. Ao sair, são retiradas da biblioteca partilhada, para que os outros dispositivos deixem de esperar por elas. Ficam nesta biblioteca.",
     "leaveCleanTitle": "Arrumar depois de sair",
     "leaveRemovedTracks": "Faixas cujas gravações nunca chegaram a este dispositivo: {n}. Foram removidas da biblioteca.",
     "leaveEmptyBody": "Estas listas ficam sem faixas:",
@@ -12960,6 +12964,7 @@ const STRINGS = {
     "sharedLeaveBtn": "Gemeinsame Bibliothek verlassen",
     "sharedLeaveConfirm": "Abgleich auf diesem Gerät beenden? Seine Bibliothek bleibt, wie sie ist.",
     "sharedLeaveMissingNote": "{n} ihrer Titel sind nie auf diesem Gerät angekommen. Beim Verlassen werden sie entfernt; dann werden Sie gefragt, was mit den Playlists geschehen soll, die sie nutzen.",
+    "sharedLeaveUnsentNote": "{n} Titel dieses Geräts wurden nie vollständig gesendet. Beim Verlassen werden sie aus der gemeinsamen Bibliothek genommen, damit die anderen Geräte nicht weiter auf sie warten. In dieser Bibliothek bleiben sie.",
     "leaveCleanTitle": "Aufräumen nach dem Verlassen",
     "leaveRemovedTracks": "Titel, deren Aufnahmen nie auf diesem Gerät ankamen: {n}. Sie wurden aus der Bibliothek entfernt.",
     "leaveEmptyBody": "Diese Playlists haben keine Titel mehr:",
@@ -14923,6 +14928,7 @@ const STRINGS = {
     "sharedLeaveBtn": "退出共享曲库",
     "sharedLeaveConfirm": "停止同步本设备？其曲库保持现状。",
     "sharedLeaveMissingNote": "其中有 {n} 首曲目从未到达这台设备。退出时会删除它们，然后询问如何处理用到它们的播放列表。",
+    "sharedLeaveUnsentNote": "这台设备有 {n} 首曲目从未完整发送。离开时会把它们从共享曲库中移除，其他设备就不再等待它们。它们仍留在这个曲库中。",
     "leaveCleanTitle": "退出后的整理",
     "leaveRemovedTracks": "录音从未到达这台设备的曲目：{n} 首。它们已从曲库中删除。",
     "leaveEmptyBody": "这些播放列表已没有曲目：",
@@ -16886,6 +16892,7 @@ const STRINGS = {
     "sharedLeaveBtn": "Rời thư viện chung",
     "sharedLeaveConfirm": "Ngừng đồng bộ thiết bị này? Thư viện của nó vẫn giữ nguyên.",
     "sharedLeaveMissingNote": "{n} bài của nó chưa từng về đến thiết bị này. Rời đi sẽ xóa chúng, rồi hỏi bạn làm gì với các danh sách phát dùng chúng.",
+    "sharedLeaveUnsentNote": "{n} bản nhạc của thiết bị này chưa bao giờ được gửi xong. Khi rời đi, chúng được lấy ra khỏi thư viện chung để các thiết bị khác thôi chờ. Chúng vẫn ở trong thư viện này.",
     "leaveCleanTitle": "Dọn dẹp sau khi rời",
     "leaveRemovedTracks": "Các bài có bản ghi chưa từng về đến thiết bị này: {n}. Chúng đã được xóa khỏi thư viện.",
     "leaveEmptyBody": "Các danh sách phát này không còn bài nào:",
@@ -18849,6 +18856,7 @@ const STRINGS = {
     "sharedLeaveBtn": "Αποχώρηση από την κοινόχρηστη βιβλιοθήκη",
     "sharedLeaveConfirm": "Διακοπή συγχρονισμού αυτής της συσκευής; Η βιβλιοθήκη της μένει ως έχει.",
     "sharedLeaveMissingNote": "{n} από τα κομμάτια της δεν έφτασαν ποτέ σε αυτή τη συσκευή. Η αποχώρηση τα αφαιρεί και μετά ρωτά τι να γίνει με τις λίστες που τα χρησιμοποιούν.",
+    "sharedLeaveUnsentNote": "{n} κομμάτια αυτής της συσκευής δεν στάλθηκαν ποτέ ολόκληρα. Με την αποχώρηση αφαιρούνται από την κοινόχρηστη βιβλιοθήκη, ώστε οι άλλες συσκευές να πάψουν να τα περιμένουν. Μένουν σε αυτή τη βιβλιοθήκη.",
     "leaveCleanTitle": "Τακτοποίηση μετά την αποχώρηση",
     "leaveRemovedTracks": "Κομμάτια των οποίων οι ηχογραφήσεις δεν έφτασαν ποτέ σε αυτή τη συσκευή: {n}. Αφαιρέθηκαν από τη βιβλιοθήκη.",
     "leaveEmptyBody": "Αυτές οι λίστες έμειναν χωρίς κομμάτια:",
@@ -20812,6 +20820,7 @@ const STRINGS = {
     "sharedLeaveBtn": "Esci dalla libreria condivisa",
     "sharedLeaveConfirm": "Smettere di sincronizzare questo dispositivo? La sua libreria resta com’è.",
     "sharedLeaveMissingNote": "{n} dei suoi brani non sono mai arrivati su questo dispositivo. Uscire li rimuove, poi chiede cosa fare delle playlist che li usano.",
+    "sharedLeaveUnsentNote": "{n} tracce di questo dispositivo non sono mai state inviate del tutto. Uscendo vengono tolte dalla libreria condivisa, così gli altri dispositivi smettono di aspettarle. Restano in questa libreria.",
     "leaveCleanTitle": "Riordino dopo l'uscita",
     "leaveRemovedTracks": "Brani le cui registrazioni non sono mai arrivate su questo dispositivo: {n}. Sono stati rimossi dalla libreria.",
     "leaveEmptyBody": "Queste playlist restano senza brani:",
@@ -46366,12 +46375,19 @@ async function sharedDownloadPendingHere(cfg){
     let recovered = false;
     for(const id of [...notOn]){
       const tr = findLibraryTrack(id);
-      if(!tr || !cfg.deviceName || tr.audioFrom !== cfg.deviceName) continue;
+      if(!tr) continue;
+      // Named as the sender, or (2.4.002) any device that holds the very
+      // recording waited for, to the byte: the sender may have left, been
+      // renamed, or be a copy of this library elsewhere (Gen Rinzin, 13 Nov
+      // 2026: tracks waited for from a name no device answers to any more).
+      const mine = !!cfg.deviceName && tr.audioFrom === cfg.deviceName;
       const rec = await idbGet("audio", id).catch(()=> null);
       if(!rec || !rec.blob || !rec.blob.size || await audioLooksWrong(rec.blob)) continue;
+      if(!mine && !(tr.fileSize > 0 && rec.blob.size === tr.fileSize)) continue;
       delete pending.audio[id]; notOn.delete(id);
-      tr.audioRev = newFileRev(); tr.fileSize = rec.blob.size;
-      sharedLog("“" + (tr.name || id) + "”: the shared library was waiting for this device to send a copy it no longer has; its own copy is used and sent instead");
+      const waitedFor = tr.audioFrom || "?";
+      tr.audioRev = newFileRev(); tr.fileSize = rec.blob.size; tr.audioFrom = cfg.deviceName || "";
+      sharedLog("“" + (tr.name || id) + "”: the shared library was waiting for " + (mine ? "this device" : "“" + waitedFor + "”") + " to send a copy that never came; this device's own copy is used and sent instead");
       recovered = true;
     }
     if(recovered){ await sharedSavePending(); await saveState(); scheduleSharedSync(1500); }
@@ -46999,12 +47015,48 @@ async function sharedLeaveCleanup(missing){
   await saveState();
   refreshCurrentView();
 }
+/* A device that leaves takes back what it promised and never sent (2.4.002,
+   Gen Rinzin, 13 Nov 2026). Its tracks whose audio never reached the shared
+   library are in the shared library's list all the same, and every other
+   device waits for them ("Waiting for X to send it") for ever once X has
+   gone. So leaving removes them from the shared library first, playlists'
+   rows included; they stay in this device's own library. Only tracks this
+   device holds, in the version the shared library lists, that the server
+   doesn't have. Can't be reached (offline)? Leaving goes ahead; the others
+   then wait, as before. */
+async function sharedUnsentHere(cfg){
+  const res = await sharedFetch(cfg, {op: "list"});
+  if(!res.ok) throw new Error("list " + res.status);
+  const on = new Set((await res.json()).audio || []);
+  const have = new Set(await storedAudioIds()), pending = await sharedLoadPending();
+  return root.library.filter(tr=> tr.audioRev && have.has(tr.id) && pending.audio[tr.id] === undefined && !on.has(sharedAudioName(tr))).map(tr=> tr.id);
+}
+async function sharedWithdrawUnsent(cfg, ids){
+  const mine = new Map(ids.map(id=> [id, findLibraryTrack(id)]).filter(([id, tr])=> tr).map(([id, tr])=> [id, sharedRev(tr.audioRev)]));
+  for(let attempt = 0; attempt < 4; attempt++){
+    const {version, doc} = await sharedGetState(cfg);
+    const gone = new Set((doc.tracks || []).filter(dt=> mine.has(dt.id) && sharedRev(dt.audioRev) === mine.get(dt.id)).map(dt=> dt.id));
+    if(!gone.size) return 0;
+    const next = syncClone(doc);
+    next.tracks = next.tracks.filter(dt=> !gone.has(dt.id));
+    (function walk(nodes){ (nodes || []).forEach(n=>{ if(n.kind === "folder") walk(n.children); else if(n.items) n.items = n.items.filter(it=> !(it.kind === "track" && gone.has(it.refId))); }); })(next.tree);
+    const res = await sharedPostState(cfg, version, next, doc, {withdrawn: gone.size});
+    if(res.status === 409) continue; // changed meanwhile: look again
+    sharedLog("leaving: " + gone.size + " track(s) this device never finished sending were taken out of the shared library (they stay in this library)");
+    return gone.size;
+  }
+  return 0;
+}
 // The Leave buttons: say beforehand what leaving will remove, then clean up.
 async function leaveSharedLibraryAsked(){
   const missing = await sharedTracksNotHere();
-  const ok = await askChoice(t("sharedLeaveBtn"), `<p>${escapeHtmlText(t("sharedLeaveConfirm"))}</p>${missing.size ? `<p>${escapeHtmlText(t("sharedLeaveMissingNote", {n: missing.size}))}</p>` : ""}`,
+  const cfg = sharedConfig();
+  let unsent = [];
+  try{ if(cfg && !cfg.receiveOnly) unsent = await sharedUnsentHere(cfg); }catch(err){ console.warn("Looking for unsent files:", err); }
+  const ok = await askChoice(t("sharedLeaveBtn"), `<p>${escapeHtmlText(t("sharedLeaveConfirm"))}</p>${missing.size ? `<p>${escapeHtmlText(t("sharedLeaveMissingNote", {n: missing.size}))}</p>` : ""}${unsent.length ? `<p>${escapeHtmlText(t("sharedLeaveUnsentNote", {n: unsent.length}))}</p>` : ""}`,
     [{label: t("sharedLeaveBtn"), value: "leave", kind: "danger"}, {label: t("cancel"), value: null}]);
   if(ok !== "leave") return false;
+  if(unsent.length){ try{ await sharedWithdrawUnsent(cfg, unsent); }catch(err){ console.warn("Withdrawing unsent files:", err); sharedLog("leaving: couldn't take this device's unsent tracks out of the shared library (" + (err.message || err) + ")"); } }
   delete root.settings.sharedLibrary;
   await leaveSharedLibrary();
   await sharedLeaveCleanup(await sharedTracksNotHere());
