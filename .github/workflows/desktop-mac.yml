@@ -65,9 +65,12 @@ jobs:
       - name: Build
         working-directory: desktop
         env:
-          # Tauri notarizes the signed app with these (and APPLE_API_KEY_PATH).
-          APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
-          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+          # For notarizing the .dmg below (with APPLE_API_KEY_PATH). Not
+          # named APPLE_API_KEY/APPLE_API_ISSUER, so Tauri only signs: it
+          # would wait on notarization without end, and a new team's first
+          # submissions waited hours (13 Nov 2026), past GitHub's 6-hour limit.
+          NOTARY_KEY_ID: ${{ secrets.APPLE_API_KEY }}
+          NOTARY_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
           # The shell's own updates (updates.rs) are signed with the key that
           # signs the pages; the app checks them with page-key.pub.
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
@@ -76,7 +79,6 @@ jobs:
           npm ci
           node copy-app.mjs
           (cd src-tauri && cargo test)
-          if [ -z "$P37_SIGNED" ]; then unset APPLE_API_KEY APPLE_API_ISSUER; fi
           upd=""; [ -n "$TAURI_SIGNING_PRIVATE_KEY" ] && upd='{"bundle":{"createUpdaterArtifacts":true}}'
           npx tauri build --target universal-apple-darwin --bundles app,dmg ${upd:+--config "$upd"}
           cp src-tauri/target/universal-apple-darwin/release/bundle/dmg/*.dmg ../37-Player-mac-test.dmg
@@ -86,13 +88,30 @@ jobs:
             cp src-tauri/target/universal-apple-darwin/release/bundle/macos/*.app.tar.gz.sig ../37-Player-mac-test.app.tar.gz.sig
           fi
           if [ -n "$P37_SIGNED" ]; then
-            # The .dmg too: notarized and stapled, so a downloaded one opens
-            # without a warning even offline (the app inside already is).
-            codesign --force --sign "$APPLE_SIGNING_IDENTITY" --timestamp ../37-Player-mac-test.dmg
-            xcrun notarytool submit ../37-Player-mac-test.dmg --key "$APPLE_API_KEY_PATH" --key-id "$APPLE_API_KEY" --issuer "$APPLE_API_ISSUER" --wait --timeout 30m
-            xcrun stapler staple ../37-Player-mac-test.dmg
-            spctl -a -t open --context context:primary-signature -v ../37-Player-mac-test.dmg
-            echo signed > ../37-Player-mac-test-signed.txt
+            # The .dmg signed and sent to Apple; notarizing it notarizes the
+            # app inside too. Waited for up to 45 minutes: accepted, it's
+            # stapled (it opens without a warning even offline). Not back by
+            # then, it's published signed anyway: Apple finishes on its own,
+            # and a Mac asks Apple online the first time it opens the app.
+            # Refused (Invalid): the build fails, with Apple's reasons.
+            dmg=../37-Player-mac-test.dmg
+            codesign --force --sign "$APPLE_SIGNING_IDENTITY" --timestamp "$dmg"
+            xcrun notarytool submit "$dmg" --key "$APPLE_API_KEY_PATH" --key-id "$NOTARY_KEY_ID" --issuer "$NOTARY_ISSUER" --wait --timeout 45m --output-format json > notary.json || true
+            cat notary.json; echo
+            st=$(python3 -c 'import json,sys; print(json.load(open("notary.json")).get("status",""))' 2>/dev/null || echo "")
+            sid=$(python3 -c 'import json,sys; print(json.load(open("notary.json")).get("id",""))' 2>/dev/null || echo "")
+            case "$st" in
+              Accepted)
+                xcrun stapler staple "$dmg"
+                spctl -a -t open --context context:primary-signature -v "$dmg"
+                echo notarized > ../37-Player-mac-test-signed.txt;;
+              Invalid|Rejected)
+                [ -n "$sid" ] && xcrun notarytool log "$sid" --key "$APPLE_API_KEY_PATH" --key-id "$NOTARY_KEY_ID" --issuer "$NOTARY_ISSUER"
+                echo "Apple refused the notarization"; exit 1;;
+              *)
+                echo "::warning::Apple hadn't finished notarizing ($sid, ${st:-no answer}) after 45 minutes: published signed; the notarization lands on its own"
+                echo signed > ../37-Player-mac-test-signed.txt;;
+            esac
           fi
           # The debug symbols, kept apart (the app itself is stripped), so a
           # Mac crash report's addresses can be turned into lines (atos).
@@ -174,7 +193,11 @@ jobs:
           syms=""
           if [ -f 37-Player-mac-test-symbols.zip ]; then mv 37-Player-mac-test-symbols.zip "37-Player-$v-mac-symbols.zip"; syms="37-Player-$v-mac-symbols.zip"; fi
           macnote="Mac: right-click → Open."
-          if [ -f 37-Player-mac-test-signed.txt ]; then rm 37-Player-mac-test-signed.txt; macnote="Mac: signed and notarized, opens normally."; fi
+          if [ -f 37-Player-mac-test-signed.txt ]; then
+            if grep -q notarized 37-Player-mac-test-signed.txt; then macnote="Mac: signed and notarized, opens normally."
+            else macnote="Mac: signed; Apple was still notarizing it when it was published (it opens normally once Apple has finished)."; fi
+            rm 37-Player-mac-test-signed.txt
+          fi
           deb=""
           if [ -f 37-Player-linux-test.deb ]; then mv 37-Player-linux-test.deb "37-Player-$v-linux-amd64.deb"; deb="37-Player-$v-linux-amd64.deb"; fi
           # The shell's update packages and signatures (updates.rs), when made.
