@@ -41,10 +41,13 @@ jobs:
           set -e
           if [ "$AFTER_BUILD" = "true" ]; then
             # After a build: the newest d build, if it isn't there already.
-            from=$(gh api "repos/$REPO/releases?per_page=50" --jq '[.[] | select(.tag_name | test("^desktop-test-[0-9]+d$"))][0].tag_name')
+            # The highest build number, not the last published: a build that
+            # waited longer (on Apple's notarizing) can be published after a
+            # newer one (13 Nov 2026).
+            from=$(gh api "repos/$REPO/releases?per_page=50" --jq '[.[] | select(.tag_name | test("^desktop-test-[0-9]+d$"))] | sort_by(.tag_name | ltrimstr("desktop-test-") | rtrimstr("d") | tonumber) | last | .tag_name')
             if gh api "repos/$REPO/releases/tags/desktop-latest-dev" --jq .body 2>/dev/null | grep -q "from $from;"; then echo "$from is already on test.37player.com's home page"; exit 0; fi
           elif [ -n "$N" ]; then from="desktop-test-$N"
-          else from=$(gh api "repos/$REPO/releases?per_page=50" --jq '[.[] | select(.tag_name | test("^desktop-test-[0-9]+m$"))][0].tag_name'); fi
+          else from=$(gh api "repos/$REPO/releases?per_page=50" --jq '[.[] | select(.tag_name | test("^desktop-test-[0-9]+m$"))] | sort_by(.tag_name | ltrimstr("desktop-test-") | rtrimstr("m") | tonumber) | last | .tag_name'); fi
           [ -n "$from" ] && [ "$from" != "null" ] || { echo "No such build"; exit 1; }
           case "$from" in *m) dest=desktop-latest; site=37player.com;; *) dest=desktop-latest-dev; site=test.37player.com;; esac
           title=$(gh api "repos/$REPO/releases/tags/$from" --jq .name)
@@ -59,6 +62,28 @@ jobs:
           if gh release download "$from" --repo "$REPO" -p '*.deb' 2>/dev/null && ls ./*.deb > /dev/null 2>&1; then
             mv ./*.deb 37-Player-linux-amd64.deb; files="$files 37-Player-linux-amd64.deb"
             notes="$notes On Linux (Ubuntu 22.04 or newer and the like): sudo apt install ./37-Player-linux-amd64.deb"
+          fi
+          # The shell's update packages, and latest.json, which the app reads
+          # to update itself (updates.rs, shell 2.2.3 on; 13 Nov 2026). Its
+          # version is the app's (the "app x.y.z" in the build's title).
+          sv=$(echo "$title" | grep -o 'app [0-9][0-9.]*' | sed 's/app //')
+          gh release download "$from" --repo "$REPO" -p '*.app.tar.gz' -p '*.sig' 2>/dev/null || true
+          base="https://github.com/$REPO/releases/download/$dest"
+          plat='{}'
+          if ls ./*.app.tar.gz > /dev/null 2>&1 && ls ./*.app.tar.gz.sig > /dev/null 2>&1; then
+            mv ./*.app.tar.gz.sig 37-Player-mac.app.tar.gz.sig; mv ./*.app.tar.gz 37-Player-mac.app.tar.gz
+            files="$files 37-Player-mac.app.tar.gz 37-Player-mac.app.tar.gz.sig"
+            plat=$(jq --arg s "$(cat 37-Player-mac.app.tar.gz.sig)" --arg u "$base/37-Player-mac.app.tar.gz" '. + {"darwin-aarch64": {signature: $s, url: $u}, "darwin-x86_64": {signature: $s, url: $u}}' <<< "$plat")
+          fi
+          if ls ./*windows-setup.exe.sig > /dev/null 2>&1; then
+            mv ./*windows-setup.exe.sig 37-Player-windows-setup.exe.sig
+            files="$files 37-Player-windows-setup.exe.sig"
+            plat=$(jq --arg s "$(cat 37-Player-windows-setup.exe.sig)" --arg u "$base/37-Player-windows-setup.exe" '. + {"windows-x86_64": {signature: $s, url: $u}}' <<< "$plat")
+          fi
+          if [ -n "$sv" ] && [ "$plat" != "{}" ]; then
+            jq -n --arg v "$sv" --arg n "37 Player's app $sv (from $from)" --arg d "$(date -u +%Y-%m-%dT%H:%M:%SZ)" --argjson p "$plat" '{version: $v, notes: $n, pub_date: $d, platforms: $p}' > latest.json
+            files="$files latest.json"
+            echo "latest.json:"; cat latest.json | head -c 600; echo
           fi
           if gh release view "$dest" --repo "$REPO" > /dev/null 2>&1; then
             gh release upload "$dest" $files --repo "$REPO" --clobber
