@@ -1,7 +1,7 @@
 # The desktop app's page updates itself
 
 **Built (6 Nov 2026):** the shell's side in `desktop/src-tauri/src/pages.rs`
-(on `tauri-spike`, with `cargo test`s), the page's in 1.4.182 (`desktopPageUp`,
+(on `tauri-spike`, now the `desktop` branch, with `cargo test`s), the page's in 1.4.182 (`desktopPageUp`,
 tests/desktop.js), the signing job in `.github/workflows/page-release.yml`.
 **Waiting for the key pair** (below): until the public key is in
 `desktop/src-tauri/page-key.pub` (now "none") and the private one in the
