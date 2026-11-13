@@ -55,6 +55,11 @@ jobs:
           mv ./*.dmg 37-Player-mac.dmg; mv ./*.exe 37-Player-windows-setup.exe; mv ./*.msi 37-Player-windows.msi
           notes="37 Player $v for computers (from $from; on $site's home page). Not signed yet: on a Mac, right-click the app → Open the first time; on Windows, SmartScreen → More info → Run anyway."
           files="37-Player-mac.dmg 37-Player-windows-setup.exe 37-Player-windows.msi"
+          # The Linux .deb, in builds since 12 Nov 2026 (38d), when there is one.
+          if gh release download "$from" --repo "$REPO" -p '*.deb' 2>/dev/null && ls ./*.deb > /dev/null 2>&1; then
+            mv ./*.deb 37-Player-linux-amd64.deb; files="$files 37-Player-linux-amd64.deb"
+            notes="$notes On Linux (Ubuntu 22.04 or newer and the like): sudo apt install ./37-Player-linux-amd64.deb"
+          fi
           if gh release view "$dest" --repo "$REPO" > /dev/null 2>&1; then
             gh release upload "$dest" $files --repo "$REPO" --clobber
             gh release edit "$dest" --repo "$REPO" --title "37 Player $v for computers" --notes "$notes"
