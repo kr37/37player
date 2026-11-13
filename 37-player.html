@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.3.004">
+<meta name="app-version" content="2.4.003">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -1125,6 +1125,10 @@
   .sel-start-time{ font-size:12.5px; color:var(--text-dim); white-space:nowrap; font-variant-numeric:tabular-nums; }
   .item-row .tdur{ color:var(--text-dim); font-size:13px; font-variant-numeric:tabular-nums; flex-shrink:0; }
   .item-row .talbum{ color:var(--folder); font-size:12.5px; flex-shrink:0; max-width:170px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  /* With Wrap on, the album wraps too and takes under a third of the row
+     (28%; 2.3.005, Gen Rinzin, 13 Nov 2026: on one line at its full width it left
+     the title two characters wide and fifteen lines tall on a narrow window). */
+  body.wrap-names .item-row .talbum{ white-space:normal; overflow:visible; text-overflow:clip; overflow-wrap:break-word; flex:0 1 auto; min-width:0; max-width:min(170px, 28%); }
   .item-row .drag-handle{ cursor:grab; color:var(--text-faint); display:none; flex-shrink:0; }
   body.edit-mode.unlocked .item-row .drag-handle{ display:inline; }
   .item-row-actions{ display:none; gap:2px; flex-shrink:0; }
@@ -3231,6 +3235,8 @@ async function desktopLibrariesAtStart(){
   for(const [id, copies] of byId){
     const name = (copies.find(f=> f.name) || {}).name || "";
     let e = reg.list.find(l=> l.id === id);
+    // One taken off the list on purpose stays off (Find a library folder… brings it back); a first start lists all.
+    if(!e && !LIBRARY_LIST_WAS_EMPTY && (reg.deleted || []).includes(id)) continue;
     if(!e){ e = {id, name}; reg.list.push(e); added++; }
     if(!e.name && name) e.name = name;
     e.desktopMade = true;
@@ -4982,6 +4988,12 @@ const STRINGS = {
     "sdSameBtn": "This is still “{device}”",
     "sdNameNeeded": "Type a name for this device, different from “{device}”.",
     "sdHeldStatus": "Not syncing until you say which device this is: press Sync now.",
+    "libForgetBtn": "Remove from list…",
+    "libForgetTitle": "Remove “{name}” from the list?",
+    "libForgetBody": "37 Player forgets this library. Its folder and everything in it, recordings included, stay on this computer; the shared library, if it’s joined to one, isn’t touched. Find a library folder… brings it back.",
+    "libForgetConfirmBtn": "Remove from the list",
+    "sdLaterBtn": "Decide later (it won’t sync until then)",
+    "sdHeldIndicator": "Not syncing",
     "sharedJoinBtn": "Join",
     "sharedJoining": "Connecting…",
     "sharedJoiningNamed": "Joining “{name}”…",
@@ -5103,6 +5115,7 @@ const STRINGS = {
     "sharedLeaveBtn": "Leave shared library",
     "sharedLeaveConfirm": "Stop syncing this device? Its library stays as it is now.",
     "sharedLeaveMissingNote": "{n} of its tracks never arrived on this device. Leaving removes them, then asks what to do with the playlists that use them.",
+    "sharedLeaveUnsentNote": "{n} of this device's tracks were never fully sent. Leaving takes them out of the shared library, so the other devices stop waiting for them. They stay in this library.",
     "leaveCleanTitle": "Tidying up after leaving",
     "leaveRemovedTracks": "Tracks whose recordings never arrived on this device: {n}. They've been removed from the library.",
     "leaveEmptyBody": "These playlists are left with no tracks:",
@@ -6946,6 +6959,12 @@ const STRINGS = {
     "sdSameBtn": "Sigue siendo “{device}”",
     "sdNameNeeded": "Escriba un nombre para este dispositivo, distinto de “{device}”.",
     "sdHeldStatus": "No se sincroniza hasta que diga qué dispositivo es este: pulse Sincronizar ahora.",
+    "libForgetBtn": "Quitar de la lista…",
+    "libForgetTitle": "¿Quitar «{name}» de la lista?",
+    "libForgetBody": "37 Player olvida esta biblioteca. Su carpeta y todo lo que contiene, incluidas las grabaciones, se quedan en este ordenador; la biblioteca compartida, si está unida a una, no se toca. Buscar la carpeta de una biblioteca… la recupera.",
+    "libForgetConfirmBtn": "Quitar de la lista",
+    "sdLaterBtn": "Decidir más tarde (no se sincroniza hasta entonces)",
+    "sdHeldIndicator": "Sin sincronizar",
     "sharedJoinBtn": "Unirse",
     "sharedJoining": "Conectando…",
     "sharedJoiningNamed": "Uniéndose a «{name}»…",
@@ -7067,6 +7086,7 @@ const STRINGS = {
     "sharedLeaveBtn": "Salir de la biblioteca compartida",
     "sharedLeaveConfirm": "¿Dejar de sincronizar este dispositivo? Su biblioteca queda como está.",
     "sharedLeaveMissingNote": "{n} de sus pistas nunca llegaron a este dispositivo. Al salir se eliminan, y luego se le pregunta qué hacer con las listas que las usan.",
+    "sharedLeaveUnsentNote": "{n} pistas de este dispositivo nunca se enviaron por completo. Al salir se quitan de la biblioteca compartida, para que los demás dispositivos dejen de esperarlas. Se quedan en esta biblioteca.",
     "leaveCleanTitle": "Ordenando después de salir",
     "leaveRemovedTracks": "Pistas cuyas grabaciones nunca llegaron a este dispositivo: {n}. Se han eliminado de la biblioteca.",
     "leaveEmptyBody": "Estas listas se quedan sin pistas:",
@@ -8909,6 +8929,12 @@ const STRINGS = {
     "sdSameBtn": "C'est toujours « {device} »",
     "sdNameNeeded": "Tapez un nom pour cet appareil, différent de « {device} ».",
     "sdHeldStatus": "Pas de synchronisation tant que vous n'avez pas dit quel appareil c'est : appuyez sur Synchroniser.",
+    "libForgetBtn": "Retirer de la liste…",
+    "libForgetTitle": "Retirer « {name} » de la liste ?",
+    "libForgetBody": "37 Player oublie cette bibliothèque. Son dossier et tout ce qu’il contient, enregistrements compris, restent sur cet ordinateur ; la bibliothèque partagée, si elle y est reliée, n’est pas touchée. Retrouver le dossier d’une bibliothèque… la fait revenir.",
+    "libForgetConfirmBtn": "Retirer de la liste",
+    "sdLaterBtn": "Décider plus tard (pas de synchronisation d’ici là)",
+    "sdHeldIndicator": "Pas de synchronisation",
     "sharedJoinBtn": "Rejoindre",
     "sharedJoining": "Connexion…",
     "sharedJoiningNamed": "Connexion à « {name} »…",
@@ -9030,6 +9056,7 @@ const STRINGS = {
     "sharedLeaveBtn": "Quitter la bibliothèque partagée",
     "sharedLeaveConfirm": "Arrêter de synchroniser cet appareil ? Sa bibliothèque reste telle quelle.",
     "sharedLeaveMissingNote": "{n} de ses pistes ne sont jamais arrivées sur cet appareil. Quitter les supprime, puis demande quoi faire des listes qui les utilisent.",
+    "sharedLeaveUnsentNote": "{n} pistes de cet appareil n'ont jamais été entièrement envoyées. En quittant, elles sont retirées de la bibliothèque partagée, pour que les autres appareils cessent de les attendre. Elles restent dans cette bibliothèque.",
     "leaveCleanTitle": "Rangement après le départ",
     "leaveRemovedTracks": "Pistes dont l'enregistrement n'est jamais arrivé sur cet appareil : {n}. Elles ont été retirées de la bibliothèque.",
     "leaveEmptyBody": "Ces listes n'ont plus de pistes :",
@@ -10872,6 +10899,12 @@ const STRINGS = {
     "sdSameBtn": "Continua a ser “{device}”",
     "sdNameNeeded": "Escreva um nome para este dispositivo, diferente de “{device}”.",
     "sdHeldStatus": "Não sincroniza até dizer que dispositivo é este: carregue em Sincronizar agora.",
+    "libForgetBtn": "Retirar da lista…",
+    "libForgetTitle": "Retirar «{name}» da lista?",
+    "libForgetBody": "O 37 Player esquece esta biblioteca. A pasta e tudo o que contém, incluindo as gravações, ficam neste computador; a biblioteca partilhada, se estiver ligada a uma, não é tocada. Procurar a pasta de uma biblioteca… trá-la de volta.",
+    "libForgetConfirmBtn": "Retirar da lista",
+    "sdLaterBtn": "Decidir mais tarde (não sincroniza até lá)",
+    "sdHeldIndicator": "Sem sincronizar",
     "sharedJoinBtn": "Aderir",
     "sharedJoining": "A ligar…",
     "sharedJoiningNamed": "Entrando em “{name}”…",
@@ -10993,6 +11026,7 @@ const STRINGS = {
     "sharedLeaveBtn": "Sair da biblioteca partilhada",
     "sharedLeaveConfirm": "Deixar de sincronizar este dispositivo? A sua biblioteca fica como está.",
     "sharedLeaveMissingNote": "{n} das suas faixas nunca chegaram a este dispositivo. Sair remove-as e depois pergunta o que fazer com as listas que as usam.",
+    "sharedLeaveUnsentNote": "{n} faixas deste dispositivo nunca foram enviadas por completo. Ao sair, são retiradas da biblioteca partilhada, para que os outros dispositivos deixem de esperar por elas. Ficam nesta biblioteca.",
     "leaveCleanTitle": "Arrumar depois de sair",
     "leaveRemovedTracks": "Faixas cujas gravações nunca chegaram a este dispositivo: {n}. Foram removidas da biblioteca.",
     "leaveEmptyBody": "Estas listas ficam sem faixas:",
@@ -12835,6 +12869,12 @@ const STRINGS = {
     "sdSameBtn": "Das ist weiterhin „{device}“",
     "sdNameNeeded": "Geben Sie einen Namen für dieses Gerät ein, anders als „{device}“.",
     "sdHeldStatus": "Keine Synchronisierung, bis Sie sagen, welches Gerät dies ist: „Jetzt abgleichen“ drücken.",
+    "libForgetBtn": "Aus der Liste nehmen…",
+    "libForgetTitle": "„{name}“ aus der Liste nehmen?",
+    "libForgetBody": "37 Player vergisst diese Bibliothek. Ihr Ordner und alles darin, auch die Aufnahmen, bleiben auf diesem Computer; die gemeinsame Bibliothek, falls sie einer beigetreten ist, wird nicht berührt. „Ordner einer Bibliothek suchen…“ holt sie zurück.",
+    "libForgetConfirmBtn": "Aus der Liste nehmen",
+    "sdLaterBtn": "Später entscheiden (bis dahin keine Synchronisierung)",
+    "sdHeldIndicator": "Keine Synchronisierung",
     "sharedJoinBtn": "Beitreten",
     "sharedJoining": "Verbinde…",
     "sharedJoiningNamed": "„{name}“ wird beigetreten …",
@@ -12956,6 +12996,7 @@ const STRINGS = {
     "sharedLeaveBtn": "Gemeinsame Bibliothek verlassen",
     "sharedLeaveConfirm": "Abgleich auf diesem Gerät beenden? Seine Bibliothek bleibt, wie sie ist.",
     "sharedLeaveMissingNote": "{n} ihrer Titel sind nie auf diesem Gerät angekommen. Beim Verlassen werden sie entfernt; dann werden Sie gefragt, was mit den Playlists geschehen soll, die sie nutzen.",
+    "sharedLeaveUnsentNote": "{n} Titel dieses Geräts wurden nie vollständig gesendet. Beim Verlassen werden sie aus der gemeinsamen Bibliothek genommen, damit die anderen Geräte nicht weiter auf sie warten. In dieser Bibliothek bleiben sie.",
     "leaveCleanTitle": "Aufräumen nach dem Verlassen",
     "leaveRemovedTracks": "Titel, deren Aufnahmen nie auf diesem Gerät ankamen: {n}. Sie wurden aus der Bibliothek entfernt.",
     "leaveEmptyBody": "Diese Playlists haben keine Titel mehr:",
@@ -14798,6 +14839,12 @@ const STRINGS = {
     "sdSameBtn": "这仍然是“{device}”",
     "sdNameNeeded": "请为本设备输入一个与“{device}”不同的名称。",
     "sdHeldStatus": "在您说明这是哪台设备之前不会同步：请按“立即同步”。",
+    "libForgetBtn": "从列表中移除…",
+    "libForgetTitle": "把“{name}”从列表中移除？",
+    "libForgetBody": "37 Player 会忘记这个曲库。它的文件夹和其中的一切（包括录音）都留在这台电脑上；如果它加入了共享曲库，共享曲库不受影响。用“查找曲库文件夹…”可以把它找回来。",
+    "libForgetConfirmBtn": "从列表中移除",
+    "sdLaterBtn": "稍后决定（在此之前不同步）",
+    "sdHeldIndicator": "未同步",
     "sharedJoinBtn": "加入",
     "sharedJoining": "正在连接…",
     "sharedJoiningNamed": "正在加入“{name}”…",
@@ -14919,6 +14966,7 @@ const STRINGS = {
     "sharedLeaveBtn": "退出共享曲库",
     "sharedLeaveConfirm": "停止同步本设备？其曲库保持现状。",
     "sharedLeaveMissingNote": "其中有 {n} 首曲目从未到达这台设备。退出时会删除它们，然后询问如何处理用到它们的播放列表。",
+    "sharedLeaveUnsentNote": "这台设备有 {n} 首曲目从未完整发送。离开时会把它们从共享曲库中移除，其他设备就不再等待它们。它们仍留在这个曲库中。",
     "leaveCleanTitle": "退出后的整理",
     "leaveRemovedTracks": "录音从未到达这台设备的曲目：{n} 首。它们已从曲库中删除。",
     "leaveEmptyBody": "这些播放列表已没有曲目：",
@@ -16761,6 +16809,12 @@ const STRINGS = {
     "sdSameBtn": "Đây vẫn là “{device}”",
     "sdNameNeeded": "Hãy nhập tên cho thiết bị này, khác với “{device}”.",
     "sdHeldStatus": "Không đồng bộ cho đến khi bạn cho biết đây là thiết bị nào: hãy bấm Đồng bộ ngay.",
+    "libForgetBtn": "Bỏ khỏi danh sách…",
+    "libForgetTitle": "Bỏ “{name}” khỏi danh sách?",
+    "libForgetBody": "37 Player quên thư viện này. Thư mục của nó và mọi thứ bên trong, kể cả các bản ghi, vẫn ở trên máy tính này; thư viện chung, nếu nó đã tham gia, không bị đụng đến. Tìm thư mục của một thư viện… sẽ đưa nó trở lại.",
+    "libForgetConfirmBtn": "Bỏ khỏi danh sách",
+    "sdLaterBtn": "Quyết định sau (chưa đồng bộ cho đến lúc đó)",
+    "sdHeldIndicator": "Chưa đồng bộ",
     "sharedJoinBtn": "Tham gia",
     "sharedJoining": "Đang kết nối…",
     "sharedJoiningNamed": "Đang tham gia “{name}”…",
@@ -16882,6 +16936,7 @@ const STRINGS = {
     "sharedLeaveBtn": "Rời thư viện chung",
     "sharedLeaveConfirm": "Ngừng đồng bộ thiết bị này? Thư viện của nó vẫn giữ nguyên.",
     "sharedLeaveMissingNote": "{n} bài của nó chưa từng về đến thiết bị này. Rời đi sẽ xóa chúng, rồi hỏi bạn làm gì với các danh sách phát dùng chúng.",
+    "sharedLeaveUnsentNote": "{n} bản nhạc của thiết bị này chưa bao giờ được gửi xong. Khi rời đi, chúng được lấy ra khỏi thư viện chung để các thiết bị khác thôi chờ. Chúng vẫn ở trong thư viện này.",
     "leaveCleanTitle": "Dọn dẹp sau khi rời",
     "leaveRemovedTracks": "Các bài có bản ghi chưa từng về đến thiết bị này: {n}. Chúng đã được xóa khỏi thư viện.",
     "leaveEmptyBody": "Các danh sách phát này không còn bài nào:",
@@ -18724,6 +18779,12 @@ const STRINGS = {
     "sdSameBtn": "Είναι ακόμη η «{device}»",
     "sdNameNeeded": "Πληκτρολογήστε όνομα για αυτή τη συσκευή, διαφορετικό από «{device}».",
     "sdHeldStatus": "Δεν γίνεται συγχρονισμός μέχρι να πείτε ποια συσκευή είναι αυτή: πατήστε Συγχρονισμός τώρα.",
+    "libForgetBtn": "Αφαίρεση από τη λίστα…",
+    "libForgetTitle": "Αφαίρεση της «{name}» από τη λίστα;",
+    "libForgetBody": "Το 37 Player ξεχνά αυτή τη βιβλιοθήκη. Ο φάκελός της και ό,τι περιέχει, μαζί με τις ηχογραφήσεις, μένουν σε αυτόν τον υπολογιστή· η κοινόχρηστη βιβλιοθήκη, αν έχει ενταχθεί σε κάποια, δεν αγγίζεται. Η Εύρεση φακέλου βιβλιοθήκης… τη φέρνει πίσω.",
+    "libForgetConfirmBtn": "Αφαίρεση από τη λίστα",
+    "sdLaterBtn": "Απόφαση αργότερα (δεν συγχρονίζεται ως τότε)",
+    "sdHeldIndicator": "Χωρίς συγχρονισμό",
     "sharedJoinBtn": "Συμμετοχή",
     "sharedJoining": "Σύνδεση…",
     "sharedJoiningNamed": "Σύνδεση με «{name}»…",
@@ -18845,6 +18906,7 @@ const STRINGS = {
     "sharedLeaveBtn": "Αποχώρηση από την κοινόχρηστη βιβλιοθήκη",
     "sharedLeaveConfirm": "Διακοπή συγχρονισμού αυτής της συσκευής; Η βιβλιοθήκη της μένει ως έχει.",
     "sharedLeaveMissingNote": "{n} από τα κομμάτια της δεν έφτασαν ποτέ σε αυτή τη συσκευή. Η αποχώρηση τα αφαιρεί και μετά ρωτά τι να γίνει με τις λίστες που τα χρησιμοποιούν.",
+    "sharedLeaveUnsentNote": "{n} κομμάτια αυτής της συσκευής δεν στάλθηκαν ποτέ ολόκληρα. Με την αποχώρηση αφαιρούνται από την κοινόχρηστη βιβλιοθήκη, ώστε οι άλλες συσκευές να πάψουν να τα περιμένουν. Μένουν σε αυτή τη βιβλιοθήκη.",
     "leaveCleanTitle": "Τακτοποίηση μετά την αποχώρηση",
     "leaveRemovedTracks": "Κομμάτια των οποίων οι ηχογραφήσεις δεν έφτασαν ποτέ σε αυτή τη συσκευή: {n}. Αφαιρέθηκαν από τη βιβλιοθήκη.",
     "leaveEmptyBody": "Αυτές οι λίστες έμειναν χωρίς κομμάτια:",
@@ -20687,6 +20749,12 @@ const STRINGS = {
     "sdSameBtn": "È sempre “{device}”",
     "sdNameNeeded": "Scrivi un nome per questo dispositivo, diverso da “{device}”.",
     "sdHeldStatus": "Nessuna sincronizzazione finché non dici quale dispositivo è questo: premi Sincronizza ora.",
+    "libForgetBtn": "Togli dall’elenco…",
+    "libForgetTitle": "Togliere «{name}» dall’elenco?",
+    "libForgetBody": "37 Player dimentica questa libreria. La sua cartella e tutto ciò che contiene, registrazioni comprese, restano su questo computer; la libreria condivisa, se è unita a una, non viene toccata. Trova la cartella di una libreria… la riporta.",
+    "libForgetConfirmBtn": "Togli dall’elenco",
+    "sdLaterBtn": "Decidi più tardi (fino ad allora non si sincronizza)",
+    "sdHeldIndicator": "Nessuna sincronizzazione",
     "sharedJoinBtn": "Unisciti",
     "sharedJoining": "Connessione…",
     "sharedJoiningNamed": "Accesso a «{name}»…",
@@ -20808,6 +20876,7 @@ const STRINGS = {
     "sharedLeaveBtn": "Esci dalla libreria condivisa",
     "sharedLeaveConfirm": "Smettere di sincronizzare questo dispositivo? La sua libreria resta com’è.",
     "sharedLeaveMissingNote": "{n} dei suoi brani non sono mai arrivati su questo dispositivo. Uscire li rimuove, poi chiede cosa fare delle playlist che li usano.",
+    "sharedLeaveUnsentNote": "{n} tracce di questo dispositivo non sono mai state inviate del tutto. Uscendo vengono tolte dalla libreria condivisa, così gli altri dispositivi smettono di aspettarle. Restano in questa libreria.",
     "leaveCleanTitle": "Riordino dopo l'uscita",
     "leaveRemovedTracks": "Brani le cui registrazioni non sono mai arrivate su questo dispositivo: {n}. Sono stati rimossi dalla libreria.",
     "leaveEmptyBody": "Queste playlist restano senza brani:",
@@ -36694,6 +36763,33 @@ const mqMoreContrast = window.matchMedia ? window.matchMedia("(prefers-contrast:
 function effectiveTheme(){ const th = root.settings.theme || "dark"; return th === "auto" ? (mqLight && mqLight.matches ? "light" : "dark") : th; }
 function effectiveMoreContrast(){ const v = root.settings.moreContrast; return v === true || v === false ? v : !!(mqMoreContrast && mqMoreContrast.matches); }
 [mqLight, mqMoreContrast].forEach(mq=>{ if(mq && mq.addEventListener) mq.addEventListener("change", ()=>{ try{ applyDisplaySettings(); }catch(err){} }); });
+// The Size setting in the desktop app: the webview's own zoom, set by the
+// shell (p37_zoom), not the transform the page uses in a browser. WebKitGTK
+// drew transformed text blurred (Gen Rinzin's T470, 13 Nov 2026: sharp at
+// the smallest size, soft above it), and zoom is the more coherent: Settings,
+// Help and every dialog follow the size, and narrow-window rules go by the
+// room there really is. Whether the shell can is known once it has answered
+// (desktopShellCheck); until then, what it said last time (kept, so the
+// page doesn't start magnified and then change).
+const SHELL_ZOOM_KEY = "37player.shellZoom";
+function desktopShellZooms(){
+  try{ // (also when called before the desktop app's own variables exist, further down the page)
+    if(!IN_DESKTOP_APP || !(window.__TAURI__ && window.__TAURI__.core)) return false;
+    if(desktopShell) return !!desktopShell.zoom;
+    return localStorage.getItem(SHELL_ZOOM_KEY) === "1";
+  }catch(err){ return false; }
+}
+let desktopZoomSet = null;
+function desktopZoom(scale){
+  if(desktopZoomSet === scale) return;
+  desktopZoomSet = scale;
+  window.__TAURI__.core.invoke("p37_zoom", {scale}).catch(err=>{
+    // A shell that can't after all (an older one put back): the page's own way.
+    desktopZoomSet = null;
+    try{ localStorage.removeItem(SHELL_ZOOM_KEY); }catch(e){}
+    if(!desktopShell){ document.documentElement.style.setProperty("--ui-scale", scale); if(resizableColumnSets && resizableColumnSets.length) reapplyColumnWidths(); }
+  });
+}
 function applyDisplaySettings(){
   const theme = effectiveTheme(), themeChoice = root.settings.theme || "dark";
   document.body.classList.toggle("more-contrast", effectiveMoreContrast());
@@ -36708,7 +36804,11 @@ function applyDisplaySettings(){
   // the way, which is exactly what caused scrolling to stop short of the real
   // bottom at the larger sizes. Transform only affects the final paint, so the
   // scrollable area's height is always computed at true, unscaled precision.
-  document.documentElement.style.setProperty("--ui-scale", scale);
+  // In the desktop app (shell 2.4.0 on) the shell zooms the webview instead,
+  // as Ctrl-plus does in a browser, and the page isn't magnified (2.4.000).
+  const byShell = desktopShellZooms();
+  document.documentElement.style.setProperty("--ui-scale", byShell ? 1 : scale);
+  if(byShell) desktopZoom(scale);
   if(resizableColumnSets && resizableColumnSets.length) reapplyColumnWidths();
   document.documentElement.style.setProperty("--density", density);
   const dIdx = density < 1 ? 0 : density > 1 ? 2 : 1;
@@ -40652,6 +40752,9 @@ function updateBackupIndicator(){
   btn.style.display = "";
   const lastTip = backupInfo.lastBackupAt ? t("backupLastTooltip",{time: new Date(backupInfo.lastBackupAt).toLocaleString()}) : t("backupNeverTooltip");
   if(sharedConfig() && sharedConfig().kind === "gdrive" && driveNeedsSignIn){ label = t("driveSignInShort"); cls = "warn"; title = t("driveSignInNeeded"); }
+  // Held until the person says which device this is (askSharedDeviceCopy):
+  // not "In sync" or "In a folder", which read as if all were well (2.4.003).
+  else if(sharedConfig() && sharedDeviceUnconfirmed()){ label = t("sdHeldIndicator"); cls = "warn"; title = t("sdHeldStatus"); }
   // (A desktop library in a shared library shows how its syncing stands.)
   else if((libraryFolderName(LIBRARY_ID) || (libraryInDesktopFolder(LIBRARY_ID) && !sharedConfig())) && !syncStuck()){ label = t("folderLibIndicator"); cls = "ok"; title = t("folderLibIndicatorTip", {name: libraryFolderLabel()}); }
   else if(backupRunning){ label = (backupProgress && backupProgress.total > 20) ? t("backupIndicatorProgress", {done: workingOn(backupProgress.done, backupProgress.total), total: backupProgress.total}) : t("backupIndicatorRunning"); cls = "busy"; title = lastTip; }
@@ -45561,7 +45664,7 @@ function sharedSetStatus(patch){
     const tr = sharedStatus.transfer;
     setActiveOperationProgress(sharedStatus.paused ? t(sharedStatus.paused === "review" ? "sharedBarPausedReview" : "sharedBarPaused")
       : tr.kind === "up" ? t("sharedBarUploading", {done: workingOn(tr.done, tr.total), total: tr.total}) + (tr.part && tr.part.total ? " (" + fmtBytes(tr.part.have) + " / " + fmtBytes(tr.part.total) + ")" : "") + " " + t("sharedBarKeepOpen")
-      : t("sharedBarDownloading", {done: workingOn(tr.done, tr.total), total: tr.total}), null, "shared");
+      : t("sharedBarDownloading", {done: workingOn(tr.done, tr.total), total: tr.total}) + (tr.name ? ": " + tr.name : ""), null, "shared");
   } else clearActiveOperation("shared");
 }
 
@@ -46331,12 +46434,19 @@ async function sharedDownloadPendingHere(cfg){
     let recovered = false;
     for(const id of [...notOn]){
       const tr = findLibraryTrack(id);
-      if(!tr || !cfg.deviceName || tr.audioFrom !== cfg.deviceName) continue;
+      if(!tr) continue;
+      // Named as the sender, or (2.4.002) any device that holds the very
+      // recording waited for, to the byte: the sender may have left, been
+      // renamed, or be a copy of this library elsewhere (Gen Rinzin, 13 Nov
+      // 2026: tracks waited for from a name no device answers to any more).
+      const mine = !!cfg.deviceName && tr.audioFrom === cfg.deviceName;
       const rec = await idbGet("audio", id).catch(()=> null);
       if(!rec || !rec.blob || !rec.blob.size || await audioLooksWrong(rec.blob)) continue;
+      if(!mine && !(tr.fileSize > 0 && rec.blob.size === tr.fileSize)) continue;
       delete pending.audio[id]; notOn.delete(id);
-      tr.audioRev = newFileRev(); tr.fileSize = rec.blob.size;
-      sharedLog("“" + (tr.name || id) + "”: the shared library was waiting for this device to send a copy it no longer has; its own copy is used and sent instead");
+      const waitedFor = tr.audioFrom || "?";
+      tr.audioRev = newFileRev(); tr.fileSize = rec.blob.size; tr.audioFrom = cfg.deviceName || "";
+      sharedLog("“" + (tr.name || id) + "”: the shared library was waiting for " + (mine ? "this device" : "“" + waitedFor + "”") + " to send a copy that never came; this device's own copy is used and sent instead");
       recovered = true;
     }
     if(recovered){ await sharedSavePending(); await saveState(); scheduleSharedSync(1500); }
@@ -46346,7 +46456,8 @@ async function sharedDownloadPendingHere(cfg){
     if(list.length) sharedLog("receiving " + list.length + " files" + (waiting ? ", " + waiting + " still on their way" : ""));
     let done = 0;
     for(const [kind, id] of list){
-      if(list.length > 1) sharedSetStatus({transfer: {kind: "down", done, total: list.length}});
+      // With the track's name (2.4.001, Gen Rinzin, 13 Nov 2026: a long download, and no way to tell which file).
+      if(list.length > 1){ const nt = findLibraryTrack(id); sharedSetStatus({transfer: {kind: "down", done, total: list.length, name: nt && nt.name ? nt.name : ""}}); }
       await sharedWaitForTransfers();
       if(!sharedConfig()) break;
       try{ await sharedFetchFile(cfg, kind, id); }
@@ -46963,12 +47074,48 @@ async function sharedLeaveCleanup(missing){
   await saveState();
   refreshCurrentView();
 }
+/* A device that leaves takes back what it promised and never sent (2.4.002,
+   Gen Rinzin, 13 Nov 2026). Its tracks whose audio never reached the shared
+   library are in the shared library's list all the same, and every other
+   device waits for them ("Waiting for X to send it") for ever once X has
+   gone. So leaving removes them from the shared library first, playlists'
+   rows included; they stay in this device's own library. Only tracks this
+   device holds, in the version the shared library lists, that the server
+   doesn't have. Can't be reached (offline)? Leaving goes ahead; the others
+   then wait, as before. */
+async function sharedUnsentHere(cfg){
+  const res = await sharedFetch(cfg, {op: "list"});
+  if(!res.ok) throw new Error("list " + res.status);
+  const on = new Set((await res.json()).audio || []);
+  const have = new Set(await storedAudioIds()), pending = await sharedLoadPending();
+  return root.library.filter(tr=> tr.audioRev && have.has(tr.id) && pending.audio[tr.id] === undefined && !on.has(sharedAudioName(tr))).map(tr=> tr.id);
+}
+async function sharedWithdrawUnsent(cfg, ids){
+  const mine = new Map(ids.map(id=> [id, findLibraryTrack(id)]).filter(([id, tr])=> tr).map(([id, tr])=> [id, sharedRev(tr.audioRev)]));
+  for(let attempt = 0; attempt < 4; attempt++){
+    const {version, doc} = await sharedGetState(cfg);
+    const gone = new Set((doc.tracks || []).filter(dt=> mine.has(dt.id) && sharedRev(dt.audioRev) === mine.get(dt.id)).map(dt=> dt.id));
+    if(!gone.size) return 0;
+    const next = syncClone(doc);
+    next.tracks = next.tracks.filter(dt=> !gone.has(dt.id));
+    (function walk(nodes){ (nodes || []).forEach(n=>{ if(n.kind === "folder") walk(n.children); else if(n.items) n.items = n.items.filter(it=> !(it.kind === "track" && gone.has(it.refId))); }); })(next.tree);
+    const res = await sharedPostState(cfg, version, next, doc, {withdrawn: gone.size});
+    if(res.status === 409) continue; // changed meanwhile: look again
+    sharedLog("leaving: " + gone.size + " track(s) this device never finished sending were taken out of the shared library (they stay in this library)");
+    return gone.size;
+  }
+  return 0;
+}
 // The Leave buttons: say beforehand what leaving will remove, then clean up.
 async function leaveSharedLibraryAsked(){
   const missing = await sharedTracksNotHere();
-  const ok = await askChoice(t("sharedLeaveBtn"), `<p>${escapeHtmlText(t("sharedLeaveConfirm"))}</p>${missing.size ? `<p>${escapeHtmlText(t("sharedLeaveMissingNote", {n: missing.size}))}</p>` : ""}`,
+  const cfg = sharedConfig();
+  let unsent = [];
+  try{ if(cfg && !cfg.receiveOnly) unsent = await sharedUnsentHere(cfg); }catch(err){ console.warn("Looking for unsent files:", err); }
+  const ok = await askChoice(t("sharedLeaveBtn"), `<p>${escapeHtmlText(t("sharedLeaveConfirm"))}</p>${missing.size ? `<p>${escapeHtmlText(t("sharedLeaveMissingNote", {n: missing.size}))}</p>` : ""}${unsent.length ? `<p>${escapeHtmlText(t("sharedLeaveUnsentNote", {n: unsent.length}))}</p>` : ""}`,
     [{label: t("sharedLeaveBtn"), value: "leave", kind: "danger"}, {label: t("cancel"), value: null}]);
   if(ok !== "leave") return false;
+  if(unsent.length){ try{ await sharedWithdrawUnsent(cfg, unsent); }catch(err){ console.warn("Withdrawing unsent files:", err); sharedLog("leaving: couldn't take this device's unsent tracks out of the shared library (" + (err.message || err) + ")"); } }
   delete root.settings.sharedLibrary;
   await leaveSharedLibrary();
   await sharedLeaveCleanup(await sharedTracksNotHere());
@@ -47026,11 +47173,11 @@ async function askSharedDeviceCopy(){
       const asked = askChoice(t("sdCopyTitle"), `<p>${escapeHtmlText(t("sdCopyBody", {lib: cfg.libraryName || sharedStatus.libraryName || "", device: old}))}</p>
         <label for="sdName" class="join-field">${escapeHtmlText(t("sharedDeviceLabel"))}</label><input type="text" id="sdName" maxlength="60">`
         + (note ? `<p class="settings-note" style="color:var(--rust-bright);">${escapeHtmlText(note)}</p>` : ""),
-        [{label: t("sdNewBtn"), value: "new", kind: "primary"}, {label: t("sdSameBtn", {device: old}), value: "same"}]);
+        [{label: t("sdNewBtn"), value: "new", kind: "primary"}, {label: t("sdSameBtn", {device: old}), value: "same"}, {label: t("sdLaterBtn"), value: "later", kind: "ghost"}]);
       const input = document.getElementById("sdName");
       if(input){ input.value = name; input.addEventListener("input", ()=>{ name = input.value; }); setTimeout(()=> input.focus(), 50); }
       const c = await asked;
-      if(!c) return; // closed: asked again at Sync now, or the next start
+      if(!c || c === "later"){ updateBackupIndicator(); return; } // closed, or "Decide later": asked again at Sync now, or the next start
       const now = sharedConfig();
       if(!now || !sharedDeviceUnconfirmed()) return;
       if(c === "same"){
@@ -49095,6 +49242,11 @@ async function deleteLibrary(id){
   await new Promise(r=> setTimeout(r, 400));
   const scoped = name=> id === MAIN_LIBRARY_ID ? name : name + "~" + id;
   try{ localStorage.removeItem(scoped("37player.analyzing")); localStorage.removeItem(scoped("37player.sharedLog")); }catch(err){}
+  // The desktop app only forgets a library, the first one too: its folder,
+  // records and recordings stay (2.4.003: the first library went through
+  // the clearing below, which emptied its folder's records; found while
+  // answering Gen Rinzin's "would that delete any audio?", 13 Nov 2026).
+  if(libraryInDesktopFolder(id)){ await storageRemove(id); return; }
   if(id === MAIN_LIBRARY_ID){
     // Everything but the converter (backup and libraryInfo go too).
     const d = storageOpen(MAIN_LIBRARY_ID);
@@ -49164,7 +49316,7 @@ function renderLibrariesSection(body){
       <div class="library-row-actions">
         ${l.id === LIBRARY_ID ? `<span class="library-open-tag">${escapeHtmlText(t("libOpenNow"))}</span>` : `<button class="btn primary" data-act="open" type="button">${escapeHtmlText(t("libOpenBtn"))}</button>`}
         <button class="btn" data-act="rename" type="button">${escapeHtmlText(t("libRenameBtn"))}</button>
-        ${l.id === LIBRARY_ID ? "" : `<button class="btn danger" data-act="delete" type="button">${escapeHtmlText(t("libDeleteBtn"))}</button>`}
+        ${l.id === LIBRARY_ID ? "" : `<button class="btn danger" data-act="delete" type="button">${escapeHtmlText(t(l.folder || libraryInDesktopFolder(l.id) ? "libForgetBtn" : "libDeleteBtn"))}</button>`}
       </div>`;
     row.querySelector(".library-row-name").textContent = libraryDisplayName(l);
     row.querySelector(".library-row-meta").textContent = parts.join(" · ");
@@ -49184,11 +49336,15 @@ function renderLibrariesSection(body){
         const folder = bk && bk.handle && bk.handle.kind === "directory" ? bk.handle : null;
         const hadFiles = !folder && bk && (bk.manualBase || bk.lastBackupAt);
         let wantBackup = false;
-        const asked = askChoice(t("libDeleteTitle", {name: libraryDisplayName(l)}), `<p>${escapeHtmlText(t("libDeleteBody"))}</p>`
+        // A library kept in a folder (always, in the desktop app) is only
+        // forgotten: its folder and recordings stay, and the wording says so
+        // (2.4.003, Gen Rinzin, 13 Nov 2026: "would that delete any audio?").
+        const kept = !!l.folder || libraryInDesktopFolder(l.id);
+        const asked = askChoice(t(kept ? "libForgetTitle" : "libDeleteTitle", {name: libraryDisplayName(l)}), `<p>${escapeHtmlText(t(kept ? "libForgetBody" : "libDeleteBody"))}</p>`
           + (folder ? `<label class="join-partial" style="font-weight:normal;"><input type="checkbox" id="libDelBackup"> ${escapeHtmlText(t("libDeleteBackupCheck", {folder: folder.name}))}</label>` : "")
           + (hadFiles ? `<p class="settings-note">${escapeHtmlText(t("libDeleteBackupFiles", {name: fileSlug(libraryDisplayName(l)) || "…"}))}</p>` : "")
           + (l.folder ? `<p class="settings-note">${escapeHtmlText(t("folderLibDeleteNote", {name: l.folder}))}</p>` : ""),
-          [{label: t("libDeleteConfirmBtn"), value: "delete", kind: "danger"}, {label: t("cancel"), value: null}]);
+          [{label: t(kept ? "libForgetConfirmBtn" : "libDeleteConfirmBtn"), value: "delete", kind: "danger"}, {label: t("cancel"), value: null}]);
         const box = document.getElementById("libDelBackup");
         if(box) box.addEventListener("change", ()=>{ wantBackup = box.checked; });
         const ok = await asked;
@@ -49510,10 +49666,13 @@ if(IN_DESKTOP_APP){
   window.addEventListener("resize", fitHeight);
 }
 const DESKTOP_BRIDGE_NEEDED = +((document.querySelector('meta[name="desktop-bridge"]') || {}).content || 1);
-let desktopShell = null; // {version, bridge, pages, device, updates}
+let desktopShell = null; // {version, bridge, pages, device, updates, zoom}
 async function desktopShellCheck(){
   if(!IN_DESKTOP_APP || !window.__TAURI__ || !window.__TAURI__.core) return;
   try{ desktopShell = await window.__TAURI__.core.invoke("p37_shell_info"); }catch(err){ desktopShell = {version: "?", bridge: 0}; }
+  // Whether it sizes the page itself (the Size setting): kept for the next start, and applied now.
+  try{ if(desktopShell.zoom) localStorage.setItem(SHELL_ZOOM_KEY, "1"); else localStorage.removeItem(SHELL_ZOOM_KEY); }catch(err){}
+  try{ applyDisplaySettings(); }catch(err){}
   if((desktopShell.bridge || 0) < DESKTOP_BRIDGE_NEEDED)
     askChoice(t("desktopShellOldTitle"), `<p>${escapeHtmlText(t("desktopShellOldBody", {shell: desktopShell.version}))}</p>`, [{label: t("ok"), value: null, kind: "primary"}]);
 }

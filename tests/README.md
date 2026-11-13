@@ -132,6 +132,9 @@ By hand: `./serve.sh` in one terminal (servers on ports 8861 and 8870), then
 | shellupd | The desktop app updating itself: offered once a start when nothing would be stopped; Update and restart has the shell install it; Not now until the next start; Check for updates offers it again; nothing asked on an older shell |
 | denied | A save refused (a read-only library folder, "Permission denied (os error 13)") says 37 Player isn't allowed to save in the library's folder, not that the device is full; a full device keeps its own message |
 | stuckpause | Pause still pauses after a passing error on the player (it used to mark any track "stuck", and Pause then played) |
+| wrapalbum | Wrap and Album both on, a narrow window: the album wraps too and takes at most a third of the row, so the title isn't squeezed |
+| shellzoom | The Size setting in the desktop app: the shell zooms the webview and the page isn't magnified, from the start after a restart; an older shell keeps the page's own way |
+| leaveunsent | A device that leaves takes the tracks it never finished sending out of the shared library (they stay in its own library): the Leave question says so, and another device stops listing and waiting for them |
 
 ## The converter test page (tests/convert/)
 
