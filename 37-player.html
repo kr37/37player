@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.3.003">
+<meta name="app-version" content="2.3.004">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -28193,7 +28193,7 @@ let convertQueue = [], convertRunning = false, convertStopped = false, convertDo
 // format settings would convert.
 function trackCanBeConverted(tr){
   if(!tr || tr.needsConvert === NEEDS_CONVERT_PLAYLIST) return false;
-  return !!tr.needsConvert || !(tr.duration > 0) || trackMatchesPolicy(tr);
+  return !!tr.needsConvert || !(tr.duration > 0) || alacImported.has(tr.id) || trackMatchesPolicy(tr);
 }
 // A file too big to convert without being asked (BIG_FILE_BYTES).
 function trackIsBigFile(tr){ return !!tr && (tr.fileSize || 0) > BIG_FILE_BYTES; }
@@ -28475,7 +28475,7 @@ async function isAppleLosslessFile(blob){
 async function convertAfterImport(names, importedIds){
   const unplayable = names.ids || [];
   const byPolicy = (importedIds || []).filter(id=> !unplayable.includes(id) && (alacImported.has(id) || trackMatchesPolicy(findLibraryTrack(id))));
-  (importedIds || []).forEach(id=> alacImported.delete(id));
+  // (The mark stays until the converted file is in place: the queue asks trackCanBeConverted again.)
   if(!unplayable.length && !byPolicy.length){ if(names.length) showUnplayableFilesWarning(names); return; }
   const ids = unplayable.concat(byPolicy);
   ids.forEach(id=> convertSoon.add(id));
@@ -28531,6 +28531,7 @@ async function applyConvertedAudio(id, blob, original, kind){
   const newName = (stem || tr.name || "track") + kind.ext;
   await idbPut("audio", {id, blob: new File([blob], newName, {type: kind.mime, lastModified: Date.now()})});
   tr.filename = newName; tr.fileSize = blob.size; tr.fileModified = Date.now();
+  alacImported.delete(id);
   tr.duration = a.duration; tr.peaks = a.peaks;
   if(a.sampleRate) tr.sampleRate = a.sampleRate;
   if(a.channels) tr.channels = a.channels;
@@ -28627,7 +28628,7 @@ async function overwriteLibraryTrackAudio(track, file, precomputedAnalysis){
   track.filename = file.name; track.fileSize = file.size; track.fileModified = file.lastModified||null;
   track.fileTags = librarySnapshot({}, null); // the library's values are the ones to keep: written into this file (see effectiveTagMeta)
   if(likelyUnplayable) await markNeedsConvert(track, file); else delete track.needsConvert;
-  if(!likelyUnplayable && await isAppleLosslessFile(file)) alacImported.add(track.id);
+  if(!likelyUnplayable && await isAppleLosslessFile(file)) alacImported.add(track.id); else alacImported.delete(track.id);
   if(objectUrlCache[track.id]){ URL.revokeObjectURL(objectUrlCache[track.id]); delete objectUrlCache[track.id]; }
   return {likelyUnplayable};
 }
