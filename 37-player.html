@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.3.002">
+<meta name="app-version" content="2.3.003">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -28445,9 +28445,37 @@ fetchConverterWhenIdle(20000);
 // Tracks just imported that are about to be converted: their files aren't
 // sent to a shared library meanwhile (sharedUploadFiles), only the result.
 const convertSoon = new Set();
+// Apple Lossless plays in WebKit (Safari, iPads, the Mac app) but not in
+// Chrome, Edge or the Windows app, so it's converted wherever it's imported,
+// as Chrome must, and every device of a shared library can play it (2.3.003,
+// Gen Rinzin, 13 Nov 2026: one conversion where the original is, rather
+// than each other device converting the same file and sending it back).
+// Where it plays, it isn't marked as unplayable: just converted after the
+// import, the original kept as for any conversion.
+const alacImported = new Set();
+async function isAppleLosslessFile(blob){
+  try{
+    if(!blob || blob.size < 64) return false;
+    const head = new Uint8Array(await blob.slice(0, 12).arrayBuffer());
+    if(String.fromCharCode(head[4], head[5], head[6], head[7]) !== "ftyp") return false;
+    // The sample description ("stsd", its first entry's codec 16 bytes on)
+    // sits in the moov box, near the start or the end of the file.
+    const look = async (from, to)=>{
+      const u = new Uint8Array(await blob.slice(from, to).arrayBuffer());
+      for(let i = 0; i + 20 <= u.length; i++){
+        if(u[i] === 0x73 && u[i+1] === 0x74 && u[i+2] === 0x73 && u[i+3] === 0x64 && String.fromCharCode(u[i+16], u[i+17], u[i+18], u[i+19]) === "alac") return true;
+      }
+      return false;
+    };
+    const SPAN = 8 * 1024 * 1024;
+    if(await look(0, Math.min(blob.size, SPAN))) return true;
+    return blob.size > SPAN && await look(Math.max(SPAN - 32, blob.size - SPAN), blob.size);
+  }catch(err){ return false; }
+}
 async function convertAfterImport(names, importedIds){
   const unplayable = names.ids || [];
-  const byPolicy = (importedIds || []).filter(id=> !unplayable.includes(id) && trackMatchesPolicy(findLibraryTrack(id)));
+  const byPolicy = (importedIds || []).filter(id=> !unplayable.includes(id) && (alacImported.has(id) || trackMatchesPolicy(findLibraryTrack(id))));
+  (importedIds || []).forEach(id=> alacImported.delete(id));
   if(!unplayable.length && !byPolicy.length){ if(names.length) showUnplayableFilesWarning(names); return; }
   const ids = unplayable.concat(byPolicy);
   ids.forEach(id=> convertSoon.add(id));
@@ -28567,6 +28595,7 @@ async function importOneAudioFile(file, precomputedAnalysis, precomputedTags){
   const id = uid();
   await idbPut("audio", {id, blob:file});
   const {duration, peaks, sampleRate, channels, loudness, likelyUnplayable} = precomputedAnalysis || await analyzeAudio(file);
+  if(!likelyUnplayable && await isAppleLosslessFile(file)) alacImported.add(id);
   const tags = precomputedTags!==undefined ? precomputedTags : await parseAudioTags(file);
   const name = (tags && tags.title) ? tags.title : file.name.replace(/\.[^.]+$/,"");
   const pathGuess = deriveArtistAlbumFromPath(file.webkitRelativePath || file.name);
@@ -28598,6 +28627,7 @@ async function overwriteLibraryTrackAudio(track, file, precomputedAnalysis){
   track.filename = file.name; track.fileSize = file.size; track.fileModified = file.lastModified||null;
   track.fileTags = librarySnapshot({}, null); // the library's values are the ones to keep: written into this file (see effectiveTagMeta)
   if(likelyUnplayable) await markNeedsConvert(track, file); else delete track.needsConvert;
+  if(!likelyUnplayable && await isAppleLosslessFile(file)) alacImported.add(track.id);
   if(objectUrlCache[track.id]){ URL.revokeObjectURL(objectUrlCache[track.id]); delete objectUrlCache[track.id]; }
   return {likelyUnplayable};
 }
