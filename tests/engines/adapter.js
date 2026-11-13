@@ -25,6 +25,10 @@ class Element {
   dispose(){ return this.h.dispose(); }
 }
 
+// Only web addresses are routed: in WebKit a route on everything also caught
+// the page's own blob: addresses, and the player's audio failed with
+// "Blocked by Web Inspector" (play, dbl, table, e2e in WebKit).
+const webOnly = (u)=> u.protocol === 'http:' || u.protocol === 'https:';
 class Page {
   constructor(p, ctx){ this.p = p; this.ctx = ctx; this.keyboard = p.keyboard; this.mouse = new Mouse(p.mouse); this.intercept = false; this.requestHandlers = []; }
   goto(url, o){ return this.p.goto(url, waitOpts(o)); }
@@ -94,7 +98,7 @@ class Page {
     this.intercept = on;
     if(on && !this.routed){
       this.routed = true;
-      await this.p.route('**/*', (route)=>{
+      await this.p.route(webOnly, (route)=>{
         const req = route.request();
         let settled = false;
         // Settled once: a handler may answer later (a held or delayed
@@ -128,14 +132,16 @@ class Page {
       this.throttleRoute = async (route)=>{
         const t = this.throttling;
         if(t){
+          // (WebKit doesn't hand over a Blob body: then its Content-Length.)
           let n = 0; try{ const b = route.request().postDataBuffer(); n = b ? b.length : 0; }catch(e){}
+          if(!n && route.request().method() !== 'GET'){ try{ n = Number((await route.request().allHeaders())['content-length']) || 0; }catch(e){} }
           const ms = (t.latency || 0) + (t.uploadThroughput > 0 ? n / t.uploadThroughput * 1000 : 0);
           // Throttling turned off meanwhile: on at once, as in Chrome.
           for(const end = Date.now() + ms; Date.now() < end && this.throttling; ) await new Promise(r=> setTimeout(r, Math.min(200, end - Date.now())));
         }
         return route.fallback().catch(()=>{});
       };
-      await this.p.route('**/*', this.throttleRoute);
+      await this.p.route(webOnly, this.throttleRoute);
     }
   }
   cookies(...urls){ return this.ctx.c.cookies(urls.length ? urls : [this.p.url()]); }
