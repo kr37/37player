@@ -41,10 +41,13 @@ jobs:
           set -e
           if [ "$AFTER_BUILD" = "true" ]; then
             # After a build: the newest d build, if it isn't there already.
-            from=$(gh api "repos/$REPO/releases?per_page=50" --jq '[.[] | select(.tag_name | test("^desktop-test-[0-9]+d$"))][0].tag_name')
+            # The highest build number, not the last published: a build that
+            # waited longer (on Apple's notarizing) can be published after a
+            # newer one (13 Nov 2026).
+            from=$(gh api "repos/$REPO/releases?per_page=50" --jq '[.[] | select(.tag_name | test("^desktop-test-[0-9]+d$"))] | sort_by(.tag_name | ltrimstr("desktop-test-") | rtrimstr("d") | tonumber) | last | .tag_name')
             if gh api "repos/$REPO/releases/tags/desktop-latest-dev" --jq .body 2>/dev/null | grep -q "from $from;"; then echo "$from is already on test.37player.com's home page"; exit 0; fi
           elif [ -n "$N" ]; then from="desktop-test-$N"
-          else from=$(gh api "repos/$REPO/releases?per_page=50" --jq '[.[] | select(.tag_name | test("^desktop-test-[0-9]+m$"))][0].tag_name'); fi
+          else from=$(gh api "repos/$REPO/releases?per_page=50" --jq '[.[] | select(.tag_name | test("^desktop-test-[0-9]+m$"))] | sort_by(.tag_name | ltrimstr("desktop-test-") | rtrimstr("m") | tonumber) | last | .tag_name'); fi
           [ -n "$from" ] && [ "$from" != "null" ] || { echo "No such build"; exit 1; }
           case "$from" in *m) dest=desktop-latest; site=37player.com;; *) dest=desktop-latest-dev; site=test.37player.com;; esac
           title=$(gh api "repos/$REPO/releases/tags/$from" --jq .name)
