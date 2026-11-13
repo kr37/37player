@@ -32,6 +32,9 @@ async function signIn(p, clickFn){
   const nav = p.waitForNavigation({waitUntil: 'networkidle0', timeout: 30000});
   await p.evaluate(clickFn);
   await nav; await sleep(1200);
+  // Back on 37 Player (the sign-in is two navigations, there and back; the first may be all that was waited for).
+  for(let i = 0; i < 60; i++){ if(await p.evaluate(()=> !!(window.__dbg && document.getElementById('btnSettings'))).catch(()=> false)) break; await sleep(250); }
+  await sleep(600);
 }
 const openShared = async p=>{ await p.evaluate(()=>{ window.__dbg.setMode('editing'); document.getElementById('btnSettings').click(); }); await sleep(400); await p.evaluate(()=> [...document.querySelectorAll('#settingsNav .settings-nav-item')].find(e=> e.textContent === 'Shared library').click()); await sleep(400); };
 (async()=>{

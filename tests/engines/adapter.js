@@ -137,7 +137,9 @@ class Page {
           // (WebKit doesn't hand over a Blob body: then its Content-Length.)
           let n = 0; try{ const b = route.request().postDataBuffer(); n = b ? b.length : 0; }catch(e){}
           if(!n && route.request().method() !== 'GET'){ try{ n = Number((await route.request().allHeaders())['content-length']) || 0; }catch(e){} }
-          const ms = (t.latency || 0) + (t.uploadThroughput > 0 ? n / t.uploadThroughput * 1000 : 0);
+          // Neither known (WebKit, a Blob sent): 8 s, as a slow upload would take.
+          const unknown = !n && route.request().method() !== 'GET' && t.uploadThroughput > 0;
+          const ms = (t.latency || 0) + (unknown ? 8000 : t.uploadThroughput > 0 ? n / t.uploadThroughput * 1000 : 0);
           // Throttling turned off meanwhile: on at once, as in Chrome.
           for(const end = Date.now() + ms; Date.now() < end && this.throttling; ) await new Promise(r=> setTimeout(r, Math.min(200, end - Date.now())));
         }
