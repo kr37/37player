@@ -1,7 +1,7 @@
 [package]
 name = "player37-desktop"
 version = "1.4.160"
-description = "37 Player desktop (Tauri spike)"
+description = "Audio player with a waveform seekbar and playlists"
 authors = ["Kelsang Rinzin"]
 edition = "2024"
 
