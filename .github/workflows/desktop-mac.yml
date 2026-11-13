@@ -1,5 +1,5 @@
 # Builds the desktop app (Tauri) for testing: a .dmg for the Mac (Intel and
-# Apple Silicon), Windows installers (.exe and .msi) and, since 12 Nov 2026,
+# Apple Silicon; signed and notarized since 12 Nov 2026), Windows installers (.exe and .msi) and, since 12 Nov 2026,
 # a Linux .deb (64-bit Intel/AMD; Ubuntu 22.04 and newer, Debian 12, Mint
 # 21 and the like), published together as a pre-release anyone can download
 # without signing in. Unsigned: on a Mac open it with right-click → Open; on
@@ -32,14 +32,58 @@ jobs:
         with: { node-version: 22 }
       - uses: dtolnay/rust-toolchain@stable
         with: { targets: "aarch64-apple-darwin,x86_64-apple-darwin" }
+      # Signed with Gen Rinzin's Developer ID and notarized by Apple (12 Nov
+      # 2026), so it opens without "can't be opened" or right-click → Open.
+      # The six APPLE_* secrets: the certificate (.p12, base64) and its
+      # password, the signing identity, and an App Store Connect API key
+      # (its ID, its issuer, and the .p8). Without them (a fork), unsigned.
+      - name: Signing certificate
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_API_KEY_P8: ${{ secrets.APPLE_API_KEY_P8 }}
+        run: |
+          if [ -z "$APPLE_CERTIFICATE" ]; then echo "No certificate: the build won't be signed"; exit 0; fi
+          kc="$RUNNER_TEMP/p37.keychain-db"; kp=$(uuidgen)
+          echo "$APPLE_CERTIFICATE" | base64 --decode > "$RUNNER_TEMP/cert.p12"
+          security create-keychain -p "$kp" "$kc"
+          security set-keychain-settings -lut 21600 "$kc"
+          security unlock-keychain -p "$kp" "$kc"
+          security import "$RUNNER_TEMP/cert.p12" -P "$APPLE_CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k "$kc"
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$kp" "$kc" > /dev/null
+          security list-keychains -d user -s "$kc" $(security list-keychains -d user | tr -d '"')
+          rm "$RUNNER_TEMP/cert.p12"
+          # The identity as the certificate names it (a secret typed by hand
+          # can carry a stray space).
+          id=$(security find-identity -v -p codesigning "$kc" | grep -o '"Developer ID Application: [^"]*"' | head -1 | tr -d '"')
+          [ -n "$id" ] || { echo "No Developer ID Application identity in the certificate"; security find-identity -v -p codesigning "$kc"; exit 1; }
+          echo "Signing as: $id"
+          echo "APPLE_SIGNING_IDENTITY=$id" >> "$GITHUB_ENV"
+          printf '%s\n' "$APPLE_API_KEY_P8" > "$RUNNER_TEMP/AuthKey.p8"
+          echo "APPLE_API_KEY_PATH=$RUNNER_TEMP/AuthKey.p8" >> "$GITHUB_ENV"
+          echo "P37_SIGNED=1" >> "$GITHUB_ENV"
       - name: Build
         working-directory: desktop
+        env:
+          # Tauri notarizes the signed app with these (and APPLE_API_KEY_PATH).
+          APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
         run: |
           npm ci
           node copy-app.mjs
           (cd src-tauri && cargo test)
+          if [ -z "$P37_SIGNED" ]; then unset APPLE_API_KEY APPLE_API_ISSUER; fi
           npx tauri build --target universal-apple-darwin --bundles dmg
           cp src-tauri/target/universal-apple-darwin/release/bundle/dmg/*.dmg ../37-Player-mac-test.dmg
+          if [ -n "$P37_SIGNED" ]; then
+            # The .dmg too: notarized and stapled, so a downloaded one opens
+            # without a warning even offline (the app inside already is).
+            codesign --force --sign "$APPLE_SIGNING_IDENTITY" --timestamp ../37-Player-mac-test.dmg
+            xcrun notarytool submit ../37-Player-mac-test.dmg --key "$APPLE_API_KEY_PATH" --key-id "$APPLE_API_KEY" --issuer "$APPLE_API_ISSUER" --wait --timeout 30m
+            xcrun stapler staple ../37-Player-mac-test.dmg
+            spctl -a -t open --context context:primary-signature -v ../37-Player-mac-test.dmg
+            echo signed > ../37-Player-mac-test-signed.txt
+          fi
           # The debug symbols, kept apart (the app itself is stripped), so a
           # Mac crash report's addresses can be turned into lines (atos).
           (cd src-tauri/target && zip -qr ../../../37-Player-mac-test-symbols.zip */release/*.dSYM) || echo "no dSYMs"
@@ -113,9 +157,11 @@ jobs:
           mv 37-Player-windows-test.msi "37-Player-$v-windows.msi"
           syms=""
           if [ -f 37-Player-mac-test-symbols.zip ]; then mv 37-Player-mac-test-symbols.zip "37-Player-$v-mac-symbols.zip"; syms="37-Player-$v-mac-symbols.zip"; fi
+          macnote="Mac: right-click → Open."
+          if [ -f 37-Player-mac-test-signed.txt ]; then rm 37-Player-mac-test-signed.txt; macnote="Mac: signed and notarized, opens normally."; fi
           deb=""
           if [ -f 37-Player-linux-test.deb ]; then mv 37-Player-linux-test.deb "37-Player-$v-linux-amd64.deb"; deb="37-Player-$v-linux-amd64.deb"; fi
           gh release create "$tag" "37-Player-$v-mac.dmg" "37-Player-$v-windows-setup.exe" "37-Player-$v-windows.msi" $deb $syms \
             --repo "${{ github.repository }}" --prerelease --target "${{ github.sha }}" \
             --title "37 Player $v for computers (build $n, app $sv)" \
-            --notes "The desktop app, not signed yet, from branch ${{ github.ref_name }}; its pages follow ${{ inputs.channel == 'main' && 'main (37player.com)' || 'dev (test.37player.com)' }}. Mac: right-click → Open. Windows: SmartScreen → More info → Run anyway. Linux (the .deb, Ubuntu 22.04 or newer and the like): sudo apt install ./37-Player-…-linux-amd64.deb"
+            --notes "The desktop app (Windows not signed yet), from branch ${{ github.ref_name }}; its pages follow ${{ inputs.channel == 'main' && 'main (37player.com)' || 'dev (test.37player.com)' }}. $macnote Windows: SmartScreen → More info → Run anyway. Linux (the .deb, Ubuntu 22.04 or newer and the like): sudo apt install ./37-Player-…-linux-amd64.deb"
