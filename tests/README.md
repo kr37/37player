@@ -129,6 +129,7 @@ By hand: `./serve.sh` in one terminal (servers on ports 8861 and 8870), then
 | pldetails | Playlist details: a notes box of a few lines, with the name field's background, and Enter in the name saves |
 | volume | The Playing volume is kept per device (a reload doesn't put it back to full) and squared (half way is -6 dB) |
 | lazyconv | The converter reads a file of the desktop app's by its address, a block at a time (the page never reads it whole); an address it can't read that way: the file read whole first, as before, and the log says so |
+| shellupd | The desktop app updating itself: offered once a start when nothing would be stopped; Update and restart has the shell install it; Not now until the next start; Check for updates offers it again; nothing asked on an older shell |
 
 ## The converter test page (tests/convert/)
 

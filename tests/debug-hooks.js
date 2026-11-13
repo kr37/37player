@@ -159,3 +159,5 @@ window.__rejoin = {idbDelete, storedAudioIds, absent: ()=> [...sharedAudioAbsent
 window.__vol = {set: (v)=> setMainVolume(v), get: ()=> mainVolume, gain: ()=> mainVolumeGain()};
 // the converter reading a file by its address (lazyconv.js)
 window.__lazy = {start: ()=> converterStart(), convert: (b, n, f, t)=> converterConvert(b, n, f, t), input: (b, n)=> converterInput(b, n), off: ()=> converterLazyOff, setOff: (v)=>{ converterLazyOff = v; }, stop: ()=> converterStop(), log: ()=> (typeof playLogLines !== "undefined" ? playLogLines : null)};
+// Settings → About → Check for updates (shellupd.js)
+window.__updates = {check: ()=> checkForUpdatesNow()};
