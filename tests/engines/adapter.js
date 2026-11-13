@@ -26,7 +26,7 @@ class Element {
 }
 
 class Page {
-  constructor(p, ctx){ this.p = p; this.ctx = ctx; this.keyboard = p.keyboard; this.mouse = p.mouse; this.intercept = false; this.requestHandlers = []; }
+  constructor(p, ctx){ this.p = p; this.ctx = ctx; this.keyboard = p.keyboard; this.mouse = new Mouse(p.mouse); this.intercept = false; this.requestHandlers = []; }
   goto(url, o){ return this.p.goto(url, waitOpts(o)); }
   reload(o){ return this.p.reload(waitOpts(o)); }
   url(){ return this.p.url(); }
@@ -50,7 +50,13 @@ class Page {
   type(sel, t, o){ return this.p.type(sel, t, o); }
   focus(sel){ return this.p.focus(sel); }
   bringToFront(){ return this.p.bringToFront(); }
-  close(){ return this.p.close(); }
+  // A persistent context ends with its last page: a test that closes its
+  // page and opens another in the same context (as a person reopening 37
+  // Player) gets a fresh blank page kept ready first.
+  async close(){
+    if(!this.ctx.spare && this.ctx.c.pages().filter(x=> x !== this.p && !x.isClosed()).length === 0) this.ctx.spare = await this.ctx.c.newPage().catch(()=> null);
+    return this.p.close();
+  }
   browserContext(){ return this.ctx; }
   // Puppeteer changes the page's user agent; here the page's navigator says
   // it (from the next load on), and requests carry it.
@@ -62,7 +68,26 @@ class Page {
       if(pf) Object.defineProperty(Navigator.prototype, 'platform', {get: ()=> pf, configurable: true});
       if(/iPad|iPhone|Macintosh/.test(ua)) Object.defineProperty(Navigator.prototype, 'vendor', {get: ()=> 'Apple Computer, Inc.', configurable: true}); }, ua);
   }
-  emulate(d){ return d && d.viewport ? this.setViewport(d.viewport) : Promise.resolve(); }
+  // Puppeteer's emulate: the viewport, the user agent, and (Playwright sets
+  // touch only when a context is made) a touch screen as the page sees it:
+  // a coarse pointer, no hover, touch points. Touch events themselves stay
+  // Chrome's (ipad, phonecols are skipped).
+  async emulate(d){
+    if(!d) return;
+    if(d.viewport) await this.setViewport(d.viewport);
+    if(d.userAgent) await this.setUserAgent(d.userAgent);
+    if(d.viewport && (d.viewport.hasTouch || d.viewport.isMobile)) await this.p.addInitScript(()=>{
+      const mm = window.matchMedia.bind(window);
+      window.matchMedia = (q)=>{
+        const m = mm(q), s = String(q).replace(/\s+/g, '');
+        const forced = /\(pointer:coarse\)|\(any-pointer:coarse\)|\(hover:none\)|\(any-hover:none\)/.test(s) ? true : /\(pointer:fine\)|\(any-pointer:fine\)|\(hover:hover\)|\(any-hover:hover\)/.test(s) ? false : null;
+        if(forced === null) return m;
+        return {matches: forced, media: m.media, onchange: null, addListener(){}, removeListener(){}, addEventListener(){}, removeEventListener(){}, dispatchEvent(){ return false; }};
+      };
+      Object.defineProperty(Navigator.prototype, 'maxTouchPoints', {get: ()=> 5, configurable: true});
+      if(!('ontouchstart' in window)) window.ontouchstart = null;
+    });
+  }
   // Puppeteer's request interception, on Playwright's routes.
   async setRequestInterception(on){
     this.intercept = on;
@@ -97,6 +122,16 @@ class Page {
   // done Playwright's way (FakeCDP).
   createCDPSession(){ return Promise.resolve(new FakeCDP(this)); }
   target(){ return {createCDPSession: ()=> this.createCDPSession()}; }
+}
+// Puppeteer's mouse.wheel takes {deltaX, deltaY}; Playwright's two numbers.
+class Mouse {
+  constructor(m){ this.m = m; }
+  move(x, y, o){ return this.m.move(x, y, o); }
+  down(o){ return this.m.down(o); }
+  up(o){ return this.m.up(o); }
+  click(x, y, o){ return this.m.click(x, y, o); }
+  dblclick(x, y, o){ return this.m.dblclick(x, y, o); }
+  wheel(o){ return this.m.wheel((o && o.deltaX) || 0, (o && o.deltaY) || 0); }
 }
 class FakeCDP {
   constructor(page){ this.page = page; }

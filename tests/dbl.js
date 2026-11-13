@@ -93,7 +93,8 @@ async function device(b, name, opts){
   // One stored earlier as application/octet-stream is typed when played.
   const u = await E.evaluate(async (id)=>{
     const blob = await window.__dmg.get(id);
-    await window.__dbg3.put('audio', {id, blob: new Blob([blob], {type: 'application/octet-stream'})});
+    // The bytes first: WebKit can't read a Blob from IndexedDB once its record is written over ("Load failed").
+    await window.__dbg3.put('audio', {id, blob: new Blob([await blob.arrayBuffer()], {type: 'application/octet-stream'})});
     const url = await window.__audioUrl(id);
     return (await fetch(url)).headers.get('content-type');
   }, pid);
