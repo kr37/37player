@@ -611,6 +611,13 @@ pub fn parse_range(h: &str, len: u64) -> Option<(u64, u64)> {
     Some((start, end))
 }
 
+// The file for "<root>/<path>", by the same roots and checks as p37lib
+// (fileserver.rs: recordings over http://127.0.0.1 on Linux).
+pub fn file_for(app: &tauri::AppHandle, root: &str, rel: &str) -> Result<PathBuf, String> {
+    let base = roots(app).get(root)?;
+    resolve(&base, rel)
+}
+
 const SERVE_PIECE: u64 = 4 << 20; // an open-ended range gets at most this much at a time
 
 // The answer to a browser's "may I?" before a cross-origin request with a
@@ -651,7 +658,7 @@ pub fn serve(app: &tauri::AppHandle, req: &tauri::http::Request<Vec<u8>>) -> tau
     r.body(body).unwrap()
 }
 
-fn mime_for(rel: &str) -> &'static str {
+pub fn mime_for(rel: &str) -> &'static str {
     let ext = rel.rsplit('.').next().unwrap_or("").to_ascii_lowercase();
     match ext.as_str() {
         "mp3" => "audio/mpeg", "m4a" | "mp4" | "aac" => "audio/mp4", "wav" => "audio/wav", "flac" => "audio/flac",

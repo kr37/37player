@@ -23,6 +23,7 @@ mod files;
 mod oauth;
 mod pages;
 mod updates;
+mod fileserver;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use tauri::{Emitter, Manager, RunEvent, WindowEvent};
@@ -44,7 +45,7 @@ struct Quitting(AtomicBool);
 const BRIDGE: u32 = 2;
 
 #[derive(serde::Serialize)]
-struct ShellInfo { version: String, bridge: u32, pages: bool, device: bool, updates: bool, zoom: bool }
+struct ShellInfo { version: String, bridge: u32, pages: bool, device: bool, updates: bool, zoom: bool, files_http: Option<String> }
 
 // The shell's version is the page's version as of the shell's own last
 // change (tauri.conf.json "version"), like sync.php's.
@@ -52,7 +53,9 @@ struct ShellInfo { version: String, bridge: u32, pages: bool, device: bool, upda
 fn p37_shell_info(app: tauri::AppHandle) -> ShellInfo {
     // updates: it can update itself (updates.rs, shell 2.2.3).
     // zoom: it sizes the page itself (p37_zoom, shell 2.4.0).
-    ShellInfo { version: app.package_info().version.to_string(), bridge: BRIDGE, pages: app.state::<Arc<pages::Pages>>().enabled(), device: true, updates: true, zoom: true }
+    ShellInfo { version: app.package_info().version.to_string(), bridge: BRIDGE, pages: app.state::<Arc<pages::Pages>>().enabled(), device: true, updates: true, zoom: true,
+        // files_http: where recordings are also served, on Linux (fileserver.rs, shell 2.5.0).
+        files_http: app.try_state::<fileserver::FileServer>().map(|f| f.base.clone()) }
 }
 
 // The display's Size, by the webview's own zoom (as Ctrl-plus in a browser)
@@ -260,6 +263,9 @@ pub fn run() {
         .setup(move |app| {
             let roots_file = app.path().app_data_dir().map(|d| d.join("roots.json")).unwrap_or_else(|_| std::path::PathBuf::from("roots.json"));
             app.manage(files::Roots::load(roots_file));
+            // Linux's webview can't play recordings any other way (fileserver.rs).
+            #[cfg(target_os = "linux")]
+            if let Some(fs) = fileserver::start(app.handle()) { app.manage(fs); }
             #[cfg(desktop)]
             if let Some(w) = app.get_webview_window("main") { fit_to_screen(&w); }
             watch_page(app.handle(), pages.clone(), first.clone());
