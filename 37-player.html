@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.5.005">
+<meta name="app-version" content="2.5.006">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -36571,6 +36571,8 @@ function buildSetupLocallyBlockHtml(){
 // switch is invisible to the rest of the Help screen's own code.
 let ACTIVE_HELP_TOPICS = HELP_TOPICS;
 let selectedHelpTopicId = HELP_TOPICS[0].id;
+// Help's last topic, made by the app (it says what's running here), not from help/*.md.
+const HELP_ABOUT_ID = "about";
 function renderHelpScreen(){
   const listEl = document.getElementById("helpTopicsList");
   const bodyEl = document.getElementById("helpTopicBody");
@@ -36583,6 +36585,22 @@ function renderHelpScreen(){
     row.addEventListener("click", ()=>{ selectedHelpTopicId = topic.id; renderHelpScreen(); });
     listEl.appendChild(row);
   });
+  {
+    const row = document.createElement("div");
+    row.className = "playlist-row" + (selectedHelpTopicId===HELP_ABOUT_ID ? " active" : "");
+    row.id = "helpAboutRow";
+    row.innerHTML = `<span class="pname"></span>`;
+    row.querySelector(".pname").textContent = t("settingsSecAbout");
+    row.addEventListener("click", ()=>{ selectedHelpTopicId = HELP_ABOUT_ID; renderHelpScreen(); });
+    listEl.appendChild(row);
+  }
+  if(selectedHelpTopicId===HELP_ABOUT_ID){
+    bodyEl.innerHTML = `<div style="max-width:720px; padding:28px 34px; line-height:1.6; font-size:15px; flex:1; min-height:0; overflow-y:auto;">
+      <h2 style="font-family:var(--font-display); margin:0 0 16px 0;"></h2><div id="helpAboutBody"></div></div>`;
+    bodyEl.querySelector("h2").textContent = t("settingsSecAbout");
+    aboutSectionInto(bodyEl.querySelector("#helpAboutBody"), false);
+    return;
+  }
   const current = ACTIVE_HELP_TOPICS.find(t=> t.id===selectedHelpTopicId) || ACTIVE_HELP_TOPICS[0];
   const bodyHtml = current.bodyHtml.replace("{{setup-locally}}", buildSetupLocallyBlockHtml());
   bodyEl.innerHTML = `<div style="max-width:720px; padding:28px 34px; line-height:1.6; font-size:15px; flex:1; min-height:0; overflow-y:auto;">
@@ -36807,7 +36825,7 @@ function toggleAboutPopover(btn){
   pop.querySelector(".ab-update").textContent = t("checkUpdatesBtn");
   pop.querySelector(".ab-update").addEventListener("click", ()=>{ pop.remove(); checkForUpdatesNow(); });
   pop.querySelector(".ab-help").addEventListener("click", ()=>{ pop.remove(); openHelpPage(); });
-  pop.querySelector(".ab-about").addEventListener("click", ()=>{ pop.remove(); settingsSection = "about"; openSettingsPage(); });
+  pop.querySelector(".ab-about").addEventListener("click", ()=>{ pop.remove(); closeHelpPage(); selectedHelpTopicId = HELP_ABOUT_ID; openHelpPage(); }); // Help's About: the same, without the PIN
   document.body.appendChild(pop);
   const close = (ev)=>{ if(ev.target.closest && ev.target.closest("#railToggle")){ document.removeEventListener("click", close, true); return; } if(!pop.contains(ev.target)){ pop.remove(); document.removeEventListener("click", close, true); } };
   setTimeout(()=> document.addEventListener("click", close, true), 0);
@@ -38546,22 +38564,26 @@ async function renderSettingsSection(fromTimer){
   }
 
 
-  else if(sec.id==="about"){
-    const local = location.protocol==="file:";
-    body.innerHTML = `
-      <p style="font-size:17px; margin-bottom:4px;"><strong>37 Player</strong></p>
-      <p class="settings-note" id="aboutVersion"></p>
-      <p id="aboutRunning"></p>
-      <p class="settings-note" id="aboutConverter"></p>
-      <div class="settings-row"><button class="btn ghost" id="checkUpdates" type="button">${t("checkUpdatesBtn")}</button>${feedbackAvailable() ? `<button class="btn ghost" id="aboutFeedback" type="button">${escapeHtmlText(t("fbBtn"))}</button>` : ""}</div>
-      <p><a href="https://37player.com/" target="_blank" rel="noopener">37player.com</a></p>`;
-    const afb = document.getElementById("aboutFeedback"); if(afb) afb.addEventListener("click", openFeedbackDialog);
-    document.getElementById("aboutVersion").textContent = t("aboutVersion",{version: APP_VERSION});
-    document.getElementById("aboutRunning").textContent = IN_DESKTOP_APP ? t("aboutRunningDesktop", {version: desktopShell ? desktopShell.version : "?"}) : local ? t("aboutRunningLocal") : t("aboutRunningWebsite", {host: location.host});
-    document.getElementById("checkUpdates").addEventListener("click", ()=> checkForUpdatesNow());
-    aboutConverterLine(document.getElementById("aboutConverter"));
-  }
+  else if(sec.id==="about"){ aboutSectionInto(body, true); }
   box.scrollTop = keepScroll;
+}
+// What About says, in Settings and (2.5.006, Gen Rinzin: for people without
+// the PIN, who can't reach Settings) as Help's last topic. Help has Send
+// feedback just below its list, so it isn't repeated there.
+function aboutSectionInto(body, withFeedback){
+  const local = location.protocol==="file:";
+  body.innerHTML = `
+    <p style="font-size:17px; margin-bottom:4px;"><strong>37 Player</strong></p>
+    <p class="settings-note" id="aboutVersion"></p>
+    <p id="aboutRunning"></p>
+    <p class="settings-note" id="aboutConverter"></p>
+    <div class="settings-row"><button class="btn ghost" id="checkUpdates" type="button">${t("checkUpdatesBtn")}</button>${withFeedback && feedbackAvailable() ? `<button class="btn ghost" id="aboutFeedback" type="button">${escapeHtmlText(t("fbBtn"))}</button>` : ""}</div>
+    <p><a href="https://37player.com/" target="_blank" rel="noopener">37player.com</a></p>`;
+  const afb = body.querySelector("#aboutFeedback"); if(afb) afb.addEventListener("click", openFeedbackDialog);
+  body.querySelector("#aboutVersion").textContent = t("aboutVersion",{version: APP_VERSION});
+  body.querySelector("#aboutRunning").textContent = IN_DESKTOP_APP ? t("aboutRunningDesktop", {version: desktopShell ? desktopShell.version : "?"}) : local ? t("aboutRunningLocal") : t("aboutRunningWebsite", {host: location.host});
+  body.querySelector("#checkUpdates").addEventListener("click", ()=> checkForUpdatesNow());
+  aboutConverterLine(body.querySelector("#aboutConverter"));
 }
 // About's third version (2.2.031, Gen Rinzin): the converter's, beside the
 // page's and the desktop app's (it was in Library cleanup). The copy on this
@@ -49146,7 +49168,7 @@ function restorePlace(){
   if(!p) return;
   const open = ()=> setTimeout(()=>{
     if(p.settings){ settingsSection = p.settings; openSettingsPage(); }
-    else if(p.help && HELP_TOPICS.some(x=> x.id === p.help)){ selectedHelpTopicId = p.help; openHelpPage(); }
+    else if(p.help && (p.help === HELP_ABOUT_ID || HELP_TOPICS.some(x=> x.id === p.help))){ selectedHelpTopicId = p.help; openHelpPage(); }
   }, 0);
   if(p.mode === "editing" || p.mode === "library") requestAppMode(p.mode, open);
   else if(p.help) open();
