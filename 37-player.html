@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.5.004">
+<meta name="app-version" content="2.5.005">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -34008,6 +34008,7 @@ function applyLevel(el, trackId, atStart){
       src.connect(gain); gain.connect(levelCtx.destination);
       levelGains.set(el, gain);
       if(el === audioEl) playLog("player now turns tracks up through Web Audio (until reloaded)");
+      if(desktopFilesHttp() || window.__clockLeadTest) holdClockForSound(el);
       el.addEventListener("play", ()=>{ if(levelCtx.state !== "running") levelCtx.resume().catch(()=>{}); });
     }catch(err){ console.warn("Couldn't route through Web Audio:", err); gain = null; }
   }
@@ -34019,6 +34020,42 @@ function applyLevel(el, trackId, atStart){
   } else {
     el.volume = Math.min(1, Math.max(0, base * g));
   }
+}
+// The Linux app, a player routed through Web Audio (2.5.005; Gen Rinzin's
+// T470): whenever a track starts or is moved, the engine (WebKitGTK) hands
+// about a second of sound ahead to Web Audio at once, and its clock counts
+// that second as played. The sound is on time; the clock, and so the seekbar,
+// is a second early, until the next pause. So when the clock is seen to have
+// leapt, it is held still (speed 0: the sound already handed over goes on
+// playing, unbroken) for as long as it is ahead. Measured in a bare WebKitGTK
+// window under PipeWire and PulseAudio: 1.15 s ahead without this, 0.1 to
+// 0.25 s with it, after a start, a seek while playing and a seek while paused.
+const CLOCK_LEAD_MIN = 0.25, CLOCK_LEAD_MAX = 1.5, CLOCK_LEAD_LOOK_MS = 250;
+function holdClockForSound(el){
+  let expected = 0, done = false, look = null, hold = null;
+  const letGo = ()=>{ if(look){ clearTimeout(look); look = null; } if(hold){ clearTimeout(hold); hold = null; if(el.playbackRate === 0) el.playbackRate = 1; } };
+  const mark = ()=>{ letGo(); expected = el.currentTime || 0; done = false; };
+  el.addEventListener("loadstart", ()=>{ letGo(); expected = 0; done = false; });
+  el.addEventListener("seeking", mark);
+  el.addEventListener("pause", mark);
+  el.addEventListener("ended", letGo);
+  const check = ()=>{
+    if(done || hold || el.paused) return;
+    const from = performance.now();
+    if(look) clearTimeout(look);
+    look = setTimeout(()=>{
+      look = null;
+      if(done || hold || el.paused || el.seeking) return;
+      const lead = window.__fakeClockLead != null ? window.__fakeClockLead : el.currentTime - expected - (performance.now() - from) / 1000;
+      done = true;
+      if(!(lead >= CLOCK_LEAD_MIN)) return;
+      if(el === audioEl) playLog("the clock was " + lead.toFixed(1) + " s ahead of the sound: held until the sound caught up");
+      el.playbackRate = 0;
+      hold = setTimeout(()=>{ hold = null; el.playbackRate = 1; }, Math.min(CLOCK_LEAD_MAX, lead) * 1000);
+    }, CLOCK_LEAD_LOOK_MS);
+  };
+  ["playing", "seeked", "play"].forEach(ev=> el.addEventListener(ev, check));
+  if(!el.paused) check();
 }
 // After a setting, a track's adjustment or its loudness changed.
 function refreshAllLevels(){
