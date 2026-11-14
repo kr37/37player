@@ -31,7 +31,10 @@ const start = async (b, base)=>{
   ok(u1 === u2, 'the same each time while the file stays put');
   await p.evaluate(()=> window.__play('it')); await sleep(800);
   const el = await p.evaluate(()=> ({src: document.getElementById('audioEl').src, co: document.getElementById('audioEl').crossOrigin}));
-  ok(el.src === u1 && el.co === 'anonymous', 'the player loads it, marked for another origin so a volume boost stays audible (' + JSON.stringify(el.co) + ')');
+  // Not marked cross-origin, and never routed through Web Audio there (2.5.002: with the mark, tracks started in the wrong place on the T470).
+  ok(el.src === u1 && !el.co, 'the player loads it plainly, not marked cross-origin (' + JSON.stringify(el.co) + ')');
+  const routed = await p.evaluate(async()=>{ const r = window.__dbg.getRoot(); r.library.find(t=> t.id === 'tk').volumeDb = 6; await window.__dbg.saveState(); document.body.click(); await new Promise(r=> setTimeout(r, 300)); await window.__play('it'); await new Promise(r=> setTimeout(r, 500)); return {log: (window.__lazy.log() || []).join('\n'), vol: document.getElementById('audioEl').volume}; });
+  ok(!/turns tracks up through Web Audio/.test(routed.log) && routed.vol === 1 && /start “Refuge & bodhichitta”, from the app's local address/.test(routed.log), 'a track turned up plays at full volume, not through Web Audio; the log says where it came from');
   await p.close();
   p = await start(b, null);
   const u3 = await p.evaluate(()=> window.__audioUrl('tk'));

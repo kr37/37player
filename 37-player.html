@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.5.001">
+<meta name="app-version" content="2.5.002">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -3885,6 +3885,16 @@ const DISK_TYPES = {mp3: "audio/mpeg", m4a: "audio/mp4", mp4: "audio/mp4", aac: 
 // shell serves the libraries' files too (fileserver.rs) and says where
 // (p37_shell_info's files_http, with a secret in it). A file read whole
 // from a library's folder remembers where it came from (p37at).
+// In the Linux app, what the player says about each track it loads, in the
+// playback log: its length as the player sees it, and any jump in position
+// the page didn't ask for can then be told from one it did.
+function desktopPlayerDiagnostics(){
+  if(!desktopFilesHttp() || audioEl._p37diag) return;
+  audioEl._p37diag = true;
+  audioEl.addEventListener("loadedmetadata", ()=> playLog("the player has the track: length " + (isFinite(audioEl.duration) ? audioEl.duration.toFixed(1) + " s" : String(audioEl.duration)) + (audioEl.crossOrigin ? ", marked cross-origin" : "")));
+  audioEl.addEventListener("seeking", ()=> playLog("seeking to " + fmtTime(audioEl.currentTime)));
+  audioEl.addEventListener("durationchange", ()=>{ if(isFinite(audioEl.duration) && audioEl.duration > 0) playLog("length now " + audioEl.duration.toFixed(1) + " s"); });
+}
 function desktopFilesHttp(){ try{ return (IN_DESKTOP_APP && desktopShell && desktopShell.files_http) || ""; }catch(err){ return ""; } }
 function desktopHttpUrlFor(blob){
   const base = desktopFilesHttp();
@@ -33957,14 +33967,19 @@ function levelPreviewEls(){ return ["libPreviewAudio", "edPreviewAudio", "dupAud
 // loaded (the only moment a route through Web Audio may be made).
 function applyLevel(el, trackId, atStart){
   if(!el) return;
-  // A recording from the Linux app's own address (desktopFilesHttp) is from
-  // another origin: without this, a route through Web Audio would be silent.
-  if(atStart && isDesktopHttpUrl(el.src) && el.crossOrigin !== "anonymous"){ const u = el.src; el.crossOrigin = "anonymous"; el.src = u; }
+  // The Linux app (desktopFilesHttp) never routes through Web Audio, so a
+  // track isn't turned up past full volume there (2.5.002). The route needs
+  // the element marked cross-origin, since its recordings come from another
+  // origin; on Gen Rinzin's T470 (13 Nov 2026, 2.5.000) the one track loaded
+  // without that mark, the one restored at the start, played right, twice,
+  // and every track loaded with it started in the wrong place with dropouts.
+  // (Not reproduced in a bare WebKitGTK 2.52 window, where both play right;
+  // his is Debian 13's.) Plain http without the mark is the known-good way.
   el._levelTrack = trackId;
   const base = el === audioEl ? mainVolumeGain() : 1;
   const g = Math.pow(10, trackLevel(findLibraryTrack(trackId)).db / 20);
   let gain = levelGains.get(el);
-  if(!gain && g * base > 1.001 && atStart && levelCtx && levelCtx.state === "running"){
+  if(!gain && g * base > 1.001 && atStart && levelCtx && levelCtx.state === "running" && !desktopFilesHttp()){
     try{
       const src = levelCtx.createMediaElementSource(el);
       gain = levelCtx.createGain();
@@ -35742,7 +35757,9 @@ async function activateItem(itemId, autoplay){
     if(seq !== activateSeq) return;
     if(!url){ endPlayBridge("audio missing"); showAudioMissing(item.refId); return; }
   }
-  if(autoplay) playLog("start " + (item.kind === "track" ? "“" + ((findLibraryTrack(item.refId) || {}).name || "?") + "”" : item.kind) + (document.hidden ? " (app not on screen)" : ""));
+  // (How the recording reaches the player, for the Linux app's troubles: never the address itself, which holds a secret.)
+  const reach = !url ? "" : isDesktopHttpUrl(url) ? ", from the app's local address" : /^blob:/.test(url) ? ", from memory" : /^p37lib:/.test(url) ? ", from the app's file address" : "";
+  if(autoplay) playLog("start " + (item.kind === "track" ? "“" + ((findLibraryTrack(item.refId) || {}).name || "?") + "”" + (IN_DESKTOP_APP ? reach : "") : item.kind) + (document.hidden ? " (app not on screen)" : ""));
   stopPlayback();
   currentItemId = itemId;
   // Only clear the highlight if the highlighted track is the one actually
@@ -43822,6 +43839,7 @@ async function restoreSession(){
         if(url){
           audioEl.src = url;
           applyLevel(audioEl, ctx.item.refId, true);
+          if(IN_DESKTOP_APP) playLog("put back “" + ((findLibraryTrack(ctx.item.refId) || {}).name || "?") + "”" + (isDesktopHttpUrl(url) ? ", from the app's local address" : /^blob:/.test(url) ? ", from memory" : ""));
           const pos = sess.positionSeconds || 0;
           audioEl.addEventListener("loadedmetadata", function onMeta(){
             try{ audioEl.currentTime = Math.min(pos, audioEl.duration||pos); }catch(e){}
@@ -49712,6 +49730,7 @@ async function desktopShellCheck(){
   // Whether it sizes the page itself (the Size setting): kept for the next start, and applied now.
   try{ if(desktopShell.zoom) localStorage.setItem(SHELL_ZOOM_KEY, "1"); else localStorage.removeItem(SHELL_ZOOM_KEY); }catch(err){}
   try{ applyDisplaySettings(); }catch(err){}
+  try{ desktopPlayerDiagnostics(); }catch(err){}
   if((desktopShell.bridge || 0) < DESKTOP_BRIDGE_NEEDED)
     askChoice(t("desktopShellOldTitle"), `<p>${escapeHtmlText(t("desktopShellOldBody", {shell: desktopShell.version}))}</p>`, [{label: t("ok"), value: null, kind: "primary"}]);
 }
