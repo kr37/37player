@@ -25,7 +25,7 @@ jobs:
   mac:
     runs-on: macos-latest
     # Test builds update their page from dev's (page-test; desktop/PAGE-UPDATES.md).
-    env: { P37_PAGE_CHANNEL: "${{ inputs.channel == 'main' && 'latest' || 'test' }}" }
+    env: { P37_PAGE_CHANNEL: "${{ inputs.channel == 'main' && 'latest' || 'test' }}", P37_PAGE_BRANCH: "${{ inputs.channel == 'main' && 'main' || 'dev' }}" }
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -120,7 +120,7 @@ jobs:
         with: { name: mac, path: "37-Player-mac-test*" }
   windows:
     runs-on: windows-latest
-    env: { P37_PAGE_CHANNEL: "${{ inputs.channel == 'main' && 'latest' || 'test' }}" }
+    env: { P37_PAGE_CHANNEL: "${{ inputs.channel == 'main' && 'latest' || 'test' }}", P37_PAGE_BRANCH: "${{ inputs.channel == 'main' && 'main' || 'dev' }}" }
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -148,7 +148,7 @@ jobs:
     # 22.04, the oldest Ubuntu with WebKitGTK 4.1 (Tauri 2's), so the .deb
     # needs no newer libraries than most current Linux computers have.
     runs-on: ubuntu-22.04
-    env: { P37_PAGE_CHANNEL: "${{ inputs.channel == 'main' && 'latest' || 'test' }}" }
+    env: { P37_PAGE_CHANNEL: "${{ inputs.channel == 'main' && 'latest' || 'test' }}", P37_PAGE_BRANCH: "${{ inputs.channel == 'main' && 'main' || 'dev' }}" }
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -187,7 +187,7 @@ jobs:
           tag="desktop-test-$n"
           # Named by the version first (Gen Rinzin, 7 Nov 2026), the build's
           # number after; the files carry the version too.
-          v=$(curl -s "https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/37-player.html" | head -c 4000 | grep -o 'app-version" content="[^"]*' | head -1 | sed 's/.*content="//')
+          v=$(curl -s "https://raw.githubusercontent.com/${{ github.repository }}/${{ inputs.channel == 'main' && 'main' || 'dev' }}/37-player.html" | head -c 4000 | grep -o 'app-version" content="[^"]*' | head -1 | sed 's/.*content="//')
           # The app's own (shell's) version too, in the title: the page's
           # number alone hid that 31d was shell 2.2.1 (Gen Rinzin, 11 Nov 2026).
           sv=$(curl -s "https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/desktop/src-tauri/tauri.conf.json" | grep -o '"version": *"[^"]*' | head -1 | sed 's/.*"//')

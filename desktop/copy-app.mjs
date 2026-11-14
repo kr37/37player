@@ -18,10 +18,33 @@ const repo = join(here, "..");
 const dist = join(here, "dist");
 
 mkdirSync(join(dist, "libraries"), { recursive: true });
-copyFileSync(join(repo, "37-player.html"), join(dist, "index.html"));
-copyFileSync(join(repo, "help.json"), join(dist, "help.json"));
+// A build for people carries the newest page of the branch its pages follow
+// (P37_PAGE_BRANCH: main for m builds, dev for d builds; Gen Rinzin, 13 Nov
+// 2026). This branch's own copy is whatever it was when main was last merged
+// in (2.2.031 for weeks): a new install ran that, with its since-fixed bugs,
+// until its first page check, and it is the page gone back to if a newer
+// one fails. Without the setting (a build at a desk), this branch's copy.
+const pageBranch = process.env.P37_PAGE_BRANCH || "";
+if (pageBranch) {
+  for (const [from, to] of [["37-player.html", "index.html"], ["help.json", "help.json"]]) {
+    const r = await fetch(`https://raw.githubusercontent.com/kr37/37player/${pageBranch}/${from}`);
+    if (!r.ok) throw new Error(`fetching ${from} from ${pageBranch}: ${r.status}`);
+    writeFileSync(join(dist, to), Buffer.from(await r.arrayBuffer()));
+  }
+  const page = readFileSync(join(dist, "index.html"), "utf8").slice(0, 4000);
+  const version = (page.match(/name="app-version" content="([^"]+)"/) || [])[1];
+  const needs = Number((page.match(/name="desktop-bridge" content="(\d+)"/) || [])[1] || 0);
+  const has = Number((readFileSync(join(here, "src-tauri", "src", "lib.rs"), "utf8").match(/const BRIDGE: u32 = (\d+);/) || [])[1] || 0);
+  if (!version) throw new Error(`${pageBranch}'s 37-player.html has no app-version`);
+  // A page this shell would refuse must not be the one it carries.
+  if (needs > has) throw new Error(`${pageBranch}'s page (${version}) needs bridge ${needs}; this shell has ${has}`);
+  console.log(`bundling ${pageBranch}'s page, ${version} (bridge ${needs} of ${has})`);
+} else {
+  copyFileSync(join(repo, "37-player.html"), join(dist, "index.html"));
+  copyFileSync(join(repo, "help.json"), join(dist, "help.json"));
+}
 copyFileSync(join(repo, "libraries", "starter.mp3"), join(dist, "libraries", "starter.mp3"));
-console.log("copied 37-player.html, help.json and the starter track into dist/");
+console.log("37-player.html, help.json and the starter track are in dist/");
 
 const ffmpegDir = join(dist, "ffmpeg");
 mkdirSync(ffmpegDir, { recursive: true });
