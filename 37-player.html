@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.5.003">
+<meta name="app-version" content="2.5.004">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -2754,6 +2754,7 @@ class FolderLibraryStore {
   // The recordings used in place, by audio key: {root, at}.
   async placeRefs(){
     if(this.places) return this.places;
+    if(window.__slowPlaceRefs) await new Promise(r=> setTimeout(r, window.__slowPlaceRefs)); // tests: as slow as hundreds of records
     const out = new Map();
     for(const id of await this.keys("audio")){
       try{ const raw = await this.readRaw("audio", id); if(raw && raw.blob && typeof raw.blob.$place === "string") out.set(id, {root: raw.blob.$place, at: raw.blob.$at}); }catch(err){}
@@ -3613,6 +3614,22 @@ function watchPlaceDrive(el, getTrackId){
   el.addEventListener("playing", ()=>{ if(timer){ clearTimeout(timer); timer = null; } });
 }
 async function placeAwarePlay(el, trackId){
+  // Which tracks are used in place isn't known until every track's record
+  // has been read once (placeRefs: seconds, for hundreds of tracks). Waiting
+  // for that before the first Play after a start left the button a triangle
+  // through a click or two (Gen Rinzin's T470, 14 Nov 2026), and a play()
+  // that comes that long after the click may be refused. So until it's
+  // known the track starts at once, inside the click, and is looked at
+  // after: a file used in place that has gone stops again and says so.
+  if(STORAGE_KIND === "desktop" && trackId && libStore && !libStore.places && el.dataset.p37stuck !== "1" && !el.error){
+    const started = el.play().then(()=> true, (err)=>{ playLog("play() refused: " + (err && err.name)); return false; });
+    libStore.placeRefs().then(async ()=>{
+      if(!placeOfTrack(trackId)) return;
+      const r = await placeFileThere(trackId);
+      if(r && !r.there && el._levelTrack === trackId){ await placeMarkMissing(r.place.root); el.pause(); showAudioMissing(trackId); }
+    }).catch(()=>{});
+    return started;
+  }
   const r = await placeFileThere(trackId);
   if(r){
     if(!r.there){ await placeMarkMissing(r.place.root); el.pause(); showAudioMissing(trackId); return false; }
@@ -3629,7 +3646,7 @@ async function placeAwarePlay(el, trackId){
       playLog("its drive is back: the track used in place starts again at " + Math.round(at) + " s");
     }
   }
-  return el.play().then(()=> true, ()=> false);
+  return el.play().then(()=> true, (err)=>{ playLog("play() refused: " + (err && err.name)); return false; });
 }
 // A playlist file's line for a recording used in place: relative to the
 // library's folder (["..", "..", "Music", …]), or the full path where there's
@@ -49736,6 +49753,8 @@ async function desktopShellCheck(){
   try{ if(desktopShell.zoom) localStorage.setItem(SHELL_ZOOM_KEY, "1"); else localStorage.removeItem(SHELL_ZOOM_KEY); }catch(err){}
   try{ applyDisplaySettings(); }catch(err){}
   try{ desktopPlayerDiagnostics(); }catch(err){}
+  // Which tracks are used in place, read ahead of the first Play (placeAwarePlay).
+  setTimeout(()=>{ try{ if(STORAGE_KIND === "desktop" && libStore && libStore.placeRefs) libStore.placeRefs().catch(()=>{}); }catch(err){} }, 2500);
   if((desktopShell.bridge || 0) < DESKTOP_BRIDGE_NEEDED)
     askChoice(t("desktopShellOldTitle"), `<p>${escapeHtmlText(t("desktopShellOldBody", {shell: desktopShell.version}))}</p>`, [{label: t("ok"), value: null, kind: "primary"}]);
 }

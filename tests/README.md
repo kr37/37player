@@ -136,6 +136,7 @@ By hand: `./serve.sh` in one terminal (servers on ports 8861 and 8870), then
 | shellzoom | The Size setting in the desktop app: the shell zooms the webview and the page isn't magnified, from the start after a restart; an older shell keeps the page's own way |
 | leaveunsent | A device that leaves takes the tracks it never finished sending out of the shared library (they stay in its own library): the Leave question says so, and another device stops listing and waiting for them |
 | fileshttp | The Linux app: a track's address is the shell's local http one (files_http), by the file's place, and the player is marked cross-origin; a shell without it gives a blob as before |
+| firstplay | The desktop app: the first Play after a start plays at once, though reading which tracks are used in place is slow |
 
 ## The converter test page (tests/convert/)
 
