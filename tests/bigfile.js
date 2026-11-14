@@ -8,8 +8,10 @@
 //    read from the disk as it's sent, and arrives with the same bytes; how
 //    much has gone is reported after each piece (the status bar's figure);
 //  - writing a track's details never reads a big file, or one with no writer;
-//  - a big file isn't converted by itself (after an import, or carried over
-//    a restart); asked for, it gets a warning first, and Cancel leaves it.
+//  - the desktop app converts a big file from the disk, so by itself and
+//    without a warning (2.5.001); where it can't, a big file isn't converted
+//    by itself (after an import, or carried over a restart), and asked for,
+//    it gets a warning first, and Cancel leaves it.
 //   node bigfile.js      (needs the app server from serve.sh on 8861)
 const puppeteer = require('puppeteer-core'); const sleep = ms=>new Promise(r=>setTimeout(r,ms));
 const fs = require('fs'), path = require('path'), crypto = require('crypto');
@@ -94,6 +96,19 @@ const modal = p=> p.evaluate(()=> document.getElementById('modalBackdrop')?.clas
     await window.__dbg.saveState();
   });
   ok(await p.evaluate(()=> window.__big.trackIsBigFile(window.__dbg.getRoot().library.find(t=> t.id === 'big1')) && !window.__big.trackIsBigFile(window.__dbg.getRoot().library.find(t=> t.id === 'small1'))), 'a 20 MB track counts as big here, a small one doesn\'t');
+  // In the desktop app a big file is converted from the disk a block at a time
+  // (2.5.001): by itself after an import too, with no warning. The warning and
+  // the asking are for where it can't be (a browser; a webview that has shown it can't).
+  ok(await p.evaluate(()=> window.__big.fromDisk()), 'the desktop app converts big files from the disk');
+  p.evaluate(()=>{ window.__big.convertTracks(['big1'], {auto: true}); });
+  await sleep(500);
+  const mAuto = await modal(p), qAuto = await p.evaluate(()=> window.__big.queue());
+  ok(!/is big|are big/.test(mAuto), 'so by itself (after an import) nothing is asked about its size (' + (mAuto.split('\n')[0] || 'no dialog') + '; queued: ' + qAuto.length + ')');
+  await p.evaluate(()=>{ document.querySelectorAll('.modal button').forEach(b=>{ if(/^(Cancel|Not now|Close)$/.test(b.textContent.trim())) b.click(); }); document.querySelector('.modal [data-close]')?.click(); window.__lazy.stop(); });
+  await p.evaluate(async()=>{ await window.__disk.idbPut('state', {key: 'convertQueue', value: null}); });
+  await sleep(400);
+  await p.evaluate(()=> window.__lazy.setOff(true));
+  ok(!(await p.evaluate(()=> window.__big.fromDisk())), 'a webview that can\'t read from the disk as it goes: the old care');
   await p.evaluate(()=> window.__big.convertTracks(['big1'], {auto: true}));
   await sleep(300);
   ok(!(await modal(p)) && !(await p.evaluate(()=> window.__big.queue())).length, 'by itself (after an import): a big file isn\'t queued, and nothing is asked');

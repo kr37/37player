@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.5.000">
+<meta name="app-version" content="2.5.001">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -3835,8 +3835,21 @@ async function converterInput(blob, name){
       playLog("the converter can't read files from the disk as it goes here (" + (err && err.message || err) + "): it reads each one whole first");
     }
   }
+  // A big file nobody agreed to read whole (2.5.001: one converted by itself
+  // because it was to be read from the disk, and then couldn't be) is left.
+  if(blob && blob.size > BIG_FILE_BYTES && converterBigUnasked) throw Object.assign(new Error("a big file, and it can't be read from the disk as it goes here"), {bigUnasked: true});
   return converterFile(blob, name);
 }
+let converterBigUnasked = false; // set by the queue for a big file the person wasn't asked about
+// In the desktop app a file is converted from the disk a block at a time
+// (converterInput), so a big one needs no warning and no asking, and the
+// rule to convert uncompressed files covers it too (2.5.001; Gen Rinzin's
+// 8 GB Mac mini, 13 Nov 2026: a 2.53 GB WAV converted while playing and
+// syncing, the app's memory never above about 650 MB; before, it had been
+// sent to the shared library as it was, since big files were left alone
+// unless asked for, and its MP3 sent again after). Not once this webview
+// has shown it can't read that way.
+function bigFilesConvertFromDisk(){ return STORAGE_KIND === "desktop" && !converterLazyOff; }
 let converterLazySaid = false;
 // What a library can be given as a file's bytes: a Blob, or the desktop
 // app's stand-ins for one.
@@ -28296,7 +28309,7 @@ function trackIsBigFile(tr){ return !!tr && (tr.fileSize || 0) > BIG_FILE_BYTES;
 const convertBigOk = new Set();
 async function convertTracks(ids, opts){
   ids = ids.filter(id=> trackCanBeConverted(findLibraryTrack(id)) && !convertQueue.includes(id));
-  const big = ids.filter(id=> trackIsBigFile(findLibraryTrack(id)));
+  const big = bigFilesConvertFromDisk() ? [] : ids.filter(id=> trackIsBigFile(findLibraryTrack(id)));
   if(big.length && opts && opts.auto) ids = ids.filter(id=> !big.includes(id));
   else if(big.length){
     const trs = big.map(id=> findLibraryTrack(id));
@@ -28399,7 +28412,8 @@ async function runConvertQueue(){
       }
       const id = convertQueue[0];
       const tr = findLibraryTrack(id);
-      if(!trackCanBeConverted(tr) || (trackIsBigFile(tr) && !convertBigOk.has(id))){ convertQueue.shift(); convertDone++; continue; }
+      if(!trackCanBeConverted(tr) || (trackIsBigFile(tr) && !convertBigOk.has(id) && !bigFilesConvertFromDisk())){ convertQueue.shift(); convertDone++; continue; }
+      converterBigUnasked = trackIsBigFile(tr) && !convertBigOk.has(id);
       const name = tr.name || tr.filename || "";
       setActiveOperationProgress(convertBarText(name, null), stopConverting, undefined, {links: convertBarLinks()});
       let rec = null;
@@ -28422,6 +28436,7 @@ async function runConvertQueue(){
       }catch(err){
         clearInterval(watch);
         if(err && err.interrupted){ if(convertStopped) break; continue; } // playback started: again when it stops
+        if(err && err.bigUnasked){ convertQueue.shift(); convertDone++; playLog("“" + name + "” is big and can't be converted from the disk here: left as it is (Library cleanup converts it, after asking)"); convertQueueSave(); continue; }
         const crashed = /memory|bounds|unreachable|abort|stopped/i.test(err.message || "");
         if(crashed){ converterStop(); sinceFresh = 0; } // a fresh converter for what comes next
         if(crashed && !retried.has(id)){ retried.add(id); console.warn("The converter crashed on", name, "- trying again with a fresh one:", err); continue; }
