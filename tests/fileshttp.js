@@ -13,13 +13,18 @@ const BASE = 'http://127.0.0.1:9/s3cret';
 const start = async (b, base)=>{
   const p = await (await b.createBrowserContext()).newPage(); await p.setViewport({width:1300, height:900});
   p.on('pageerror', e=>console.log('PAGE ERROR:', e.message)); p.on('dialog', d=> d.accept());
-  await p.evaluateOnNewDocument((base)=>{ window.__fakeFilesHttp = base; }, base);
+  // Files read whole, as every recording under 32 MB is in the real app (the
+  // test copy otherwise reads from 1 MB up where they lie, which hid 2.5.000's fault).
+  await p.evaluateOnNewDocument((base)=>{ window.__fakeFilesHttp = base; window.__diskBlobMin = 1e12; }, base);
   await p.evaluateOnNewDocument(FAKE);
   await p.goto('http://localhost:8861/37-player.html', {waitUntil:'networkidle0'}); await sleep(1000);
   for(const x of ['^English$','^Keep them there$','^Start a library on this device$','^No, just start$','^Skip for now$','^Finish$','^OK$']){ await clickText(p,'.modal button',x); await sleep(300); }
   await p.evaluate(()=> document.querySelector('.modal [data-close]')?.click()); await sleep(500);
-  await p.evaluate(async()=>{ const r = window.__dbg.getRoot(); const blob = await (await fetch('ten.mp3')).blob(); r.library.push({id: 'tk', name: 'Refuge & bodhichitta', artist: 'NKT', album: 'Essence #1', duration: 600, peaks: [0.2, 0.4], filename: 'x.mp3'}); await window.__dbg3.put('audio', {id: 'tk', blob}); r.tree.push({id: 'pl', kind: 'playlist', name: 'P', items: [{id: 'it', kind: 'track', refId: 'tk', order: 0}]}); await window.__dbg.saveState(); });
+  await p.evaluate(async()=>{ const r = window.__dbg.getRoot(); const blob = await (await fetch('ten.mp3')).blob(); r.library.push({id: 'tk', name: 'Refuge & bodhichitta', artist: 'NKT', album: 'Essence #1', duration: 600, peaks: [0.2, 0.4], filename: 'x.mp3'}); await window.__dbg3.put('audio', {id: 'tk', blob: new File([blob], 'Refuge & bodhichitta.mp3', {type: 'audio/mpeg'})}); /* named and typed, as every imported track is: the store hands back a new File (2.5.000 lost the file's place there) */ r.tree.push({id: 'pl', kind: 'playlist', name: 'P', items: [{id: 'it', kind: 'track', refId: 'tk', order: 0}]}); await window.__dbg.saveState(); });
   await sleep(1500);
+  // Read back from the disk, as at any later start (what was just stored is still held as it was given).
+  await p.reload({waitUntil: 'networkidle0'}); await sleep(1500);
+  await p.evaluate(()=> document.querySelectorAll('.modal [data-close]').forEach(x=> x.click()));
   return p;
 };
 (async()=>{
@@ -31,10 +36,9 @@ const start = async (b, base)=>{
   ok(u1 === u2, 'the same each time while the file stays put');
   await p.evaluate(()=> window.__play('it')); await sleep(800);
   const el = await p.evaluate(()=> ({src: document.getElementById('audioEl').src, co: document.getElementById('audioEl').crossOrigin}));
-  // Not marked cross-origin, and never routed through Web Audio there (2.5.002: with the mark, tracks started in the wrong place on the T470).
-  ok(el.src === u1 && !el.co, 'the player loads it plainly, not marked cross-origin (' + JSON.stringify(el.co) + ')');
-  const routed = await p.evaluate(async()=>{ const r = window.__dbg.getRoot(); r.library.find(t=> t.id === 'tk').volumeDb = 6; await window.__dbg.saveState(); document.body.click(); await new Promise(r=> setTimeout(r, 300)); await window.__play('it'); await new Promise(r=> setTimeout(r, 500)); return {log: (window.__lazy.log() || []).join('\n'), vol: document.getElementById('audioEl').volume}; });
-  ok(!/turns tracks up through Web Audio/.test(routed.log) && routed.vol === 1 && /start “Refuge & bodhichitta”, from the app's local address/.test(routed.log), 'a track turned up plays at full volume, not through Web Audio; the log says where it came from');
+  ok(el.src === u1 && !el.co, 'the player loads it plainly: no cross-origin mark for a track that isn\'t turned up (' + JSON.stringify(el.co) + ')');
+  const log = await p.evaluate(()=> (window.__lazy.log() || []).join('\n'));
+  ok(/start “Refuge & bodhichitta”, from the app's local address/.test(log), 'and the playback log says where it came from');
   await p.close();
   p = await start(b, null);
   const u3 = await p.evaluate(()=> window.__audioUrl('tk'));

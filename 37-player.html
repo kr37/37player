@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.5.002">
+<meta name="app-version" content="2.5.003">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -2512,8 +2512,12 @@ class FolderLibraryStore {
       if(v.buf){ const ab = await f.arrayBuffer(); return v.buf === "ArrayBuffer" ? ab : new globalThis[v.buf](ab); }
       // A big file of the desktop app's stays where it lies, with its name.
       if(isDiskBlob(f)){ const d = f.slice(0, f.size, v.type || f.type); d.name = v.name != null ? v.name : f.name; d.lastModified = v.lastModified || f.lastModified; return d; }
-      if(v.name != null) return new File([f], v.name, {type: v.type || "", lastModified: v.lastModified || f.lastModified});
-      return v.type ? f.slice(0, f.size, v.type) : f;
+      // (Given its name or type, it's a new object: where it lies on the disk
+      // goes with it. 2.5.000 lost that here, so the Linux app never played
+      // from its local address: every real track has a name. 2.5.003.)
+      const at = f.p37at, keep = (b)=>{ if(at){ try{ b.p37at = at; }catch(err){} } return b; };
+      if(v.name != null) return keep(new File([f], v.name, {type: v.type || "", lastModified: v.lastModified || f.lastModified}));
+      return v.type ? keep(f.slice(0, f.size, v.type)) : f;
     }
     const out = {};
     for(const [k, x] of Object.entries(v)) out[k] = await this.revive(dir, x);
@@ -33967,19 +33971,20 @@ function levelPreviewEls(){ return ["libPreviewAudio", "edPreviewAudio", "dupAud
 // loaded (the only moment a route through Web Audio may be made).
 function applyLevel(el, trackId, atStart){
   if(!el) return;
-  // The Linux app (desktopFilesHttp) never routes through Web Audio, so a
-  // track isn't turned up past full volume there (2.5.002). The route needs
-  // the element marked cross-origin, since its recordings come from another
-  // origin; on Gen Rinzin's T470 (13 Nov 2026, 2.5.000) the one track loaded
-  // without that mark, the one restored at the start, played right, twice,
-  // and every track loaded with it started in the wrong place with dropouts.
-  // (Not reproduced in a bare WebKitGTK 2.52 window, where both play right;
-  // his is Debian 13's.) Plain http without the mark is the known-good way.
+  // A recording from the Linux app's own address (desktopFilesHttp) is from
+  // another origin: without this mark a route through Web Audio would be
+  // silent. Only when the track is to be turned up, and before it loads.
+  // (2.5.002 dropped the mark and the route, on the T470's evidence that
+  // marked tracks played wrongly; those tracks had come from memory, not
+  // from this address at all. In a bare WebKitGTK window a marked track
+  // plays right, through Web Audio too.)
+  if(atStart && isDesktopHttpUrl(el.src) && el.crossOrigin !== "anonymous" && levelCtx && levelCtx.state === "running"
+      && Math.pow(10, trackLevel(findLibraryTrack(trackId)).db / 20) * (el === audioEl ? mainVolumeGain() : 1) > 1.001){ const u = el.src; el.crossOrigin = "anonymous"; el.src = u; }
   el._levelTrack = trackId;
   const base = el === audioEl ? mainVolumeGain() : 1;
   const g = Math.pow(10, trackLevel(findLibraryTrack(trackId)).db / 20);
   let gain = levelGains.get(el);
-  if(!gain && g * base > 1.001 && atStart && levelCtx && levelCtx.state === "running" && !desktopFilesHttp()){
+  if(!gain && g * base > 1.001 && atStart && levelCtx && levelCtx.state === "running"){
     try{
       const src = levelCtx.createMediaElementSource(el);
       gain = levelCtx.createGain();
