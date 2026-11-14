@@ -43,7 +43,7 @@
     window.__fakeShellPaths.push(cmd + ' ' + ((args && (args.path || args.from)) || '')); // which file, for tests that count reads of one file
     args = args || {};
     switch(cmd){
-      case 'p37_shell_info': return {version: '2.0.000', bridge: 2, pages: false, device: true, updates: !!window.__fakeShellUpdates, zoom: !!window.__fakeShellZoom};
+      case 'p37_shell_info': return {version: '2.0.000', bridge: 2, pages: false, device: true, updates: !!window.__fakeShellUpdates, zoom: !!window.__fakeShellZoom, files_http: window.__fakeFilesHttp || null};
       // The Size setting, by the shell (2.4.000): what it was asked for is kept for the test.
       case 'p37_zoom': if(!window.__fakeShellZoom) throw new Error('unknown command'); (window.__fakeZooms = window.__fakeZooms || []).push(args.scale); return null;
       // The shell updating itself (shellupd.js): window.__fakeShellUpdates = {version, current} or null (none).

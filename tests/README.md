@@ -135,6 +135,7 @@ By hand: `./serve.sh` in one terminal (servers on ports 8861 and 8870), then
 | wrapalbum | Wrap and Album both on, a narrow window: the album wraps too and takes at most a third of the row, so the title isn't squeezed |
 | shellzoom | The Size setting in the desktop app: the shell zooms the webview and the page isn't magnified, from the start after a restart; an older shell keeps the page's own way |
 | leaveunsent | A device that leaves takes the tracks it never finished sending out of the shared library (they stay in its own library): the Leave question says so, and another device stops listing and waiting for them |
+| fileshttp | The Linux app: a track's address is the shell's local http one (files_http), by the file's place, and the player is marked cross-origin; a shell without it gives a blob as before |
 
 ## The converter test page (tests/convert/)
 

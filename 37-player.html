@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.4.003">
+<meta name="app-version" content="2.5.000">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -3864,7 +3864,26 @@ const DISK_TYPES = {mp3: "audio/mpeg", m4a: "audio/mp4", mp4: "audio/mp4", aac: 
 // A playable address for a track's audio: a DiskBlob's own (the shell
 // serves it with Range, so the player streams and seeks from disk), else an
 // object URL of the blob, typed.
+// The Linux app (2.5.000, shell 2.5.0): its webview, WebKitGTK, played a
+// recording handed to it as a blob from the wrong place (the clock from 0,
+// the sound from the middle, with dropouts: Gen Rinzin's T470, 13 Nov 2026;
+// reproduced in a bare WebKitGTK window), and won't take audio from
+// p37lib:// at all. It plays correctly from http://127.0.0.1, so there the
+// shell serves the libraries' files too (fileserver.rs) and says where
+// (p37_shell_info's files_http, with a secret in it). A file read whole
+// from a library's folder remembers where it came from (p37at).
+function desktopFilesHttp(){ try{ return (IN_DESKTOP_APP && desktopShell && desktopShell.files_http) || ""; }catch(err){ return ""; } }
+function desktopHttpUrlFor(blob){
+  const base = desktopFilesHttp();
+  if(!base || !blob) return "";
+  const at = isDiskBlob(blob) ? (blob.whole ? {root: blob.p37root, path: blob.p37path} : null) : blob.p37at;
+  return at && at.root && at.path ? base + "/" + [at.root].concat(String(at.path).split("/")).map(encodeURIComponent).join("/") : "";
+}
+// (Such an address names the file's place, which a rename changes: not kept between plays.)
+function isDesktopHttpUrl(url){ const base = desktopFilesHttp(); return !!base && typeof url === "string" && url.startsWith(base + "/"); }
 async function audioObjectUrl(blob, filenameHint){
+  const http = desktopHttpUrlFor(blob);
+  if(http) return http;
   if(isDiskBlob(blob) && !blob.whole) blob = await realBlob(blob); // a part of a file: its own bytes
   if(isDiskBlob(blob)){
     if(window.__p37FileUrl) return window.__p37FileUrl(blob.p37root, blob.p37path); // the tests' stand-in shell
@@ -3879,7 +3898,9 @@ class DesktopFileHandle {
     if(!st || st.kind !== "file") throw desktopNotFound(this.path);
     if(st.size > DISK_BLOB_MIN){ const d = new DiskBlob(this.root, this.path, st.size, DISK_TYPES[(this.name.split(".").pop() || "").toLowerCase()] || "", this.name, Math.round(st.modified) || Date.now()); d.whole = true; return d; };
     const bytes = await desktopInvoke("fs_read", {root: this.root, path: this.path});
-    return new File([bytes], this.name, {lastModified: Math.round(st.modified) || Date.now()});
+    const f = new File([bytes], this.name, {lastModified: Math.round(st.modified) || Date.now()});
+    try{ f.p37at = {root: this.root, path: this.path}; }catch(err){} // where it is on the disk (audioObjectUrl, on Linux)
+    return f;
   }
   // Collected, and written on close (the shell writes it aside and swaps it
   // in, as createWritable does). A whole DiskBlob is copied by the shell,
@@ -33921,6 +33942,9 @@ function levelPreviewEls(){ return ["libPreviewAudio", "edPreviewAudio", "dupAud
 // loaded (the only moment a route through Web Audio may be made).
 function applyLevel(el, trackId, atStart){
   if(!el) return;
+  // A recording from the Linux app's own address (desktopFilesHttp) is from
+  // another origin: without this, a route through Web Audio would be silent.
+  if(atStart && isDesktopHttpUrl(el.src) && el.crossOrigin !== "anonymous"){ const u = el.src; el.crossOrigin = "anonymous"; el.src = u; }
   el._levelTrack = trackId;
   const base = el === audioEl ? mainVolumeGain() : 1;
   const g = Math.pow(10, trackLevel(findLibraryTrack(trackId)).db / 20);
@@ -35480,7 +35504,7 @@ async function getAudioUrl(libraryId){
   const rec = await idbGet("audio", libraryId);
   if(!rec) return null;
   const url = await audioObjectUrl(rec.blob, trackFileName(libraryId));
-  objectUrlCache[libraryId] = url;
+  if(!isDesktopHttpUrl(url)) objectUrlCache[libraryId] = url;
   return url;
 }
 // The track's audio as a playable URL, or null if the library has no audio
@@ -35493,7 +35517,7 @@ async function getPlayableAudioUrl(libraryId){
     if(!rec || !rec.blob || !rec.blob.size) return null;
     await rec.blob.slice(0, 1).arrayBuffer();
     const url = await audioObjectUrl(rec.blob, trackFileName(libraryId));
-    objectUrlCache[libraryId] = url;
+    if(!isDesktopHttpUrl(url)) objectUrlCache[libraryId] = url;
     return url;
   }catch(err){
     console.warn("Audio unreadable for", libraryId, err);
@@ -49666,7 +49690,7 @@ if(IN_DESKTOP_APP){
   window.addEventListener("resize", fitHeight);
 }
 const DESKTOP_BRIDGE_NEEDED = +((document.querySelector('meta[name="desktop-bridge"]') || {}).content || 1);
-let desktopShell = null; // {version, bridge, pages, device, updates, zoom}
+let desktopShell = null; // {version, bridge, pages, device, updates, zoom, files_http}
 async function desktopShellCheck(){
   if(!IN_DESKTOP_APP || !window.__TAURI__ || !window.__TAURI__.core) return;
   try{ desktopShell = await window.__TAURI__.core.invoke("p37_shell_info"); }catch(err){ desktopShell = {version: "?", bridge: 0}; }
