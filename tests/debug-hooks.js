@@ -153,7 +153,7 @@ window.__dbg3.trashKeys = ()=> undoTrashKeys(); // reconcile.js
 window.__dbg3.downloadPass = ()=> sharedDownloadPending(sharedConfig()); // reconcile.js
 window.__disk = {kind: ()=> STORAGE_KIND, idbPut, idbGet, DiskBlob, JoinedBlob, audioObjectUrl, writeFileTo, storageOpen, readLibraryList, writeLibraryList, libraryDbName, renameLibrary, id: ()=> LIBRARY_ID, openImportChoice, desktopImportFolder, placeFolders, placeIntoLibrary, placeLookForNew, placePathFrom, libStore: ()=> libStore, rewriteFileTagsIfPossible, tracksWithMissingAudio, showAudioMissing, confirmDeleteTracksFromLibrary, syncPlaylistFiles, placeOffline, switchLibrary, togglePlay}; // diskblob.js, desktoplibs.js, inplace.js, switchplaying.js
 window.__sil = {mp3: buildSilentMp3Bytes, entries: buildPlaceholderEntries, recognize: recognizePlaceholder, tags: parseAudioTags}; // silencemp3.js
-window.__big = {realBlob, sharedFetch, blobWithCurrentTags, convertTracks, trackIsBigFile, scheduleConvertResume, bigBytes: ()=> BIG_FILE_BYTES, queue: ()=> convertQueue.slice()}; // bigfile.js
+window.__big = {realBlob, sharedFetch, blobWithCurrentTags, convertTracks, trackIsBigFile, scheduleConvertResume, bigBytes: ()=> BIG_FILE_BYTES, fromDisk: ()=> bigFilesConvertFromDisk(), queue: ()=> convertQueue.slice()}; // bigfile.js
 window.__rejoin = {idbDelete, storedAudioIds, absent: ()=> [...sharedAudioAbsent], revs: ()=> root.library.map(t=> [t.id.slice(0,6), t.audioRev, t.fileSize])}; // rejoin.js
 // the Playing volume (volume.js)
 window.__vol = {set: (v)=> setMainVolume(v), get: ()=> mainVolume, gain: ()=> mainVolumeGain()};

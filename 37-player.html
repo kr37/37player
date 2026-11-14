@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.4.003">
+<meta name="app-version" content="2.5.005">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -2512,8 +2512,12 @@ class FolderLibraryStore {
       if(v.buf){ const ab = await f.arrayBuffer(); return v.buf === "ArrayBuffer" ? ab : new globalThis[v.buf](ab); }
       // A big file of the desktop app's stays where it lies, with its name.
       if(isDiskBlob(f)){ const d = f.slice(0, f.size, v.type || f.type); d.name = v.name != null ? v.name : f.name; d.lastModified = v.lastModified || f.lastModified; return d; }
-      if(v.name != null) return new File([f], v.name, {type: v.type || "", lastModified: v.lastModified || f.lastModified});
-      return v.type ? f.slice(0, f.size, v.type) : f;
+      // (Given its name or type, it's a new object: where it lies on the disk
+      // goes with it. 2.5.000 lost that here, so the Linux app never played
+      // from its local address: every real track has a name. 2.5.003.)
+      const at = f.p37at, keep = (b)=>{ if(at){ try{ b.p37at = at; }catch(err){} } return b; };
+      if(v.name != null) return keep(new File([f], v.name, {type: v.type || "", lastModified: v.lastModified || f.lastModified}));
+      return v.type ? keep(f.slice(0, f.size, v.type)) : f;
     }
     const out = {};
     for(const [k, x] of Object.entries(v)) out[k] = await this.revive(dir, x);
@@ -2750,6 +2754,7 @@ class FolderLibraryStore {
   // The recordings used in place, by audio key: {root, at}.
   async placeRefs(){
     if(this.places) return this.places;
+    if(window.__slowPlaceRefs) await new Promise(r=> setTimeout(r, window.__slowPlaceRefs)); // tests: as slow as hundreds of records
     const out = new Map();
     for(const id of await this.keys("audio")){
       try{ const raw = await this.readRaw("audio", id); if(raw && raw.blob && typeof raw.blob.$place === "string") out.set(id, {root: raw.blob.$place, at: raw.blob.$at}); }catch(err){}
@@ -3609,6 +3614,22 @@ function watchPlaceDrive(el, getTrackId){
   el.addEventListener("playing", ()=>{ if(timer){ clearTimeout(timer); timer = null; } });
 }
 async function placeAwarePlay(el, trackId){
+  // Which tracks are used in place isn't known until every track's record
+  // has been read once (placeRefs: seconds, for hundreds of tracks). Waiting
+  // for that before the first Play after a start left the button a triangle
+  // through a click or two (Gen Rinzin's T470, 14 Nov 2026), and a play()
+  // that comes that long after the click may be refused. So until it's
+  // known the track starts at once, inside the click, and is looked at
+  // after: a file used in place that has gone stops again and says so.
+  if(STORAGE_KIND === "desktop" && trackId && libStore && !libStore.places && el.dataset.p37stuck !== "1" && !el.error){
+    const started = el.play().then(()=> true, (err)=>{ playLog("play() refused: " + (err && err.name)); return false; });
+    libStore.placeRefs().then(async ()=>{
+      if(!placeOfTrack(trackId)) return;
+      const r = await placeFileThere(trackId);
+      if(r && !r.there && el._levelTrack === trackId){ await placeMarkMissing(r.place.root); el.pause(); showAudioMissing(trackId); }
+    }).catch(()=>{});
+    return started;
+  }
   const r = await placeFileThere(trackId);
   if(r){
     if(!r.there){ await placeMarkMissing(r.place.root); el.pause(); showAudioMissing(trackId); return false; }
@@ -3625,7 +3646,7 @@ async function placeAwarePlay(el, trackId){
       playLog("its drive is back: the track used in place starts again at " + Math.round(at) + " s");
     }
   }
-  return el.play().then(()=> true, ()=> false);
+  return el.play().then(()=> true, (err)=>{ playLog("play() refused: " + (err && err.name)); return false; });
 }
 // A playlist file's line for a recording used in place: relative to the
 // library's folder (["..", "..", "Music", …]), or the full path where there's
@@ -3835,8 +3856,21 @@ async function converterInput(blob, name){
       playLog("the converter can't read files from the disk as it goes here (" + (err && err.message || err) + "): it reads each one whole first");
     }
   }
+  // A big file nobody agreed to read whole (2.5.001: one converted by itself
+  // because it was to be read from the disk, and then couldn't be) is left.
+  if(blob && blob.size > BIG_FILE_BYTES && converterBigUnasked) throw Object.assign(new Error("a big file, and it can't be read from the disk as it goes here"), {bigUnasked: true});
   return converterFile(blob, name);
 }
+let converterBigUnasked = false; // set by the queue for a big file the person wasn't asked about
+// In the desktop app a file is converted from the disk a block at a time
+// (converterInput), so a big one needs no warning and no asking, and the
+// rule to convert uncompressed files covers it too (2.5.001; Gen Rinzin's
+// 8 GB Mac mini, 13 Nov 2026: a 2.53 GB WAV converted while playing and
+// syncing, the app's memory never above about 650 MB; before, it had been
+// sent to the shared library as it was, since big files were left alone
+// unless asked for, and its MP3 sent again after). Not once this webview
+// has shown it can't read that way.
+function bigFilesConvertFromDisk(){ return STORAGE_KIND === "desktop" && !converterLazyOff; }
 let converterLazySaid = false;
 // What a library can be given as a file's bytes: a Blob, or the desktop
 // app's stand-ins for one.
@@ -3864,7 +3898,36 @@ const DISK_TYPES = {mp3: "audio/mpeg", m4a: "audio/mp4", mp4: "audio/mp4", aac: 
 // A playable address for a track's audio: a DiskBlob's own (the shell
 // serves it with Range, so the player streams and seeks from disk), else an
 // object URL of the blob, typed.
+// The Linux app (2.5.000, shell 2.5.0): its webview, WebKitGTK, played a
+// recording handed to it as a blob from the wrong place (the clock from 0,
+// the sound from the middle, with dropouts: Gen Rinzin's T470, 13 Nov 2026;
+// reproduced in a bare WebKitGTK window), and won't take audio from
+// p37lib:// at all. It plays correctly from http://127.0.0.1, so there the
+// shell serves the libraries' files too (fileserver.rs) and says where
+// (p37_shell_info's files_http, with a secret in it). A file read whole
+// from a library's folder remembers where it came from (p37at).
+// In the Linux app, what the player says about each track it loads, in the
+// playback log: its length as the player sees it, and any jump in position
+// the page didn't ask for can then be told from one it did.
+function desktopPlayerDiagnostics(){
+  if(!desktopFilesHttp() || audioEl._p37diag) return;
+  audioEl._p37diag = true;
+  audioEl.addEventListener("loadedmetadata", ()=> playLog("the player has the track: length " + (isFinite(audioEl.duration) ? audioEl.duration.toFixed(1) + " s" : String(audioEl.duration)) + (audioEl.crossOrigin ? ", marked cross-origin" : "")));
+  audioEl.addEventListener("seeking", ()=> playLog("seeking to " + fmtTime(audioEl.currentTime)));
+  audioEl.addEventListener("durationchange", ()=>{ if(isFinite(audioEl.duration) && audioEl.duration > 0) playLog("length now " + audioEl.duration.toFixed(1) + " s"); });
+}
+function desktopFilesHttp(){ try{ return (IN_DESKTOP_APP && desktopShell && desktopShell.files_http) || ""; }catch(err){ return ""; } }
+function desktopHttpUrlFor(blob){
+  const base = desktopFilesHttp();
+  if(!base || !blob) return "";
+  const at = isDiskBlob(blob) ? (blob.whole ? {root: blob.p37root, path: blob.p37path} : null) : blob.p37at;
+  return at && at.root && at.path ? base + "/" + [at.root].concat(String(at.path).split("/")).map(encodeURIComponent).join("/") : "";
+}
+// (Such an address names the file's place, which a rename changes: not kept between plays.)
+function isDesktopHttpUrl(url){ const base = desktopFilesHttp(); return !!base && typeof url === "string" && url.startsWith(base + "/"); }
 async function audioObjectUrl(blob, filenameHint){
+  const http = desktopHttpUrlFor(blob);
+  if(http) return http;
   if(isDiskBlob(blob) && !blob.whole) blob = await realBlob(blob); // a part of a file: its own bytes
   if(isDiskBlob(blob)){
     if(window.__p37FileUrl) return window.__p37FileUrl(blob.p37root, blob.p37path); // the tests' stand-in shell
@@ -3879,7 +3942,9 @@ class DesktopFileHandle {
     if(!st || st.kind !== "file") throw desktopNotFound(this.path);
     if(st.size > DISK_BLOB_MIN){ const d = new DiskBlob(this.root, this.path, st.size, DISK_TYPES[(this.name.split(".").pop() || "").toLowerCase()] || "", this.name, Math.round(st.modified) || Date.now()); d.whole = true; return d; };
     const bytes = await desktopInvoke("fs_read", {root: this.root, path: this.path});
-    return new File([bytes], this.name, {lastModified: Math.round(st.modified) || Date.now()});
+    const f = new File([bytes], this.name, {lastModified: Math.round(st.modified) || Date.now()});
+    try{ f.p37at = {root: this.root, path: this.path}; }catch(err){} // where it is on the disk (audioObjectUrl, on Linux)
+    return f;
   }
   // Collected, and written on close (the shell writes it aside and swaps it
   // in, as createWritable does). A whole DiskBlob is copied by the shell,
@@ -28275,7 +28340,7 @@ function trackIsBigFile(tr){ return !!tr && (tr.fileSize || 0) > BIG_FILE_BYTES;
 const convertBigOk = new Set();
 async function convertTracks(ids, opts){
   ids = ids.filter(id=> trackCanBeConverted(findLibraryTrack(id)) && !convertQueue.includes(id));
-  const big = ids.filter(id=> trackIsBigFile(findLibraryTrack(id)));
+  const big = bigFilesConvertFromDisk() ? [] : ids.filter(id=> trackIsBigFile(findLibraryTrack(id)));
   if(big.length && opts && opts.auto) ids = ids.filter(id=> !big.includes(id));
   else if(big.length){
     const trs = big.map(id=> findLibraryTrack(id));
@@ -28378,7 +28443,8 @@ async function runConvertQueue(){
       }
       const id = convertQueue[0];
       const tr = findLibraryTrack(id);
-      if(!trackCanBeConverted(tr) || (trackIsBigFile(tr) && !convertBigOk.has(id))){ convertQueue.shift(); convertDone++; continue; }
+      if(!trackCanBeConverted(tr) || (trackIsBigFile(tr) && !convertBigOk.has(id) && !bigFilesConvertFromDisk())){ convertQueue.shift(); convertDone++; continue; }
+      converterBigUnasked = trackIsBigFile(tr) && !convertBigOk.has(id);
       const name = tr.name || tr.filename || "";
       setActiveOperationProgress(convertBarText(name, null), stopConverting, undefined, {links: convertBarLinks()});
       let rec = null;
@@ -28401,6 +28467,7 @@ async function runConvertQueue(){
       }catch(err){
         clearInterval(watch);
         if(err && err.interrupted){ if(convertStopped) break; continue; } // playback started: again when it stops
+        if(err && err.bigUnasked){ convertQueue.shift(); convertDone++; playLog("“" + name + "” is big and can't be converted from the disk here: left as it is (Library cleanup converts it, after asking)"); convertQueueSave(); continue; }
         const crashed = /memory|bounds|unreachable|abort|stopped/i.test(err.message || "");
         if(crashed){ converterStop(); sinceFresh = 0; } // a fresh converter for what comes next
         if(crashed && !retried.has(id)){ retried.add(id); console.warn("The converter crashed on", name, "- trying again with a fresh one:", err); continue; }
@@ -33921,6 +33988,15 @@ function levelPreviewEls(){ return ["libPreviewAudio", "edPreviewAudio", "dupAud
 // loaded (the only moment a route through Web Audio may be made).
 function applyLevel(el, trackId, atStart){
   if(!el) return;
+  // A recording from the Linux app's own address (desktopFilesHttp) is from
+  // another origin: without this mark a route through Web Audio would be
+  // silent. Only when the track is to be turned up, and before it loads.
+  // (2.5.002 dropped the mark and the route, on the T470's evidence that
+  // marked tracks played wrongly; those tracks had come from memory, not
+  // from this address at all. In a bare WebKitGTK window a marked track
+  // plays right, through Web Audio too.)
+  if(atStart && isDesktopHttpUrl(el.src) && el.crossOrigin !== "anonymous" && levelCtx && levelCtx.state === "running"
+      && Math.pow(10, trackLevel(findLibraryTrack(trackId)).db / 20) * (el === audioEl ? mainVolumeGain() : 1) > 1.001){ const u = el.src; el.crossOrigin = "anonymous"; el.src = u; }
   el._levelTrack = trackId;
   const base = el === audioEl ? mainVolumeGain() : 1;
   const g = Math.pow(10, trackLevel(findLibraryTrack(trackId)).db / 20);
@@ -33932,6 +34008,7 @@ function applyLevel(el, trackId, atStart){
       src.connect(gain); gain.connect(levelCtx.destination);
       levelGains.set(el, gain);
       if(el === audioEl) playLog("player now turns tracks up through Web Audio (until reloaded)");
+      if(desktopFilesHttp() || window.__clockLeadTest) holdClockForSound(el);
       el.addEventListener("play", ()=>{ if(levelCtx.state !== "running") levelCtx.resume().catch(()=>{}); });
     }catch(err){ console.warn("Couldn't route through Web Audio:", err); gain = null; }
   }
@@ -33943,6 +34020,42 @@ function applyLevel(el, trackId, atStart){
   } else {
     el.volume = Math.min(1, Math.max(0, base * g));
   }
+}
+// The Linux app, a player routed through Web Audio (2.5.005; Gen Rinzin's
+// T470): whenever a track starts or is moved, the engine (WebKitGTK) hands
+// about a second of sound ahead to Web Audio at once, and its clock counts
+// that second as played. The sound is on time; the clock, and so the seekbar,
+// is a second early, until the next pause. So when the clock is seen to have
+// leapt, it is held still (speed 0: the sound already handed over goes on
+// playing, unbroken) for as long as it is ahead. Measured in a bare WebKitGTK
+// window under PipeWire and PulseAudio: 1.15 s ahead without this, 0.1 to
+// 0.25 s with it, after a start, a seek while playing and a seek while paused.
+const CLOCK_LEAD_MIN = 0.25, CLOCK_LEAD_MAX = 1.5, CLOCK_LEAD_LOOK_MS = 250;
+function holdClockForSound(el){
+  let expected = 0, done = false, look = null, hold = null;
+  const letGo = ()=>{ if(look){ clearTimeout(look); look = null; } if(hold){ clearTimeout(hold); hold = null; if(el.playbackRate === 0) el.playbackRate = 1; } };
+  const mark = ()=>{ letGo(); expected = el.currentTime || 0; done = false; };
+  el.addEventListener("loadstart", ()=>{ letGo(); expected = 0; done = false; });
+  el.addEventListener("seeking", mark);
+  el.addEventListener("pause", mark);
+  el.addEventListener("ended", letGo);
+  const check = ()=>{
+    if(done || hold || el.paused) return;
+    const from = performance.now();
+    if(look) clearTimeout(look);
+    look = setTimeout(()=>{
+      look = null;
+      if(done || hold || el.paused || el.seeking) return;
+      const lead = window.__fakeClockLead != null ? window.__fakeClockLead : el.currentTime - expected - (performance.now() - from) / 1000;
+      done = true;
+      if(!(lead >= CLOCK_LEAD_MIN)) return;
+      if(el === audioEl) playLog("the clock was " + lead.toFixed(1) + " s ahead of the sound: held until the sound caught up");
+      el.playbackRate = 0;
+      hold = setTimeout(()=>{ hold = null; el.playbackRate = 1; }, Math.min(CLOCK_LEAD_MAX, lead) * 1000);
+    }, CLOCK_LEAD_LOOK_MS);
+  };
+  ["playing", "seeked", "play"].forEach(ev=> el.addEventListener(ev, check));
+  if(!el.paused) check();
 }
 // After a setting, a track's adjustment or its loudness changed.
 function refreshAllLevels(){
@@ -35480,7 +35593,7 @@ async function getAudioUrl(libraryId){
   const rec = await idbGet("audio", libraryId);
   if(!rec) return null;
   const url = await audioObjectUrl(rec.blob, trackFileName(libraryId));
-  objectUrlCache[libraryId] = url;
+  if(!isDesktopHttpUrl(url)) objectUrlCache[libraryId] = url;
   return url;
 }
 // The track's audio as a playable URL, or null if the library has no audio
@@ -35493,7 +35606,7 @@ async function getPlayableAudioUrl(libraryId){
     if(!rec || !rec.blob || !rec.blob.size) return null;
     await rec.blob.slice(0, 1).arrayBuffer();
     const url = await audioObjectUrl(rec.blob, trackFileName(libraryId));
-    objectUrlCache[libraryId] = url;
+    if(!isDesktopHttpUrl(url)) objectUrlCache[libraryId] = url;
     return url;
   }catch(err){
     console.warn("Audio unreadable for", libraryId, err);
@@ -35703,7 +35816,9 @@ async function activateItem(itemId, autoplay){
     if(seq !== activateSeq) return;
     if(!url){ endPlayBridge("audio missing"); showAudioMissing(item.refId); return; }
   }
-  if(autoplay) playLog("start " + (item.kind === "track" ? "“" + ((findLibraryTrack(item.refId) || {}).name || "?") + "”" : item.kind) + (document.hidden ? " (app not on screen)" : ""));
+  // (How the recording reaches the player, for the Linux app's troubles: never the address itself, which holds a secret.)
+  const reach = !url ? "" : isDesktopHttpUrl(url) ? ", from the app's local address" : /^blob:/.test(url) ? ", from memory" : /^p37lib:/.test(url) ? ", from the app's file address" : "";
+  if(autoplay) playLog("start " + (item.kind === "track" ? "“" + ((findLibraryTrack(item.refId) || {}).name || "?") + "”" + (IN_DESKTOP_APP ? reach : "") : item.kind) + (document.hidden ? " (app not on screen)" : ""));
   stopPlayback();
   currentItemId = itemId;
   // Only clear the highlight if the highlighted track is the one actually
@@ -43783,6 +43898,7 @@ async function restoreSession(){
         if(url){
           audioEl.src = url;
           applyLevel(audioEl, ctx.item.refId, true);
+          if(IN_DESKTOP_APP) playLog("put back “" + ((findLibraryTrack(ctx.item.refId) || {}).name || "?") + "”" + (isDesktopHttpUrl(url) ? ", from the app's local address" : /^blob:/.test(url) ? ", from memory" : ""));
           const pos = sess.positionSeconds || 0;
           audioEl.addEventListener("loadedmetadata", function onMeta(){
             try{ audioEl.currentTime = Math.min(pos, audioEl.duration||pos); }catch(e){}
@@ -49666,13 +49782,16 @@ if(IN_DESKTOP_APP){
   window.addEventListener("resize", fitHeight);
 }
 const DESKTOP_BRIDGE_NEEDED = +((document.querySelector('meta[name="desktop-bridge"]') || {}).content || 1);
-let desktopShell = null; // {version, bridge, pages, device, updates, zoom}
+let desktopShell = null; // {version, bridge, pages, device, updates, zoom, files_http}
 async function desktopShellCheck(){
   if(!IN_DESKTOP_APP || !window.__TAURI__ || !window.__TAURI__.core) return;
   try{ desktopShell = await window.__TAURI__.core.invoke("p37_shell_info"); }catch(err){ desktopShell = {version: "?", bridge: 0}; }
   // Whether it sizes the page itself (the Size setting): kept for the next start, and applied now.
   try{ if(desktopShell.zoom) localStorage.setItem(SHELL_ZOOM_KEY, "1"); else localStorage.removeItem(SHELL_ZOOM_KEY); }catch(err){}
   try{ applyDisplaySettings(); }catch(err){}
+  try{ desktopPlayerDiagnostics(); }catch(err){}
+  // Which tracks are used in place, read ahead of the first Play (placeAwarePlay).
+  setTimeout(()=>{ try{ if(STORAGE_KIND === "desktop" && libStore && libStore.placeRefs) libStore.placeRefs().catch(()=>{}); }catch(err){} }, 2500);
   if((desktopShell.bridge || 0) < DESKTOP_BRIDGE_NEEDED)
     askChoice(t("desktopShellOldTitle"), `<p>${escapeHtmlText(t("desktopShellOldBody", {shell: desktopShell.version}))}</p>`, [{label: t("ok"), value: null, kind: "primary"}]);
 }
