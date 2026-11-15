@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.5.006">
+<meta name="app-version" content="2.5.007">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -760,6 +760,53 @@
   .hist-it-changed{ color:var(--amber); font-weight:700; }
   .hist-it-word{ font-weight:400; font-size:12px; }
   .hist-nothing{ max-width:920px; margin:18px auto; color:var(--text-dim); }
+  /* History: the tabs, and Roll back the library (2.5.007) */
+  .hist-tabbar{ display:flex; padding:10px 22px 0; }
+  .hist-tabs{ max-width:100%; flex-wrap:wrap; border-radius:18px; }
+  .hist-tabs .tab-short{ display:none; }
+  .hist-soon{ max-width:620px; color:var(--text-dim); }
+  .hist-point-undone .hist-point-time, .hist-point-undone .hist-point-by, .hist-point-undone .hist-point-what{ text-decoration:line-through; color:var(--text-dim); }
+  .hist-undone-line{ display:flex; align-items:center; gap:8px; margin:6px 16px 4px; color:var(--rust-bright); font-size:12px; }
+  .hist-undone-line::before, .hist-undone-line::after{ content:""; flex:1; height:1px; background:var(--rust-bright); }
+  .rb-tools{ display:flex; align-items:center; flex-wrap:wrap; gap:4px 18px; margin:0 0 8px; max-width:1100px; }
+  .rb-modes{ margin:0 0 0 auto; }
+  .rb-grid{ position:relative; max-width:1100px; }
+  .rb-box{ position:absolute; top:0; bottom:0; left:0; width:calc(50% - 5px); background:var(--bg-panel-raised); border:1px solid var(--line); border-radius:12px; }
+  .rb-row{ position:relative; display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); }
+  .rb-cell{ position:relative; display:flex; align-items:center; gap:5px; min-width:0; min-height:30px; padding:3px 14px 3px calc(12px + var(--d, 0) * 18px); }
+  .rb-body{ display:flex; align-items:center; gap:6px; min-width:0; }
+  .rb-text{ min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .rb-wrap .rb-body{ display:block; line-height:1.3; padding:2px 0; }
+  .rb-wrap .rb-text{ white-space:normal; overflow-wrap:anywhere; }
+  .rb-wrap .rb-cell{ align-items:flex-start; }
+  .rb-wrap .rb-icon{ margin-top:4px; }
+  .rb-cell .rv-chev, .rb-cell .rv-chev-space{ width:24px; height:24px; flex-shrink:0; }
+  .rb-icon{ display:inline-flex; flex-shrink:0; color:var(--text-dim); }
+  .rb-line{ position:absolute; top:0; bottom:0; width:1px; background:var(--folder); opacity:0.45; pointer-events:none; }
+  .rb-sec-tree .rb-line{ left:calc(23px + var(--i) * 18px); }
+  .rb-sec-flat .rb-line{ left:calc(15px + var(--i) * 18px); }
+  .rb-head .rb-cell{ display:block; padding:14px 16px 10px; }
+  .rb-head .btn{ margin-top:10px; }
+  .rb-note{ margin:4px 0 0; color:var(--text-dim); font-size:13px; line-height:1.4; }
+  .rb-foot .rb-cell{ padding:14px 16px 16px; }
+  .rb-order{ padding-top:8px; }
+  .rb-sec .rb-cell{ padding:12px 14px 6px 12px; }
+  .rb-sec .rb-cell > span{ flex:1; text-align:center; background:var(--line); color:var(--text-dim); font-weight:700; font-size:14px; padding:4px 8px; border-radius:8px; }
+  .rb-art .rb-cell{ font-size:16px; font-weight:700; padding-top:10px; }
+  .rb-art .rb-line{ top:10px; }
+  .rb-alb .rb-cell{ font-size:14.5px; font-weight:700; }
+  .rb-un{ color:var(--text-dim); }
+  .rb-back{ color:var(--sage); font-weight:700; }
+  .rb-lost{ color:var(--rust-bright); font-weight:700; }
+  .rb-ren{ color:var(--folder); font-style:italic; }
+  .rb-chg{ font-weight:700; }
+  .rb-tag{ flex-shrink:0; display:inline-block; font-size:11.5px; font-weight:400; font-style:normal; padding:1px 7px; border-radius:99px; border:1px solid currentColor; white-space:nowrap; }
+  .rb-t-back{ color:var(--sage); } .rb-t-lost{ color:var(--rust-bright); } .rb-t-ren{ color:var(--folder); } .rb-t-chg{ color:var(--amber); }
+  .rb-tap{ cursor:pointer; }
+  .rb-tap:hover .rb-text{ text-decoration:underline; text-decoration-color:var(--text-faint); }
+  .rb-tap:focus-visible{ outline:2px solid var(--amber); outline-offset:-2px; border-radius:6px; }
+  @media (max-width: 1100px){ .hist-tabs .tab-long{ display:none; } .hist-tabs .tab-short{ display:inline; } }
+  @media (max-width: 760px){ .hist-tabbar{ padding:8px 12px 0; } .rb-cell{ padding-right:6px; padding-left:calc(6px + var(--d, 0) * 12px); } .rb-sec-tree .rb-line{ left:calc(17px + var(--i) * 12px); } .rb-sec-flat .rb-line{ left:calc(9px + var(--i) * 12px); } .rb-modes{ margin-left:0; } }
   @media (max-width: 760px){
     .hist-body{ flex-direction:column; }
     .hist-side{ flex:0 0 auto; max-height:34vh; border-right:0; border-bottom:1px solid var(--line); }
@@ -4895,6 +4942,46 @@ const STRINGS = {
     "histBtnNote": "Every saved change from the last 30 days, and restoring any of it.",
     "histBtnNoteDrive": "Every saved change, and restoring any of it.",
     "histTitle": "History",
+    "histTabUndo": "Undo on this device",
+    "histTabUndoShort": "This device",
+    "histTabRoll": "Roll back the library",
+    "histTabRollShort": "Roll back",
+    "histTabBring": "Bring back tracks or playlists",
+    "histTabBringShort": "Bring back",
+    "histRbUndoSoon": "This tab isn't built yet. Undo and Redo on Edit Playlists and Library work as before.",
+    "histRbThenHead": "The library then: {time}",
+    "histRbNowHead": "The library now",
+    "histRbNowNote": "What the shared library holds now.",
+    "histRbGo": "Roll back to this",
+    "histRbErased": "Nothing is erased. The rollback becomes a new save at the top of the list, and can itself be rolled back.",
+    "histRbPlaylists": "Playlists",
+    "histRbTracks": "Tracks",
+    "histRbDeleted": "deleted since",
+    "histRbAdded": "added since",
+    "histRbRenamed": "renamed",
+    "histRbChanged": "changed",
+    "histRbMoved": "moved since",
+    "histRbMovedHere": "moved here since",
+    "histRbTracksDeleted": "{n} tracks deleted since",
+    "histRbTrackDeletedOne": "1 track deleted since",
+    "histRbTracksAdded": "{n} tracks added since",
+    "histRbTrackAddedOne": "1 track added since",
+    "histRbUnchanged": "{n} unchanged",
+    "histRbAlbumsUnch": "{a} albums and {n} tracks unchanged…",
+    "histRbAlbumUnch": "{name}: {n} tracks unchanged…",
+    "histRbAlbumUnchOne": "{name}: 1 track unchanged…",
+    "histRbNoArtist": "(no artist)",
+    "histRbNoAlbum": "(no album)",
+    "histRbShowGrey": "Show unchanged in grey",
+    "histRbShowChanged": "Only what changed",
+    "histRbUndoneAbove": "undone above this line",
+    "histRbPickEarlier": "This is the library as it is now. Choose an earlier save on the left to see what rolling back to it would do.",
+    "histRbTopLevel": "the top level",
+    "histRbOrderNote": "The order also changed in: {names}",
+    "histRbConfirmTitle": "Roll back to {time}?",
+    "histRbConfirmBody": "Every device that shares this library gets it as it was then. Nothing is erased: the rollback is saved as a new version, and can itself be rolled back.",
+    "histRbReceiveOnly": "This device receives updates only, so it can't roll back. Roll back from a device that sends changes.",
+    "histRbChangedMeanwhile": "The shared library changed meanwhile. The comparison is up to date again: look it over, then roll back.",
     "histSubtitle": "“{name}”, every version the shared library has kept",
     "histLoading": "Looking at the history…",
     "histNow": "Now",
@@ -6866,6 +6953,46 @@ const STRINGS = {
     "histBtnNote": "Cada cambio guardado de los últimos 30 días, y restaurar cualquiera de ellos.",
     "histBtnNoteDrive": "Cada cambio guardado, y restaurar cualquiera de ellos.",
     "histTitle": "Historial",
+    "histTabUndo": "Deshacer en este dispositivo",
+    "histTabUndoShort": "Este dispositivo",
+    "histTabRoll": "Revertir la biblioteca",
+    "histTabRollShort": "Revertir",
+    "histTabBring": "Recuperar pistas o listas",
+    "histTabBringShort": "Recuperar",
+    "histRbUndoSoon": "Esta pestaña aún no está hecha. Deshacer y Rehacer en Editar listas y Biblioteca funcionan como antes.",
+    "histRbThenHead": "La biblioteca entonces: {time}",
+    "histRbNowHead": "La biblioteca ahora",
+    "histRbNowNote": "Lo que la biblioteca compartida contiene ahora.",
+    "histRbGo": "Revertir a este punto",
+    "histRbErased": "No se borra nada. La reversión se guarda como un nuevo punto al principio de la lista, y también se puede revertir.",
+    "histRbPlaylists": "Listas",
+    "histRbTracks": "Pistas",
+    "histRbDeleted": "eliminado después",
+    "histRbAdded": "añadido después",
+    "histRbRenamed": "renombrado",
+    "histRbChanged": "cambiado",
+    "histRbMoved": "movido después",
+    "histRbMovedHere": "movido aquí después",
+    "histRbTracksDeleted": "{n} pistas eliminadas después",
+    "histRbTrackDeletedOne": "1 pista eliminada después",
+    "histRbTracksAdded": "{n} pistas añadidas después",
+    "histRbTrackAddedOne": "1 pista añadida después",
+    "histRbUnchanged": "{n} sin cambios",
+    "histRbAlbumsUnch": "{a} álbumes y {n} pistas sin cambios…",
+    "histRbAlbumUnch": "{name}: {n} pistas sin cambios…",
+    "histRbAlbumUnchOne": "{name}: 1 pista sin cambios…",
+    "histRbNoArtist": "(sin artista)",
+    "histRbNoAlbum": "(sin álbum)",
+    "histRbShowGrey": "Mostrar en gris lo que no cambió",
+    "histRbShowChanged": "Solo lo que cambió",
+    "histRbUndoneAbove": "deshecho por encima de esta línea",
+    "histRbPickEarlier": "Esta es la biblioteca tal como está ahora. Elige un guardado anterior a la izquierda para ver qué haría revertir a ese punto.",
+    "histRbTopLevel": "el primer nivel",
+    "histRbOrderNote": "El orden también cambió en: {names}",
+    "histRbConfirmTitle": "¿Revertir a {time}?",
+    "histRbConfirmBody": "Todos los dispositivos que comparten esta biblioteca la reciben como estaba entonces. No se borra nada: la reversión se guarda como una nueva versión, y también se puede revertir.",
+    "histRbReceiveOnly": "Este dispositivo solo recibe actualizaciones, así que no puede revertir. Revierte desde un dispositivo que envíe cambios.",
+    "histRbChangedMeanwhile": "La biblioteca compartida cambió mientras tanto. La comparación está al día de nuevo: revísala y luego revierte.",
     "histSubtitle": "«{name}», cada versión que ha guardado la biblioteca compartida",
     "histLoading": "Consultando el historial…",
     "histNow": "Ahora",
@@ -8836,6 +8963,46 @@ const STRINGS = {
     "histBtnNote": "Chaque modification enregistrée des 30 derniers jours, et la possibilité d'en restaurer.",
     "histBtnNoteDrive": "Chaque modification enregistrée, et la possibilité d'en restaurer.",
     "histTitle": "Historique",
+    "histTabUndo": "Annuler sur cet appareil",
+    "histTabUndoShort": "Cet appareil",
+    "histTabRoll": "Revenir en arrière",
+    "histTabRollShort": "Revenir",
+    "histTabBring": "Récupérer des pistes ou des playlists",
+    "histTabBringShort": "Récupérer",
+    "histRbUndoSoon": "Cet onglet n'est pas encore fait. Annuler et Rétablir dans Modifier les playlists et Bibliothèque fonctionnent comme avant.",
+    "histRbThenHead": "La bibliothèque alors : {time}",
+    "histRbNowHead": "La bibliothèque maintenant",
+    "histRbNowNote": "Ce que la bibliothèque partagée contient maintenant.",
+    "histRbGo": "Revenir à ce point",
+    "histRbErased": "Rien n'est effacé. Le retour en arrière devient un nouvel enregistrement en haut de la liste, et peut lui-même être annulé.",
+    "histRbPlaylists": "Playlists",
+    "histRbTracks": "Pistes",
+    "histRbDeleted": "supprimé depuis",
+    "histRbAdded": "ajouté depuis",
+    "histRbRenamed": "renommé",
+    "histRbChanged": "modifié",
+    "histRbMoved": "déplacé depuis",
+    "histRbMovedHere": "déplacé ici depuis",
+    "histRbTracksDeleted": "{n} pistes supprimées depuis",
+    "histRbTrackDeletedOne": "1 piste supprimée depuis",
+    "histRbTracksAdded": "{n} pistes ajoutées depuis",
+    "histRbTrackAddedOne": "1 piste ajoutée depuis",
+    "histRbUnchanged": "{n} inchangés",
+    "histRbAlbumsUnch": "{a} albums et {n} pistes inchangés…",
+    "histRbAlbumUnch": "{name} : {n} pistes inchangées…",
+    "histRbAlbumUnchOne": "{name} : 1 piste inchangée…",
+    "histRbNoArtist": "(sans artiste)",
+    "histRbNoAlbum": "(sans album)",
+    "histRbShowGrey": "Afficher en gris ce qui n'a pas changé",
+    "histRbShowChanged": "Seulement ce qui a changé",
+    "histRbUndoneAbove": "annulé au-dessus de cette ligne",
+    "histRbPickEarlier": "Voici la bibliothèque telle qu'elle est maintenant. Choisissez un enregistrement antérieur à gauche pour voir ce que ferait un retour à ce point.",
+    "histRbTopLevel": "le premier niveau",
+    "histRbOrderNote": "L'ordre a aussi changé dans : {names}",
+    "histRbConfirmTitle": "Revenir à {time} ?",
+    "histRbConfirmBody": "Tous les appareils qui partagent cette bibliothèque la reçoivent telle qu'elle était alors. Rien n'est effacé : le retour en arrière est enregistré comme une nouvelle version, et peut lui-même être annulé.",
+    "histRbReceiveOnly": "Cet appareil ne fait que recevoir les mises à jour, il ne peut donc pas revenir en arrière. Faites-le depuis un appareil qui envoie des modifications.",
+    "histRbChangedMeanwhile": "La bibliothèque partagée a changé entre-temps. La comparaison est de nouveau à jour : vérifiez-la, puis revenez en arrière.",
     "histSubtitle": "« {name} », chaque version gardée par la bibliothèque partagée",
     "histLoading": "Lecture de l'historique…",
     "histNow": "Maintenant",
@@ -10806,6 +10973,46 @@ const STRINGS = {
     "histBtnNote": "Cada alteração salva nos últimos 30 dias, e restaurar qualquer uma delas.",
     "histBtnNoteDrive": "Cada alteração salva, e restaurar qualquer uma delas.",
     "histTitle": "Histórico",
+    "histTabUndo": "Desfazer neste dispositivo",
+    "histTabUndoShort": "Este dispositivo",
+    "histTabRoll": "Reverter a biblioteca",
+    "histTabRollShort": "Reverter",
+    "histTabBring": "Recuperar faixas ou playlists",
+    "histTabBringShort": "Recuperar",
+    "histRbUndoSoon": "Esta aba ainda não está pronta. Desfazer e Refazer em Editar playlists e Biblioteca funcionam como antes.",
+    "histRbThenHead": "A biblioteca então: {time}",
+    "histRbNowHead": "A biblioteca agora",
+    "histRbNowNote": "O que a biblioteca compartilhada contém agora.",
+    "histRbGo": "Reverter para este ponto",
+    "histRbErased": "Nada é apagado. A reversão é salva como um novo ponto no topo da lista, e também pode ser revertida.",
+    "histRbPlaylists": "Playlists",
+    "histRbTracks": "Faixas",
+    "histRbDeleted": "excluído depois",
+    "histRbAdded": "adicionado depois",
+    "histRbRenamed": "renomeado",
+    "histRbChanged": "alterado",
+    "histRbMoved": "movido depois",
+    "histRbMovedHere": "movido para cá depois",
+    "histRbTracksDeleted": "{n} faixas excluídas depois",
+    "histRbTrackDeletedOne": "1 faixa excluída depois",
+    "histRbTracksAdded": "{n} faixas adicionadas depois",
+    "histRbTrackAddedOne": "1 faixa adicionada depois",
+    "histRbUnchanged": "{n} sem alteração",
+    "histRbAlbumsUnch": "{a} álbuns e {n} faixas sem alteração…",
+    "histRbAlbumUnch": "{name}: {n} faixas sem alteração…",
+    "histRbAlbumUnchOne": "{name}: 1 faixa sem alteração…",
+    "histRbNoArtist": "(sem artista)",
+    "histRbNoAlbum": "(sem álbum)",
+    "histRbShowGrey": "Mostrar em cinza o que não mudou",
+    "histRbShowChanged": "Só o que mudou",
+    "histRbUndoneAbove": "desfeito acima desta linha",
+    "histRbPickEarlier": "Esta é a biblioteca como está agora. Escolha um salvamento anterior à esquerda para ver o que reverter para ele faria.",
+    "histRbTopLevel": "o primeiro nível",
+    "histRbOrderNote": "A ordem também mudou em: {names}",
+    "histRbConfirmTitle": "Reverter para {time}?",
+    "histRbConfirmBody": "Todos os dispositivos que compartilham esta biblioteca a recebem como estava então. Nada é apagado: a reversão é salva como uma nova versão, e também pode ser revertida.",
+    "histRbReceiveOnly": "Este dispositivo só recebe atualizações, por isso não pode reverter. Reverta a partir de um dispositivo que envie alterações.",
+    "histRbChangedMeanwhile": "A biblioteca compartilhada mudou nesse meio-tempo. A comparação está atualizada de novo: confira e depois reverta.",
     "histSubtitle": "“{name}”, cada versão que a biblioteca compartilhada guardou",
     "histLoading": "Consultando o histórico…",
     "histNow": "Agora",
@@ -12776,6 +12983,46 @@ const STRINGS = {
     "histBtnNote": "Jede gespeicherte Änderung der letzten 30 Tage, und jede davon wiederherstellen.",
     "histBtnNoteDrive": "Jede gespeicherte Änderung, und jede davon wiederherstellen.",
     "histTitle": "Verlauf",
+    "histTabUndo": "Rückgängig auf diesem Gerät",
+    "histTabUndoShort": "Dieses Gerät",
+    "histTabRoll": "Bibliothek zurücksetzen",
+    "histTabRollShort": "Zurücksetzen",
+    "histTabBring": "Titel oder Playlists zurückholen",
+    "histTabBringShort": "Zurückholen",
+    "histRbUndoSoon": "Dieser Reiter ist noch nicht fertig. Rückgängig und Wiederholen in Playlists bearbeiten und Bibliothek funktionieren wie bisher.",
+    "histRbThenHead": "Die Bibliothek damals: {time}",
+    "histRbNowHead": "Die Bibliothek jetzt",
+    "histRbNowNote": "Was die gemeinsame Bibliothek jetzt enthält.",
+    "histRbGo": "Auf diesen Stand zurücksetzen",
+    "histRbErased": "Nichts wird gelöscht. Das Zurücksetzen wird als neuer Stand oben in der Liste gespeichert und kann selbst zurückgesetzt werden.",
+    "histRbPlaylists": "Playlists",
+    "histRbTracks": "Titel",
+    "histRbDeleted": "seitdem gelöscht",
+    "histRbAdded": "seitdem hinzugefügt",
+    "histRbRenamed": "umbenannt",
+    "histRbChanged": "geändert",
+    "histRbMoved": "seitdem verschoben",
+    "histRbMovedHere": "seitdem hierher verschoben",
+    "histRbTracksDeleted": "{n} Titel seitdem gelöscht",
+    "histRbTrackDeletedOne": "1 Titel seitdem gelöscht",
+    "histRbTracksAdded": "{n} Titel seitdem hinzugefügt",
+    "histRbTrackAddedOne": "1 Titel seitdem hinzugefügt",
+    "histRbUnchanged": "{n} unverändert",
+    "histRbAlbumsUnch": "{a} Alben und {n} Titel unverändert…",
+    "histRbAlbumUnch": "{name}: {n} Titel unverändert…",
+    "histRbAlbumUnchOne": "{name}: 1 Titel unverändert…",
+    "histRbNoArtist": "(kein Interpret)",
+    "histRbNoAlbum": "(kein Album)",
+    "histRbShowGrey": "Unverändertes grau anzeigen",
+    "histRbShowChanged": "Nur was sich geändert hat",
+    "histRbUndoneAbove": "oberhalb dieser Linie rückgängig gemacht",
+    "histRbPickEarlier": "Das ist die Bibliothek, wie sie jetzt ist. Wähle links einen früheren Stand, um zu sehen, was ein Zurücksetzen darauf bewirken würde.",
+    "histRbTopLevel": "die oberste Ebene",
+    "histRbOrderNote": "Die Reihenfolge hat sich auch geändert in: {names}",
+    "histRbConfirmTitle": "Auf {time} zurücksetzen?",
+    "histRbConfirmBody": "Jedes Gerät, das diese Bibliothek teilt, erhält sie so, wie sie damals war. Nichts wird gelöscht: Das Zurücksetzen wird als neue Version gespeichert und kann selbst zurückgesetzt werden.",
+    "histRbReceiveOnly": "Dieses Gerät empfängt nur Aktualisierungen und kann daher nicht zurücksetzen. Setze von einem Gerät zurück, das Änderungen sendet.",
+    "histRbChangedMeanwhile": "Die gemeinsame Bibliothek hat sich inzwischen geändert. Der Vergleich ist wieder aktuell: Sieh ihn durch und setze dann zurück.",
     "histSubtitle": "„{name}“, jede Version, die die gemeinsame Bibliothek aufbewahrt hat",
     "histLoading": "Verlauf wird gelesen…",
     "histNow": "Jetzt",
@@ -14746,6 +14993,46 @@ const STRINGS = {
     "histBtnNote": "过去 30 天保存的每一次更改，并可恢复其中任何内容。",
     "histBtnNoteDrive": "保存的每一次更改，并可恢复其中任何内容。",
     "histTitle": "历史记录",
+    "histTabUndo": "在此设备上撤销",
+    "histTabUndoShort": "此设备",
+    "histTabRoll": "回滚资料库",
+    "histTabRollShort": "回滚",
+    "histTabBring": "找回曲目或播放列表",
+    "histTabBringShort": "找回",
+    "histRbUndoSoon": "此标签页尚未完成。“编辑播放列表”和“资料库”中的撤销与重做照常可用。",
+    "histRbThenHead": "当时的资料库：{time}",
+    "histRbNowHead": "现在的资料库",
+    "histRbNowNote": "共享资料库现在的内容。",
+    "histRbGo": "回滚到此处",
+    "histRbErased": "不会抹掉任何内容。回滚会作为新的保存出现在列表顶部，并且本身也可以回滚。",
+    "histRbPlaylists": "播放列表",
+    "histRbTracks": "曲目",
+    "histRbDeleted": "此后已删除",
+    "histRbAdded": "此后添加",
+    "histRbRenamed": "已重命名",
+    "histRbChanged": "已更改",
+    "histRbMoved": "此后已移走",
+    "histRbMovedHere": "此后移到这里",
+    "histRbTracksDeleted": "此后删除了 {n} 首曲目",
+    "histRbTrackDeletedOne": "此后删除了 1 首曲目",
+    "histRbTracksAdded": "此后添加了 {n} 首曲目",
+    "histRbTrackAddedOne": "此后添加了 1 首曲目",
+    "histRbUnchanged": "{n} 项未更改",
+    "histRbAlbumsUnch": "{a} 张专辑、{n} 首曲目未更改…",
+    "histRbAlbumUnch": "{name}：{n} 首曲目未更改…",
+    "histRbAlbumUnchOne": "{name}：1 首曲目未更改…",
+    "histRbNoArtist": "（无艺人）",
+    "histRbNoAlbum": "（无专辑）",
+    "histRbShowGrey": "未更改的显示为灰色",
+    "histRbShowChanged": "只显示更改的内容",
+    "histRbUndoneAbove": "此线以上已撤销",
+    "histRbPickEarlier": "这是资料库现在的样子。在左侧选择较早的一次保存，查看回滚到那里会怎样。",
+    "histRbTopLevel": "顶层",
+    "histRbOrderNote": "以下位置的顺序也变了：{names}",
+    "histRbConfirmTitle": "回滚到 {time}？",
+    "histRbConfirmBody": "共享此资料库的每台设备都会得到当时的内容。不会抹掉任何内容：回滚会保存为新版本，并且本身也可以回滚。",
+    "histRbReceiveOnly": "此设备只接收更新，因此不能回滚。请在会发送更改的设备上回滚。",
+    "histRbChangedMeanwhile": "共享资料库在此期间有了变化。对比已更新：请再看一遍，然后回滚。",
     "histSubtitle": "“{name}”，共享曲库保留的每个版本",
     "histLoading": "正在读取历史记录…",
     "histNow": "现在",
@@ -16716,6 +17003,46 @@ const STRINGS = {
     "histBtnNote": "Mọi thay đổi đã lưu trong 30 ngày qua, và khôi phục bất kỳ thay đổi nào.",
     "histBtnNoteDrive": "Mọi thay đổi đã lưu, và khôi phục bất kỳ thay đổi nào.",
     "histTitle": "Lịch sử",
+    "histTabUndo": "Hoàn tác trên thiết bị này",
+    "histTabUndoShort": "Thiết bị này",
+    "histTabRoll": "Quay lui thư viện",
+    "histTabRollShort": "Quay lui",
+    "histTabBring": "Lấy lại bài hoặc danh sách phát",
+    "histTabBringShort": "Lấy lại",
+    "histRbUndoSoon": "Thẻ này chưa được làm xong. Hoàn tác và Làm lại trong Sửa danh sách phát và Thư viện vẫn hoạt động như trước.",
+    "histRbThenHead": "Thư viện khi đó: {time}",
+    "histRbNowHead": "Thư viện bây giờ",
+    "histRbNowNote": "Những gì thư viện dùng chung đang có.",
+    "histRbGo": "Quay lui về điểm này",
+    "histRbErased": "Không có gì bị xóa. Lần quay lui được lưu thành một điểm mới ở đầu danh sách, và chính nó cũng có thể được quay lui.",
+    "histRbPlaylists": "Danh sách phát",
+    "histRbTracks": "Bài",
+    "histRbDeleted": "đã xóa sau đó",
+    "histRbAdded": "đã thêm sau đó",
+    "histRbRenamed": "đã đổi tên",
+    "histRbChanged": "đã thay đổi",
+    "histRbMoved": "đã chuyển đi sau đó",
+    "histRbMovedHere": "đã chuyển đến đây sau đó",
+    "histRbTracksDeleted": "{n} bài đã xóa sau đó",
+    "histRbTrackDeletedOne": "1 bài đã xóa sau đó",
+    "histRbTracksAdded": "{n} bài đã thêm sau đó",
+    "histRbTrackAddedOne": "1 bài đã thêm sau đó",
+    "histRbUnchanged": "{n} không thay đổi",
+    "histRbAlbumsUnch": "{a} album và {n} bài không thay đổi…",
+    "histRbAlbumUnch": "{name}: {n} bài không thay đổi…",
+    "histRbAlbumUnchOne": "{name}: 1 bài không thay đổi…",
+    "histRbNoArtist": "(không có nghệ sĩ)",
+    "histRbNoAlbum": "(không có album)",
+    "histRbShowGrey": "Hiện phần không đổi bằng màu xám",
+    "histRbShowChanged": "Chỉ những gì đã thay đổi",
+    "histRbUndoneAbove": "đã hoàn tác phía trên dòng này",
+    "histRbPickEarlier": "Đây là thư viện như hiện tại. Hãy chọn một lần lưu trước đó ở bên trái để xem quay lui về đó sẽ làm gì.",
+    "histRbTopLevel": "cấp trên cùng",
+    "histRbOrderNote": "Thứ tự cũng đã thay đổi trong: {names}",
+    "histRbConfirmTitle": "Quay lui về {time}?",
+    "histRbConfirmBody": "Mọi thiết bị dùng chung thư viện này sẽ nhận thư viện như khi đó. Không có gì bị xóa: lần quay lui được lưu thành một phiên bản mới, và chính nó cũng có thể được quay lui.",
+    "histRbReceiveOnly": "Thiết bị này chỉ nhận cập nhật nên không thể quay lui. Hãy quay lui từ một thiết bị có gửi thay đổi.",
+    "histRbChangedMeanwhile": "Thư viện dùng chung đã thay đổi trong lúc đó. Phần so sánh đã được cập nhật: hãy xem lại rồi quay lui.",
     "histSubtitle": "“{name}”, mọi phiên bản thư viện chung còn giữ",
     "histLoading": "Đang xem lịch sử…",
     "histNow": "Hiện tại",
@@ -18686,6 +19013,46 @@ const STRINGS = {
     "histBtnNote": "Κάθε αποθηκευμένη αλλαγή των τελευταίων 30 ημερών, και επαναφορά οποιασδήποτε.",
     "histBtnNoteDrive": "Κάθε αποθηκευμένη αλλαγή, και επαναφορά οποιασδήποτε.",
     "histTitle": "Ιστορικό",
+    "histTabUndo": "Αναίρεση σε αυτή τη συσκευή",
+    "histTabUndoShort": "Αυτή η συσκευή",
+    "histTabRoll": "Επαναφορά της βιβλιοθήκης",
+    "histTabRollShort": "Επαναφορά",
+    "histTabBring": "Ανάκτηση κομματιών ή λιστών",
+    "histTabBringShort": "Ανάκτηση",
+    "histRbUndoSoon": "Αυτή η καρτέλα δεν είναι ακόμη έτοιμη. Η Αναίρεση και η Επανάληψη στην Επεξεργασία λιστών και στη Βιβλιοθήκη λειτουργούν όπως πριν.",
+    "histRbThenHead": "Η βιβλιοθήκη τότε: {time}",
+    "histRbNowHead": "Η βιβλιοθήκη τώρα",
+    "histRbNowNote": "Ό,τι περιέχει τώρα η κοινόχρηστη βιβλιοθήκη.",
+    "histRbGo": "Επαναφορά σε αυτό το σημείο",
+    "histRbErased": "Τίποτα δεν σβήνεται. Η επαναφορά αποθηκεύεται ως νέο σημείο στην κορυφή της λίστας και μπορεί κι αυτή να αναιρεθεί.",
+    "histRbPlaylists": "Λίστες",
+    "histRbTracks": "Κομμάτια",
+    "histRbDeleted": "διαγράφηκε έκτοτε",
+    "histRbAdded": "προστέθηκε έκτοτε",
+    "histRbRenamed": "μετονομάστηκε",
+    "histRbChanged": "άλλαξε",
+    "histRbMoved": "μετακινήθηκε έκτοτε",
+    "histRbMovedHere": "μετακινήθηκε εδώ έκτοτε",
+    "histRbTracksDeleted": "{n} κομμάτια διαγράφηκαν έκτοτε",
+    "histRbTrackDeletedOne": "1 κομμάτι διαγράφηκε έκτοτε",
+    "histRbTracksAdded": "{n} κομμάτια προστέθηκαν έκτοτε",
+    "histRbTrackAddedOne": "1 κομμάτι προστέθηκε έκτοτε",
+    "histRbUnchanged": "{n} χωρίς αλλαγή",
+    "histRbAlbumsUnch": "{a} άλμπουμ και {n} κομμάτια χωρίς αλλαγή…",
+    "histRbAlbumUnch": "{name}: {n} κομμάτια χωρίς αλλαγή…",
+    "histRbAlbumUnchOne": "{name}: 1 κομμάτι χωρίς αλλαγή…",
+    "histRbNoArtist": "(χωρίς καλλιτέχνη)",
+    "histRbNoAlbum": "(χωρίς άλμπουμ)",
+    "histRbShowGrey": "Εμφάνιση των αμετάβλητων με γκρι",
+    "histRbShowChanged": "Μόνο ό,τι άλλαξε",
+    "histRbUndoneAbove": "αναιρέθηκαν πάνω από αυτή τη γραμμή",
+    "histRbPickEarlier": "Αυτή είναι η βιβλιοθήκη όπως είναι τώρα. Επιλέξτε μια προηγούμενη αποθήκευση αριστερά για να δείτε τι θα έκανε η επαναφορά σε αυτήν.",
+    "histRbTopLevel": "το ανώτατο επίπεδο",
+    "histRbOrderNote": "Η σειρά άλλαξε επίσης σε: {names}",
+    "histRbConfirmTitle": "Επαναφορά στο {time};",
+    "histRbConfirmBody": "Κάθε συσκευή που μοιράζεται αυτή τη βιβλιοθήκη την παίρνει όπως ήταν τότε. Τίποτα δεν σβήνεται: η επαναφορά αποθηκεύεται ως νέα έκδοση και μπορεί κι αυτή να αναιρεθεί.",
+    "histRbReceiveOnly": "Αυτή η συσκευή λαμβάνει μόνο ενημερώσεις, οπότε δεν μπορεί να κάνει επαναφορά. Κάντε την από συσκευή που στέλνει αλλαγές.",
+    "histRbChangedMeanwhile": "Η κοινόχρηστη βιβλιοθήκη άλλαξε στο μεταξύ. Η σύγκριση είναι ξανά ενημερωμένη: δείτε την και μετά κάντε επαναφορά.",
     "histSubtitle": "«{name}», κάθε έκδοση που έχει κρατήσει η κοινή βιβλιοθήκη",
     "histLoading": "Ανάγνωση ιστορικού…",
     "histNow": "Τώρα",
@@ -20656,6 +21023,46 @@ const STRINGS = {
     "histBtnNote": "Ogni modifica salvata negli ultimi 30 giorni, e ripristinarne qualsiasi.",
     "histBtnNoteDrive": "Ogni modifica salvata, e ripristinarne qualsiasi.",
     "histTitle": "Cronologia",
+    "histTabUndo": "Annulla su questo dispositivo",
+    "histTabUndoShort": "Questo dispositivo",
+    "histTabRoll": "Ripristina la libreria",
+    "histTabRollShort": "Ripristina",
+    "histTabBring": "Recupera brani o playlist",
+    "histTabBringShort": "Recupera",
+    "histRbUndoSoon": "Questa scheda non è ancora pronta. Annulla e Ripeti in Modifica playlist e Libreria funzionano come prima.",
+    "histRbThenHead": "La libreria allora: {time}",
+    "histRbNowHead": "La libreria adesso",
+    "histRbNowNote": "Ciò che la libreria condivisa contiene adesso.",
+    "histRbGo": "Torna a questo punto",
+    "histRbErased": "Non viene cancellato nulla. Il ritorno viene salvato come nuovo punto in cima all'elenco, e può a sua volta essere annullato.",
+    "histRbPlaylists": "Playlist",
+    "histRbTracks": "Brani",
+    "histRbDeleted": "eliminato da allora",
+    "histRbAdded": "aggiunto da allora",
+    "histRbRenamed": "rinominato",
+    "histRbChanged": "modificato",
+    "histRbMoved": "spostato da allora",
+    "histRbMovedHere": "spostato qui da allora",
+    "histRbTracksDeleted": "{n} brani eliminati da allora",
+    "histRbTrackDeletedOne": "1 brano eliminato da allora",
+    "histRbTracksAdded": "{n} brani aggiunti da allora",
+    "histRbTrackAddedOne": "1 brano aggiunto da allora",
+    "histRbUnchanged": "{n} invariati",
+    "histRbAlbumsUnch": "{a} album e {n} brani invariati…",
+    "histRbAlbumUnch": "{name}: {n} brani invariati…",
+    "histRbAlbumUnchOne": "{name}: 1 brano invariato…",
+    "histRbNoArtist": "(nessun artista)",
+    "histRbNoAlbum": "(nessun album)",
+    "histRbShowGrey": "Mostra in grigio ciò che non è cambiato",
+    "histRbShowChanged": "Solo ciò che è cambiato",
+    "histRbUndoneAbove": "annullato sopra questa linea",
+    "histRbPickEarlier": "Questa è la libreria com'è adesso. Scegli un salvataggio precedente a sinistra per vedere cosa farebbe tornare a quel punto.",
+    "histRbTopLevel": "il primo livello",
+    "histRbOrderNote": "L'ordine è cambiato anche in: {names}",
+    "histRbConfirmTitle": "Tornare a {time}?",
+    "histRbConfirmBody": "Ogni dispositivo che condivide questa libreria la riceve com'era allora. Non viene cancellato nulla: il ritorno viene salvato come nuova versione, e può a sua volta essere annullato.",
+    "histRbReceiveOnly": "Questo dispositivo riceve soltanto gli aggiornamenti, quindi non può tornare indietro. Fallo da un dispositivo che invia le modifiche.",
+    "histRbChangedMeanwhile": "La libreria condivisa è cambiata nel frattempo. Il confronto è di nuovo aggiornato: ricontrollalo, poi torna indietro.",
     "histSubtitle": "«{name}», ogni versione conservata dalla libreria condivisa",
     "histLoading": "Lettura della cronologia…",
     "histNow": "Ora",
@@ -47424,7 +47831,7 @@ async function openSharedHistory(){
     <div class="hist-body"><p class="settings-note" style="padding:18px 22px;">${escapeHtmlText(t("histLoading"))}</p></div>`;
   document.body.appendChild(page);
   page.querySelector("#histClose").addEventListener("click", closeSharedHistory);
-  histState = {cfg, docs: new Map(), choices: new Set(), open: new Set(), mode: "restore", notice: ""};
+  histState = {cfg, docs: new Map(), choices: new Set(), open: new Set(), mode: "restore", notice: "", tab: "roll", rbOpen: new Set(), rbMode: "all", rbWrap: true, rbInit: null};
   try{
     // Send anything waiting here first, so "now" includes it.
     for(let i = 0; i < 40 && sharedSyncRunning; i++) await new Promise(r=> setTimeout(r, 250));
@@ -47576,11 +47983,14 @@ function renderSharedHistory(){
   page.querySelector(".hist-sub").textContent = t("histSubtitle", {name: st.libName});
   // The points, grouped by day.
   let lastDay = "", listHtml = "";
+  const rollTab = st.tab === "roll", selAt = st.list.findIndex(x=> x.version === st.sel);
   st.list.forEach((p, i)=>{
     const day = histDay(p.time);
     if(day !== lastDay){ listHtml += `<div class="hist-day">${escapeHtmlText(day)}</div>`; lastDay = day; }
     const on = p.version === st.sel;
-    listHtml += `<button type="button" class="hist-point${on ? " on" : ""}" data-v="${p.version}" ${on ? 'aria-current="true"' : ""}>
+    // Roll back: the saves above the chosen one are what it would undo.
+    if(rollTab && on && i > 0) listHtml += `<div class="hist-undone-line">${escapeHtmlText(t("histRbUndoneAbove"))}</div>`;
+    listHtml += `<button type="button" class="hist-point${on ? " on" : ""}${rollTab && i < selAt ? " hist-point-undone" : ""}" data-v="${p.version}" ${on ? 'aria-current="true"' : ""}>
       <span class="hist-point-top"><span class="hist-point-time">${escapeHtmlText(histTime(p.time))}${i === 0 ? ` <span class="hist-now">${escapeHtmlText(t("histNow"))}</span>` : ""}</span><span class="hist-point-by">${escapeHtmlText(p.by || "")}</span></span>
       <span class="hist-point-what">${escapeHtmlText(histSummaryText(p.what))}</span></button>`;
   });
@@ -47639,16 +48049,21 @@ function renderSharedHistory(){
   }
   const canRestore = restoreMode && !isNow && !st.cfg.receiveOnly && st.rows.length;
   const allTaken = canRestore && chosen === st.rows.length;
-  const foot = canRestore ? `<span class="rv-summary">${escapeHtmlText(chosen ? t("histFooterSome", {k: chosen, n: st.rows.length}) : t(st.rows.length === 1 ? "histFooterNoneOne" : "histFooterNone", {n: st.rows.length}))}</span>
+  let foot = canRestore ? `<span class="rv-summary">${escapeHtmlText(chosen ? t("histFooterSome", {k: chosen, n: st.rows.length}) : t(st.rows.length === 1 ? "histFooterNoneOne" : "histFooterNone", {n: st.rows.length}))}</span>
       <button class="btn ghost" type="button" id="histAll">${escapeHtmlText(t(allTaken ? "histNoneBtn" : "histAll"))}</button>
       <button class="btn primary" type="button" id="histGo" ${chosen ? "" : "disabled"}>${escapeHtmlText(chosen ? t(chosen === 1 ? "histGoOne" : "histGoN", {n: chosen}) : t("histGo"))}</button>` : "";
+  if(rollTab){ main = histRollMainHtml(st, sel, isNow); foot = ""; }
+  else if(st.tab === "undo"){ main = `<p class="hist-soon">${escapeHtmlText(t("histRbUndoSoon"))}</p>`; foot = ""; }
+  // The three tabs (Gen Rinzin, 14 Nov 2026). A receive-only device makes
+  // no changes of its own, so it has no first tab.
+  const tabsHtml = `<div class="hist-tabbar"><div class="mode-tabs hist-tabs" role="tablist">${[["undo", "histTabUndo"], ["roll", "histTabRoll"], ["bring", "histTabBring"]].filter(x=> x[0] !== "undo" || !st.cfg.receiveOnly).map(([k, key])=> `<button type="button" role="tab" class="mode-tab${st.tab === k ? " active" : ""}" data-tab="${k}" aria-selected="${st.tab === k}"><span class="tab-long">${escapeHtmlText(t(key))}</span><span class="tab-short">${escapeHtmlText(t(key + "Short"))}</span></button>`).join("")}</div></div>`;
   const body = page.querySelector(".hist-body");
   const keepScroll = body.querySelector(".hist-main") ? body.querySelector(".hist-main").scrollTop : 0;
   const keepList = body.querySelector(".hist-points") ? body.querySelector(".hist-points").scrollTop : null;
   body.innerHTML = `<aside class="hist-side">
       <div class="hist-steps"><button class="btn ghost hist-step" type="button" data-step="1" aria-label="${escapeHtmlText(t("histEarlier"))}" ${at >= st.list.length - 1 ? "disabled" : ""}>‹</button><span class="hist-pos">${escapeHtmlText(t("histPosition", {i: at + 1, n: st.list.length}))}</span><button class="btn ghost hist-step" type="button" data-step="-1" aria-label="${escapeHtmlText(t("histLater"))}" ${at <= 0 ? "disabled" : ""}>›</button></div>
       <div class="hist-points">${listHtml}</div></aside>
-    <div class="hist-mainwrap"><div class="hist-main">${main}</div>${foot ? `<div class="rv-foot">${foot}</div>` : ""}</div>`;
+    <div class="hist-mainwrap">${tabsHtml}<div class="hist-main">${main}</div>${foot ? `<div class="rv-foot">${foot}</div>` : ""}</div>`;
   if(keepList != null) body.querySelector(".hist-points").scrollTop = keepList;
   body.querySelector(".hist-main").scrollTop = keepScroll;
   const choose = async v=>{
@@ -47659,6 +48074,8 @@ function renderSharedHistory(){
     renderSharedHistory();
   };
   body.querySelectorAll(".hist-point").forEach(b=> b.addEventListener("click", ()=> choose(+b.dataset.v)));
+  body.querySelectorAll(".hist-tabs .mode-tab").forEach(b=> b.addEventListener("click", ()=>{ if(st.tab === b.dataset.tab) return; st.tab = b.dataset.tab; st.notice = ""; body.querySelector(".hist-main").scrollTop = 0; renderSharedHistory(); }));
+  if(rollTab) histRollWire(body);
   body.querySelectorAll(".hist-step").forEach(b=> b.addEventListener("click", ()=>{ const n = st.list[at + +b.dataset.step]; if(n) choose(n.version); }));
   body.querySelectorAll('input[name="histMode"]').forEach(inp=> inp.addEventListener("change", ()=>{ st.mode = inp.value; renderSharedHistory(); }));
   body.querySelectorAll(".hist-row").forEach(el=>{
@@ -47672,6 +48089,254 @@ function renderSharedHistory(){
   if(all) all.addEventListener("click", ()=>{ if(allTaken) st.choices.clear(); else st.rows.forEach(r=> st.choices.add(r.key)); renderSharedHistory(); });
   const go = body.querySelector("#histGo");
   if(go) go.addEventListener("click", ()=> histRestore(go));
+}
+/* ---- History: Roll back the library (2.5.007) ----
+   One of History's three tabs (Gen Rinzin's design, 14 Nov 2026): the
+   library as it was at the chosen save (column B, in a box with the one
+   button) beside the library now (column D), row for row, showing only what
+   differs. Rolling back restores every difference at once (syncRestore
+   with every row), as a new version. */
+function histRollLabel(it, tracks){
+  return it.kind === "track" ? ((tracks.get(it.refId) || {}).name || "?")
+    : it.kind === "silence" ? (it.name || t("histItemSilence", {time: fmtTime(it.seconds || 0)})) : t("histItemStop", {name: it.name || ""});
+}
+// Two ordered lists of ids as one: what both have in the same order stays
+// level; the rest sits where it was on its own side.
+function histRollAlign(a, b){
+  const n = a.length, m = b.length, w = m + 1, L = new Uint16Array((n + 1) * w);
+  for(let i = n - 1; i >= 0; i--) for(let j = m - 1; j >= 0; j--) L[i * w + j] = a[i] === b[j] ? L[(i + 1) * w + j + 1] + 1 : Math.max(L[(i + 1) * w + j], L[i * w + j + 1]);
+  const out = []; let i = 0, j = 0;
+  while(i < n || j < m){
+    if(i < n && j < m && a[i] === b[j]){ out.push([i, j]); i++; j++; }
+    else if(i < n && (j >= m || L[(i + 1) * w + j] >= L[i * w + j + 1])){ out.push([i, -1]); i++; }
+    else { out.push([-1, j]); j++; }
+  }
+  return out;
+}
+function histRollEntries(B, D, bt, dt, lvl, key, whole){
+  const byOrder = (x, y)=> (x.order || 0) - (y.order || 0);
+  const a = B ? (B.items || []).slice().sort(byOrder) : [], b = D ? (D.items || []).slice().sort(byOrder) : [];
+  const inA = new Set(a.map(x=> x.id)), inB = new Set(b.map(x=> x.id));
+  const rows = []; let changed = false, same = 0;
+  const sans = it=> Object.assign({}, it, {order: 0});
+  histRollAlign(a.map(x=> x.id), b.map(x=> x.id)).forEach(([i, j], at)=>{
+    const x = i >= 0 ? a[i] : null, y = j >= 0 ? b[j] : null;
+    const row = {key: key + ":" + at, lvl, tree: true};
+    if(x && y){
+      const lx = histRollLabel(x, bt), ly = histRollLabel(y, dt), itemSame = syncEq(sans(x), sans(y));
+      if(itemSame){ row.un = true; same++; row.b = {text: lx, cls: "rb-un"}; row.d = {text: ly, cls: "rb-un"}; }
+      else { changed = true; const ren = lx !== ly; row.b = {text: lx, cls: ren ? "rb-ren" : "rb-chg"}; row.d = {text: ly, cls: ren ? "rb-ren" : "rb-chg", tag: t(ren ? "histRbRenamed" : "histRbChanged"), tagCls: ren ? "rb-t-ren" : "rb-t-chg"}; }
+    } else if(x){
+      const moved = inB.has(x.id); changed = true;
+      row.b = {text: histRollLabel(x, bt), cls: moved ? "rb-chg" : "rb-back", tag: whole ? "" : t(moved ? "histRbMoved" : "histRbDeleted"), tagCls: moved ? "rb-t-chg" : "rb-t-back"}; row.d = null;
+    } else {
+      const moved = inA.has(y.id); changed = true;
+      row.b = null; row.d = {text: histRollLabel(y, dt), cls: moved ? "rb-chg" : "rb-lost", tag: whole ? "" : t(moved ? "histRbMovedHere" : "histRbAdded"), tagCls: moved ? "rb-t-chg" : "rb-t-lost"};
+    }
+    rows.push(row);
+  });
+  if(B && D && same && changed){ const s = {text: t("histRbUnchanged", {n: same}), cls: "rb-un"}; rows.push({key: key + ":sum", lvl, tree: true, sum: true, b: s, d: s}); }
+  return {rows, changed};
+}
+// The folders and playlists that differ, as a tree; opens collects the
+// keys that start open.
+function histRollPlaylists(st, opens){
+  const then = st.thenDoc, now = st.nowDoc;
+  const bn = syncFlattenTree(then.tree), dn = syncFlattenTree(now.tree);
+  const bo = syncChildOrders(bn), dord = syncChildOrders(dn);
+  const bt = new Map((then.tracks || []).map(x=> [x.id, x])), dt = new Map((now.tracks || []).map(x=> [x.id, x]));
+  const pk = rec=> rec.parent == null ? SYNC_ROOT_KEY : rec.parent;
+  const merge = (a, b)=>{ const out = (b || []).slice(); let last = -1; (a || []).forEach(id=>{ const at = out.indexOf(id); if(at >= 0) last = at; else { out.splice(last + 1, 0, id); last++; } }); return out; };
+  const plain = rec=>{ const c = syncNodeSansOrder(rec); delete c.name; delete c.parent; delete c.items; return c; };
+  const build = (id, p, lvl)=>{
+    const hb = bn.get(id), hd = dn.get(id);
+    const B = hb && pk(hb) === p ? hb : null, D = hd && pk(hd) === p ? hd : null;
+    if(!B && !D) return null;
+    const moved = !!(hb && hd && pk(hb) !== pk(hd)), v = B || D, isPl = v.kind === "playlist";
+    const key = "n:" + id + (B && D ? "" : B ? ":b" : ":d");
+    let kids = [], inner = false;
+    if(isPl){ const e = histRollEntries(B, D, bt, dt, lvl + 1, key, !(B && D)); kids = e.rows; inner = e.changed; }
+    else kids = merge(B ? bo.get(id) : null, D ? dord.get(id) : null).map(c=> build(c, id, lvl + 1)).filter(Boolean);
+    const node = {key, lvl, tree: true, icon: isPl ? ICON_PLAYLIST : ICON_FOLDER, kids, kind: kids.length ? "fold" : null};
+    if(B && D){
+      const ren = B.name !== D.name, chg = (isPl && inner) || !syncEq(plain(B), plain(D));
+      if(!ren && !chg && (isPl || !kids.length)) return null;
+      const cls = ren ? "rb-ren" : chg ? "rb-chg" : "rb-un";
+      const tag = [ren ? t("histRbRenamed") : "", chg ? t("histRbChanged") : ""].filter(Boolean).join(" · ");
+      node.b = {text: B.name || "", cls, tag: chg && !ren ? tag : "", tagCls: "rb-t-chg"};
+      node.d = {text: D.name || "", cls, tag, tagCls: ren ? "rb-t-ren" : "rb-t-chg"};
+      if(!isPl || chg) opens.push(key);
+    } else if(B){
+      node.b = {text: B.name || "", cls: moved ? "rb-chg" : "rb-back", tag: t(moved ? "histRbMoved" : "histRbDeleted"), tagCls: moved ? "rb-t-chg" : "rb-t-back"}; node.d = null;
+      if(!isPl) opens.push(key);
+    } else {
+      node.b = null; node.d = {text: D.name || "", cls: moved ? "rb-chg" : "rb-lost", tag: t(moved ? "histRbMovedHere" : "histRbAdded"), tagCls: moved ? "rb-t-chg" : "rb-t-lost"};
+      if(!isPl) opens.push(key);
+    }
+    return node;
+  };
+  return merge(bo.get(SYNC_ROOT_KEY), dord.get(SYNC_ROOT_KEY)).map(id=> build(id, SYNC_ROOT_KEY, 0)).filter(Boolean);
+}
+// The tracks that differ, under their artist and album. A name that
+// changed keeps its tracks together: one row, the old name and the new.
+function histRollTracks(st){
+  const then = st.thenDoc, now = st.nowDoc;
+  const bt = new Map((then.tracks || []).map(x=> [x.id, x])), dt = new Map((now.tracks || []).map(x=> [x.id, x]));
+  const nm = s=> (s == null ? "" : String(s)).trim();
+  // Groups items by a pair of names (then, now): those on both sides make
+  // the pairs; one-sided items join the pair that has their name.
+  const pair = (items, field)=>{
+    const groups = new Map(), get = (b, d)=>{ const k = JSON.stringify([b, d]); if(!groups.has(k)) groups.set(k, {b, d, items: []}); return groups.get(k); };
+    items.filter(x=> x.B && x.D).forEach(x=> get(nm(x.B[field]), nm(x.D[field])).items.push(x));
+    const all = ()=> [...groups.values()];
+    items.filter(x=> x.B && !x.D).forEach(x=>{ const a = nm(x.B[field]); (groups.get(JSON.stringify([a, a])) || all().find(g=> g.b === a) || get(a, null)).items.push(x); });
+    items.filter(x=> !x.B && x.D).forEach(x=>{ const a = nm(x.D[field]); (groups.get(JSON.stringify([a, a])) || all().find(g=> g.d === a) || get(null, a)).items.push(x); });
+    return all().sort((x, y)=> (x.d != null ? x.d : x.b).localeCompare(y.d != null ? y.d : y.b));
+  };
+  const skip = new Set(["name", "artist", "album", "changedAt", "addedAt"]);
+  const status = x=>{
+    if(!x.D) return "del"; if(!x.B) return "add";
+    const fb = syncTrackFields(x.B), fd = syncTrackFields(x.D), words = [];
+    if(!syncEq(fb["#audio"], fd["#audio"])) words.push(t("histOtherAudio"));
+    if(!syncEq(fb["#art"], fd["#art"])) words.push(t("histOtherArt"));
+    if(Object.keys(Object.assign({}, fb, fd)).some(k=> k[0] !== "#" && !skip.has(k) && !syncEq(fb[k], fd[k]))) words.push(t("histOtherDetails"));
+    x.words = words;
+    return x.B.name !== x.D.name ? "ren" : words.length ? "chg" : "un";
+  };
+  const items = [...new Set([...bt.keys(), ...dt.keys()])].map(id=> ({id, B: bt.get(id) || null, D: dt.get(id) || null}));
+  items.forEach(x=>{ x.st = status(x); });
+  const byNo = (x, y)=>{ const p = x.D || x.B, q = y.D || y.B; return ((p.trackNo || 1e9) - (q.trackNo || 1e9)) || (p.name || "").localeCompare(q.name || ""); };
+  const name = (s, none)=> s === "" ? t(none) : s;
+  const trackRow = (x, key, whole, grey)=>{
+    const row = {key, lvl: 2};
+    if(x.st === "del"){ row.b = {text: x.B.name || "", cls: "rb-back", tag: whole ? "" : t("histRbDeleted"), tagCls: "rb-t-back"}; row.d = null; }
+    else if(x.st === "add"){ row.b = null; row.d = {text: x.D.name || "", cls: "rb-lost", tag: whole ? "" : t("histRbAdded"), tagCls: "rb-t-lost"}; }
+    else if(x.st === "un"){ row.un = !grey; row.b = {text: x.B.name || "", cls: "rb-un"}; row.d = {text: x.D.name || "", cls: "rb-un"}; }
+    else { const ren = x.st === "ren", cls = ren ? "rb-ren" : "rb-chg", tag = [ren ? t("histRbRenamed") : ""].concat(x.words).filter(Boolean).join(" · ");
+      row.b = {text: x.B.name || "", cls}; row.d = {text: x.D.name || "", cls, tag, tagCls: ren ? "rb-t-ren" : "rb-t-chg"}; }
+    return row;
+  };
+  const out = [];
+  pair(items, "artist").forEach((ar, ai)=>{
+    const arRen = ar.b != null && ar.d != null && ar.b !== ar.d, akey = "a:" + ai;
+    const kids = [], quiet = [];
+    pair(ar.items, "album").forEach((al, li)=>{
+      const alRen = al.b != null && al.d != null && al.b !== al.d, key = akey + ":" + li;
+      const list = al.items.slice().sort(byNo), same = list.filter(x=> x.st === "un").length;
+      if(!alRen && same === list.length){ quiet.push({al, key, list}); return; }
+      const allDel = list.every(x=> x.st === "del"), allAdd = list.every(x=> x.st === "add");
+      const node = {key, lvl: 1, cls: "rb-alb", kids: list.map((x, i)=> trackRow(x, key + ":" + i, allDel || allAdd))};
+      const count = (one, many)=> t(list.length === 1 ? one : many, {n: list.length});
+      if(allDel){ node.b = {text: name(al.b, "histRbNoAlbum"), cls: "rb-back", tag: count("histRbTrackDeletedOne", "histRbTracksDeleted"), tagCls: "rb-t-back"}; node.d = null; }
+      else if(allAdd){ node.b = null; node.d = {text: name(al.d, "histRbNoAlbum"), cls: "rb-lost", tag: count("histRbTrackAddedOne", "histRbTracksAdded"), tagCls: "rb-t-lost"}; }
+      else {
+        node.b = {text: name(al.b != null ? al.b : al.d, "histRbNoAlbum"), cls: alRen ? "rb-ren" : ""};
+        node.d = {text: name(al.d != null ? al.d : al.b, "histRbNoAlbum"), cls: alRen ? "rb-ren" : "", tag: alRen ? t("histRbRenamed") : "", tagCls: "rb-t-ren"};
+        if(same){ const s = {text: t("histRbUnchanged", {n: same}), cls: "rb-un"}; node.kids.push({key: key + ":sum", lvl: 2, sum: true, b: s, d: s}); }
+      }
+      kids.push(node);
+    });
+    if(!arRen && !kids.length) return;
+    // A renamed artist's untouched albums: one line, which a tap replaces
+    // with a line per album, each of which a tap replaces with its tracks.
+    if(arRen && quiet.length){
+      const albumLine = q=>{
+        const s = {text: t(q.list.length === 1 ? "histRbAlbumUnchOne" : "histRbAlbumUnch", {name: name(q.al.d, "histRbNoAlbum"), n: q.list.length}), cls: "rb-un"};
+        const head = {text: name(q.al.d, "histRbNoAlbum"), cls: "rb-un"};
+        return {key: q.key, lvl: 1, cls: "rb-alb", kind: "swap", b: s, d: s, kids: [{key: q.key + ":h", lvl: 1, cls: "rb-alb", b: head, d: head, kids: q.list.map((x, i)=> trackRow(x, q.key + ":" + i, false, true))}]};
+      };
+      if(quiet.length === 1) kids.push(albumLine(quiet[0]));
+      else { const s = {text: t("histRbAlbumsUnch", {a: quiet.length, n: quiet.reduce((n, q)=> n + q.list.length, 0)}), cls: "rb-un"}; kids.push({key: akey + ":q", lvl: 1, cls: "rb-alb", kind: "swap", b: s, d: s, kids: quiet.map(albumLine)}); }
+    }
+    const node = {key: akey, lvl: 0, cls: "rb-art", kids};
+    const gone = ar.d == null, isNew = ar.b == null;
+    node.b = isNew ? null : {text: name(ar.b, "histRbNoArtist"), cls: gone ? "rb-back" : arRen ? "rb-ren" : ""};
+    node.d = gone ? null : {text: name(ar.d, "histRbNoArtist"), cls: isNew ? "rb-lost" : arRen ? "rb-ren" : "", tag: arRen ? t("histRbRenamed") : "", tagCls: "rb-t-ren"};
+    out.push(node);
+  });
+  return out;
+}
+function histRollRowsHtml(list, st){
+  let html = "";
+  const cell = (n, v, lines)=>{
+    let gl = ""; for(let i = 0; i < lines; i++) gl += `<i class="rb-line" style="--i:${i}"></i>`;
+    if(!v) return `<div class="rb-cell rb-blank">${gl}</div>`;
+    const fold = n.kind === "fold";
+    return `<div class="rb-cell" style="--d:${n.lvl}">${gl}${fold ? `<span class="rv-chev${st.rbOpen.has(n.key) ? " open" : ""}" aria-hidden="true"></span>` : n.tree ? `<span class="rv-chev-space"></span>` : ""}${n.icon ? `<span class="rb-icon">${n.icon}</span>` : ""}<span class="rb-body"><span class="rb-text ${v.cls || ""}">${escapeHtmlText(v.text)}</span>${v.tag ? ` <span class="rb-tag ${v.tagCls || ""}">${escapeHtmlText(v.tag)}</span>` : ""}</span></div>`;
+  };
+  (function walk(nodes, capB, capD){
+    nodes.forEach(n=>{
+      if(n.un && st.rbMode === "chg") return;
+      if(n.sum && st.rbMode !== "chg") return;
+      if(n.kind === "swap" && st.rbOpen.has(n.key)){ walk(n.kids, capB, capD); return; }
+      const lb = Math.min(n.lvl, capB), ld = Math.min(n.lvl, capD), open = st.rbOpen.has(n.key);
+      html += `<div class="rb-row ${n.cls || ""}${n.kind ? " rb-tap" : ""}"${n.kind ? ` data-rb="${escapeHtmlText(n.key)}" data-rbkind="${n.kind}" role="button" tabindex="0" aria-expanded="${open}"` : ""}>${cell(n, n.b, lb)}${cell(n, n.d, ld)}</div>`;
+      if(n.kids && n.kind !== "swap" && (n.kind !== "fold" || open)) walk(n.kids, n.b ? n.lvl + 1 : lb, n.d ? n.lvl + 1 : ld);
+    });
+  })(list, 0, 0);
+  return html;
+}
+function histRollMainHtml(st, sel, isNow){
+  const notice = st.notice ? `<p class="rv-notice">${escapeHtmlText(st.notice)}</p>` : "";
+  if(isNow) return notice + `<p class="hist-nothing">${escapeHtmlText(t("histRbPickEarlier"))}</p>`;
+  if(!st.thenDoc) return notice;
+  if(!st.rows.length) return notice + `<p class="hist-nothing">${escapeHtmlText(t("histNothing"))}</p>`;
+  const opens = [], pl = histRollPlaylists(st, opens), tr = histRollTracks(st);
+  // A newly chosen save starts folded the standard way.
+  if(st.rbInit !== st.sel){ st.rbInit = st.sel; st.rbOpen = new Set(opens); }
+  const names = histNames();
+  const orders = st.rows.filter(r=> r.kind === "order").map(r=> r.id === SYNC_ROOT_KEY ? t("rvTopLevel") : "“" + ((names.nodes.get(r.id) || {}).name || "") + "”");
+  const sec = (word, cls, rows)=> rows ? `<div class="rb-row rb-sec"><div class="rb-cell"><span>${escapeHtmlText(word)}</span></div><div class="rb-cell"><span>${escapeHtmlText(word)}</span></div></div><div class="${cls}">${rows}</div>` : "";
+  const plRows = histRollRowsHtml(pl, st), trRows = histRollRowsHtml(tr, st);
+  const radio = (v, key)=> `<label><input type="radio" name="rbMode" value="${v}" ${st.rbMode === v ? "checked" : ""}> ${escapeHtmlText(t(key))}</label>`;
+  return `${notice}<div class="rb-tools"><div class="ctx-inline" id="rbBar"></div><fieldset class="hist-modes rb-modes"><legend class="sr-only">${escapeHtmlText(t("histShowLegend"))}</legend>${radio("all", "histRbShowGrey")}${radio("chg", "histRbShowChanged")}</fieldset></div>
+    <div class="rb-grid${st.rbWrap ? " rb-wrap" : ""}"><div class="rb-box" aria-hidden="true"></div>
+      <div class="rb-row rb-head"><div class="rb-cell"><h3 class="hist-h3">${escapeHtmlText(t("histRbThenHead", {time: histWhen(sel.time)}))}</h3>${st.cfg.receiveOnly ? "" : `<button class="btn primary" type="button" id="rbGo">${escapeHtmlText(t("histRbGo"))}</button>`}</div>
+        <div class="rb-cell"><h3 class="hist-h3">${escapeHtmlText(t("histRbNowHead"))}</h3><p class="rb-note">${escapeHtmlText(t("histRbNowNote"))}</p></div></div>
+      ${sec(t("histRbPlaylists"), "rb-sec-tree", plRows)}
+      ${orders.length ? `<div class="rb-row"><div class="rb-cell rb-note rb-order">${escapeHtmlText(t("histRbOrderNote", {names: orders.join(", ")}))}</div><div class="rb-cell"></div></div>` : ""}
+      ${sec(t("histRbTracks"), "rb-sec-flat", trRows)}
+      <div class="rb-row rb-foot"><div class="rb-cell rb-note">${escapeHtmlText(t(st.cfg.receiveOnly ? "histRbReceiveOnly" : "histRbErased"))}</div><div class="rb-cell"></div></div>
+    </div>`;
+}
+function histRollWire(body){
+  const st = histState;
+  const bar = body.querySelector("#rbBar");
+  if(bar) fillCtxBar(bar, [{icon: "wrap", label: t("ctxWrap"), tip: t("wrapNamesLabel"), on: ()=> !!st.rbWrap, act: ()=>{ st.rbWrap = !st.rbWrap; const g = body.querySelector(".rb-grid"); if(g) g.classList.toggle("rb-wrap", st.rbWrap); }}]);
+  body.querySelectorAll('input[name="rbMode"]').forEach(inp=> inp.addEventListener("change", ()=>{ st.rbMode = inp.value; renderSharedHistory(); }));
+  const tap = el=>{ const k = el.dataset.rb; if(el.dataset.rbkind === "fold" && st.rbOpen.has(k)) st.rbOpen.delete(k); else st.rbOpen.add(k); renderSharedHistory(); };
+  body.querySelectorAll("[data-rb]").forEach(el=>{
+    el.addEventListener("click", ()=> tap(el));
+    el.addEventListener("keydown", e=>{ if(e.key === "Enter" || e.key === " "){ e.preventDefault(); tap(el); } });
+  });
+  const go = body.querySelector("#rbGo");
+  if(go) go.addEventListener("click", ()=> histRollback(go));
+}
+async function histRollback(btn){
+  const st = histState;
+  if(!st || st.restoring) return;
+  const sel = st.list.find(x=> x.version === st.sel);
+  const yes = await askChoice(t("histRbConfirmTitle", {time: histWhen(sel.time)}), `<p>${escapeHtmlText(t("histRbConfirmBody"))}</p>`,
+    [{label: t("histRbGo"), value: true, kind: "primary"}, {label: t("cancelBtn"), value: null}]);
+  if(!yes || !histState || histState !== st || st.restoring) return;
+  st.restoring = true; btn.disabled = true;
+  const cfg = st.cfg;
+  const again = async fresh=>{ await histRecompare(fresh); if(histState){ histState.notice = t("histRbChangedMeanwhile"); renderSharedHistory(); } };
+  try{
+    // Someone saved meanwhile? Then compare again and ask again.
+    const fresh = await sharedGetState(cfg);
+    if(fresh.version !== st.nowVersion){ await again(fresh); return; }
+    const {doc, keys} = syncRestore(st.nowDoc, st.thenDoc, new Set(st.rows.map(r=> r.key)));
+    const res = await sharedPostState(cfg, st.nowVersion, doc, st.nowDoc, {rs: sel.time});
+    if(res.status === 409){ await again(await sharedGetState(cfg)); return; }
+    sharedLog("rolled back to version " + st.sel + " (" + new Date(sel.time).toLocaleString() + "): " + keys.size + " differences");
+    closeSharedHistory();
+    await runSharedSync({force: true});
+  }catch(err){
+    if(histState){ st.notice = err && err.rejected ? sharedRejectedText() : sharedFailText(err); renderSharedHistory(); }
+  }finally{
+    if(histState) histState.restoring = false;
+  }
 }
 async function histRestore(btn){
   const st = histState;

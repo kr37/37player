@@ -72,7 +72,19 @@ window.__share = {offer: (meta)=> offerNativeImport(meta, {}, {}, null, {backupR
   noteKept: ()=>{ root.backupKeepers = Object.assign({}, root.backupKeepers, {[sharedConfig().deviceName]: Date.now()}); return saveState(); },
   label: ()=> document.getElementById("btnBackup").textContent, setup: ()=> backupInfo.setupDone};
 window.__share.manualBackup = downloadManualBackup; window.__share.judge = judgeBackupFiles; window.__share.manualPlan = manualBackupPlan;
-window.__hist = {open: openSharedHistory};
+window.__hist = {open: openSharedHistory,
+  // History drawn from two documents handed in, with no shared library (rollback.js).
+  fake: (now, then, list, sel, cfg)=>{
+    closeSharedHistory();
+    const page = document.createElement("div"); page.id = "historyPage"; page.className = "settings-page rv-page hist-page";
+    placeOverlayPage(page, closeSharedHistory);
+    page.innerHTML = `<div class="hist-top"><h2 class="hist-h">${escapeHtmlText(t("histTitle"))}</h2><span class="hist-sub"></span><button class="btn" type="button" id="histClose">${escapeHtmlText(t("closeBtn"))}</button></div><div class="hist-body"></div>`;
+    document.body.appendChild(page);
+    histState = {cfg: cfg || {kind: "server"}, docs: new Map(), choices: new Set(), open: new Set(), mode: "restore", notice: "", tab: "roll", rbOpen: new Set(), rbMode: "all", rbWrap: true, rbInit: null,
+      list, sel, nowVersion: list[0].version, nowDoc: now, thenDoc: then, beforeDoc: null, libName: "Test"};
+    histComputeRows(); renderSharedHistory();
+  },
+  state: ()=> histState};
 window.__undo = {undo: doUndo, redo: doRedo, del: deleteLibraryTracks, stacks: ()=> ({undo: undoStack.length, redo: redoStack.length, labels: undoStack.map(undoLabel)}), rebase: undoRebase};
 window.__split = performTrackSplit; window.__queueSplit = queueTrackSplit; window.__audioUrl = getAudioUrl; window.__retag = rewriteFileTagsIfPossible;
 window.__share.missingNote = ()=> sharedMissingNote({waiting: false, from: "Laptop"});

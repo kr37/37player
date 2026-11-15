@@ -42,6 +42,7 @@ const versions = async ()=> JSON.parse(require('child_process').execSync(`curl -
 
   // History on A
   await A.evaluate(()=> window.__hist.open()); for(let i=0;i<60;i++){ await sleep(250); if(await A.$('.hist-point')) break; }
+  await A.evaluate(()=> document.querySelector('.hist-tabs [data-tab="bring"]').click()); await sleep(200); // History opens on Roll back (2.5.007); these rows are Bring back's
   const pts = await A.evaluate(()=> [...document.querySelectorAll('.hist-point')].map(b=>({v: +b.dataset.v, text: b.innerText.replace(/\s+/g,' ')})));
   console.log('points:', JSON.stringify(pts));
   ok(pts.length === vs.length && /now/i.test(pts[0].text), 'History lists every version, the newest marked Now');
@@ -74,6 +75,7 @@ const versions = async ()=> JSON.parse(require('child_process').execSync(`curl -
 
   // What changed at a point
   await A.evaluate(()=> window.__hist.open()); for(let i=0;i<60;i++){ await sleep(250); if(await A.$('.hist-point')) break; }
+  await A.evaluate(()=> document.querySelector('.hist-tabs [data-tab="bring"]').click()); await sleep(200); // History opens on Roll back (2.5.007); these rows are Bring back's
   const v2 = vs.find(v=> v.what && v.what.tc === 1 && !v.what.rs);
   await A.evaluate((v)=> document.querySelector('.hist-point[data-v="' + v + '"]').click(), v2.version);
   for(let i=0;i<40;i++){ await sleep(200); if(await A.$('.hist-row, .hist-nothing')) break; }
@@ -84,6 +86,25 @@ const versions = async ()=> JSON.parse(require('child_process').execSync(`curl -
   ok(!(await A.$('#histGo')), 'and nothing to restore in that view');
   await A.keyboard.press('Escape'); await sleep(300);
   ok(!(await A.$('#historyPage')), 'Escape closes History');
+
+  // Roll back the library (2.5.007): everything as it was at the first save with the track, in one go.
+  await A.evaluate(async()=>{ window.__dbg.getRoot().library[0].name = 'Renamed a third time'; await window.__dbg.saveState(); }); await sync(A);
+  await A.evaluate(()=> window.__hist.open()); for(let i=0;i<60;i++){ await sleep(250); if(await A.$('.hist-point')) break; }
+  ok(await A.evaluate(()=> document.querySelector('.hist-tabs .mode-tab.active').dataset.tab === 'roll'), 'History opens on Roll back the library');
+  await A.evaluate((v)=> document.querySelector('.hist-point[data-v="' + v + '"]').click(), oldest);
+  for(let i=0;i<40;i++){ await sleep(200); if(await A.$('#rbGo')) break; }
+  const rb = await A.evaluate(()=> [...document.querySelectorAll('.rb-row')].map(r=> r.innerText.replace(/\s+/g,' ').trim()));
+  console.log('roll back rows:', JSON.stringify(rb));
+  ok(rb.some(r=> r.indexOf(original) >= 0 && /Renamed a third time renamed/.test(r)), 'the track shows its name then and its name now');
+  await A.evaluate(()=> document.getElementById('rbGo').click()); await sleep(400);
+  ok(await A.evaluate(()=> /Roll back to/.test(document.querySelector('.modal h3').textContent)), 'Roll back to this asks first');
+  await clickText(A, '.modal button', '^Roll back to this$');
+  for(let i=0;i<60;i++){ await sleep(250); if(!(await A.$('#historyPage'))) break; }
+  await waitIdle(A); await sleep(1000); await waitIdle(A);
+  ok(!(await A.$('#historyPage')) && await trackName(A) === original, 'rolled back: History closes and the track has its original name (' + await trackName(A) + ')');
+  vs = await versions();
+  ok(vs[0].what && vs[0].what.rs, 'the rollback is a new version at the top');
+  await sync(B); ok(await trackName(B) === original, 'and the other device gets it');
 
   // Settings → Shared library
   await A.evaluate(()=>{ window.__dbg4.settings(); window.__dbg4.section('shared'); }); await sleep(600);
