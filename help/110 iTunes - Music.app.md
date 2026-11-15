@@ -41,11 +41,11 @@ Volume adjustments made in 37 Player, and its evening out, don't come along: the
 
 Music.app and iTunes play one track straight into the next — but only smoothly when the two are alike. When the next track is a different file type (MP3 after AAC), or has a different sample rate (44.1 kHz after 48 kHz, say) or a different number of channels (mono after stereo), the player has to reset its audio output between them, and you hear a click, dropout, short gap, or worse.
 
-37 Player itself doesn't have this problem, so there's no need to change the library for it. Instead, when exporting with **Portable**, select **Convert to the preferred format**: every file in the export comes out alike, and the library stays as it is. For a stricter match, set the preferred format (Settings → **File format**) to **Best for Apple** (AAC, 44.1 kHz, stereo), or choose your own under Custom.
+37 Player itself doesn't have this problem, so there's no need to change the library for it. Instead, when exporting with **Portable**, select **Convert to the preferred format**: every file in the export comes out alike, and the library stays as it is. For a stricter match, set the preferred format (Settings → **File conversion**) to **Best for Apple** (AAC, 44.1 kHz, stereo), or choose your own under Custom.
 
 ### The library's file format
 
-Settings → **File format** sets one **preferred format** for the library — Standard (MP3 192k, recommended), Best for Apple, Very small, Lossless (FLAC, not recommended: much larger, with no difference you can hear), or Custom — and which files are converted to it:
+Settings → **File conversion** sets one **preferred format** for the library — Standard (MP3 192k, recommended), Best for Apple, Very small, Lossless (FLAC, not recommended: much larger, with no difference you can hear), or Custom — and which files are converted to it:
 
 - **Don't touch my files:** nothing is changed. A file this browser can't play still gets a playable copy, and its original is kept too.
 - **Reduce uncompressed audio** (recommended): WAV and AIFF files are converted as they come in.

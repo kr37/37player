@@ -24,7 +24,7 @@ let fails=0; const ok=(c,m)=>{ console.log((c?'ok   ':'FAIL ')+m); if(!c) fails+
   await p.evaluate(()=> window.__ah.pause()); await sleep(1500); // the button some lock screens show while the silent loop plays
   s = await p.evaluate(()=> window.__st());
   ok(!s.paused, 'pause shown during syncing also resumes the paused track');
-  // Sending and receiving follow File format's switch: held while playing, unless "Any time"
+  // Sending and receiving follow File conversion's switch: held while playing, unless "Any time"
   s = await p.evaluate(()=> window.__st());
   if(s.paused){ await p.evaluate(()=> window.__ah.play()); await sleep(1200); }
   await p.evaluate(()=>{ delete window.__dbg.getRoot().settings.standardizeOnlyWhenIdle; });

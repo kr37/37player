@@ -80,7 +80,7 @@ async function open(b, name){
   ok(await B.evaluate(()=> !!document.getElementById('shStatus')), 'and it opens Settings → Shared library');
   ok(await B.evaluate(()=> !!document.querySelector(".sh-status-row #shSyncNow")), 'Sync now sits beside Last checked');
   const nav = await B.evaluate(()=> [...document.querySelectorAll('#settingsNav .settings-nav-item')].map(e=> e.textContent).join(' | '));
-  ok(nav === 'Library | Shared library | Playback | Library cleanup | File format | Backups | PIN | All settings | About', 'Settings in the new order: ' + nav);
+  ok(nav === 'Undo history | Library | Shared library | Playback | Library cleanup | File conversion | Backups | PIN | All settings | About', 'Settings in the new order: ' + nav);
   await B.evaluate(()=> [...document.querySelectorAll('#settingsNav .settings-nav-item')].find(e=> e.textContent === 'Library').click()); await sleep(600);
   const info = await B.evaluate(()=> ({lib: document.getElementById('infoThis')?.textContent, sh: document.getElementById('infoSync')?.textContent}));
   ok(/This library: “.+”/.test(info.lib || '') && /“Test” on 127\.0\.0\.1:8870/.test(info.sh || ''), 'Settings → Library names the library and where it syncs: ' + JSON.stringify(info));
