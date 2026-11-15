@@ -98,6 +98,7 @@ const tree = p=> p.evaluate(()=>{ const out = []; (function w(ns, d){ ns.forEach
   ok(a.some(x=> /^Receiving Blessings/.test(x)) && a.some(x=> /^The Liberating Prayer/.test(x)), 'searching a playlist\'s name shows all its tracks, changed or not');
   await p.evaluate(()=>{ const q = document.getElementById('bbQ'); q.value = ''; q.dispatchEvent(new Event('input')); }); await sleep(200);
   await p.evaluate(()=> document.querySelector('[data-trby="al"]').click()); await sleep(400);
+  await p.screenshot({path: path.join(SHOTS, 'bringback-4.png'), clip: {x: 0, y: 140, width: 1500, height: 330}});
   a = await colA(p);
   console.log('tracks by album:', JSON.stringify(a));
   ok(a.some(x=> /^Tharpa Daily prayers$/.test(x)) && a.some(x=> /^Gen Rinzin Talks$/.test(x)), 'By album: the artist small above the album');

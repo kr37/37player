@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.5.018">
+<meta name="app-version" content="2.5.019">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -766,15 +766,20 @@
   .bb-top{ display:flex; align-items:center; flex-wrap:wrap; gap:8px 16px; margin:0 0 10px; }
   .bb-title{ margin:0; font-size:17px; }
   .bb-tabs{ flex-wrap:wrap; }
-  .bb-radios{ margin:0; }
-  .bb-legend{ float:left; margin-right:8px; color:var(--text-dim); }
+  .bb-radios{ display:flex; align-items:center; flex-wrap:wrap; gap:4px 14px; margin:0; padding:0; border:0; }
+  .bb-top > .bb-radios{ margin:0; padding:0; align-self:center; }
+  .settings-page .hist-main .bb-radios label, .settings-page .hist-main .rb-modes label{ display:inline-flex; align-items:center; gap:6px; margin:0; font-size:14px; color:var(--text); line-height:1.2; } /* over .settings-page label's block and margin */
+  .bb-radios input{ margin:0; position:static; top:auto; vertical-align:middle; }
+  .bb-legend{ color:var(--text-dim); }
+  .bb-top .bb-tabs, .bb-top .hist-ctx{ align-self:center; }
+  .ctx-below.hist-ctx{ background:none; padding:0; }
+  .bb-ctabs{ margin:0 0 8px; }
   .bb-spacer{ flex:1; }
   .bb-missing{ display:flex; align-items:center; flex-wrap:wrap; gap:8px 12px; margin:0 0 12px; color:var(--text-dim); font-size:13px; }
   .bb-grid{ display:grid; grid-template-columns:minmax(200px, 1fr) minmax(0, 2.1fr) minmax(130px, 0.75fr); gap:0; align-items:start; border:1px solid var(--line); border-radius:12px; }
   .bb-a{ border-right:1px solid var(--line); padding:8px 0; min-width:0; }
   .bb-c{ border-left:1px solid var(--line); padding:8px 0; min-width:0; position:sticky; top:0; }
   .bb-h{ display:block; font-size:12px; color:var(--text-dim); padding:0 12px 6px; }
-  .bb-a > .bb-tabs{ margin:0 12px 8px; font-size:12px; }
   .bb-q{ display:block; width:calc(100% - 24px); margin:0 12px 8px; }
   .bb-it{ position:relative; display:flex; flex-wrap:wrap; align-items:center; gap:0 5px; padding:4px 10px 4px calc(10px + var(--d, 0) * 18px); cursor:pointer; min-width:0; }
   .bb-it:hover{ background:var(--bg-panel-raised); }
@@ -5018,6 +5023,7 @@ const STRINGS = {
     "histBtnNote": "Every saved change from the last 30 days, and restoring any of it.",
     "histBtnNoteDrive": "Every saved change, and restoring any of it.",
     "histTitle": "History",
+    "bbServerOld": "The shared library's server needs updating (sync.php 2.5.018 or later) before Bring back can list what changed.",
     "bbTitle": "Bring back since {date}",
     "bbPlaylists": "Playlists",
     "bbTracks": "Tracks",
@@ -7112,6 +7118,7 @@ const STRINGS = {
     "histBtnNote": "Cada cambio guardado de los últimos 30 días, y restaurar cualquiera de ellos.",
     "histBtnNoteDrive": "Cada cambio guardado, y restaurar cualquiera de ellos.",
     "histTitle": "Historial",
+    "bbServerOld": "El servidor de la biblioteca compartida necesita actualizarse (sync.php 2.5.018 o posterior) antes de que Recuperar pueda mostrar qué cambió.",
     "bbTitle": "Recuperar desde el {date}",
     "bbPlaylists": "Listas",
     "bbTracks": "Pistas",
@@ -9205,6 +9212,7 @@ const STRINGS = {
     "histBtnNote": "Chaque modification enregistrée des 30 derniers jours, et la possibilité d'en restaurer.",
     "histBtnNoteDrive": "Chaque modification enregistrée, et la possibilité d'en restaurer.",
     "histTitle": "Historique",
+    "bbServerOld": "Le serveur de la bibliothèque partagée doit être mis à jour (sync.php 2.5.018 ou plus récent) avant que Récupérer puisse lister ce qui a changé.",
     "bbTitle": "Récupérer depuis le {date}",
     "bbPlaylists": "Playlists",
     "bbTracks": "Pistes",
@@ -11298,6 +11306,7 @@ const STRINGS = {
     "histBtnNote": "Cada alteração salva nos últimos 30 dias, e restaurar qualquer uma delas.",
     "histBtnNoteDrive": "Cada alteração salva, e restaurar qualquer uma delas.",
     "histTitle": "Histórico",
+    "bbServerOld": "O servidor da biblioteca compartilhada precisa ser atualizado (sync.php 2.5.018 ou posterior) antes que Recuperar possa listar o que mudou.",
     "bbTitle": "Recuperar desde {date}",
     "bbPlaylists": "Playlists",
     "bbTracks": "Faixas",
@@ -13391,6 +13400,7 @@ const STRINGS = {
     "histBtnNote": "Jede gespeicherte Änderung der letzten 30 Tage, und jede davon wiederherstellen.",
     "histBtnNoteDrive": "Jede gespeicherte Änderung, und jede davon wiederherstellen.",
     "histTitle": "Verlauf",
+    "bbServerOld": "Der Server der gemeinsamen Bibliothek muss aktualisiert werden (sync.php 2.5.018 oder neuer), bevor Zurückholen auflisten kann, was sich geändert hat.",
     "bbTitle": "Zurückholen seit {date}",
     "bbPlaylists": "Playlists",
     "bbTracks": "Titel",
@@ -15484,6 +15494,7 @@ const STRINGS = {
     "histBtnNote": "过去 30 天保存的每一次更改，并可恢复其中任何内容。",
     "histBtnNoteDrive": "保存的每一次更改，并可恢复其中任何内容。",
     "histTitle": "历史记录",
+    "bbServerOld": "共享资料库的服务器需要先更新（sync.php 2.5.018 或更高版本），“找回”才能列出更改的内容。",
     "bbTitle": "找回 {date} 以来的内容",
     "bbPlaylists": "播放列表",
     "bbTracks": "曲目",
@@ -17577,6 +17588,7 @@ const STRINGS = {
     "histBtnNote": "Mọi thay đổi đã lưu trong 30 ngày qua, và khôi phục bất kỳ thay đổi nào.",
     "histBtnNoteDrive": "Mọi thay đổi đã lưu, và khôi phục bất kỳ thay đổi nào.",
     "histTitle": "Lịch sử",
+    "bbServerOld": "Máy chủ của thư viện dùng chung cần được cập nhật (sync.php 2.5.018 trở lên) trước khi Lấy lại có thể liệt kê những gì đã thay đổi.",
     "bbTitle": "Lấy lại kể từ {date}",
     "bbPlaylists": "Danh sách phát",
     "bbTracks": "Bài",
@@ -19670,6 +19682,7 @@ const STRINGS = {
     "histBtnNote": "Κάθε αποθηκευμένη αλλαγή των τελευταίων 30 ημερών, και επαναφορά οποιασδήποτε.",
     "histBtnNoteDrive": "Κάθε αποθηκευμένη αλλαγή, και επαναφορά οποιασδήποτε.",
     "histTitle": "Ιστορικό",
+    "bbServerOld": "Ο διακομιστής της κοινόχρηστης βιβλιοθήκης χρειάζεται ενημέρωση (sync.php 2.5.018 ή νεότερο) για να μπορεί η Ανάκτηση να δείξει τι άλλαξε.",
     "bbTitle": "Ανάκτηση από {date}",
     "bbPlaylists": "Λίστες",
     "bbTracks": "Κομμάτια",
@@ -21763,6 +21776,7 @@ const STRINGS = {
     "histBtnNote": "Ogni modifica salvata negli ultimi 30 giorni, e ripristinarne qualsiasi.",
     "histBtnNoteDrive": "Ogni modifica salvata, e ripristinarne qualsiasi.",
     "histTitle": "Cronologia",
+    "bbServerOld": "Il server della libreria condivisa va aggiornato (sync.php 2.5.018 o successivo) prima che Recupera possa elencare cosa è cambiato.",
     "bbTitle": "Recupera dal {date}",
     "bbPlaylists": "Playlist",
     "bbTracks": "Brani",
@@ -47172,6 +47186,7 @@ async function histChangeIndex(cfg, opts){
   const known = Object.keys(idx.versions).map(Number);
   const since = known.length ? Math.max(...known) : 0;
   const res = await sharedFetch(cfg, {op: "changes", since: String(since)});
+  if(res.status === 400 && cfg.kind !== "gdrive"){ const e = new Error("changes 400"); e.serverOld = true; throw e; } // sync.php before 2.5.015
   if(!res.ok) throw new Error("changes " + res.status);
   const j = await res.json();
   const kept = new Set(j.kept || []);
@@ -49452,7 +49467,7 @@ function histRollMainHtml(st, sel, isNow){
   };
   const plRows = histRollRowsHtml(pl, st), trRows = histRollRowsHtml(tr, st);
   const radio = (v, key)=> `<label><input type="radio" name="rbMode" value="${v}" ${st.rbMode === v ? "checked" : ""}> ${escapeHtmlText(t(key))}</label>`;
-  return `${notice}${nothing}<div class="rb-tools"><div class="ctx-inline" id="rbBar"></div><fieldset class="hist-modes rb-modes"><legend class="sr-only">${escapeHtmlText(t("histShowLegend"))}</legend>${radio("all", "histRbShowGrey")}${radio("chg", "histRbShowChanged")}</fieldset></div>
+  return `${notice}${nothing}<div class="rb-tools"><div class="ctx-inline ctx-below hist-ctx" id="rbBar"></div><fieldset class="hist-modes rb-modes"><legend class="sr-only">${escapeHtmlText(t("histShowLegend"))}</legend>${radio("all", "histRbShowGrey")}${radio("chg", "histRbShowChanged")}</fieldset></div>
     <div class="rb-grid${st.rbWrap ? " rb-wrap" : ""}"><div class="rb-box" aria-hidden="true"></div>
       <div class="rb-row rb-head"><div class="rb-cell"><h3 class="hist-h3">${escapeHtmlText(t("histRbThenHead", {time: histWhen(sel.time)}))}</h3>${st.cfg.receiveOnly || !any || blocked ? "" : `<button class="btn primary" type="button" id="rbGo">${escapeHtmlText(t(stepSel ? "histUndoTo" : "histRbGo"))}</button>`}</div>
         <div class="rb-cell"><h3 class="hist-h3">${escapeHtmlText(t("histRbNowHead"))}</h3><p class="rb-note">${escapeHtmlText(t(stepSel || st.local ? "histRbNowNoteLocal" : "histRbNowNote"))}</p></div></div>
@@ -49665,12 +49680,12 @@ function histBringMainHtml(st){
     <div class="bb-top"><h3 class="bb-title">${escapeHtmlText(t("bbTitle", {date: bbDate(histVersionTime(st, m.oldest))}))}</h3>
       ${tabs("kind", [["pl", "bbPlaylists"], ["tr", "bbTracks"]], bb.kind)}
       <fieldset class="hist-modes bb-radios"><legend class="sr-only">${escapeHtmlText(t("bbByFolder"))}</legend>${radio("bbView", "tree", "bbByFolder", bb.view)}${radio("bbView", "flat", "bbFlat", bb.view)}</fieldset>
-      <span class="bb-spacer"></span><div class="ctx-inline" id="bbBar"></div>
-      <fieldset class="hist-modes bb-radios"><legend class="bb-legend">${escapeHtmlText(t("bbShow"))}</legend>${radio("bbShow", "chg", "bbShowChanges", bb.show)}${radio("bbShow", "all", "bbShowAll", bb.show)}</fieldset></div>
+      <span class="bb-spacer"></span><div class="ctx-inline ctx-below hist-ctx" id="bbBar"></div>
+      <fieldset class="hist-modes bb-radios"><legend class="sr-only">${escapeHtmlText(t("bbShow"))}</legend><span class="bb-legend" aria-hidden="true">${escapeHtmlText(t("bbShow"))}</span>${radio("bbShow", "chg", "bbShowChanges", bb.show)}${radio("bbShow", "all", "bbShowAll", bb.show)}</fieldset></div>
     ${missing}
     <div class="bb-grid${bb.wrap ? " bb-wrap" : ""}">
       <div class="bb-a"><div class="bb-h">${escapeHtmlText(t(bb.view === "flat" ? "bbFlatHead" : bb.kind === "pl" ? "bbTreeHead" : "bbFindTrack"))}</div>
-        ${bb.kind === "tr" && bb.view === "tree" ? tabs("trby", [["pl", "bbByPlaylist"], ["al", "bbByAlbum"]], bb.trBy) : ""}
+        ${bb.kind === "tr" && bb.view === "tree" ? `<div class="editor-tabs bb-ctabs">${[["pl", "bbByPlaylist"], ["al", "bbByAlbum"]].map(([v, key])=> `<button type="button" class="editor-tab${bb.trBy === v ? " active" : ""}" data-trby="${v}" aria-pressed="${bb.trBy === v}">${escapeHtmlText(t(key))}</button>`).join("")}</div>` : ""}
         <input type="search" class="bb-q" id="bbQ" placeholder="${escapeHtmlText(t("bbSearch"))}" value="${escapeHtmlText(bb.q)}">
         <div id="bbA">${bbColumnA(st, m)}</div></div>
       <div class="bb-cmp" id="bbBD">${bbCompareHtml(st)}</div>
@@ -49779,7 +49794,7 @@ async function bbLoad(st, build, btn){
   try{
     const r = await histChangeIndex(st.cfg, build ? {build: true, onStep: (i, n)=>{ if(btn) btn.textContent = t("bbBuilding", {i: i + 1, n}); }} : {});
     bb.idx = r.index; bb.kept = r.kept; bb.missing = r.missing;
-  }catch(err){ bb.notice = err && err.rejected ? sharedRejectedText() : sharedFailText(err); bb.idx = {versions: {}}; bb.kept = st.list.filter(x=> !x.step).map(x=> x.version); bb.missing = []; }
+  }catch(err){ bb.notice = err && err.serverOld ? t("bbServerOld") : err && err.rejected ? sharedRejectedText() : sharedFailText(err); bb.idx = {versions: {}}; bb.kept = st.list.filter(x=> !x.step).map(x=> x.version); bb.missing = []; }
   finally{ bb.loading = false; }
   if(histState === st && st.tab === "bring") renderSharedHistory();
 }
