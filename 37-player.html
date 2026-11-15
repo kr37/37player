@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.5.007">
+<meta name="app-version" content="2.5.008">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -760,6 +760,7 @@
   .hist-it-changed{ color:var(--amber); font-weight:700; }
   .hist-it-word{ font-weight:400; font-size:12px; }
   .hist-nothing{ max-width:920px; margin:18px auto; color:var(--text-dim); }
+  .hist-nothing + .rb-tools{ margin-top:14px; }
   /* History: the tabs, and Roll back the library (2.5.007) */
   .hist-tabbar{ display:flex; padding:10px 22px 0; }
   .hist-tabs{ max-width:100%; flex-wrap:wrap; border-radius:18px; }
@@ -791,7 +792,11 @@
   .rb-foot .rb-cell{ padding:14px 16px 16px; }
   .rb-order{ padding-top:8px; }
   .rb-sec .rb-cell{ padding:12px 14px 6px 12px; }
-  .rb-sec .rb-cell > span{ flex:1; text-align:center; background:var(--line); color:var(--text-dim); font-weight:700; font-size:14px; padding:4px 8px; border-radius:8px; }
+  .rb-grid{ --rb-head:#374550; }
+  body.theme-light .rb-grid{ --rb-head:#E7EEF2; }
+  body.theme-light.more-contrast .rb-grid{ --rb-head:#D4DEE5; }
+  .rb-sec .rb-cell > span{ flex:1; text-align:center; background:var(--rb-head); color:var(--text); font-weight:700; font-size:14px; padding:4px 8px; border-radius:8px; }
+  .rb-rest .rb-cell{ padding-top:6px; padding-bottom:6px; }
   .rb-art .rb-cell{ font-size:16px; font-weight:700; padding-top:10px; }
   .rb-art .rb-line{ top:10px; }
   .rb-alb .rb-cell{ font-size:14.5px; font-weight:700; }
@@ -3548,7 +3553,7 @@ async function placeIntoLibrary(rootId, move){
       const back = await idbGet("audio", key);
       if(!back || !back.blob || back.blob.inPlace || back.blob.size !== rec.blob.size) throw new Error("the copy didn't arrive whole");
       if(objectUrlCache[key]){ try{ URL.revokeObjectURL(objectUrlCache[key]); }catch(err){} delete objectUrlCache[key]; }
-      if(move && !(await desktopInvoke("fs_remove", {root: rootId, path: r.at}))) throw new Error("the original wasn't there to delete");
+      if(move && !(await desktopInvokeMoving("fs_remove", {root: rootId, path: r.at}))) throw new Error("the original wasn't there to delete");
       done++;
     }catch(err){ failed++; console.warn("Into the library:", key, err); }
   }
@@ -3562,7 +3567,7 @@ async function placeIntoLibrary(rootId, move){
       const label = ((await placeFolders()).find(x=> x.root === rootId) || {}).label || "";
       const c = await askChoice(t("placeEmptyTitle"), `<p>${escapeHtmlText(t("placeEmptyBody", {path: label}))}</p>`,
         [{label: t("placeEmptyRemoveBtn"), value: "remove", kind: "primary"}, {label: t("placeEmptyKeepBtn"), value: null}]);
-      if(c === "remove"){ try{ await desktopInvoke("fs_remove_if_empty", {id: rootId, dry: false}); }catch(err){ alert(String((err && err.message) || err)); } }
+      if(c === "remove"){ try{ await desktopInvokeMoving("fs_remove_if_empty", {id: rootId, dry: false}); }catch(err){ alert(String((err && err.message) || err)); } }
     }
   }
   if(!failed) await forgetPlaceRoot(rootId);
@@ -3759,7 +3764,28 @@ async function renderPlaceFolders(el){
    them until the shell's bridge is 2 and the reading of big recordings by
    address is in (desktop/FILES-DESIGN.md); until then getFile() reads the
    whole file. Tested through a stand-in for the shell (desktophandles.js). */
-function desktopInvoke(cmd, args, options){ return window.__TAURI_INTERNALS__.invoke(cmd, args, options); }
+// Every call to the shell passes through here, and this is where 37 Player
+// is kept from changing a folder used in place (Gen Rinzin, 14 Nov 2026: a
+// limit at the lowest level, so that nothing anywhere in 37 Player can
+// write, rename or delete there, whatever the code above it gets wrong).
+// A folder used in place is a root whose id starts "in-" (addPlaceFolder);
+// a library's own folder never does. Reading is free. The one exception is
+// Move into the library, which the person asks for: desktopInvokeMoving.
+function desktopChangedRoots(cmd, args, options){
+  const a = args || {}, h = (options && options.headers) || {};
+  if(cmd === "fs_write") return [decodeURIComponent(h["p37-root"] || "")];
+  if(cmd === "fs_remove" || cmd === "fs_mkdir") return [a.root];
+  if(cmd === "fs_rename") return [a.root, a.toRoot || a.root];
+  if(cmd === "fs_copy") return [a.toRoot || a.root]; // where the copy lands; the source is only read
+  if(cmd === "fs_remove_if_empty") return a.dry ? [] : [a.id];
+  return null; // not a command that changes files
+}
+function desktopInvoke(cmd, args, options){
+  const roots = desktopChangedRoots(cmd, args, options);
+  if(roots && roots.some(id=> typeof id !== "string" || !id || id.startsWith("in-"))) return Promise.reject(new Error("37 Player doesn't change a folder used in place (" + cmd + ")."));
+  return window.__TAURI_INTERNALS__.invoke(cmd, args, options);
+}
+function desktopInvokeMoving(cmd, args){ return window.__TAURI_INTERNALS__.invoke(cmd, args); }
 function desktopNotFound(what){ return new DOMException("Not there: " + what, "NotFoundError"); }
 class DesktopDirHandle {
   constructor(root, path){ this.root = root; this.path = path; this.kind = "directory"; this.name = path.split("/").pop() || root; }
@@ -4942,6 +4968,21 @@ const STRINGS = {
     "histBtnNote": "Every saved change from the last 30 days, and restoring any of it.",
     "histBtnNoteDrive": "Every saved change, and restoring any of it.",
     "histTitle": "History",
+    "histRbRestPlaylists": "The other {n} playlists are the same on both sides.",
+    "histRbRestPlaylistOne": "The other playlist is the same on both sides.",
+    "histRbRestTracks": "The other {n} tracks are the same on both sides.",
+    "histRbRestTrackOne": "The other track is the same on both sides.",
+    "histRbAllPlaylists": "The playlists are the same on both sides.",
+    "histRbAllTracks": "The tracks are the same on both sides.",
+    "histRbOrderChanged": "order changed",
+    "histRbOrderThen": "Order then",
+    "histRbOrderNow": "Order now",
+    "histRbTopOrderThen": "Top level: order then",
+    "histRbTopOrderNow": "Top level: order now",
+    "histRbCostBack": "{n} recordings ({size}) come back. Each device that holds them downloads them again.",
+    "histRbCostBackOne": "1 recording ({size}) comes back. Each device that holds it downloads it again.",
+    "histRbCostLost": "{n} recordings ({size}) leave every device. Rolling back again would mean downloading them again.",
+    "histRbCostLostOne": "1 recording ({size}) leaves every device. Rolling back again would mean downloading it again.",
     "histTabUndo": "Undo on this device",
     "histTabUndoShort": "This device",
     "histTabRoll": "Roll back the library",
@@ -6953,6 +6994,21 @@ const STRINGS = {
     "histBtnNote": "Cada cambio guardado de los últimos 30 días, y restaurar cualquiera de ellos.",
     "histBtnNoteDrive": "Cada cambio guardado, y restaurar cualquiera de ellos.",
     "histTitle": "Historial",
+    "histRbRestPlaylists": "Las otras {n} listas son iguales en ambos lados.",
+    "histRbRestPlaylistOne": "La otra lista es igual en ambos lados.",
+    "histRbRestTracks": "Las otras {n} pistas son iguales en ambos lados.",
+    "histRbRestTrackOne": "La otra pista es igual en ambos lados.",
+    "histRbAllPlaylists": "Las listas son iguales en ambos lados.",
+    "histRbAllTracks": "Las pistas son iguales en ambos lados.",
+    "histRbOrderChanged": "orden cambiado",
+    "histRbOrderThen": "Orden entonces",
+    "histRbOrderNow": "Orden ahora",
+    "histRbTopOrderThen": "Primer nivel: orden entonces",
+    "histRbTopOrderNow": "Primer nivel: orden ahora",
+    "histRbCostBack": "Vuelven {n} grabaciones ({size}). Cada dispositivo que las tenga las descarga de nuevo.",
+    "histRbCostBackOne": "Vuelve 1 grabación ({size}). Cada dispositivo que la tenga la descarga de nuevo.",
+    "histRbCostLost": "{n} grabaciones ({size}) salen de todos los dispositivos. Revertir otra vez supondría descargarlas de nuevo.",
+    "histRbCostLostOne": "1 grabación ({size}) sale de todos los dispositivos. Revertir otra vez supondría descargarla de nuevo.",
     "histTabUndo": "Deshacer en este dispositivo",
     "histTabUndoShort": "Este dispositivo",
     "histTabRoll": "Revertir la biblioteca",
@@ -8963,6 +9019,21 @@ const STRINGS = {
     "histBtnNote": "Chaque modification enregistrée des 30 derniers jours, et la possibilité d'en restaurer.",
     "histBtnNoteDrive": "Chaque modification enregistrée, et la possibilité d'en restaurer.",
     "histTitle": "Historique",
+    "histRbRestPlaylists": "Les {n} autres playlists sont identiques des deux côtés.",
+    "histRbRestPlaylistOne": "L'autre playlist est identique des deux côtés.",
+    "histRbRestTracks": "Les {n} autres pistes sont identiques des deux côtés.",
+    "histRbRestTrackOne": "L'autre piste est identique des deux côtés.",
+    "histRbAllPlaylists": "Les playlists sont identiques des deux côtés.",
+    "histRbAllTracks": "Les pistes sont identiques des deux côtés.",
+    "histRbOrderChanged": "ordre modifié",
+    "histRbOrderThen": "Ordre alors",
+    "histRbOrderNow": "Ordre maintenant",
+    "histRbTopOrderThen": "Premier niveau : ordre alors",
+    "histRbTopOrderNow": "Premier niveau : ordre maintenant",
+    "histRbCostBack": "{n} enregistrements ({size}) reviennent. Chaque appareil qui les contient les télécharge à nouveau.",
+    "histRbCostBackOne": "1 enregistrement ({size}) revient. Chaque appareil qui le contient le télécharge à nouveau.",
+    "histRbCostLost": "{n} enregistrements ({size}) quittent tous les appareils. Revenir de nouveau en arrière obligerait à les télécharger à nouveau.",
+    "histRbCostLostOne": "1 enregistrement ({size}) quitte tous les appareils. Revenir de nouveau en arrière obligerait à le télécharger à nouveau.",
     "histTabUndo": "Annuler sur cet appareil",
     "histTabUndoShort": "Cet appareil",
     "histTabRoll": "Revenir en arrière",
@@ -10973,6 +11044,21 @@ const STRINGS = {
     "histBtnNote": "Cada alteração salva nos últimos 30 dias, e restaurar qualquer uma delas.",
     "histBtnNoteDrive": "Cada alteração salva, e restaurar qualquer uma delas.",
     "histTitle": "Histórico",
+    "histRbRestPlaylists": "As outras {n} playlists são iguais nos dois lados.",
+    "histRbRestPlaylistOne": "A outra playlist é igual nos dois lados.",
+    "histRbRestTracks": "As outras {n} faixas são iguais nos dois lados.",
+    "histRbRestTrackOne": "A outra faixa é igual nos dois lados.",
+    "histRbAllPlaylists": "As playlists são iguais nos dois lados.",
+    "histRbAllTracks": "As faixas são iguais nos dois lados.",
+    "histRbOrderChanged": "ordem alterada",
+    "histRbOrderThen": "Ordem então",
+    "histRbOrderNow": "Ordem agora",
+    "histRbTopOrderThen": "Primeiro nível: ordem então",
+    "histRbTopOrderNow": "Primeiro nível: ordem agora",
+    "histRbCostBack": "{n} gravações ({size}) voltam. Cada dispositivo que as tem baixa-as de novo.",
+    "histRbCostBackOne": "1 gravação ({size}) volta. Cada dispositivo que a tem baixa-a de novo.",
+    "histRbCostLost": "{n} gravações ({size}) saem de todos os dispositivos. Reverter outra vez significaria baixá-las de novo.",
+    "histRbCostLostOne": "1 gravação ({size}) sai de todos os dispositivos. Reverter outra vez significaria baixá-la de novo.",
     "histTabUndo": "Desfazer neste dispositivo",
     "histTabUndoShort": "Este dispositivo",
     "histTabRoll": "Reverter a biblioteca",
@@ -12983,6 +13069,21 @@ const STRINGS = {
     "histBtnNote": "Jede gespeicherte Änderung der letzten 30 Tage, und jede davon wiederherstellen.",
     "histBtnNoteDrive": "Jede gespeicherte Änderung, und jede davon wiederherstellen.",
     "histTitle": "Verlauf",
+    "histRbRestPlaylists": "Die anderen {n} Playlists sind auf beiden Seiten gleich.",
+    "histRbRestPlaylistOne": "Die andere Playlist ist auf beiden Seiten gleich.",
+    "histRbRestTracks": "Die anderen {n} Titel sind auf beiden Seiten gleich.",
+    "histRbRestTrackOne": "Der andere Titel ist auf beiden Seiten gleich.",
+    "histRbAllPlaylists": "Die Playlists sind auf beiden Seiten gleich.",
+    "histRbAllTracks": "Die Titel sind auf beiden Seiten gleich.",
+    "histRbOrderChanged": "Reihenfolge geändert",
+    "histRbOrderThen": "Reihenfolge damals",
+    "histRbOrderNow": "Reihenfolge jetzt",
+    "histRbTopOrderThen": "Oberste Ebene: Reihenfolge damals",
+    "histRbTopOrderNow": "Oberste Ebene: Reihenfolge jetzt",
+    "histRbCostBack": "{n} Aufnahmen ({size}) kommen zurück. Jedes Gerät, das sie enthält, lädt sie erneut herunter.",
+    "histRbCostBackOne": "1 Aufnahme ({size}) kommt zurück. Jedes Gerät, das sie enthält, lädt sie erneut herunter.",
+    "histRbCostLost": "{n} Aufnahmen ({size}) verschwinden von jedem Gerät. Ein erneutes Zurücksetzen würde bedeuten, sie erneut herunterzuladen.",
+    "histRbCostLostOne": "1 Aufnahme ({size}) verschwindet von jedem Gerät. Ein erneutes Zurücksetzen würde bedeuten, sie erneut herunterzuladen.",
     "histTabUndo": "Rückgängig auf diesem Gerät",
     "histTabUndoShort": "Dieses Gerät",
     "histTabRoll": "Bibliothek zurücksetzen",
@@ -14993,6 +15094,21 @@ const STRINGS = {
     "histBtnNote": "过去 30 天保存的每一次更改，并可恢复其中任何内容。",
     "histBtnNoteDrive": "保存的每一次更改，并可恢复其中任何内容。",
     "histTitle": "历史记录",
+    "histRbRestPlaylists": "其余 {n} 个播放列表两边相同。",
+    "histRbRestPlaylistOne": "另一个播放列表两边相同。",
+    "histRbRestTracks": "其余 {n} 首曲目两边相同。",
+    "histRbRestTrackOne": "另一首曲目两边相同。",
+    "histRbAllPlaylists": "播放列表两边相同。",
+    "histRbAllTracks": "曲目两边相同。",
+    "histRbOrderChanged": "顺序已更改",
+    "histRbOrderThen": "当时的顺序",
+    "histRbOrderNow": "现在的顺序",
+    "histRbTopOrderThen": "顶层：当时的顺序",
+    "histRbTopOrderNow": "顶层：现在的顺序",
+    "histRbCostBack": "{n} 个录音（{size}）会回来。每台存有它们的设备都要重新下载。",
+    "histRbCostBackOne": "1 个录音（{size}）会回来。每台存有它的设备都要重新下载。",
+    "histRbCostLost": "{n} 个录音（{size}）会从每台设备上移除。再次回滚就得重新下载它们。",
+    "histRbCostLostOne": "1 个录音（{size}）会从每台设备上移除。再次回滚就得重新下载它。",
     "histTabUndo": "在此设备上撤销",
     "histTabUndoShort": "此设备",
     "histTabRoll": "回滚资料库",
@@ -17003,6 +17119,21 @@ const STRINGS = {
     "histBtnNote": "Mọi thay đổi đã lưu trong 30 ngày qua, và khôi phục bất kỳ thay đổi nào.",
     "histBtnNoteDrive": "Mọi thay đổi đã lưu, và khôi phục bất kỳ thay đổi nào.",
     "histTitle": "Lịch sử",
+    "histRbRestPlaylists": "{n} danh sách phát còn lại giống nhau ở cả hai bên.",
+    "histRbRestPlaylistOne": "Danh sách phát còn lại giống nhau ở cả hai bên.",
+    "histRbRestTracks": "{n} bài còn lại giống nhau ở cả hai bên.",
+    "histRbRestTrackOne": "Bài còn lại giống nhau ở cả hai bên.",
+    "histRbAllPlaylists": "Các danh sách phát giống nhau ở cả hai bên.",
+    "histRbAllTracks": "Các bài giống nhau ở cả hai bên.",
+    "histRbOrderChanged": "thứ tự đã thay đổi",
+    "histRbOrderThen": "Thứ tự khi đó",
+    "histRbOrderNow": "Thứ tự bây giờ",
+    "histRbTopOrderThen": "Cấp trên cùng: thứ tự khi đó",
+    "histRbTopOrderNow": "Cấp trên cùng: thứ tự bây giờ",
+    "histRbCostBack": "{n} bản ghi ({size}) quay lại. Mỗi thiết bị có chúng sẽ tải lại.",
+    "histRbCostBackOne": "1 bản ghi ({size}) quay lại. Mỗi thiết bị có nó sẽ tải lại.",
+    "histRbCostLost": "{n} bản ghi ({size}) rời khỏi mọi thiết bị. Quay lui lần nữa sẽ phải tải chúng lại.",
+    "histRbCostLostOne": "1 bản ghi ({size}) rời khỏi mọi thiết bị. Quay lui lần nữa sẽ phải tải nó lại.",
     "histTabUndo": "Hoàn tác trên thiết bị này",
     "histTabUndoShort": "Thiết bị này",
     "histTabRoll": "Quay lui thư viện",
@@ -19013,6 +19144,21 @@ const STRINGS = {
     "histBtnNote": "Κάθε αποθηκευμένη αλλαγή των τελευταίων 30 ημερών, και επαναφορά οποιασδήποτε.",
     "histBtnNoteDrive": "Κάθε αποθηκευμένη αλλαγή, και επαναφορά οποιασδήποτε.",
     "histTitle": "Ιστορικό",
+    "histRbRestPlaylists": "Οι άλλες {n} λίστες είναι ίδιες και στις δύο πλευρές.",
+    "histRbRestPlaylistOne": "Η άλλη λίστα είναι ίδια και στις δύο πλευρές.",
+    "histRbRestTracks": "Τα άλλα {n} κομμάτια είναι ίδια και στις δύο πλευρές.",
+    "histRbRestTrackOne": "Το άλλο κομμάτι είναι ίδιο και στις δύο πλευρές.",
+    "histRbAllPlaylists": "Οι λίστες είναι ίδιες και στις δύο πλευρές.",
+    "histRbAllTracks": "Τα κομμάτια είναι ίδια και στις δύο πλευρές.",
+    "histRbOrderChanged": "άλλαξε η σειρά",
+    "histRbOrderThen": "Σειρά τότε",
+    "histRbOrderNow": "Σειρά τώρα",
+    "histRbTopOrderThen": "Ανώτατο επίπεδο: σειρά τότε",
+    "histRbTopOrderNow": "Ανώτατο επίπεδο: σειρά τώρα",
+    "histRbCostBack": "{n} ηχογραφήσεις ({size}) επιστρέφουν. Κάθε συσκευή που τις έχει τις κατεβάζει ξανά.",
+    "histRbCostBackOne": "1 ηχογράφηση ({size}) επιστρέφει. Κάθε συσκευή που την έχει την κατεβάζει ξανά.",
+    "histRbCostLost": "{n} ηχογραφήσεις ({size}) φεύγουν από κάθε συσκευή. Μια νέα επαναφορά θα σήμαινε να κατέβουν ξανά.",
+    "histRbCostLostOne": "1 ηχογράφηση ({size}) φεύγει από κάθε συσκευή. Μια νέα επαναφορά θα σήμαινε να κατέβει ξανά.",
     "histTabUndo": "Αναίρεση σε αυτή τη συσκευή",
     "histTabUndoShort": "Αυτή η συσκευή",
     "histTabRoll": "Επαναφορά της βιβλιοθήκης",
@@ -21023,6 +21169,21 @@ const STRINGS = {
     "histBtnNote": "Ogni modifica salvata negli ultimi 30 giorni, e ripristinarne qualsiasi.",
     "histBtnNoteDrive": "Ogni modifica salvata, e ripristinarne qualsiasi.",
     "histTitle": "Cronologia",
+    "histRbRestPlaylists": "Le altre {n} playlist sono uguali da entrambi i lati.",
+    "histRbRestPlaylistOne": "L'altra playlist è uguale da entrambi i lati.",
+    "histRbRestTracks": "Gli altri {n} brani sono uguali da entrambi i lati.",
+    "histRbRestTrackOne": "L'altro brano è uguale da entrambi i lati.",
+    "histRbAllPlaylists": "Le playlist sono uguali da entrambi i lati.",
+    "histRbAllTracks": "I brani sono uguali da entrambi i lati.",
+    "histRbOrderChanged": "ordine cambiato",
+    "histRbOrderThen": "Ordine allora",
+    "histRbOrderNow": "Ordine adesso",
+    "histRbTopOrderThen": "Primo livello: ordine allora",
+    "histRbTopOrderNow": "Primo livello: ordine adesso",
+    "histRbCostBack": "{n} registrazioni ({size}) tornano. Ogni dispositivo che le contiene le scarica di nuovo.",
+    "histRbCostBackOne": "1 registrazione ({size}) torna. Ogni dispositivo che la contiene la scarica di nuovo.",
+    "histRbCostLost": "{n} registrazioni ({size}) lasciano ogni dispositivo. Tornare indietro di nuovo vorrebbe dire scaricarle di nuovo.",
+    "histRbCostLostOne": "1 registrazione ({size}) lascia ogni dispositivo. Tornare indietro di nuovo vorrebbe dire scaricarla di nuovo.",
     "histTabUndo": "Annulla su questo dispositivo",
     "histTabUndoShort": "Questo dispositivo",
     "histTabRoll": "Ripristina la libreria",
@@ -47831,7 +47992,7 @@ async function openSharedHistory(){
     <div class="hist-body"><p class="settings-note" style="padding:18px 22px;">${escapeHtmlText(t("histLoading"))}</p></div>`;
   document.body.appendChild(page);
   page.querySelector("#histClose").addEventListener("click", closeSharedHistory);
-  histState = {cfg, docs: new Map(), choices: new Set(), open: new Set(), mode: "restore", notice: "", tab: "roll", rbOpen: new Set(), rbMode: "all", rbWrap: true, rbInit: null};
+  histState = {cfg, docs: new Map(), choices: new Set(), open: new Set(), mode: "restore", notice: "", tab: "roll", rbOpen: new Set(), rbMode: "all", rbWrap: true, rbInit: null, rbSeen: {nodes: new Set(), tracks: new Set()}};
   try{
     // Send anything waiting here first, so "now" includes it.
     for(let i = 0; i < 40 && sharedSyncRunning; i++) await new Promise(r=> setTimeout(r, 250));
@@ -48148,6 +48309,20 @@ function histRollPlaylists(st, opens){
   const pk = rec=> rec.parent == null ? SYNC_ROOT_KEY : rec.parent;
   const merge = (a, b)=>{ const out = (b || []).slice(); let last = -1; (a || []).forEach(id=>{ const at = out.indexOf(id); if(at >= 0) last = at; else { out.splice(last + 1, 0, id); last++; } }); return out; };
   const plain = rec=>{ const c = syncNodeSansOrder(rec); delete c.name; delete c.parent; delete c.items; return c; };
+  // Rows seen at another save stay listed (in grey once both sides agree),
+  // so that moving between saves never makes one vanish, which read as
+  // "deleted" (Gen Rinzin, 14 Nov 2026).
+  const seen = st.rbSeen.nodes, shown = []; let rest = 0;
+  // A folder whose order changed: everything in it, each side in its own order.
+  const ord = new Set(st.rows.filter(r=> r.kind === "order").map(r=> r.id));
+  const orderNode = (key, lvl, a, b, top)=>{
+    const side = (list, map, i)=>{ const rec = list && list[i] != null ? map.get(list[i]) : null; return rec ? {text: rec.name || "", cls: "rb-un", icon: rec.kind === "playlist" ? ICON_PLAYLIST : ICON_FOLDER} : null; };
+    const kids = [], n = Math.max((a || []).length, (b || []).length);
+    for(let i = 0; i < n; i++) kids.push({key: key + ":o" + i, lvl: lvl + 1, tree: true, b: side(a, bn, i), d: side(b, dn, i)});
+    opens.push(key + ":o");
+    const tag = {tag: t("histRbOrderChanged"), tagCls: "rb-t-chg", cls: "rb-chg"};
+    return {key: key + ":o", lvl, tree: true, kind: "fold", kids, b: Object.assign({text: t(top ? "histRbTopOrderThen" : "histRbOrderThen")}, tag), d: Object.assign({text: t(top ? "histRbTopOrderNow" : "histRbOrderNow")}, tag)};
+  };
   const build = (id, p, lvl)=>{
     const hb = bn.get(id), hd = dn.get(id);
     const B = hb && pk(hb) === p ? hb : null, D = hd && pk(hd) === p ? hd : null;
@@ -48157,10 +48332,11 @@ function histRollPlaylists(st, opens){
     let kids = [], inner = false;
     if(isPl){ const e = histRollEntries(B, D, bt, dt, lvl + 1, key, !(B && D)); kids = e.rows; inner = e.changed; }
     else kids = merge(B ? bo.get(id) : null, D ? dord.get(id) : null).map(c=> build(c, id, lvl + 1)).filter(Boolean);
+    if(!isPl && B && D && ord.has(id)) kids.push(orderNode(key, lvl + 1, bo.get(id), dord.get(id), false));
     const node = {key, lvl, tree: true, icon: isPl ? ICON_PLAYLIST : ICON_FOLDER, kids, kind: kids.length ? "fold" : null};
     if(B && D){
       const ren = B.name !== D.name, chg = (isPl && inner) || !syncEq(plain(B), plain(D));
-      if(!ren && !chg && (isPl || !kids.length)) return null;
+      if(!ren && !chg && !seen.has(id) && (isPl || !kids.length)){ if(isPl) rest++; return null; }
       const cls = ren ? "rb-ren" : chg ? "rb-chg" : "rb-un";
       const tag = [ren ? t("histRbRenamed") : "", chg ? t("histRbChanged") : ""].filter(Boolean).join(" · ");
       node.b = {text: B.name || "", cls, tag: chg && !ren ? tag : "", tagCls: "rb-t-chg"};
@@ -48173,9 +48349,14 @@ function histRollPlaylists(st, opens){
       node.b = null; node.d = {text: D.name || "", cls: moved ? "rb-chg" : "rb-lost", tag: t(moved ? "histRbMovedHere" : "histRbAdded"), tagCls: moved ? "rb-t-chg" : "rb-t-lost"};
       if(!isPl) opens.push(key);
     }
+    shown.push(id);
     return node;
   };
-  return merge(bo.get(SYNC_ROOT_KEY), dord.get(SYNC_ROOT_KEY)).map(id=> build(id, SYNC_ROOT_KEY, 0)).filter(Boolean);
+  const list = merge(bo.get(SYNC_ROOT_KEY), dord.get(SYNC_ROOT_KEY)).map(id=> build(id, SYNC_ROOT_KEY, 0)).filter(Boolean);
+  if(ord.has(SYNC_ROOT_KEY)) list.push(orderNode("root", 0, bo.get(SYNC_ROOT_KEY), dord.get(SYNC_ROOT_KEY), true));
+  shown.forEach(id=> seen.add(id));
+  list.rest = rest;
+  return list;
 }
 // The tracks that differ, under their artist and album. A name that
 // changed keeps its tracks together: one row, the old name and the new.
@@ -48216,26 +48397,29 @@ function histRollTracks(st){
       row.b = {text: x.B.name || "", cls}; row.d = {text: x.D.name || "", cls, tag, tagCls: ren ? "rb-t-ren" : "rb-t-chg"}; }
     return row;
   };
-  const out = [];
+  const out = [], seen = st.rbSeen.tracks, stuck = x=> x.st === "un" && seen.has(x.id);
+  let rest = 0;
   pair(items, "artist").forEach((ar, ai)=>{
     const arRen = ar.b != null && ar.d != null && ar.b !== ar.d, akey = "a:" + ai;
     const kids = [], quiet = [];
     pair(ar.items, "album").forEach((al, li)=>{
       const alRen = al.b != null && al.d != null && al.b !== al.d, key = akey + ":" + li;
       const list = al.items.slice().sort(byNo), same = list.filter(x=> x.st === "un").length;
-      if(!alRen && same === list.length){ quiet.push({al, key, list}); return; }
+      if(!alRen && same === list.length && !list.some(stuck)){ quiet.push({al, key, list}); return; }
       const allDel = list.every(x=> x.st === "del"), allAdd = list.every(x=> x.st === "add");
-      const node = {key, lvl: 1, cls: "rb-alb", kids: list.map((x, i)=> trackRow(x, key + ":" + i, allDel || allAdd))};
+      const node = {key, lvl: 1, cls: "rb-alb", kids: list.map((x, i)=> trackRow(x, key + ":" + i, allDel || allAdd, stuck(x)))};
       const count = (one, many)=> t(list.length === 1 ? one : many, {n: list.length});
       if(allDel){ node.b = {text: name(al.b, "histRbNoAlbum"), cls: "rb-back", tag: count("histRbTrackDeletedOne", "histRbTracksDeleted"), tagCls: "rb-t-back"}; node.d = null; }
       else if(allAdd){ node.b = null; node.d = {text: name(al.d, "histRbNoAlbum"), cls: "rb-lost", tag: count("histRbTrackAddedOne", "histRbTracksAdded"), tagCls: "rb-t-lost"}; }
       else {
         node.b = {text: name(al.b != null ? al.b : al.d, "histRbNoAlbum"), cls: alRen ? "rb-ren" : ""};
         node.d = {text: name(al.d != null ? al.d : al.b, "histRbNoAlbum"), cls: alRen ? "rb-ren" : "", tag: alRen ? t("histRbRenamed") : "", tagCls: "rb-t-ren"};
-        if(same){ const s = {text: t("histRbUnchanged", {n: same}), cls: "rb-un"}; node.kids.push({key: key + ":sum", lvl: 2, sum: true, b: s, d: s}); }
+        const hidden = list.filter(x=> x.st === "un" && !stuck(x)).length;
+        if(hidden){ const s = {text: t("histRbUnchanged", {n: hidden}), cls: "rb-un"}; node.kids.push({key: key + ":sum", lvl: 2, sum: true, b: s, d: s}); }
       }
       kids.push(node);
     });
+    if(!arRen) quiet.forEach(q=>{ rest += q.list.length; });
     if(!arRen && !kids.length) return;
     // A renamed artist's untouched albums: one line, which a tap replaces
     // with a line per album, each of which a tap replaces with its tracks.
@@ -48254,6 +48438,8 @@ function histRollTracks(st){
     node.d = gone ? null : {text: name(ar.d, "histRbNoArtist"), cls: isNew ? "rb-lost" : arRen ? "rb-ren" : "", tag: arRen ? t("histRbRenamed") : "", tagCls: "rb-t-ren"};
     out.push(node);
   });
+  items.forEach(x=>{ if(x.st !== "un") seen.add(x.id); });
+  out.rest = rest;
   return out;
 }
 function histRollRowsHtml(list, st){
@@ -48262,7 +48448,7 @@ function histRollRowsHtml(list, st){
     let gl = ""; for(let i = 0; i < lines; i++) gl += `<i class="rb-line" style="--i:${i}"></i>`;
     if(!v) return `<div class="rb-cell rb-blank">${gl}</div>`;
     const fold = n.kind === "fold";
-    return `<div class="rb-cell" style="--d:${n.lvl}">${gl}${fold ? `<span class="rv-chev${st.rbOpen.has(n.key) ? " open" : ""}" aria-hidden="true"></span>` : n.tree ? `<span class="rv-chev-space"></span>` : ""}${n.icon ? `<span class="rb-icon">${n.icon}</span>` : ""}<span class="rb-body"><span class="rb-text ${v.cls || ""}">${escapeHtmlText(v.text)}</span>${v.tag ? ` <span class="rb-tag ${v.tagCls || ""}">${escapeHtmlText(v.tag)}</span>` : ""}</span></div>`;
+    return `<div class="rb-cell" style="--d:${n.lvl}">${gl}${fold ? `<span class="rv-chev${st.rbOpen.has(n.key) ? " open" : ""}" aria-hidden="true"></span>` : n.tree ? `<span class="rv-chev-space"></span>` : ""}${v.icon || n.icon ? `<span class="rb-icon">${v.icon || n.icon}</span>` : ""}<span class="rb-body"><span class="rb-text ${v.cls || ""}">${escapeHtmlText(v.text)}</span>${v.tag ? ` <span class="rb-tag ${v.tagCls || ""}">${escapeHtmlText(v.tag)}</span>` : ""}</span></div>`;
   };
   (function walk(nodes, capB, capD){
     nodes.forEach(n=>{
@@ -48278,25 +48464,29 @@ function histRollRowsHtml(list, st){
 }
 function histRollMainHtml(st, sel, isNow){
   const notice = st.notice ? `<p class="rv-notice">${escapeHtmlText(st.notice)}</p>` : "";
-  if(isNow) return notice + `<p class="hist-nothing">${escapeHtmlText(t("histRbPickEarlier"))}</p>`;
   if(!st.thenDoc) return notice;
-  if(!st.rows.length) return notice + `<p class="hist-nothing">${escapeHtmlText(t("histNothing"))}</p>`;
+  // Nothing differs (the newest save, or one the same as now): say so; and
+  // if rows were seen at another save, keep them in view all the same.
+  const any = st.rows.length > 0, nothing = any ? "" : `<p class="hist-nothing">${escapeHtmlText(t(isNow ? "histRbPickEarlier" : "histNothing"))}</p>`;
+  if(!any && !st.rbSeen.nodes.size && !st.rbSeen.tracks.size) return notice + nothing;
   const opens = [], pl = histRollPlaylists(st, opens), tr = histRollTracks(st);
   // A newly chosen save starts folded the standard way.
   if(st.rbInit !== st.sel){ st.rbInit = st.sel; st.rbOpen = new Set(opens); }
-  const names = histNames();
-  const orders = st.rows.filter(r=> r.kind === "order").map(r=> r.id === SYNC_ROOT_KEY ? t("rvTopLevel") : "“" + ((names.nodes.get(r.id) || {}).name || "") + "”");
-  const sec = (word, cls, rows)=> rows ? `<div class="rb-row rb-sec"><div class="rb-cell"><span>${escapeHtmlText(word)}</span></div><div class="rb-cell"><span>${escapeHtmlText(word)}</span></div></div><div class="${cls}">${rows}</div>` : "";
+  // Under each section, what isn't listed: the same on both sides.
+  const sec = (word, cls, rows, n, keys)=>{
+    if(!rows && !n) return "";
+    const line = n ? escapeHtmlText(t(!rows ? keys[2] : n === 1 ? keys[1] : keys[0], {n})) : "";
+    return `<div class="rb-row rb-sec"><div class="rb-cell"><span>${escapeHtmlText(word)}</span></div><div class="rb-cell"><span>${escapeHtmlText(word)}</span></div></div><div class="${cls}">${rows}</div>${line ? `<div class="rb-row rb-rest"><div class="rb-cell rb-note">${line}</div><div class="rb-cell rb-note">${line}</div></div>` : ""}`;
+  };
   const plRows = histRollRowsHtml(pl, st), trRows = histRollRowsHtml(tr, st);
   const radio = (v, key)=> `<label><input type="radio" name="rbMode" value="${v}" ${st.rbMode === v ? "checked" : ""}> ${escapeHtmlText(t(key))}</label>`;
-  return `${notice}<div class="rb-tools"><div class="ctx-inline" id="rbBar"></div><fieldset class="hist-modes rb-modes"><legend class="sr-only">${escapeHtmlText(t("histShowLegend"))}</legend>${radio("all", "histRbShowGrey")}${radio("chg", "histRbShowChanged")}</fieldset></div>
+  return `${notice}${nothing}<div class="rb-tools"><div class="ctx-inline" id="rbBar"></div><fieldset class="hist-modes rb-modes"><legend class="sr-only">${escapeHtmlText(t("histShowLegend"))}</legend>${radio("all", "histRbShowGrey")}${radio("chg", "histRbShowChanged")}</fieldset></div>
     <div class="rb-grid${st.rbWrap ? " rb-wrap" : ""}"><div class="rb-box" aria-hidden="true"></div>
-      <div class="rb-row rb-head"><div class="rb-cell"><h3 class="hist-h3">${escapeHtmlText(t("histRbThenHead", {time: histWhen(sel.time)}))}</h3>${st.cfg.receiveOnly ? "" : `<button class="btn primary" type="button" id="rbGo">${escapeHtmlText(t("histRbGo"))}</button>`}</div>
+      <div class="rb-row rb-head"><div class="rb-cell"><h3 class="hist-h3">${escapeHtmlText(t("histRbThenHead", {time: histWhen(sel.time)}))}</h3>${st.cfg.receiveOnly || !any ? "" : `<button class="btn primary" type="button" id="rbGo">${escapeHtmlText(t("histRbGo"))}</button>`}</div>
         <div class="rb-cell"><h3 class="hist-h3">${escapeHtmlText(t("histRbNowHead"))}</h3><p class="rb-note">${escapeHtmlText(t("histRbNowNote"))}</p></div></div>
-      ${sec(t("histRbPlaylists"), "rb-sec-tree", plRows)}
-      ${orders.length ? `<div class="rb-row"><div class="rb-cell rb-note rb-order">${escapeHtmlText(t("histRbOrderNote", {names: orders.join(", ")}))}</div><div class="rb-cell"></div></div>` : ""}
-      ${sec(t("histRbTracks"), "rb-sec-flat", trRows)}
-      <div class="rb-row rb-foot"><div class="rb-cell rb-note">${escapeHtmlText(t(st.cfg.receiveOnly ? "histRbReceiveOnly" : "histRbErased"))}</div><div class="rb-cell"></div></div>
+      ${sec(t("histRbPlaylists"), "rb-sec-tree", plRows, pl.rest, ["histRbRestPlaylists", "histRbRestPlaylistOne", "histRbAllPlaylists"])}
+      ${sec(t("histRbTracks"), "rb-sec-flat", trRows, tr.rest, ["histRbRestTracks", "histRbRestTrackOne", "histRbAllTracks"])}
+      <div class="rb-row rb-foot"><div class="rb-cell rb-note">${any ? escapeHtmlText(t(st.cfg.receiveOnly ? "histRbReceiveOnly" : "histRbErased")) : ""}</div><div class="rb-cell"></div></div>
     </div>`;
 }
 function histRollWire(body){
@@ -48316,8 +48506,17 @@ async function histRollback(btn){
   const st = histState;
   if(!st || st.restoring) return;
   const sel = st.list.find(x=> x.version === st.sel);
-  const yes = await askChoice(t("histRbConfirmTitle", {time: histWhen(sel.time)}), `<p>${escapeHtmlText(t("histRbConfirmBody"))}</p>`,
-    [{label: t("histRbGo"), value: true, kind: "primary"}, {label: t("cancelBtn"), value: null}]);
+  // What it costs the devices (Gen Rinzin, 14 Nov 2026: say it before they
+  // commit): recordings that come back are downloaded again by each device;
+  // those added since leave every device.
+  const bt = new Map((st.thenDoc.tracks || []).map(x=> [x.id, x])), dt = new Map((st.nowDoc.tracks || []).map(x=> [x.id, x]));
+  let back = 0, backBytes = 0, lost = 0, lostBytes = 0;
+  bt.forEach((x, id)=>{ const y = dt.get(id); if(!y || sharedRev(y.audioRev) !== sharedRev(x.audioRev)){ back++; backBytes += x.fileSize || 0; } });
+  dt.forEach((y, id)=>{ if(!bt.has(id)){ lost++; lostBytes += y.fileSize || 0; } });
+  const cost = (back ? `<p>${escapeHtmlText(t(back === 1 ? "histRbCostBackOne" : "histRbCostBack", {n: back, size: fmtBytes(backBytes)}))}</p>` : "")
+    + (lost ? `<p>${escapeHtmlText(t(lost === 1 ? "histRbCostLostOne" : "histRbCostLost", {n: lost, size: fmtBytes(lostBytes)}))}</p>` : "");
+  const yes = await askChoice(t("histRbConfirmTitle", {time: histWhen(sel.time)}), `<p>${escapeHtmlText(t("histRbConfirmBody"))}</p><div id="rbCost">${cost}</div>`,
+    [{label: t("histRbGo"), value: true, kind: "primary"}, {label: t("cancel"), value: null}]);
   if(!yes || !histState || histState !== st || st.restoring) return;
   st.restoring = true; btn.disabled = true;
   const cfg = st.cfg;

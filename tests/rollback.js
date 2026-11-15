@@ -73,6 +73,30 @@ const rowsOf = p=> p.evaluate(()=> [...document.querySelectorAll('.rb-row')].map
   const oa = rows.find(r=> r.b === '' && /^Offering to the Spiritual Guide 3 tracks added since$/.test(r.d));
   ok(oa && oa.lb === 1, 'across from the added album, B has only the artist\'s line');
   ok(rows.some(r=> /^Track08$/.test(r.b) && /^Receiving Blessings renamed$/.test(r.d)), 'a renamed track');
+  ok(rows.some(r=> /^The other track is the same on both sides\.$/.test(r.b) && r.b === r.d) && rows.some(r=> /^The other playlist is the same on both sides\.$/.test(r.b)), 'each section ends by saying the rest is the same on both sides');
+  ok(await p.evaluate(()=>{ const h = getComputedStyle(document.querySelector('.rb-sec .rb-cell > span')).backgroundColor; return h === 'rgb(212, 222, 229)' || h === 'rgb(231, 238, 242)' || h === 'rgb(55, 69, 80)'; }), 'Playlists and Tracks have the Table header\'s blue');
+  // The question says what it costs the devices
+  await p.evaluate(()=> document.getElementById('rbGo').click()); await sleep(300);
+  const cost = await p.evaluate(()=> (document.getElementById('rbCost') || {}).innerText || '');
+  ok(/7 recordings \(.+\) come back/.test(cost) && /5 recordings \(.+\) leave every device/.test(cost), 'Roll back to this asks, with the recordings that come back and those that leave (' + cost.replace(/\s+/g, ' ') + ')');
+  await clickText(p, '.modal button', '^Cancel$'); await sleep(300);
+  ok(await p.evaluate(()=> !!document.getElementById('historyPage') && !document.querySelector('.modal-backdrop.show')), 'Cancel closes the question and leaves History as it was');
+  // Moving to another save: what was listed stays, in grey once both sides agree
+  await p.evaluate((doc)=> window.__hist.point(doc, 7), now); await sleep(300);
+  rows = await rowsOf(p);
+  ok(rows.some(r=> r.b === 'Offering to the Spiritual Guide 1' && r.d === 'Offering to the Spiritual Guide 1') && rows.some(r=> r.b === 'Heart Jewel' && r.d === '') === false && rows.some(r=> /^Morning$/.test(r.b) && /^Morning$/.test(r.d)), 'at a save where both sides agree, the rows seen before are still there, on both sides');
+  ok(await p.evaluate(()=> [...document.querySelectorAll('.rb-row .rb-text')].filter(e=> /Offering to the Spiritual Guide 1|^Morning$/.test(e.textContent)).every(e=> e.classList.contains('rb-un'))), 'and in grey');
+  await p.evaluate((doc)=> window.__hist.point(doc, 6), then); await sleep(300);
+  rows = await rowsOf(p);
+  // A folder whose order changed
+  const swapped = JSON.parse(JSON.stringify(now)); swapped.tree[0].order = 1; swapped.tree[1].order = 0;
+  await p.evaluate((doc)=> window.__hist.point(doc, 5), swapped); await sleep(300);
+  rows = await rowsOf(p);
+  const at = rows.findIndex(r=> /^Top level: order then order changed$/.test(r.b) && /^Top level: order now order changed$/.test(r.d));
+  ok(at >= 0 && rows[at + 1].b === 'Pujas' && rows[at + 1].d === 'Daily' && rows[at + 2].b === 'Daily' && rows[at + 2].d === 'Pujas', 'an order that changed: everything in the folder, each side in its own order');
+  await p.screenshot({path: path.join(SHOTS, 'rollback-7.png')});
+  await p.evaluate((now, then, list)=> window.__hist.fake(now, then, list, 6), now, then, list); await sleep(300);
+  rows = await rowsOf(p);
   // Opening and the one-way lines
   await p.evaluate(()=> [...document.querySelectorAll('.rb-row[data-rb]')].find(r=> /Heart Jewel/.test(r.innerText) && r.closest('.rb-sec-tree')).click()); await sleep(200);
   rows = await rowsOf(p);
@@ -95,7 +119,7 @@ const rowsOf = p=> p.evaluate(()=> [...document.querySelectorAll('.rb-row')].map
   ok(await p.evaluate(()=> !document.querySelector('.rb-grid').classList.contains('rb-wrap')), 'and the Wrap button turns it off');
   // Another point starts folded again
   await p.evaluate(()=> document.querySelector('.hist-point[data-v="9"]').click()); await sleep(300);
-  ok(await p.evaluate(()=> !document.getElementById('rbGo') && !!document.querySelector('.hist-nothing')), 'the newest save: nothing to roll back, no button');
+  ok(await p.evaluate(()=> !document.getElementById('rbGo') && !!document.querySelector('.hist-nothing') && !!document.querySelector('.rb-row')), 'the newest save: nothing to roll back, no button, the rows seen still listed');
   // The other tabs
   await p.evaluate(()=> document.querySelector('.hist-tabs [data-tab="bring"]').click()); await sleep(200);
   ok(await p.evaluate(()=> !!document.querySelector('input[name="histMode"]') && !document.querySelector('.hist-point-undone')), 'Bring back: today\'s rows, no struck-through saves');

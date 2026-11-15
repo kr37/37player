@@ -80,11 +80,13 @@ window.__hist = {open: openSharedHistory,
     placeOverlayPage(page, closeSharedHistory);
     page.innerHTML = `<div class="hist-top"><h2 class="hist-h">${escapeHtmlText(t("histTitle"))}</h2><span class="hist-sub"></span><button class="btn" type="button" id="histClose">${escapeHtmlText(t("closeBtn"))}</button></div><div class="hist-body"></div>`;
     document.body.appendChild(page);
-    histState = {cfg: cfg || {kind: "server"}, docs: new Map(), choices: new Set(), open: new Set(), mode: "restore", notice: "", tab: "roll", rbOpen: new Set(), rbMode: "all", rbWrap: true, rbInit: null,
+    histState = {cfg: cfg || {kind: "server"}, docs: new Map([[list[0].version, now]]), choices: new Set(), open: new Set(), mode: "restore", notice: "", tab: "roll", rbOpen: new Set(), rbMode: "all", rbWrap: true, rbInit: null, rbSeen: {nodes: new Set(), tracks: new Set()},
       list, sel, nowVersion: list[0].version, nowDoc: now, thenDoc: then, beforeDoc: null, libName: "Test"};
     histComputeRows(); renderSharedHistory();
   },
+  point: async (then, sel)=>{ histState.sel = sel; histState.thenDoc = then; histComputeRows(); renderSharedHistory(); },
   state: ()=> histState};
+window.__desk = {invoke: desktopInvoke};
 window.__undo = {undo: doUndo, redo: doRedo, del: deleteLibraryTracks, stacks: ()=> ({undo: undoStack.length, redo: redoStack.length, labels: undoStack.map(undoLabel)}), rebase: undoRebase};
 window.__split = performTrackSplit; window.__queueSplit = queueTrackSplit; window.__audioUrl = getAudioUrl; window.__retag = rewriteFileTagsIfPossible;
 window.__share.missingNote = ()=> sharedMissingNote({waiting: false, from: "Laptop"});

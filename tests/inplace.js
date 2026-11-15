@@ -259,5 +259,16 @@ const closeModals = (p)=> p.evaluate(()=> document.querySelectorAll('.modal [dat
   await p.evaluate((pick)=>{ window.__fakeShellPick = pick; window.__disk.openImportChoice(); }, libPath); await sleep(400);
   await clickText(p, '.modal button', '^Choose a folder'); await sleep(1200);
   ok(alerts.some(a=> /a library's own folder/.test(a)), 'a library\'s own folder is refused (' + alerts.join(' / ') + ')');
+  // The limit at the lowest level (2.5.008): no call that writes, renames or
+  // deletes reaches the shell for a folder used in place.
+  const gate = await p.evaluate(async ()=>{
+    const tries = [["fs_remove", {root: "in-x-1", path: "a.mp3"}], ["fs_mkdir", {root: "in-x-1", path: "new"}], ["fs_rename", {root: "in-x-1", from: "a.mp3", to: "b.mp3"}],
+      ["fs_rename", {root: "lib-1", from: "a.mp3", toRoot: "in-x-1", to: "b.mp3"}], ["fs_copy", {root: "lib-1", from: "a.mp3", toRoot: "in-x-1", to: "b.mp3"}], ["fs_remove_if_empty", {id: "in-x-1", dry: false}],
+      ["fs_write", new Uint8Array(1), {headers: {"p37-root": "in-x-1", "p37-path": "a.mp3"}}]];
+    const out = [];
+    for(const [cmd, a, o] of tries){ try{ await window.__desk.invoke(cmd, a, o); out.push(cmd + ": went through"); }catch(err){ out.push(/used in place/.test(String(err && err.message)) ? "refused" : cmd + ": " + (err && err.message)); } }
+    return out;
+  });
+  ok(gate.every(x=> x === "refused"), 'writing, renaming, copying into or deleting in a folder used in place is refused before it reaches the shell (' + gate.filter(x=> x !== "refused").join('; ') + ')');
   console.log(fails ? fails + ' FAILED' : 'ALL OK'); await b.close();
 })();
