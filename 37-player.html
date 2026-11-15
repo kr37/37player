@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.5.015">
+<meta name="app-version" content="2.5.016">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -45149,13 +45149,18 @@ function syncEq(a, b){ return syncStable(a) === syncStable(b); }
    version's info file; on Drive the saving device writes
    <version>.changes.json), so "every version of this playlist" needs no
    version opened. Each device keeps an index of them (histChangeIndex). */
+// Also the names (2.5.016), so that every name a track or playlist has had
+// can be listed without opening a version: for each id, its name after,
+// and before when that differs (a deleted one has only its name before).
+// tn/nn: {id: [name, …]}.
 function syncChangedIds(a, b){
-  const t = [], n = [];
+  const t = [], n = [], tn = {}, nn = {};
+  const names = (x, y)=>{ const out = []; [y, x].forEach(r=>{ if(r && typeof r.name === "string" && !out.includes(r.name)) out.push(r.name); }); return out; };
   const ta = new Map(((a && a.tracks) || []).map(x=> [x.id, x])), tb = new Map(((b && b.tracks) || []).map(x=> [x.id, x]));
-  new Set([...ta.keys(), ...tb.keys()]).forEach(id=>{ if(!ta.has(id) || !tb.has(id) || !syncEq(ta.get(id), tb.get(id))) t.push(id); });
+  new Set([...ta.keys(), ...tb.keys()]).forEach(id=>{ if(!ta.has(id) || !tb.has(id) || !syncEq(ta.get(id), tb.get(id))){ t.push(id); tn[id] = names(ta.get(id), tb.get(id)); } });
   const na = syncFlattenTree((a && a.tree) || []), nb = syncFlattenTree((b && b.tree) || []);
-  new Set([...na.keys(), ...nb.keys()]).forEach(id=>{ if(!na.has(id) || !nb.has(id) || !syncEq(na.get(id), nb.get(id))) n.push(id); });
-  return {t, n};
+  new Set([...na.keys(), ...nb.keys()]).forEach(id=>{ if(!na.has(id) || !nb.has(id) || !syncEq(na.get(id), nb.get(id))){ n.push(id); nn[id] = names(na.get(id), nb.get(id)); } });
+  return {t, n, tn, nn};
 }
 function syncClone(v){ return v === undefined ? undefined : JSON.parse(JSON.stringify(v)); }
 function syncEmptyDoc(){ return {format: SYNC_DOC_FORMAT, tracks: [], tree: []}; }
@@ -46721,7 +46726,7 @@ async function histChangeIndex(cfg, opts){
   if(!res.ok) throw new Error("changes " + res.status);
   const j = await res.json();
   const kept = new Set(j.kept || []);
-  Object.entries(j.versions || {}).forEach(([v, c])=>{ idx.versions[v] = {t: c.t || [], n: c.n || []}; });
+  Object.entries(j.versions || {}).forEach(([v, c])=>{ idx.versions[v] = {t: c.t || [], n: c.n || [], tn: c.tn || {}, nn: c.nn || {}}; });
   Object.keys(idx.versions).forEach(v=>{ if(!kept.has(+v)) delete idx.versions[v]; });
   const missing = [...kept].filter(v=> !idx.versions[v] && v > 1).sort((a, b)=> a - b);
   if(opts.build && missing.length){
@@ -46736,6 +46741,19 @@ async function histChangeIndex(cfg, opts){
   }
   await idbPut("state", idx).catch(()=>{});
   return {index: idx, kept: [...kept].sort((a, b)=> b - a), missing: opts.build ? [] : missing};
+}
+// Every name there is a record of, for Bring back's flat list: the names in
+// the library now, and every name a changed item had in a kept version.
+// [{name, kind: "t" | "n", id, now: true if it has that name now}], by name.
+function histAllNames(idx, doc){
+  const seen = new Map(), add = (kind, id, name, now)=>{ if(!name) return; const k = kind + "\u0000" + id + "\u0000" + name; const e = seen.get(k); if(e){ e.now = e.now || now; } else seen.set(k, {name, kind, id, now: !!now}); };
+  ((doc && doc.tracks) || []).forEach(x=> add("t", x.id, x.name, true));
+  syncFlattenTree((doc && doc.tree) || []).forEach((r, id)=> add("n", id, r.name, true));
+  Object.values(idx.versions).forEach(c=>{
+    Object.entries(c.tn || {}).forEach(([id, ns])=> ns.forEach(nm=> add("t", id, nm, false)));
+    Object.entries(c.nn || {}).forEach(([id, ns])=> ns.forEach(nm=> add("n", id, nm, false)));
+  });
+  return [...seen.values()].sort((x, y)=> x.name.localeCompare(y.name) || (y.now - x.now));
 }
 // The versions in which one playlist, folder ("n") or track ("t") changed, newest first.
 function histVersionsOf(idx, kind, id){

@@ -1,7 +1,7 @@
 <?php
 /*
  * 37 Player — shared library sync server.
- * Version 2.5.015 (the 37 Player version this file was last changed for;
+ * Version 2.5.016 (the 37 Player version this file was last changed for;
  * keep it the same as SYNC_VERSION below).
  *
  * One file, plain PHP (7.4+), no database. It keeps each shared library in
@@ -50,9 +50,10 @@
  *                                 "what"), when the device said so
  *   GET  op=changes&since=N       (2.5.015) {"kept": [every version kept],
  *                                 "versions": {"N+1": {"t": [track ids],
- *                                 "n": [folder and playlist ids]}, …}}: what
- *                                 each version after N changed, worked out
- *                                 here as it was saved
+ *                                 "n": [folder and playlist ids], "tn"/"nn":
+ *                                 {id: [name after, name before]}}, …}}:
+ *                                 what each version after N changed, worked
+ *                                 out here as it was saved (names: 2.5.016)
  *   GET  op=logs                  devices' logs kept here: [{name, size, time}]
  *   GET  op=log&name=X            one of them (text)
  *   PUT  op=log&name=X            a device's log, replacing its last copy (1 MB at most)
@@ -90,7 +91,7 @@ const KINDS = ['audio', 'artwork', 'peaks'];
 // The 37 Player version this file was last changed for (it doesn't change
 // with every release of the app, only when this file does). Shown in the
 // app's Settings → Shared library, and by `php sync.php version`.
-const SYNC_VERSION = '2.5.015';
+const SYNC_VERSION = '2.5.016';
 
 if (PHP_SAPI === 'cli') { exit(cli($argv)); }
 
@@ -247,7 +248,7 @@ if ($op === 'changes' && $method === 'GET') {
     foreach ($kept as $v) {
         if ($v <= $since || !is_file(info_file($dir, $v))) continue;
         $info = json_decode(file_get_contents(info_file($dir, $v)), true);
-        if (is_array($info) && isset($info['c'])) $out[(string)$v] = $info['c'];
+        if (is_array($info) && isset($info['c'])) { $c = $info['c']; foreach (['tn', 'nn'] as $k) if (isset($c[$k])) $c[$k] = (object)$c[$k]; $out[(string)$v] = $c; } // an empty {} reads back as []
     }
     json_out(['kept' => array_values($kept), 'versions' => (object)$out]);
 }
@@ -471,20 +472,29 @@ function flat_tree($tree, $parent, &$out) {
         if (!is_array($n) || !isset($n['id'])) continue;
         $rec = $n; unset($rec['children'], $rec['id']); $rec['parent'] = $parent;
         $out[$n['id']] = json_encode(canon($rec), JSON_UNESCAPED_UNICODE);
+        $GLOBALS['flat_names'][$n['id']] = $n['name'] ?? null;
         if (($n['kind'] ?? '') === 'folder') flat_tree($n['children'] ?? [], $n['id'], $out);
     }
 }
+// With the names (2.5.016): for each id, its name after, and before when
+// that differs (a deleted one has only its name before).
+function both_names($before, $after) {
+    $out = [];
+    foreach ([$after, $before] as $n) if (is_string($n) && !in_array($n, $out, true)) $out[] = $n;
+    return $out;
+}
 function changed_ids($a, $b) {
-    $ta = []; $tb = [];
-    foreach (($a['tracks'] ?? []) as $x) if (isset($x['id'])) $ta[$x['id']] = json_encode(canon($x), JSON_UNESCAPED_UNICODE);
-    foreach (($b['tracks'] ?? []) as $x) if (isset($x['id'])) $tb[$x['id']] = json_encode(canon($x), JSON_UNESCAPED_UNICODE);
-    $t = [];
-    foreach (array_unique(array_merge(array_keys($ta), array_keys($tb))) as $id) if (($ta[$id] ?? null) !== ($tb[$id] ?? null)) $t[] = (string)$id;
+    $ta = []; $tb = []; $tna = []; $tnb = [];
+    foreach (($a['tracks'] ?? []) as $x) if (isset($x['id'])) { $ta[$x['id']] = json_encode(canon($x), JSON_UNESCAPED_UNICODE); $tna[$x['id']] = $x['name'] ?? null; }
+    foreach (($b['tracks'] ?? []) as $x) if (isset($x['id'])) { $tb[$x['id']] = json_encode(canon($x), JSON_UNESCAPED_UNICODE); $tnb[$x['id']] = $x['name'] ?? null; }
+    $t = []; $tn = [];
+    foreach (array_unique(array_merge(array_keys($ta), array_keys($tb))) as $id) if (($ta[$id] ?? null) !== ($tb[$id] ?? null)) { $t[] = (string)$id; $tn[(string)$id] = both_names($tna[$id] ?? null, $tnb[$id] ?? null); }
     $na = []; $nb = [];
-    flat_tree($a['tree'] ?? [], null, $na); flat_tree($b['tree'] ?? [], null, $nb);
-    $n = [];
-    foreach (array_unique(array_merge(array_keys($na), array_keys($nb))) as $id) if (($na[$id] ?? null) !== ($nb[$id] ?? null)) $n[] = (string)$id;
-    return ['t' => $t, 'n' => $n];
+    $GLOBALS['flat_names'] = []; flat_tree($a['tree'] ?? [], null, $na); $nna = $GLOBALS['flat_names'];
+    $GLOBALS['flat_names'] = []; flat_tree($b['tree'] ?? [], null, $nb); $nnb = $GLOBALS['flat_names'];
+    $n = []; $nn = [];
+    foreach (array_unique(array_merge(array_keys($na), array_keys($nb))) as $id) if (($na[$id] ?? null) !== ($nb[$id] ?? null)) { $n[] = (string)$id; $nn[(string)$id] = both_names($nna[$id] ?? null, $nnb[$id] ?? null); }
+    return ['t' => $t, 'n' => $n, 'tn' => (object)$tn, 'nn' => (object)$nn];
 }
 function files_used($dir, $v) {
     $used = ['audio' => [], 'artwork' => [], 'peaks' => []];

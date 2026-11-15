@@ -42,10 +42,11 @@ const get = q=> JSON.parse(execSync(`curl -s -H "X-Library: ${encodeURIComponent
   const vs = Object.keys(ch.versions).map(Number).sort((a, b)=> a - b), last = vs[vs.length - 1];
   const at = k=> ch.versions[String(last - k)];
   ok(ch.kept.length === vs.length && vs.length >= 6, 'every kept version has its changes recorded (' + vs.length + ')');
-  ok(JSON.stringify(at(4)) === JSON.stringify({t: [], n: ['plM']}), 'a playlist renamed: just that playlist');
-  ok(JSON.stringify(at(3)) === JSON.stringify({t: ['tr5'], n: []}), 'a track renamed: just that track');
-  ok(JSON.stringify(at(2)) === JSON.stringify({t: [], n: ['plM']}), 'an entry added to a playlist: that playlist');
-  ok(JSON.stringify(at(0)) === JSON.stringify({t: ['tr9'], n: []}), 'a track deleted: that track');
+  const ids = c=> JSON.stringify({t: c.t, n: c.n});
+  ok(ids(at(4)) === JSON.stringify({t: [], n: ['plM']}) && JSON.stringify(at(4).nn) === JSON.stringify({plM: ['Morning prayers', 'Morning']}), 'a playlist renamed: just that playlist, with its name after and before');
+  ok(ids(at(3)) === JSON.stringify({t: ['tr5'], n: []}) && JSON.stringify(at(3).tn) === JSON.stringify({tr5: ['Track five', 'Track 5']}), 'a track renamed: just that track, both names');
+  ok(ids(at(2)) === JSON.stringify({t: [], n: ['plM']}) && JSON.stringify(at(2).nn) === JSON.stringify({plM: ['Morning prayers']}), 'an entry added to a playlist: that playlist, its one name');
+  ok(ids(at(0)) === JSON.stringify({t: ['tr9'], n: []}) && JSON.stringify(at(0).tn) === JSON.stringify({tr9: ['Track 9']}), 'a track deleted: that track, with the name it had');
   ok(JSON.stringify(get('op=changes&since=' + (last - 1)).versions) === JSON.stringify({[last]: at(0)}), 'since=N: only the versions after N');
   // The device's index agrees with the server's (same rules on both sides)
   const agree = await p.evaluate(async (last)=>{
@@ -53,9 +54,14 @@ const get = q=> JSON.parse(execSync(`curl -s -H "X-Library: ${encodeURIComponent
     const docs = []; for(const v of [last - 4, last - 3, last - 2, last - 1, last]) docs.push(await (await fetch('http://127.0.0.1:8870/sync.php?op=state&version=' + v, {headers: {'X-Library': encodeURIComponent(window.__dbg.getRoot().settings.sharedLibrary.code)}})).json());
     const prev = await (await fetch('http://127.0.0.1:8870/sync.php?op=state&version=' + (last - 5), {headers: {'X-Library': encodeURIComponent(window.__dbg.getRoot().settings.sharedLibrary.code)}})).json();
     const mine = [window.__hist.changed(prev, docs[0])].concat(docs.slice(1).map((d, i)=> window.__hist.changed(docs[i], d)));
-    return {same: mine.every((m, i)=> JSON.stringify(m) === JSON.stringify(idx.versions[last - 4 + i])), of: window.__hist.versionsOf(idx, 'n', 'plM'), t5: window.__hist.versionsOf(idx, 'n', 'plE')};
+    const names = window.__hist.allNames(idx, docs[4]);
+    const diff = mine.map((m, i)=> JSON.stringify(m) === JSON.stringify(idx.versions[last - 4 + i]) ? '' : JSON.stringify(m) + ' vs ' + JSON.stringify(idx.versions[last - 4 + i])).filter(Boolean);
+    if(diff.length) console.log('DIFF ' + diff.join(' // '));
+    return {diff, same: mine.every((m, i)=> JSON.stringify(m) === JSON.stringify(idx.versions[last - 4 + i])), of: window.__hist.versionsOf(idx, 'n', 'plM'), t5: window.__hist.versionsOf(idx, 'n', 'plE'),
+      names: names.filter(x=> /Morning|Track 5|Track five|Track 9|Evening/.test(x.name)).map(x=> x.name + (x.now ? '' : ' (was)'))};
   }, last);
-  ok(agree.same, 'the device works out the same ids as the server, for the same two versions');
+  ok(agree.same, 'the device works out the same ids and names as the server, for the same two versions' + (agree.diff.length ? ': ' + agree.diff.join(' // ') : ''));
+  ok(agree.names.join('|') === 'Evening (was)|Evening puja|Morning (was)|Morning prayers|Track 5 (was)|Track 9 (was)|Track five', 'every name there is a record of, old ones marked: ' + agree.names.join(' | '));
   ok(agree.of.join() === [last - 2, last - 4].concat(agree.of.slice(2)).join() && agree.of[0] === last - 2, 'the versions in which Morning changed, newest first: ' + agree.of.join(', '));
   // Versions saved before this existed: their info lacks the ids
   for(const v of [last - 3, last - 2]){ const f = path.join(DATA, 'state', String(v).padStart(6, '0') + '.json'); const j = JSON.parse(fs.readFileSync(f)); delete j.c; fs.writeFileSync(f, JSON.stringify(j)); }
