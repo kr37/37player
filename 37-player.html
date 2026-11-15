@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.5.013">
+<meta name="app-version" content="2.5.014">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -25047,11 +25047,13 @@ try{ playingToolbarCollapsed = localStorage.getItem("37player.playingToolbarColl
 const playingCtxBar = document.createElement("div");
 playingCtxBar.className = "ctx-bar ctx-playing"; playingCtxBar.setAttribute("role", "toolbar");
 // Native select handles keyboard and touch; the visible face stays compact.
-function playingLevelControl(){
+// Also used by Settings → Playback (id "levelModeSelect", no caption: the
+// row has its own), so the two look and act alike.
+function playingLevelControl(id, noCaption){
   const label = document.createElement("label");
   label.className = "playing-level";
   const caption = document.createElement("span");
-  caption.textContent = t("ctxLoudness");
+  caption.textContent = noCaption ? "" : t("ctxLoudness");
   const face = document.createElement("span");
   face.className = "playing-level-face";
   const value = document.createElement("span");
@@ -25059,7 +25061,7 @@ function playingLevelControl(){
   face.append(value);
   face.insertAdjacentHTML("beforeend", '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>');
   const select = document.createElement("select");
-  select.id = "playingLevelMode";
+  select.id = id || "playingLevelMode";
   select.setAttribute("aria-label", t("ctxLevelGroup"));
   const choices = [
     ["album", "ctxLevelAlbum", "ctxLevelAlbumRecommended", "ctxLevelAlbumTip"],
@@ -25073,8 +25075,14 @@ function playingLevelControl(){
     value.textContent = t(choice[1]);
     label.title = t(choice[3]);
   };
-  select.addEventListener("change", ()=>{ setLevelMode(select.value); update(); });
-  select._update = update; // Settings → Playback changes the same setting
+  select.addEventListener("change", ()=>{
+    setLevelMode(select.value);
+    // Its twin (Playing's bar, or Settings → Playback) shows the same.
+    ["playingLevelMode", "levelModeSelect"].forEach(k=>{ const el = document.getElementById(k); if(el && el._update) el._update(); });
+    const saved = document.getElementById("levelSaved");
+    if(saved && select.id === "levelModeSelect") settingsSaved(saved);
+  });
+  select._update = update;
   face.append(select);
   label.append(caption, face);
   update();
@@ -39184,8 +39192,8 @@ async function renderSettingsSection(fromTimer){
   else if(sec.id==="playback"){
     body.innerHTML = `
       <div class="settings-row" style="gap:12px; flex-wrap:wrap; align-items:center;">
-        <label for="levelModeSelect"><strong>${t("levelModeLabel")}</strong></label>
-        <select id="levelModeSelect">${[["album", "ctxLevelAlbumRecommended"], ["off", "ctxLevelOff"], ["track", "ctxLevelTrack"]].map(([v, k])=> `<option value="${v}"${levelMode() === v ? " selected" : ""}>${escapeHtmlText(t(k))}</option>`).join("")}</select>
+        <strong>${t("levelModeLabel")}</strong>
+        <span id="levelModeSlot"></span>
         <span class="settings-saved" id="levelSaved"></span>
       </div>
       <p class="settings-note">${t("levelNote")}</p>
@@ -39210,12 +39218,7 @@ async function renderSettingsSection(fromTimer){
     // One drop-down, the same three choices as the one on Playing's bar and
     // the same setting (Gen Rinzin, 15 Nov 2026: the switch with two radio
     // buttons looked like a main switch that overrode Playing's).
-    document.getElementById("levelModeSelect").addEventListener("change", (e)=>{
-      setLevelMode(e.target.value);
-      const onPlaying = document.getElementById("playingLevelMode");
-      if(onPlaying && onPlaying._update) onPlaying._update();
-      settingsSaved(document.getElementById("levelSaved"));
-    });
+    document.getElementById("levelModeSlot").append(playingLevelControl("levelModeSelect", true));
     wireIdleSwitch();
     document.getElementById("playLog").textContent = playLogLines.slice().reverse().join("\n");
     const c = loudnessMeasuredCounts();
