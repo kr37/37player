@@ -121,8 +121,7 @@ const rowsOf = p=> p.evaluate(()=> [...document.querySelectorAll('.rb-row')].map
   await p.evaluate(()=> document.querySelector('.hist-point[data-v="9"]').click()); await sleep(300);
   ok(await p.evaluate(()=> !document.getElementById('rbGo') && !!document.querySelector('.hist-nothing') && !!document.querySelector('.rb-row')), 'the newest save: nothing to roll back, no button, the rows seen still listed');
   // The other tabs
-  await p.evaluate(()=> document.querySelector('.hist-tabs [data-tab="bring"]').click()); await sleep(200);
-  ok(await p.evaluate(()=> !!document.querySelector('input[name="histMode"]') && !document.querySelector('.hist-point-undone')), 'Bring back: today\'s rows, no struck-through saves');
+  // (Bring back's own test: bringback.js)
   // Receive-only: no first tab, no button
   await p.evaluate((now, then, list)=> window.__hist.fake(now, then, list, 6, {kind: 'server', receiveOnly: true}), now, then, list); await sleep(300);
   ok(await p.evaluate(()=> document.querySelectorAll('.hist-tabs .mode-tab').length === 2 && !document.getElementById('rbGo') && /receives updates only/.test(document.querySelector('.rb-foot').innerText)), 'receive-only: two tabs, no button, and why');

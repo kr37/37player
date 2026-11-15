@@ -42,28 +42,33 @@ const versions = async ()=> JSON.parse(require('child_process').execSync(`curl -
 
   // History on A
   await A.evaluate(()=> window.__hist.open()); for(let i=0;i<60;i++){ await sleep(250); if(await A.$('.hist-point')) break; }
-  await A.evaluate(()=> document.querySelector('.hist-tabs [data-tab="bring"]').click()); await sleep(200); // History opens on Roll back (2.5.007); these rows are Bring back's
   const pts = await A.evaluate(()=> [...document.querySelectorAll('.hist-point')].map(b=>({v: +b.dataset.v, text: b.innerText.replace(/\s+/g,' ')})));
   console.log('points:', JSON.stringify(pts));
   ok(pts.length === vs.length && /now/i.test(pts[0].text), 'History lists every version, the newest marked Now');
   ok(pts.some(x=> /Laptop/.test(x.text) && /1 track changed/.test(x.text)), 'with who saved it and what changed, in words');
   const oldest = Math.min(...pts.map(x=> x.v));
   const firstNamed = vs.filter(v=> v.version <= vs[0].version).map(v=> v.version).sort((a,b)=>a-b);
-  // Choose the version that still had the original name (the first one with the track).
-  await A.evaluate((v)=> document.querySelector('.hist-point[data-v="' + v + '"]').click(), oldest);
-  for(let i=0;i<40;i++){ await sleep(200); if(await A.evaluate(()=> !!document.querySelector('.hist-row') || !!document.querySelector('.hist-nothing'))) break; }
-  let rows = await A.evaluate(()=> [...document.querySelectorAll('.hist-row')].map(r=> r.innerText.replace(/\s+/g,' ')));
-  console.log('rows vs v' + oldest + ':', JSON.stringify(rows));
-  ok(rows.length >= 1 && rows.some(r=> /Changed since/.test(r) && /Renamed twice/.test(r)), 'the renamed track shows as changed since');
-  ok(await A.evaluate(()=> document.getElementById('histGo').disabled), 'Restore is off until something is chosen');
-  // Choose the track's row and restore it.
-  await A.evaluate(()=>{ const row = [...document.querySelectorAll('.hist-row')].find(r=> /♪/.test(r.querySelector('.rv-icon').textContent)); row.querySelector('[data-pick]').click(); });
-  await sleep(300);
-  ok(await A.evaluate(()=> /Restore 1 change/.test(document.getElementById('histGo').textContent) && !document.getElementById('histGo').disabled), 'chosen: Restore 1 change');
-  await A.evaluate(()=> document.getElementById('histGo').click());
+  // Bring back (2.5.018): find the track by its first name, choose the earlier state that has it, and replace.
+  await A.evaluate(()=> document.querySelector('.hist-tabs [data-tab="bring"]').click());
+  for(let i=0;i<60;i++){ await sleep(200); if(await A.$('#bbA')) break; } await sleep(300);
+  await A.evaluate(()=> document.querySelector('[data-kind="tr"]').click()); await sleep(300);
+  await A.evaluate(()=> document.querySelector('input[name="bbView"][value="flat"]').click()); await sleep(300);
+  const flat = await A.evaluate(()=> [...document.querySelectorAll('#bbA .bb-it')].map(e=> e.innerText.replace(/\s+/g,' ').trim()));
+  console.log('flat list:', JSON.stringify(flat));
+  ok(flat.some(x=> x.indexOf(original) === 0 && /now “Renamed twice”/.test(x)), 'Bring back\'s flat list has the track under its first name, saying what it\'s called now');
+  await A.evaluate((o)=> [...document.querySelectorAll('#bbA [data-id]')].find(e=> e.innerText.indexOf(o) === 0).click(), original);
+  for(let i=0;i<60;i++){ await sleep(200); if(await A.$('#bbC .bb-ver')) break; }
+  const states = await A.evaluate(()=> document.querySelectorAll('#bbC .bb-ver').length);
+  ok(states === 2, 'two earlier states: its first name, and the name between (' + states + ')');
+  for(let i = 0; i < states; i++){
+    await A.evaluate((i)=> document.querySelectorAll('#bbC .bb-ver')[i].click(), i); await sleep(300);
+    if(await A.evaluate((o)=> document.querySelectorAll('#bbBD .bb-head')[1].innerText.indexOf(o) >= 0, original)) break;
+  }
+  ok(await A.evaluate((o)=> document.querySelectorAll('#bbBD .bb-head')[0].innerText.indexOf('Renamed twice') >= 0 && document.querySelectorAll('#bbBD .bb-head')[1].innerText.indexOf(o) >= 0, original), 'Now: Renamed twice; Earlier: its first name');
+  await A.evaluate(()=> document.querySelector('#bbBD [data-bb="replace"]').click());
   for(let i=0;i<60;i++){ await sleep(250); if(!(await A.$('#historyPage'))) break; }
   await waitIdle(A); await sleep(1000); await waitIdle(A);
-  ok(!(await A.$('#historyPage')), 'History closes after restoring');
+  ok(!(await A.$('#historyPage')), 'History closes after bringing it back');
   ok(await trackName(A) === original, 'the track has its original name again (' + await trackName(A) + ')');
   vs = await versions();
   ok(vs[0].what && vs[0].what.rs, 'the restore is a new version that says it restored (' + JSON.stringify(vs[0].what) + ')');
@@ -73,17 +78,7 @@ const versions = async ()=> JSON.parse(require('child_process').execSync(`curl -
   await B.evaluate((c,u)=> window.__dbg3.join(u,c,'iPad'), CODE, URL_SYNC); await waitIdle(B); await sleep(1500); await waitIdle(B);
   ok(await trackName(B) === original, 'another device gets the restored name');
 
-  // What changed at a point
-  await A.evaluate(()=> window.__hist.open()); for(let i=0;i<60;i++){ await sleep(250); if(await A.$('.hist-point')) break; }
-  await A.evaluate(()=> document.querySelector('.hist-tabs [data-tab="bring"]').click()); await sleep(200); // History opens on Roll back (2.5.007); these rows are Bring back's
-  const v2 = vs.find(v=> v.what && v.what.tc === 1 && !v.what.rs);
-  await A.evaluate((v)=> document.querySelector('.hist-point[data-v="' + v + '"]').click(), v2.version);
-  for(let i=0;i<40;i++){ await sleep(200); if(await A.$('.hist-row, .hist-nothing')) break; }
-  await A.evaluate(()=> document.querySelector('input[name="histMode"][value="point"]').click()); await sleep(300);
-  rows = await A.evaluate(()=> [...document.querySelectorAll('.hist-row')].map(r=> r.innerText.replace(/\s+/g,' ')));
-  console.log('point rows:', JSON.stringify(rows));
-  ok(rows.length === 1 && /Changed here/.test(rows[0]), 'What changed at this point: the one rename');
-  ok(!(await A.$('#histGo')), 'and nothing to restore in that view');
+  // ("What changed at this point" went with the old Bring back tab in 2.5.018.)
   await A.keyboard.press('Escape'); await sleep(300);
   ok(!(await A.$('#historyPage')), 'Escape closes History');
 
