@@ -138,6 +138,12 @@ pub struct Pages {
     channel: String,
     chosen: RwLock<Chosen>,
     state: Mutex<State>,
+    /// One check at a time. The daily check (a minute after starting) and
+    /// Check for updates once ran together and shared one temporary folder,
+    /// each emptying it first: the Mac mini kept 2.5.016 without
+    /// index.html.sig (15 Nov 2026), refused it at every start and Update
+    /// now, while Update now went on being offered.
+    checking: Mutex<()>,
 }
 
 fn now() -> u64 { std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0) }
@@ -150,6 +156,7 @@ impl Pages {
             dir, bundled: bundled.to_string(), bridge, verifier, base_url, channel: channel.to_string(),
             chosen: RwLock::new(Chosen { version: bundled.to_string(), files: HashMap::new() }),
             state: Mutex::new(state),
+            checking: Mutex::new(()),
         }
     }
 
@@ -201,6 +208,12 @@ impl Pages {
         let files = self.check_files(version, &mut |n| std::fs::read(d.join(n)).map_err(|e| format!("{n}: {e}")))?;
         if Self::bridge_needed(&files["index.html"]) > self.bridge { return Err("needs a newer desktop app".into()); }
         Ok(files)
+    }
+
+    /// A kept page that would really be used: all its files there and good,
+    /// not put aside. What "ready" may name (it's what choose() would take).
+    fn usable(&self, version: &str, st: &State) -> bool {
+        !st.bad.iter().any(|b| b == version) && self.load_kept(version).is_ok()
     }
 
     /// Picks the page to use: the newest kept one that's newer than the
@@ -281,7 +294,7 @@ impl Pages {
         let mut st = self.state.lock().unwrap();
         let ready = if self.verifier.has_key() {
             self.kept().into_iter().find(|v| version_cmp(v, &running) == Ordering::Greater
-                && version_cmp(v, &self.bundled) == Ordering::Greater && !st.bad.contains(v))
+                && version_cmp(v, &self.bundled) == Ordering::Greater && self.usable(v, &st))
         } else { None };
         let reverted = st.reverted.take();
         if reverted.is_some() { self.save(&st); }
@@ -296,7 +309,17 @@ impl Pages {
     /// downloads, checks and keeps it. `fetch` gets a URL's bytes.
     pub fn check(&self, fetch: &dyn Fn(&str) -> Result<Vec<u8>, String>) -> Check {
         let Some(base) = self.base_url.clone().filter(|_| self.verifier.has_key()) else { return Check::Off };
+        let _one_at_a_time = self.checking.lock().unwrap_or_else(|e| e.into_inner());
         let base = base.trim_end_matches('/').to_string();
+        // A kept page that's incomplete or altered (not one in use) is removed,
+        // so it's fetched again rather than offered and then refused.
+        let running = self.running();
+        for v in self.kept() {
+            if v != running && self.load_kept(&v).is_err() {
+                eprintln!("37 Player: kept page {v} is incomplete or altered: removed");
+                let _ = std::fs::remove_dir_all(self.dir.join(&v));
+            }
+        }
         let manifest: serde_json::Value = match fetch(&format!("{base}/page.json")).and_then(|b| serde_json::from_slice(&b).map_err(|e| e.to_string())) {
             Ok(m) => m,
             Err(e) => return Check::Error { error: e },
@@ -317,7 +340,7 @@ impl Pages {
             // Already here and waiting: say so.
             let running = self.running();
             if version_cmp(&newest_here, &running) == Ordering::Greater && self.kept().contains(&newest_here)
-                && !self.state.lock().unwrap().bad.contains(&newest_here) {
+                && self.usable(&newest_here, &self.state.lock().unwrap()) {
                 return Check::Ready { version: newest_here };
             }
             return Check::Current { version: running };
@@ -330,7 +353,7 @@ impl Pages {
         if Self::bridge_needed(&files["index.html"]) > self.bridge { return Check::NeedsApp { version }; }
         // Written beside, then renamed into place, so a half-written page is
         // never taken for a whole one.
-        let tmp = self.dir.join(format!(".{version}.part"));
+        let tmp = self.dir.join(format!(".{version}.{}.part", std::process::id()));
         let _ = std::fs::remove_dir_all(&tmp);
         let write = || -> std::io::Result<()> {
             std::fs::create_dir_all(&tmp)?;
@@ -564,6 +587,36 @@ mod tests {
         let (k, d) = (keys(), tmpdir("newshell"));
         pages(&d, &k, "1.4.181", 1).check(&Source::new(&k, "1.4.190", None).fetch());
         assert_eq!(pages(&d, &k, "1.4.195", 1).choose(), "1.4.195");
+    }
+
+    #[test]
+    fn a_kept_page_missing_a_file_isnt_offered_and_is_fetched_again() {
+        let (k, d) = (keys(), tmpdir("missing"));
+        let src = Source::new(&k, "1.4.190", None);
+        let p = pages(&d, &k, "1.4.181", 1);
+        p.choose();
+        p.check(&src.fetch());
+        std::fs::remove_file(d.join("1.4.190").join("index.html.sig")).unwrap(); // as on the Mac mini
+        let p = pages(&d, &k, "1.4.181", 1);
+        assert_eq!(p.choose(), "1.4.181");
+        assert_eq!(p.info().ready, None, "not offered");
+        assert_eq!(p.check(&src.fetch()), Check::Ready { version: "1.4.190".into() }, "fetched again");
+        assert_eq!(p.choose(), "1.4.190");
+    }
+
+    #[test]
+    fn two_checks_at_once_keep_a_whole_page() {
+        let (k, d) = (keys(), tmpdir("together"));
+        let src = Source::new(&k, "1.4.190", None);
+        let p = std::sync::Arc::new(pages(&d, &k, "1.4.181", 1));
+        p.choose();
+        let slow = |u: &str| -> Result<Vec<u8>, String> { std::thread::sleep(std::time::Duration::from_millis(20)); src.fetch()(u) };
+        std::thread::scope(|sc| {
+            for _ in 0..4 { let p = p.clone(); sc.spawn(move || { p.check(&slow); }); }
+        });
+        let names: Vec<String> = std::fs::read_dir(d.join("1.4.190")).unwrap().flatten().map(|e| e.file_name().into_string().unwrap()).collect();
+        assert_eq!(names.len(), 4, "{names:?}");
+        assert_eq!(pages(&d, &k, "1.4.181", 1).choose(), "1.4.190");
     }
 
     #[test]
