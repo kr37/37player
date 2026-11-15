@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.5.020">
+<meta name="app-version" content="2.5.021">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -2689,6 +2689,7 @@ class FolderLibraryStore {
     try{
       const json = await flat(record, "");
       await writeWholeFile(dir, fk + ".json", JSON.stringify(json));
+      if(store === "audio") this.noteRecording(record.id, json.blob);
     }catch(err){
       // Nothing points at what was written: take it back now (unless it's
       // the file the record already had, written over).
@@ -2699,7 +2700,7 @@ class FolderLibraryStore {
     return before.filter(n=> !written.includes(n)).map(n=> n.startsWith("/") ? n : store + "/" + n);
   }
   async removeRecord(store, key){
-    if(store === "audio") this.places = null;
+    if(store === "audio"){ this.places = null; this.noteRecording(key, undefined); }
     const dir = await this.sub(store), name = fileKeyOf(key) + ".json";
     let names = [];
     try{ names = FolderLibraryStore.blobNames(await this.readRaw(store, key), []); }catch(err){}
@@ -2739,7 +2740,7 @@ class FolderLibraryStore {
       const kp = STORE_KEYPATH[store];
       await writeWholeFile(dir, fileKeyOf(to) + ".json", JSON.stringify(Object.assign({}, raw, {[kp]: to})));
       try{ await dir.removeEntry(fileKeyOf(from) + ".json"); }catch(err){ if(!err || err.name !== "NotFoundError") throw err; }
-      if(store === "audio") this.places = null;
+      if(store === "audio"){ this.places = null; this.noteRecording(from, undefined); this.noteRecording(to, raw.blob); }
       return true;
     });
   }
@@ -2823,13 +2824,18 @@ class FolderLibraryStore {
     return this.locked(async()=>{
       const audio = await this.sub("audio");
       let moved = 0;
-      for(const id of await this.keys("audio")){
+      for(const [id, known] of await this.recordingList()){
+        if(!known || (typeof known.$path !== "string" && typeof known.$blob !== "string")) continue;
+        const base = this.opts.recordingPath(id);
+        if(!base) continue;
+        const kcur = known.$path || null, kext = ((kcur || known.$blob).match(/\.[a-z0-9]+$/i) || [".mp3"])[0].toLowerCase();
+        if(kcur){ const n = kcur.slice(0, -kext.length).toLowerCase(), b = base.toLowerCase(); if(n === b || n.replace(/ \(\d+\)$/, "") === b) continue; }
+        // One to move: its record as it is on disk now.
         let raw;
         try{ raw = await this.readRaw("audio", id); }catch(err){ continue; }
         const ph = raw && raw.blob;
+        this.noteRecording(id, ph);
         if(!ph || (typeof ph.$path !== "string" && typeof ph.$blob !== "string")) continue;
-        const base = this.opts.recordingPath(id);
-        if(!base) continue;
         const cur = ph.$path || null, ext = ((cur || ph.$blob).match(/\.[a-z0-9]+$/i) || [".mp3"])[0].toLowerCase();
         if(cur){
           // Its name already (with any " (2)" kept). A change of capitals
@@ -2854,6 +2860,7 @@ class FolderLibraryStore {
         if(!didMove) await writeWholeFile(to.dir, to.name, await from.getFile());
         raw.blob = Object.assign({}, ph, {$path: rp}); delete raw.blob.$blob;
         await writeWholeFile(audio, fileKeyOf(id) + ".json", JSON.stringify(raw));
+        this.noteRecording(id, raw.blob);
         if(!didMove) await this.addOrphans([cur ? "/" + cur : "audio/" + ph.$blob]);
         else if(cur){ // the album and artist it left may be empty now
           const old = await this.pathDir(cur, false);
@@ -2878,11 +2885,37 @@ class FolderLibraryStore {
   // Every recording's path, by track id (readable ones only).
   async recordingPaths(){
     const out = {};
-    for(const id of await this.keys("audio")){
-      try{ const raw = await this.readRaw("audio", id); if(raw && raw.blob && typeof raw.blob.$path === "string") out[id] = raw.blob.$path; }catch(err){}
-    }
+    for(const [id, ph] of await this.recordingList()) if(ph && typeof ph.$path === "string") out[id] = ph.$path;
     return out;
   }
+  /* Each recording's file details ($path, $blob or $place: its record's
+     "blob"), by track id, kept in memory (2.5.018). renameRecordings and
+     recordingPaths run 2.5 seconds after every save, and each read all the
+     audio records: on Gen Rinzin's 2014 Mac mini (707 tracks, the desktop
+     app, three calls to the shell per record) that held the library's lock
+     for most of a minute, so the next edit's Save waited that long (15 Nov
+     2026, pasting artwork into several tracks). Now the records are read
+     once, and this window's own writes keep the list current
+     (noteRecording). Another window's writes reset it (forgetRecordings,
+     on its "library" message). A list read while something was written, or
+     with a record that couldn't be read, isn't kept. */
+  async recordingList(){
+    if(this.recordings) return this.recordings;
+    const out = new Map(), gen = this.recordingsGen = (this.recordingsGen || 0) + 1;
+    let whole = true;
+    for(const id of await this.keys("audio")){
+      try{ const raw = await this.readRaw("audio", id); out.set(id, raw ? raw.blob : undefined); }catch(err){ whole = false; }
+    }
+    // Kept only if nothing was written or reset while it was being read.
+    if(whole && gen === this.recordingsGen) this.recordings = out;
+    return out;
+  }
+  noteRecording(id, ph){
+    this.recordingsGen = (this.recordingsGen || 0) + 1;
+    if(!this.recordings) return;
+    if(ph === undefined) this.recordings.delete(id); else this.recordings.set(id, ph);
+  }
+  forgetRecordings(){ this.recordings = null; this.recordingsGen = (this.recordingsGen || 0) + 1; }
   // Keeps a set of text files under `prefix` (playlists/) as given: writes
   // the ones that changed, removes the ones it wrote before that aren't in
   // the set any more (and folders left empty). Only files it wrote itself
@@ -24058,6 +24091,7 @@ function broadcastSync(msg){ try{ if(syncChannel) syncChannel.postMessage(msg); 
 if(syncChannel) syncChannel.onmessage = (e)=>{
   const m = e.data || {};
   if(m.type==="library" || m.type==="backup") backupFullScanNeeded = true; // their writes aren't in this window's list
+  if(m.type==="library" && libStore && libStore.forgetRecordings) libStore.forgetRecordings(); // nor in its list of recordings
   if(m.type==="library" && m.rev>libraryRev) pendingSync.library = true;
   else if(m.type==="settings") pendingSync.settings = true;
   else if(m.type==="backup"){ idbGet("state","backup").then(b=>{ if(b){ backupInfo = b; refreshBackupPermission().then(updateBackupIndicator); } }); return; }
