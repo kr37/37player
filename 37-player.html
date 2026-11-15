@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.5.014">
+<meta name="app-version" content="2.5.015">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -45142,6 +45142,21 @@ function syncStable(v){
   return "{" + Object.keys(v).filter(k=> v[k] !== undefined).sort().map(k=> JSON.stringify(k) + ":" + syncStable(v[k])).join(",") + "}";
 }
 function syncEq(a, b){ return syncStable(a) === syncStable(b); }
+/* What each version of a shared library changed (2.5.015; the first step
+   of Bring back's redesign, Gen Rinzin 15 Nov 2026): the ids of the tracks
+   and of the folders and playlists that differ from the version before.
+   Kept for each version beside it (sync.php works it out itself into the
+   version's info file; on Drive the saving device writes
+   <version>.changes.json), so "every version of this playlist" needs no
+   version opened. Each device keeps an index of them (histChangeIndex). */
+function syncChangedIds(a, b){
+  const t = [], n = [];
+  const ta = new Map(((a && a.tracks) || []).map(x=> [x.id, x])), tb = new Map(((b && b.tracks) || []).map(x=> [x.id, x]));
+  new Set([...ta.keys(), ...tb.keys()]).forEach(id=>{ if(!ta.has(id) || !tb.has(id) || !syncEq(ta.get(id), tb.get(id))) t.push(id); });
+  const na = syncFlattenTree((a && a.tree) || []), nb = syncFlattenTree((b && b.tree) || []);
+  new Set([...na.keys(), ...nb.keys()]).forEach(id=>{ if(!na.has(id) || !nb.has(id) || !syncEq(na.get(id), nb.get(id))) n.push(id); });
+  return {t, n};
+}
 function syncClone(v){ return v === undefined ? undefined : JSON.parse(JSON.stringify(v)); }
 function syncEmptyDoc(){ return {format: SYNC_DOC_FORMAT, tracks: [], tree: []}; }
 function syncTrackForDoc(t){
@@ -46262,13 +46277,31 @@ async function driveFetch(cfg, params, init){
     // An earlier version (History).
     const want = parseInt(params.version, 10);
     const q = new URLSearchParams({q: driveQuote(lib.state) + " in parents and trashed=false and name contains " + driveQuote(drivePad(want)), fields: "files(id,name,createdTime)", pageSize: "10", spaces: "drive"});
-    const file = ((await driveJson(cfg, "/drive/v3/files?" + q)).files || []).filter(f=> f.name.slice(0, 6) === drivePad(want)).sort(driveEarliest)[0];
+    const file = ((await driveJson(cfg, "/drive/v3/files?" + q)).files || []).filter(f=> f.name.slice(0, 6) === drivePad(want) && /^\d{6}\.json(\.gz)?$/.test(f.name)).sort(driveEarliest)[0];
     if(!file) return driveResponse({error: "No such version"}, 404);
     const res = await driveCall(cfg, "/drive/v3/files/" + encodeURIComponent(file.id) + "?alt=media");
     if(!res.ok) return driveResponse({error: "state " + res.status}, res.status);
     const blob = await res.blob();
     const text = /\.gz$/.test(file.name) ? await driveGunzip(blob) : await blob.text();
     return driveResponse(text, 200, Object.assign({"X-Version": String(want)}, nameHeader));
+  }
+  if(op === "changes" && method === "GET"){
+    // As sync.php's: what the versions after `since` changed, and which
+    // versions are kept. Each one is a small file, fetched only once by
+    // each device (it keeps an index).
+    const since = parseInt(params.since, 10) || 0;
+    const files = await driveListAll(cfg, driveQuote(lib.state) + " in parents and trashed=false", "id,name,createdTime");
+    const kept = new Set(), comp = new Map();
+    files.forEach(f=>{
+      if(/^\d{6}\.json(\.gz)?$/.test(f.name)) kept.add(parseInt(f.name, 10));
+      else if(/^\d{6}\.changes\.json$/.test(f.name)){ const v = parseInt(f.name, 10); if(v > since && (!comp.has(v) || driveEarliest(f, comp.get(v)) < 0)) comp.set(v, f); }
+    });
+    const versions = {};
+    for(const [v, f] of comp){
+      if(!kept.has(v)) continue;
+      try{ const r = await driveCall(cfg, "/drive/v3/files/" + encodeURIComponent(f.id) + "?alt=media"); if(r.ok) versions[v] = await r.json(); }catch(err){}
+    }
+    return driveResponse({kept: [...kept].sort((a, b)=> a - b), versions});
   }
   if(op === "history" && method === "GET"){
     const files = await driveListAll(cfg, driveQuote(lib.state) + " in parents and trashed=false", "id,name,createdTime,size,appProperties");
@@ -46307,11 +46340,14 @@ async function driveFetch(cfg, params, init){
     const mine = await driveUpload(cfg, lib.state, name, body instanceof Blob ? body : new Blob([body]), gz ? "application/gzip" : "application/json", driveHistoryProps(headers));
     // Did another device add the same number meanwhile?
     const params2 = new URLSearchParams({q: driveQuote(lib.state) + " in parents and trashed=false and name contains " + driveQuote(drivePad(base + 1)), fields: "files(id,name,createdTime)", pageSize: "10", spaces: "drive"});
-    const all = ((await driveJson(cfg, "/drive/v3/files?" + params2)).files || []).filter(f=> f.name.slice(0, 6) === drivePad(base + 1)).sort(driveEarliest);
+    const all = ((await driveJson(cfg, "/drive/v3/files?" + params2)).files || []).filter(f=> f.name.slice(0, 6) === drivePad(base + 1) && /^\d{6}\.json(\.gz)?$/.test(f.name)).sort(driveEarliest);
     if(all.length > 1 && all[0].id !== mine.id){
       await driveCall(cfg, "/drive/v3/files/" + encodeURIComponent(mine.id), {method: "DELETE"}).catch(()=>{});
       return driveResponse({version: base + 1}, 409, {"X-Version": String(base + 1)});
     }
+    // What this version changed, beside it (2.5.015). Not needed for the
+    // save itself, so a failure here is let pass.
+    if(headers["X-Changed"]) await driveUpload(cfg, lib.state, drivePad(base + 1) + ".changes.json", new Blob([headers["X-Changed"]]), "application/json").catch(err=> sharedLog("couldn't write what version " + (base + 1) + " changed: " + (err && err.message)));
     return driveResponse({version: base + 1}, 200, {"X-Version": String(base + 1)});
   }
   if(op === "list" && method === "GET"){
@@ -46638,6 +46674,8 @@ async function sharedPostState(cfg, base, doc, prev, extra){
     headers["X-Saved-By"] = encodeURIComponent((cfg.deviceName || "").slice(0, 60));
     headers["X-Change"] = encodeURIComponent(JSON.stringify(what));
   }catch(err){}
+  // Drive keeps no server of its own: the device works out the changed ids.
+  if(cfg.kind === "gdrive" && prev) try{ headers["X-Changed"] = JSON.stringify(syncChangedIds(prev, doc)); }catch(err){}
   let body = json;
   if(sharedServerGzip && typeof CompressionStream === "function"){
     try{ body = await new Response(new Blob([json]).stream().pipeThrough(new CompressionStream("gzip"))).blob(); headers["X-Body-Gzip"] = "1"; }
@@ -46666,6 +46704,43 @@ async function sharedGetState(cfg){
   return {version, doc, name};
 }
 // History: the versions kept, newest first ({version, time, size, by?, what?}).
+// The device's index of what each version changed: fetched once a version,
+// kept in the state store ("histchanges:<library>"), versions no longer
+// kept dropped. build: for versions saved before they were recorded, open
+// each one and the one before it and work it out here (slow: two documents
+// a version, though each is fetched once). onStep(i, n) for progress.
+function histChangeKey(cfg){ return "histchanges:" + (cfg.kind === "gdrive" ? "gd:" + cfg.folderId : (cfg.url || "") + "|" + String(cfg.code || "").split(" ")[0]); }
+async function histChangeIndex(cfg, opts){
+  opts = opts || {};
+  const key = histChangeKey(cfg);
+  const saved = await idbGet("state", key).catch(()=> null);
+  const idx = saved && saved.versions ? saved : {key, versions: {}};
+  const known = Object.keys(idx.versions).map(Number);
+  const since = known.length ? Math.max(...known) : 0;
+  const res = await sharedFetch(cfg, {op: "changes", since: String(since)});
+  if(!res.ok) throw new Error("changes " + res.status);
+  const j = await res.json();
+  const kept = new Set(j.kept || []);
+  Object.entries(j.versions || {}).forEach(([v, c])=>{ idx.versions[v] = {t: c.t || [], n: c.n || []}; });
+  Object.keys(idx.versions).forEach(v=>{ if(!kept.has(+v)) delete idx.versions[v]; });
+  const missing = [...kept].filter(v=> !idx.versions[v] && v > 1).sort((a, b)=> a - b);
+  if(opts.build && missing.length){
+    const docs = new Map();
+    const doc = async v=>{ if(!docs.has(v)) docs.set(v, await sharedGetVersion(cfg, v)); return docs.get(v); };
+    for(let i = 0; i < missing.length; i++){
+      if(opts.onStep) opts.onStep(i, missing.length);
+      const v = missing[i], a = await doc(v - 1), b = await doc(v);
+      if(a && b) idx.versions[v] = syncChangedIds(a, b);
+      docs.delete(v - 1); // documents can be big: hold at most two
+    }
+  }
+  await idbPut("state", idx).catch(()=>{});
+  return {index: idx, kept: [...kept].sort((a, b)=> b - a), missing: opts.build ? [] : missing};
+}
+// The versions in which one playlist, folder ("n") or track ("t") changed, newest first.
+function histVersionsOf(idx, kind, id){
+  return Object.entries(idx.versions).filter(([v, c])=> (c[kind] || []).includes(id)).map(([v])=> +v).sort((a, b)=> b - a);
+}
 async function sharedHistoryList(cfg){
   const res = await sharedFetch(cfg, {op: "history"});
   if(!res.ok) throw new Error("history " + res.status);
@@ -49816,9 +49891,14 @@ async function driveTidyPlan(cfg, days, onStep){
   const states = (await driveListAll(cfg, driveQuote(lib.state) + " in parents and trashed=false", "id,name,size,createdTime"))
     .map(f=> ({id: f.id, name: f.name, size: +f.size || 0, at: Date.parse(f.createdTime) || 0, v: parseInt(f.name, 10)}))
     .filter(f=> f.v > 0).sort((a, b)=> a.v - b.v || a.at - b.at);
+  // What each version changed (2.5.015) sits beside it, and goes with it.
+  const companions = states.filter(f=> /\.changes\.json$/.test(f.name));
+  states.splice(0, states.length, ...states.filter(f=> !companions.includes(f)));
   if(!states.length) return null;
   const newest = states[states.length - 1];
   const keep = states.filter(f=> f === newest || f.at >= cutoff), drop = states.filter(f=> !keep.includes(f));
+  const keptV = new Set(keep.map(f=> f.v));
+  companions.forEach(f=>{ if(!keptV.has(f.v)) drop.push(f); });
   const used = {audio: new Set(), artwork: new Set(), peaks: new Set()};
   for(let i = 0; i < keep.length; i++){
     if(onStep) onStep(i, keep.length);

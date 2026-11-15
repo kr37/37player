@@ -1,7 +1,7 @@
 <?php
 /*
  * 37 Player — shared library sync server.
- * Version 2.2.002 (the 37 Player version this file was last changed for;
+ * Version 2.5.015 (the 37 Player version this file was last changed for;
  * keep it the same as SYNC_VERSION below).
  *
  * One file, plain PHP (7.4+), no database. It keeps each shared library in
@@ -12,7 +12,9 @@
  *     latest               current version number
  *     lock                 held briefly while a new version is written
  *     state/000123.json.gz the library document at each version (its history)
- *     state/000123.json    who saved that version and what it changed, for History
+ *     state/000123.json    who saved that version and what it changed, for History;
+ *                          and (2.5.015) the ids of the tracks, folders and
+ *                          playlists that differ from the version before ("c")
  *     audio/<id>.<rev>     audio files, never overwritten
  *     artwork/<id>.<rev>   artwork files, never overwritten
  *     peaks/<id>.<rev>     waveform data for each audio file (small JSON)
@@ -46,6 +48,11 @@
  *   GET  op=history               recent versions: number, time, size, and
  *                                 who saved each and what it changed ("by",
  *                                 "what"), when the device said so
+ *   GET  op=changes&since=N       (2.5.015) {"kept": [every version kept],
+ *                                 "versions": {"N+1": {"t": [track ids],
+ *                                 "n": [folder and playlist ids]}, …}}: what
+ *                                 each version after N changed, worked out
+ *                                 here as it was saved
  *   GET  op=logs                  devices' logs kept here: [{name, size, time}]
  *   GET  op=log&name=X            one of them (text)
  *   PUT  op=log&name=X            a device's log, replacing its last copy (1 MB at most)
@@ -83,7 +90,7 @@ const KINDS = ['audio', 'artwork', 'peaks'];
 // The 37 Player version this file was last changed for (it doesn't change
 // with every release of the app, only when this file does). Shown in the
 // app's Settings → Shared library, and by `php sync.php version`.
-const SYNC_VERSION = '2.2.002';
+const SYNC_VERSION = '2.5.015';
 
 if (PHP_SAPI === 'cli') { exit(cli($argv)); }
 
@@ -141,12 +148,17 @@ if ($op === 'state' && $method === 'POST') {
     // and read by op=history without opening the documents themselves.
     $by = substr(rawurldecode($_SERVER['HTTP_X_SAVED_BY'] ?? ''), 0, 120);
     $what = substr(rawurldecode($_SERVER['HTTP_X_CHANGE'] ?? ''), 0, 1000);
+    $info = [];
     if ($by !== '' || $what !== '') {
-        $info = ['by' => $by];
+        $info['by'] = $by;
         $w = json_decode($what, true);
         if (is_array($w)) $info['what'] = $w;
-        file_put_contents(info_file($dir, $new), json_encode($info, JSON_UNESCAPED_UNICODE));
     }
+    // What it changed, by id (2.5.015): worked out here, so it never depends
+    // on what a device says, and it has no size limit.
+    $prev = $cur > 0 && is_file(state_file($dir, $cur)) ? json_decode(gzdecode(file_get_contents(state_file($dir, $cur))), true) : null;
+    $info['c'] = changed_ids(is_array($prev) ? $prev : ['tracks' => [], 'tree' => []], $doc);
+    file_put_contents(info_file($dir, $new), json_encode($info, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
     file_put_contents($dir . '/latest.tmp', (string)$new);
     rename($dir . '/latest.tmp', $dir . '/latest');
     flock($lock, LOCK_UN);
@@ -222,11 +234,22 @@ if ($op === 'history' && $method === 'GET') {
         $f = state_file($dir, $v);
         $row = ['version' => $v, 'time' => filemtime($f) * 1000, 'size' => filesize($f)];
         $i = info_file($dir, $v);
-        if (is_file($i)) { $info = json_decode(file_get_contents($i), true); if (is_array($info)) $row += $info; }
+        if (is_file($i)) { $info = json_decode(file_get_contents($i), true); if (is_array($info)) { unset($info['c']); $row += $info; } }
         $rows[] = $row;
     }
     usort($rows, fn($a, $b) => $b['version'] - $a['version']);
     json_out(array_slice($rows, 0, 500));
+}
+
+if ($op === 'changes' && $method === 'GET') {
+    $since = intval($_GET['since'] ?? 0);
+    $kept = versions($dir); $out = [];
+    foreach ($kept as $v) {
+        if ($v <= $since || !is_file(info_file($dir, $v))) continue;
+        $info = json_decode(file_get_contents(info_file($dir, $v)), true);
+        if (is_array($info) && isset($info['c'])) $out[(string)$v] = $info['c'];
+    }
+    json_out(['kept' => array_values($kept), 'versions' => (object)$out]);
 }
 
 // Devices' logs (1.4.137): each device keeps a short copy of its playback
@@ -434,6 +457,35 @@ function cli($argv) {
     return 1;
 }
 // The files one version uses, by kind: [kind => [name => 1]].
+// The ids that differ between two documents (as syncChangedIds in 37 Player):
+// tracks compared whole; folders and playlists without their children, with
+// the folder they're in.
+function canon($v) {
+    if (!is_array($v)) return $v;
+    if (array_keys($v) !== range(0, count($v) - 1)) ksort($v);
+    foreach ($v as $k => $x) $v[$k] = canon($x);
+    return $v;
+}
+function flat_tree($tree, $parent, &$out) {
+    foreach (($tree ?: []) as $n) {
+        if (!is_array($n) || !isset($n['id'])) continue;
+        $rec = $n; unset($rec['children'], $rec['id']); $rec['parent'] = $parent;
+        $out[$n['id']] = json_encode(canon($rec), JSON_UNESCAPED_UNICODE);
+        if (($n['kind'] ?? '') === 'folder') flat_tree($n['children'] ?? [], $n['id'], $out);
+    }
+}
+function changed_ids($a, $b) {
+    $ta = []; $tb = [];
+    foreach (($a['tracks'] ?? []) as $x) if (isset($x['id'])) $ta[$x['id']] = json_encode(canon($x), JSON_UNESCAPED_UNICODE);
+    foreach (($b['tracks'] ?? []) as $x) if (isset($x['id'])) $tb[$x['id']] = json_encode(canon($x), JSON_UNESCAPED_UNICODE);
+    $t = [];
+    foreach (array_unique(array_merge(array_keys($ta), array_keys($tb))) as $id) if (($ta[$id] ?? null) !== ($tb[$id] ?? null)) $t[] = (string)$id;
+    $na = []; $nb = [];
+    flat_tree($a['tree'] ?? [], null, $na); flat_tree($b['tree'] ?? [], null, $nb);
+    $n = [];
+    foreach (array_unique(array_merge(array_keys($na), array_keys($nb))) as $id) if (($na[$id] ?? null) !== ($nb[$id] ?? null)) $n[] = (string)$id;
+    return ['t' => $t, 'n' => $n];
+}
 function files_used($dir, $v) {
     $used = ['audio' => [], 'artwork' => [], 'peaks' => []];
     $f = state_file($dir, $v);
