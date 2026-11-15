@@ -51,7 +51,7 @@ const rowsOf = p=> p.evaluate(()=> [...document.querySelectorAll('.rb-row')].map
   let rows = await rowsOf(p);
   const find = (re, side)=> rows.find(r=> re.test(r[side || 'b']));
   const tabs = await p.evaluate(()=> [...document.querySelectorAll('.hist-tabs .mode-tab')].map(x=> ({k: x.dataset.tab, on: x.classList.contains('active')})));
-  ok(tabs.length === 3 && tabs.find(x=> x.on).k === 'roll', 'three tabs, opening on Roll back');
+  ok(tabs.length === 2 && tabs.find(x=> x.on).k === 'roll', 'two tabs, opening on Roll back');
   ok(await p.evaluate(()=> document.querySelectorAll('.hist-point-undone').length === 3 && !!document.querySelector('.hist-undone-line')), 'the three saves above the chosen one are struck through, with the line');
   ok(await p.evaluate(()=>{ const box = document.querySelector('.rb-box').getBoundingClientRect(), go = document.getElementById('rbGo').getBoundingClientRect(); return go.left > box.left && go.right < box.right && go.top > box.top; }), 'Roll back to this sits inside the box of column B');
   ok(find(/^Daily$/) && /^Daily$/.test(find(/^Daily$/).d), 'the folder Daily on both sides');
@@ -123,8 +123,6 @@ const rowsOf = p=> p.evaluate(()=> [...document.querySelectorAll('.rb-row')].map
   // The other tabs
   await p.evaluate(()=> document.querySelector('.hist-tabs [data-tab="bring"]').click()); await sleep(200);
   ok(await p.evaluate(()=> !!document.querySelector('input[name="histMode"]') && !document.querySelector('.hist-point-undone')), 'Bring back: today\'s rows, no struck-through saves');
-  await p.evaluate(()=> document.querySelector('.hist-tabs [data-tab="undo"]').click()); await sleep(200);
-  ok(await p.evaluate(()=> !!document.querySelector('.hist-soon')), 'Undo on this device: not built yet, and says so');
   // Receive-only: no first tab, no button
   await p.evaluate((now, then, list)=> window.__hist.fake(now, then, list, 6, {kind: 'server', receiveOnly: true}), now, then, list); await sleep(300);
   ok(await p.evaluate(()=> document.querySelectorAll('.hist-tabs .mode-tab').length === 2 && !document.getElementById('rbGo') && /receives updates only/.test(document.querySelector('.rb-foot').innerText)), 'receive-only: two tabs, no button, and why');

@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.5.010">
+<meta name="app-version" content="2.5.011">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -762,6 +762,9 @@
   .hist-nothing{ max-width:920px; margin:18px auto; color:var(--text-dim); }
   .hist-nothing + .rb-tools{ margin-top:14px; }
   /* History: the tabs, and Roll back the library (2.5.007) */
+  .hist-group{ margin:10px 16px 0; padding-top:10px; border-top:1px solid var(--line); color:var(--text); font-size:13px; font-weight:700; }
+  .hist-group:first-child{ border-top:0; padding-top:0; }
+  #btnUndo{ -webkit-touch-callout:none; -webkit-user-select:none; user-select:none; }
   .hist-tabbar{ display:flex; padding:10px 22px 0; }
   .hist-tabs{ max-width:100%; flex-wrap:wrap; border-radius:18px; }
   .hist-tabs .tab-short{ display:none; }
@@ -4968,6 +4971,30 @@ const STRINGS = {
     "histBtnNote": "Every saved change from the last 30 days, and restoring any of it.",
     "histBtnNoteDrive": "Every saved change, and restoring any of it.",
     "histTitle": "History",
+    "histThisDevice": "This device",
+    "histStepsLabel": "This device, not yet synced",
+    "histVersionsLabel": "Versions of the shared library",
+    "histBeforeSteps": "Before these changes",
+    "histSubtitleLocal": "“{name}”, the changes Undo has kept on this device",
+    "histOlderLocal": "Undo keeps the last {n} changes.",
+    "histNoSteps": "Nothing to undo yet. Changes made on this device will be listed here.",
+    "histOfflineNote": "The shared library can't be reached, so its versions aren't listed.",
+    "histRbNowNoteLocal": "What this device has now.",
+    "histUndoTo": "Undo back to this",
+    "histUndoFoot": "Redo brings these changes back.",
+    "histUndoFootShared": "These changes are only on this device so far. Redo brings them back.",
+    "histUndoPartial": "Some of it has changed since, and would stay as it is.",
+    "histUndoPickEarlier": "This is the library as it is now. Choose an earlier change on the left to see what undoing back to it would do.",
+    "histRbSendFirst": "This device has changes that haven't been sent yet. Undo them (the list above) or sync first, then roll back.",
+    "histUndone": "{n} changes undone. Redo brings them back.",
+    "histUndoneOne": "1 change undone. Redo brings it back.",
+    "histUndoneKept": "{n} changes undone. Some of it had changed since and was left as it is.",
+    "undoOldTitle": "Undo an older change?",
+    "undoOldBody": "This change was made more than 2 hours ago ({time}): {what}. Undo it?",
+    "undoOldGo": "Undo it",
+    "undoOldHistory": "View detailed history",
+    "undoHoldHint": "Hold, or right-click, for the history",
+    "histBtnNoteLocal": "The last changes made on this device, to undo back to any of them.",
     "histRbRestPlaylists": "The other {n} playlists are the same on both sides.",
     "histRbRestPlaylistOne": "The other playlist is the same on both sides.",
     "histRbRestTracks": "The other {n} tracks are the same on both sides.",
@@ -6994,6 +7021,30 @@ const STRINGS = {
     "histBtnNote": "Cada cambio guardado de los últimos 30 días, y restaurar cualquiera de ellos.",
     "histBtnNoteDrive": "Cada cambio guardado, y restaurar cualquiera de ellos.",
     "histTitle": "Historial",
+    "histThisDevice": "Este dispositivo",
+    "histStepsLabel": "Este dispositivo, aún sin sincronizar",
+    "histVersionsLabel": "Versiones de la biblioteca compartida",
+    "histBeforeSteps": "Antes de estos cambios",
+    "histSubtitleLocal": "«{name}», los cambios que Deshacer ha guardado en este dispositivo",
+    "histOlderLocal": "Deshacer guarda los últimos {n} cambios.",
+    "histNoSteps": "Aún no hay nada que deshacer. Los cambios hechos en este dispositivo aparecerán aquí.",
+    "histOfflineNote": "No se puede acceder a la biblioteca compartida, así que sus versiones no aparecen.",
+    "histRbNowNoteLocal": "Lo que este dispositivo tiene ahora.",
+    "histUndoTo": "Deshacer hasta aquí",
+    "histUndoFoot": "Rehacer recupera estos cambios.",
+    "histUndoFootShared": "Estos cambios solo están en este dispositivo por ahora. Rehacer los recupera.",
+    "histUndoPartial": "Parte de ello ha cambiado después y se quedaría como está.",
+    "histUndoPickEarlier": "Esta es la biblioteca tal como está ahora. Elige un cambio anterior a la izquierda para ver qué haría deshacer hasta ahí.",
+    "histRbSendFirst": "Este dispositivo tiene cambios que aún no se han enviado. Deshazlos (la lista de arriba) o sincroniza primero, y luego revierte.",
+    "histUndone": "{n} cambios deshechos. Rehacer los recupera.",
+    "histUndoneOne": "1 cambio deshecho. Rehacer lo recupera.",
+    "histUndoneKept": "{n} cambios deshechos. Parte de ello había cambiado después y se dejó como está.",
+    "undoOldTitle": "¿Deshacer un cambio antiguo?",
+    "undoOldBody": "Este cambio se hizo hace más de 2 horas ({time}): {what}. ¿Deshacerlo?",
+    "undoOldGo": "Deshacerlo",
+    "undoOldHistory": "Ver el historial detallado",
+    "undoHoldHint": "Mantén pulsado, o clic derecho, para ver el historial",
+    "histBtnNoteLocal": "Los últimos cambios hechos en este dispositivo, para deshacer hasta cualquiera de ellos.",
     "histRbRestPlaylists": "Las otras {n} listas son iguales en ambos lados.",
     "histRbRestPlaylistOne": "La otra lista es igual en ambos lados.",
     "histRbRestTracks": "Las otras {n} pistas son iguales en ambos lados.",
@@ -9019,6 +9070,30 @@ const STRINGS = {
     "histBtnNote": "Chaque modification enregistrée des 30 derniers jours, et la possibilité d'en restaurer.",
     "histBtnNoteDrive": "Chaque modification enregistrée, et la possibilité d'en restaurer.",
     "histTitle": "Historique",
+    "histThisDevice": "Cet appareil",
+    "histStepsLabel": "Cet appareil, pas encore synchronisé",
+    "histVersionsLabel": "Versions de la bibliothèque partagée",
+    "histBeforeSteps": "Avant ces modifications",
+    "histSubtitleLocal": "« {name} », les modifications qu'Annuler a gardées sur cet appareil",
+    "histOlderLocal": "Annuler garde les {n} dernières modifications.",
+    "histNoSteps": "Rien à annuler pour l'instant. Les modifications faites sur cet appareil apparaîtront ici.",
+    "histOfflineNote": "La bibliothèque partagée est inaccessible : ses versions ne sont pas affichées.",
+    "histRbNowNoteLocal": "Ce que cet appareil contient maintenant.",
+    "histUndoTo": "Annuler jusqu'ici",
+    "histUndoFoot": "Rétablir ramène ces modifications.",
+    "histUndoFootShared": "Ces modifications ne sont pour l'instant que sur cet appareil. Rétablir les ramène.",
+    "histUndoPartial": "Une partie a changé depuis et resterait telle quelle.",
+    "histUndoPickEarlier": "Voici la bibliothèque telle qu'elle est maintenant. Choisissez une modification antérieure à gauche pour voir ce que ferait une annulation jusque-là.",
+    "histRbSendFirst": "Cet appareil a des modifications pas encore envoyées. Annulez-les (la liste ci-dessus) ou synchronisez d'abord, puis revenez en arrière.",
+    "histUndone": "{n} modifications annulées. Rétablir les ramène.",
+    "histUndoneOne": "1 modification annulée. Rétablir la ramène.",
+    "histUndoneKept": "{n} modifications annulées. Une partie avait changé depuis et a été laissée telle quelle.",
+    "undoOldTitle": "Annuler une modification plus ancienne ?",
+    "undoOldBody": "Cette modification date de plus de 2 heures ({time}) : {what}. L'annuler ?",
+    "undoOldGo": "L'annuler",
+    "undoOldHistory": "Voir l'historique détaillé",
+    "undoHoldHint": "Appui long, ou clic droit, pour l'historique",
+    "histBtnNoteLocal": "Les dernières modifications faites sur cet appareil, pour annuler jusqu'à n'importe laquelle.",
     "histRbRestPlaylists": "Les {n} autres playlists sont identiques des deux côtés.",
     "histRbRestPlaylistOne": "L'autre playlist est identique des deux côtés.",
     "histRbRestTracks": "Les {n} autres pistes sont identiques des deux côtés.",
@@ -11044,6 +11119,30 @@ const STRINGS = {
     "histBtnNote": "Cada alteração salva nos últimos 30 dias, e restaurar qualquer uma delas.",
     "histBtnNoteDrive": "Cada alteração salva, e restaurar qualquer uma delas.",
     "histTitle": "Histórico",
+    "histThisDevice": "Este dispositivo",
+    "histStepsLabel": "Este dispositivo, ainda não sincronizado",
+    "histVersionsLabel": "Versões da biblioteca compartilhada",
+    "histBeforeSteps": "Antes destas alterações",
+    "histSubtitleLocal": "“{name}”, as alterações que o Desfazer guardou neste dispositivo",
+    "histOlderLocal": "O Desfazer guarda as últimas {n} alterações.",
+    "histNoSteps": "Ainda não há nada para desfazer. As alterações feitas neste dispositivo aparecerão aqui.",
+    "histOfflineNote": "Não foi possível acessar a biblioteca compartilhada, por isso suas versões não aparecem.",
+    "histRbNowNoteLocal": "O que este dispositivo tem agora.",
+    "histUndoTo": "Desfazer até aqui",
+    "histUndoFoot": "Refazer traz estas alterações de volta.",
+    "histUndoFootShared": "Estas alterações estão só neste dispositivo por enquanto. Refazer as traz de volta.",
+    "histUndoPartial": "Parte disso mudou depois e ficaria como está.",
+    "histUndoPickEarlier": "Esta é a biblioteca como está agora. Escolha uma alteração anterior à esquerda para ver o que desfazer até ela faria.",
+    "histRbSendFirst": "Este dispositivo tem alterações ainda não enviadas. Desfaça-as (a lista acima) ou sincronize primeiro, e depois reverta.",
+    "histUndone": "{n} alterações desfeitas. Refazer as traz de volta.",
+    "histUndoneOne": "1 alteração desfeita. Refazer a traz de volta.",
+    "histUndoneKept": "{n} alterações desfeitas. Parte disso tinha mudado depois e foi deixada como está.",
+    "undoOldTitle": "Desfazer uma alteração antiga?",
+    "undoOldBody": "Esta alteração foi feita há mais de 2 horas ({time}): {what}. Desfazer?",
+    "undoOldGo": "Desfazer",
+    "undoOldHistory": "Ver o histórico detalhado",
+    "undoHoldHint": "Segure, ou clique com o botão direito, para ver o histórico",
+    "histBtnNoteLocal": "As últimas alterações feitas neste dispositivo, para desfazer até qualquer uma delas.",
     "histRbRestPlaylists": "As outras {n} playlists são iguais nos dois lados.",
     "histRbRestPlaylistOne": "A outra playlist é igual nos dois lados.",
     "histRbRestTracks": "As outras {n} faixas são iguais nos dois lados.",
@@ -13069,6 +13168,30 @@ const STRINGS = {
     "histBtnNote": "Jede gespeicherte Änderung der letzten 30 Tage, und jede davon wiederherstellen.",
     "histBtnNoteDrive": "Jede gespeicherte Änderung, und jede davon wiederherstellen.",
     "histTitle": "Verlauf",
+    "histThisDevice": "Dieses Gerät",
+    "histStepsLabel": "Dieses Gerät, noch nicht synchronisiert",
+    "histVersionsLabel": "Versionen der gemeinsamen Bibliothek",
+    "histBeforeSteps": "Vor diesen Änderungen",
+    "histSubtitleLocal": "„{name}“, die Änderungen, die Rückgängig auf diesem Gerät behalten hat",
+    "histOlderLocal": "Rückgängig behält die letzten {n} Änderungen.",
+    "histNoSteps": "Noch nichts rückgängig zu machen. Änderungen auf diesem Gerät erscheinen hier.",
+    "histOfflineNote": "Die gemeinsame Bibliothek ist nicht erreichbar, daher werden ihre Versionen nicht aufgeführt.",
+    "histRbNowNoteLocal": "Was dieses Gerät jetzt enthält.",
+    "histUndoTo": "Bis hierher rückgängig machen",
+    "histUndoFoot": "Wiederholen bringt diese Änderungen zurück.",
+    "histUndoFootShared": "Diese Änderungen sind bisher nur auf diesem Gerät. Wiederholen bringt sie zurück.",
+    "histUndoPartial": "Ein Teil davon hat sich seitdem geändert und bliebe, wie er ist.",
+    "histUndoPickEarlier": "Das ist die Bibliothek, wie sie jetzt ist. Wähle links eine frühere Änderung, um zu sehen, was das Rückgängigmachen bis dorthin bewirken würde.",
+    "histRbSendFirst": "Dieses Gerät hat Änderungen, die noch nicht gesendet wurden. Mach sie rückgängig (die Liste oben) oder synchronisiere zuerst, und setze dann zurück.",
+    "histUndone": "{n} Änderungen rückgängig gemacht. Wiederholen bringt sie zurück.",
+    "histUndoneOne": "1 Änderung rückgängig gemacht. Wiederholen bringt sie zurück.",
+    "histUndoneKept": "{n} Änderungen rückgängig gemacht. Ein Teil davon hatte sich seitdem geändert und wurde so gelassen.",
+    "undoOldTitle": "Eine ältere Änderung rückgängig machen?",
+    "undoOldBody": "Diese Änderung wurde vor mehr als 2 Stunden gemacht ({time}): {what}. Rückgängig machen?",
+    "undoOldGo": "Rückgängig machen",
+    "undoOldHistory": "Ausführlichen Verlauf ansehen",
+    "undoHoldHint": "Gedrückt halten oder Rechtsklick für den Verlauf",
+    "histBtnNoteLocal": "Die letzten Änderungen auf diesem Gerät, um bis zu einer beliebigen davon rückgängig zu machen.",
     "histRbRestPlaylists": "Die anderen {n} Playlists sind auf beiden Seiten gleich.",
     "histRbRestPlaylistOne": "Die andere Playlist ist auf beiden Seiten gleich.",
     "histRbRestTracks": "Die anderen {n} Titel sind auf beiden Seiten gleich.",
@@ -15094,6 +15217,30 @@ const STRINGS = {
     "histBtnNote": "过去 30 天保存的每一次更改，并可恢复其中任何内容。",
     "histBtnNoteDrive": "保存的每一次更改，并可恢复其中任何内容。",
     "histTitle": "历史记录",
+    "histThisDevice": "此设备",
+    "histStepsLabel": "此设备，尚未同步",
+    "histVersionsLabel": "共享资料库的版本",
+    "histBeforeSteps": "这些更改之前",
+    "histSubtitleLocal": "“{name}”，撤销功能在此设备上保留的更改",
+    "histOlderLocal": "撤销功能保留最近 {n} 次更改。",
+    "histNoSteps": "还没有可撤销的内容。在此设备上所做的更改会列在这里。",
+    "histOfflineNote": "无法连接共享资料库，因此没有列出它的版本。",
+    "histRbNowNoteLocal": "此设备现在的内容。",
+    "histUndoTo": "撤销到此处",
+    "histUndoFoot": "重做可以恢复这些更改。",
+    "histUndoFootShared": "这些更改目前只在此设备上。重做可以恢复它们。",
+    "histUndoPartial": "其中一部分此后已有变化，会保持现状。",
+    "histUndoPickEarlier": "这是资料库现在的样子。在左侧选择较早的一次更改，查看撤销到那里会怎样。",
+    "histRbSendFirst": "此设备有尚未发送的更改。请先撤销它们（上面的列表）或先同步，然后再回滚。",
+    "histUndone": "已撤销 {n} 次更改。重做可以恢复它们。",
+    "histUndoneOne": "已撤销 1 次更改。重做可以恢复它。",
+    "histUndoneKept": "已撤销 {n} 次更改。其中一部分此后已有变化，保持了现状。",
+    "undoOldTitle": "撤销较早的更改？",
+    "undoOldBody": "这次更改是在 2 个多小时前做的（{time}）：{what}。要撤销吗？",
+    "undoOldGo": "撤销",
+    "undoOldHistory": "查看详细历史记录",
+    "undoHoldHint": "长按或右键点击可查看历史记录",
+    "histBtnNoteLocal": "在此设备上最近所做的更改，可撤销到其中任何一次。",
     "histRbRestPlaylists": "其余 {n} 个播放列表两边相同。",
     "histRbRestPlaylistOne": "另一个播放列表两边相同。",
     "histRbRestTracks": "其余 {n} 首曲目两边相同。",
@@ -17119,6 +17266,30 @@ const STRINGS = {
     "histBtnNote": "Mọi thay đổi đã lưu trong 30 ngày qua, và khôi phục bất kỳ thay đổi nào.",
     "histBtnNoteDrive": "Mọi thay đổi đã lưu, và khôi phục bất kỳ thay đổi nào.",
     "histTitle": "Lịch sử",
+    "histThisDevice": "Thiết bị này",
+    "histStepsLabel": "Thiết bị này, chưa đồng bộ",
+    "histVersionsLabel": "Các phiên bản của thư viện dùng chung",
+    "histBeforeSteps": "Trước những thay đổi này",
+    "histSubtitleLocal": "“{name}”, những thay đổi mà Hoàn tác còn giữ trên thiết bị này",
+    "histOlderLocal": "Hoàn tác giữ {n} thay đổi gần nhất.",
+    "histNoSteps": "Chưa có gì để hoàn tác. Những thay đổi thực hiện trên thiết bị này sẽ hiện ở đây.",
+    "histOfflineNote": "Không kết nối được với thư viện dùng chung nên các phiên bản của nó không được liệt kê.",
+    "histRbNowNoteLocal": "Những gì thiết bị này đang có.",
+    "histUndoTo": "Hoàn tác về điểm này",
+    "histUndoFoot": "Làm lại sẽ đưa những thay đổi này trở lại.",
+    "histUndoFootShared": "Những thay đổi này hiện chỉ có trên thiết bị này. Làm lại sẽ đưa chúng trở lại.",
+    "histUndoPartial": "Một phần đã thay đổi sau đó và sẽ giữ nguyên.",
+    "histUndoPickEarlier": "Đây là thư viện như hiện tại. Hãy chọn một thay đổi trước đó ở bên trái để xem hoàn tác về đó sẽ làm gì.",
+    "histRbSendFirst": "Thiết bị này có những thay đổi chưa được gửi. Hãy hoàn tác chúng (danh sách phía trên) hoặc đồng bộ trước, rồi mới quay lui.",
+    "histUndone": "Đã hoàn tác {n} thay đổi. Làm lại sẽ đưa chúng trở lại.",
+    "histUndoneOne": "Đã hoàn tác 1 thay đổi. Làm lại sẽ đưa nó trở lại.",
+    "histUndoneKept": "Đã hoàn tác {n} thay đổi. Một phần đã thay đổi sau đó và được giữ nguyên.",
+    "undoOldTitle": "Hoàn tác một thay đổi cũ hơn?",
+    "undoOldBody": "Thay đổi này được thực hiện hơn 2 giờ trước ({time}): {what}. Hoàn tác nó?",
+    "undoOldGo": "Hoàn tác",
+    "undoOldHistory": "Xem lịch sử chi tiết",
+    "undoHoldHint": "Nhấn giữ hoặc nhấp chuột phải để xem lịch sử",
+    "histBtnNoteLocal": "Những thay đổi gần nhất trên thiết bị này, để hoàn tác về bất kỳ thay đổi nào.",
     "histRbRestPlaylists": "{n} danh sách phát còn lại giống nhau ở cả hai bên.",
     "histRbRestPlaylistOne": "Danh sách phát còn lại giống nhau ở cả hai bên.",
     "histRbRestTracks": "{n} bài còn lại giống nhau ở cả hai bên.",
@@ -19144,6 +19315,30 @@ const STRINGS = {
     "histBtnNote": "Κάθε αποθηκευμένη αλλαγή των τελευταίων 30 ημερών, και επαναφορά οποιασδήποτε.",
     "histBtnNoteDrive": "Κάθε αποθηκευμένη αλλαγή, και επαναφορά οποιασδήποτε.",
     "histTitle": "Ιστορικό",
+    "histThisDevice": "Αυτή η συσκευή",
+    "histStepsLabel": "Αυτή η συσκευή, χωρίς συγχρονισμό ακόμη",
+    "histVersionsLabel": "Εκδόσεις της κοινόχρηστης βιβλιοθήκης",
+    "histBeforeSteps": "Πριν από αυτές τις αλλαγές",
+    "histSubtitleLocal": "«{name}», οι αλλαγές που έχει κρατήσει η Αναίρεση σε αυτή τη συσκευή",
+    "histOlderLocal": "Η Αναίρεση κρατά τις τελευταίες {n} αλλαγές.",
+    "histNoSteps": "Δεν υπάρχει ακόμη κάτι για αναίρεση. Οι αλλαγές που γίνονται σε αυτή τη συσκευή θα εμφανίζονται εδώ.",
+    "histOfflineNote": "Η κοινόχρηστη βιβλιοθήκη δεν είναι προσβάσιμη, οπότε οι εκδόσεις της δεν εμφανίζονται.",
+    "histRbNowNoteLocal": "Ό,τι έχει τώρα αυτή η συσκευή.",
+    "histUndoTo": "Αναίρεση έως εδώ",
+    "histUndoFoot": "Η Επανάληψη φέρνει πίσω αυτές τις αλλαγές.",
+    "histUndoFootShared": "Αυτές οι αλλαγές βρίσκονται προς το παρόν μόνο σε αυτή τη συσκευή. Η Επανάληψη τις φέρνει πίσω.",
+    "histUndoPartial": "Μέρος τους έχει αλλάξει έκτοτε και θα έμενε ως έχει.",
+    "histUndoPickEarlier": "Αυτή είναι η βιβλιοθήκη όπως είναι τώρα. Επιλέξτε μια προηγούμενη αλλαγή αριστερά για να δείτε τι θα έκανε η αναίρεση έως εκεί.",
+    "histRbSendFirst": "Αυτή η συσκευή έχει αλλαγές που δεν έχουν σταλεί ακόμη. Αναιρέστε τις (η λίστα από πάνω) ή συγχρονίστε πρώτα, και μετά κάντε επαναφορά.",
+    "histUndone": "Αναιρέθηκαν {n} αλλαγές. Η Επανάληψη τις φέρνει πίσω.",
+    "histUndoneOne": "Αναιρέθηκε 1 αλλαγή. Η Επανάληψη τη φέρνει πίσω.",
+    "histUndoneKept": "Αναιρέθηκαν {n} αλλαγές. Μέρος τους είχε αλλάξει έκτοτε και έμεινε ως έχει.",
+    "undoOldTitle": "Αναίρεση παλαιότερης αλλαγής;",
+    "undoOldBody": "Αυτή η αλλαγή έγινε πριν από περισσότερες από 2 ώρες ({time}): {what}. Να αναιρεθεί;",
+    "undoOldGo": "Αναίρεση",
+    "undoOldHistory": "Προβολή αναλυτικού ιστορικού",
+    "undoHoldHint": "Κρατήστε πατημένο, ή δεξί κλικ, για το ιστορικό",
+    "histBtnNoteLocal": "Οι τελευταίες αλλαγές σε αυτή τη συσκευή, για αναίρεση έως οποιαδήποτε από αυτές.",
     "histRbRestPlaylists": "Οι άλλες {n} λίστες είναι ίδιες και στις δύο πλευρές.",
     "histRbRestPlaylistOne": "Η άλλη λίστα είναι ίδια και στις δύο πλευρές.",
     "histRbRestTracks": "Τα άλλα {n} κομμάτια είναι ίδια και στις δύο πλευρές.",
@@ -21169,6 +21364,30 @@ const STRINGS = {
     "histBtnNote": "Ogni modifica salvata negli ultimi 30 giorni, e ripristinarne qualsiasi.",
     "histBtnNoteDrive": "Ogni modifica salvata, e ripristinarne qualsiasi.",
     "histTitle": "Cronologia",
+    "histThisDevice": "Questo dispositivo",
+    "histStepsLabel": "Questo dispositivo, non ancora sincronizzato",
+    "histVersionsLabel": "Versioni della libreria condivisa",
+    "histBeforeSteps": "Prima di queste modifiche",
+    "histSubtitleLocal": "“{name}”, le modifiche che Annulla ha conservato su questo dispositivo",
+    "histOlderLocal": "Annulla conserva le ultime {n} modifiche.",
+    "histNoSteps": "Non c'è ancora nulla da annullare. Le modifiche fatte su questo dispositivo compariranno qui.",
+    "histOfflineNote": "La libreria condivisa non è raggiungibile, quindi le sue versioni non sono elencate.",
+    "histRbNowNoteLocal": "Ciò che questo dispositivo contiene adesso.",
+    "histUndoTo": "Annulla fino a qui",
+    "histUndoFoot": "Ripeti riporta queste modifiche.",
+    "histUndoFootShared": "Queste modifiche sono per ora solo su questo dispositivo. Ripeti le riporta.",
+    "histUndoPartial": "Una parte è cambiata nel frattempo e resterebbe com'è.",
+    "histUndoPickEarlier": "Questa è la libreria com'è adesso. Scegli una modifica precedente a sinistra per vedere cosa farebbe annullare fino a lì.",
+    "histRbSendFirst": "Questo dispositivo ha modifiche non ancora inviate. Annullale (l'elenco qui sopra) o sincronizza prima, poi torna indietro.",
+    "histUndone": "{n} modifiche annullate. Ripeti le riporta.",
+    "histUndoneOne": "1 modifica annullata. Ripeti la riporta.",
+    "histUndoneKept": "{n} modifiche annullate. Una parte era cambiata nel frattempo ed è stata lasciata com'è.",
+    "undoOldTitle": "Annullare una modifica più vecchia?",
+    "undoOldBody": "Questa modifica è stata fatta più di 2 ore fa ({time}): {what}. Annullarla?",
+    "undoOldGo": "Annullala",
+    "undoOldHistory": "Vedi la cronologia dettagliata",
+    "undoHoldHint": "Tieni premuto, o clic destro, per la cronologia",
+    "histBtnNoteLocal": "Le ultime modifiche fatte su questo dispositivo, per annullare fino a una qualsiasi di esse.",
     "histRbRestPlaylists": "Le altre {n} playlist sono uguali da entrambi i lati.",
     "histRbRestPlaylistOne": "L'altra playlist è uguale da entrambi i lati.",
     "histRbRestTracks": "Gli altri {n} brani sono uguali da entrambi i lati.",
@@ -23014,6 +23233,14 @@ function stampTrackDates(rows){
   });
   if(any) setTimeout(()=> saveState(), 0);
 }
+// A sync that sent this device's changes: every step so far is now part of
+// a version of the shared library (History lists those as versions, and
+// only the steps since as this device's own).
+function undoMarkSynced(){
+  let any = false;
+  undoStack.concat(redoStack).forEach(st=>{ if(!st.synced){ st.synced = true; any = true; } });
+  if(any) undoPersist();
+}
 function undoRebase(){ undoBase = undoDoc(); undoBaseStr = JSON.stringify(undoBase); undoBaseObjs = new Map((root.library || []).map(t=> [t.id, t])); }
 async function undoInit(){
   try{ const r = await idbGet("state", "undo"); if(r && r.value){ undoStack = r.value.undo || []; redoStack = r.value.redo || []; } }catch(err){}
@@ -23054,6 +23281,7 @@ function undoNoteSaved(){
     undoStack.push({at: Date.now(), changes, full});
     if(undoStack.length > UNDO_MAX) undoStack.shift();
   }
+  undoOldOk = false;
   redoStack = [];
   undoPersist();
   updateUndoButtons();
@@ -23076,14 +23304,15 @@ function undoLabel(step){
   });
   return histSummaryText(w);
 }
-// Applies a step from one side to the other ("undo": after → before).
-async function undoApply(step, dir){
+// What applying a step to a document gives, without touching the library:
+// the tracks' fields (T), the folders and playlists (N, tree), how much had
+// changed since and stays (kept), and which tracks come back or go. objs:
+// the tracks that are there now, by id.
+function undoPlan(cur, step, dir, objs){
   const from = dir === "undo" ? "after" : "before", to = dir === "undo" ? "before" : "after";
-  const cur = undoDoc();
   const T = new Map(cur.tracks.map(t=> [t.id, syncTrackFields(t)]));
   const N = syncFlattenTree(cur.tree);
   const O = syncChildOrders(N);
-  const objs = new Map((root.library || []).map(t=> [t.id, t]));
   let kept = 0;
   const orderChanges = [];
   const restored = [], removed = [];
@@ -23119,6 +23348,25 @@ async function undoApply(step, dir){
     if(back){ T.set(it.refId, syncTrackFields(undoDocTrack(back))); const i = removed.indexOf(it.refId); if(i >= 0) removed.splice(i, 1); }
   }));
   const tree = syncBuildDoc(new Map(), N).tree;
+  return {T, N, tree, kept, restored, removed};
+}
+// The library as Undo compares it, after undoing the newest `count` steps
+// (History's column B for a step of this device's).
+function undoPreviewDoc(count){
+  let cur = undoDoc(), kept = 0, objs = new Map((root.library || []).map(t=> [t.id, t]));
+  for(let i = undoStack.length - 1, n = 0; i >= 0 && n < count; i--, n++){
+    const p = undoPlan(cur, undoStack[i], "undo", objs);
+    kept += p.kept;
+    const tracks = [...p.T].map(([id, f])=> syncTrackFromFields(id, f));
+    cur = {format: SYNC_DOC_FORMAT, tree: p.tree, tracks};
+    objs = new Map(tracks.map(t=> [t.id, t]));
+  }
+  return {doc: cur, kept};
+}
+// Applies a step from one side to the other ("undo": after → before).
+async function undoApply(step, dir){
+  const objs = new Map((root.library || []).map(t=> [t.id, t]));
+  const {T, tree, kept, restored, removed} = undoPlan(undoDoc(), step, dir, objs);
   // Back into the library: the details from the step, everything else (the
   // audio, artwork and this device's own fields) from the track as it is.
   const lib = [];
@@ -23148,8 +23396,24 @@ function undoMergeTrack(tr, fields){
   Object.keys(fields).forEach(k=>{ if(k !== "#audio" && k !== "#art" && fields[k] !== undefined) out[k] = syncClone(fields[k]); });
   return out;
 }
+// Undoing a change more than two hours old asks first, and offers History
+// (Gen Rinzin, 14 Nov 2026: on a shared device a newcomer pressing Undo
+// again and again takes apart what someone did there days ago; the history
+// display is "much safer than trying to remember what you did hours ago").
+// One yes covers the run of undos, until the next change made here.
+const UNDO_OLD_MS = 2 * 3600 * 1000;
+let undoOldOk = false;
 async function doUndo(){
   if(!undoStack.length || undoBusy || overlayPageOpen()) return;
+  const top = undoStack[undoStack.length - 1];
+  if(!undoOldOk && Date.now() - top.at > UNDO_OLD_MS){
+    if(backdrop.classList.contains("show")) return;
+    const pick = await askChoice(t("undoOldTitle"), `<p>${escapeHtmlText(t("undoOldBody", {time: histWhen(top.at), what: undoLabel(top)}))}</p>`,
+      [{label: t("undoOldGo"), value: "undo", kind: "primary"}, {label: t("cancel"), value: null}, {label: t("undoOldHistory"), value: "history"}]);
+    if(pick === "history"){ openSharedHistory(); return; }
+    if(pick !== "undo" || !undoStack.length || undoBusy) return;
+    undoOldOk = true;
+  }
   undoBusy = true;
   try{
     const step = undoStack.pop();
@@ -23178,7 +23442,7 @@ function updateUndoButtons(){
   // the change wouldn't be seen, and the page may be showing what it undoes.
   const covered = typeof overlayPageOpen === "function" && overlayPageOpen();
   u.disabled = covered || !undoStack.length; r.disabled = covered || !redoStack.length;
-  u.title = undoStack.length ? t("undoTitle", {what: undoLabel(undoStack[undoStack.length - 1])}) : t("undoNothing");
+  u.title = undoStack.length ? t("undoTitle", {what: undoLabel(undoStack[undoStack.length - 1])}) + "\n" + t("undoHoldHint") : t("undoNothing");
   r.title = redoStack.length ? t("redoTitle", {what: undoLabel(redoStack[redoStack.length - 1])}) : t("redoNothing");
   u.setAttribute("aria-label", u.title); r.setAttribute("aria-label", r.title);
 }
@@ -23211,6 +23475,14 @@ async function undoTrashPurge(){
     if(old.length) await idbDeleteMany("state", old);
   }catch(err){}
 }
+// A long press on Undo, or a right-click, opens History (Gen Rinzin, 14 Nov 2026).
+(function(){
+  const b = document.getElementById("btnUndo"); let timer = null, held = false;
+  b.addEventListener("pointerdown", ()=>{ held = false; clearTimeout(timer); timer = setTimeout(()=>{ held = true; if(!overlayPageOpen()) openSharedHistory(); }, 600); });
+  ["pointerup", "pointerleave", "pointercancel"].forEach(ev=> b.addEventListener(ev, ()=> clearTimeout(timer)));
+  b.addEventListener("click", e=>{ if(held){ held = false; e.stopImmediatePropagation(); e.preventDefault(); } }, true);
+  b.addEventListener("contextmenu", e=>{ e.preventDefault(); clearTimeout(timer); if(!overlayPageOpen()) openSharedHistory(); });
+})();
 document.getElementById("btnUndo").addEventListener("click", ()=> doUndo());
 document.getElementById("btnRedo").addEventListener("click", ()=> doRedo());
 // Ctrl/⌘-Z, and Ctrl/⌘-Shift-Z or Ctrl-Y, on Edit Playlists and Library,
@@ -39089,7 +39361,9 @@ async function renderSettingsSection(fromTimer){
     const fullLine = (!backupInfo.handle && backupInfo.manualBase) ? t("lastFullBackupLabel",{date: new Date(backupInfo.manualBase.at).toLocaleString()}) : "";
     const sharedNote = sharedConfig() ? `<p class="settings-note" style="white-space:pre-line;">${escapeHtmlText((sharedCoversLibrary() ? t("sharedCoveredTooltip") + "\n" : "") + (keeperLines().join("\n") || t("keeperNone")))}</p>
       <div class="settings-row"><button class="btn" id="bkHistoryBtn" type="button">${escapeHtmlText(t("histBtn"))}</button></div>
-      <p class="settings-note">${escapeHtmlText(t(sharedConfig().kind === "gdrive" ? "histBtnNoteDrive" : "histBtnNote"))}</p>` : "";
+      <p class="settings-note">${escapeHtmlText(t(sharedConfig().kind === "gdrive" ? "histBtnNoteDrive" : "histBtnNote"))}</p>`
+      : `<div class="settings-row"><button class="btn" id="bkHistoryBtn" type="button">${escapeHtmlText(t("histBtn"))}</button></div>
+      <p class="settings-note">${escapeHtmlText(t("histBtnNoteLocal"))}</p>`;
     body.innerHTML = `
       ${sharedNote}
       <p id="bkStatus" style="white-space:pre-line;"></p>
@@ -46610,6 +46884,7 @@ async function sharedSyncOnce(opts){
       const upper = rows.filter(r=> !r.lower);
       // No differences left that anyone has to decide: settled.
       if(!rows.length && (!base || base.version !== remote.version)) await sharedSaveBase({version: remote.version, doc: remote.doc});
+      if(!rows.length) undoMarkSynced();
       if(upper.length !== sharedStatus.reviewCount) sharedLog(upper.length + " changes to review");
       if(cfg.partial) await sharedUpdatePartialNew(base ? base.doc : null, here, remote.doc);
       sharedSetStatus({state: "idle", message: "", lastSyncAt: Date.now(), version: remote.version, libraryName: remote.name || sharedStatus.libraryName, reviewCount: upper.length});
@@ -46676,6 +46951,7 @@ async function sharedSyncOnce(opts){
         }
       }
       await sharedSaveBase({version, doc: agreed || merged});
+      undoMarkSynced();
       await sharedQueueAbsentAudio(agreed || merged, !!(opts.force || opts.useShared));
       // What the shared library now holds is this library, as it is now
       // (once its audio has gone up too: see sharedNoteCovered). A device
@@ -47982,7 +48258,7 @@ let histState = null;
 function histOpen(){ return !!document.getElementById("historyPage"); }
 async function openSharedHistory(){
   const cfg = sharedConfig();
-  if(!cfg || histOpen()) return;
+  if(histOpen()) return;
   closeSettingsPage(); closeHelpPage();
   const page = document.createElement("div");
   page.id = "historyPage";
@@ -47992,29 +48268,62 @@ async function openSharedHistory(){
     <div class="hist-body"><p class="settings-note" style="padding:18px 22px;">${escapeHtmlText(t("histLoading"))}</p></div>`;
   document.body.appendChild(page);
   page.querySelector("#histClose").addEventListener("click", closeSharedHistory);
-  histState = {cfg, docs: new Map(), choices: new Set(), open: new Set(), mode: "restore", notice: "", tab: "roll", rbOpen: new Set(), rbMode: "all", rbWrap: true, rbInit: null, rbSeen: {nodes: new Set(), tracks: new Set()}};
-  try{
-    // Send anything waiting here first, so "now" includes it.
-    for(let i = 0; i < 40 && sharedSyncRunning; i++) await new Promise(r=> setTimeout(r, 250));
-    if(!cfg.receiveOnly && !cfg.reviewMode){ try{ await runSharedSync({force: true}); }catch(err){} }
-    for(let i = 0; i < 40 && sharedSyncRunning; i++) await new Promise(r=> setTimeout(r, 250));
-    await histLoadNow();
-    const list = await sharedHistoryList(cfg);
-    histState.list = list.filter(x=> x.version <= histState.nowVersion);
-    if(!histState.list.length || histState.list[0].version !== histState.nowVersion) histState.list.unshift({version: histState.nowVersion, time: Date.now()});
-    histState.sel = (histState.list[1] || histState.list[0]).version;
-    await histLoadSelected();
-  }catch(err){
-    if(!histOpen()) return;
-    page.querySelector(".hist-body").innerHTML = `<p style="padding:18px 22px;">${escapeHtmlText(err && err.rejected ? sharedRejectedText() : sharedFailText(err))}</p>`;
+  histState = {cfg: cfg || {kind: "local"}, local: !cfg, docs: new Map(), choices: new Set(), open: new Set(), mode: "restore", notice: "", tab: "roll", rbOpen: new Set(), rbMode: "all", rbWrap: true, rbInit: null, rbSeen: {nodes: new Set(), tracks: new Set()}};
+  const st = histState;
+  st.list = []; st.libName = currentLibraryName();
+  if(cfg){
+    try{
+      // Send anything waiting here first, so "now" includes it.
+      for(let i = 0; i < 40 && sharedSyncRunning; i++) await new Promise(r=> setTimeout(r, 250));
+      if(!cfg.receiveOnly && !cfg.reviewMode){ try{ await runSharedSync({force: true}); }catch(err){} }
+      for(let i = 0; i < 40 && sharedSyncRunning; i++) await new Promise(r=> setTimeout(r, 250));
+      await histLoadNow();
+      const list = await sharedHistoryList(cfg);
+      st.list = list.filter(x=> x.version <= st.nowVersion);
+      if(!st.list.length || st.list[0].version !== st.nowVersion) st.list.unshift({version: st.nowVersion, time: Date.now()});
+    }catch(err){
+      if(!histOpen() || histState !== st) return;
+      // Not reachable: this device's own changes can still be undone here.
+      st.offline = err && err.rejected ? sharedRejectedText() : sharedFailText(err);
+      st.list = [];
+    }
+  }
+  if(!histOpen() || histState !== st) return;
+  // This device's own changes, above the versions (2.5.011).
+  const steps = histStepEntries(st);
+  st.localNow = undoDoc();
+  if(!st.nowDoc) st.nowDoc = st.localNow;
+  st.list = steps.concat(st.list);
+  if(!st.list.length){
+    page.querySelector(".hist-sub").textContent = st.local ? t("histSubtitleLocal", {name: st.libName}) : "";
+    page.querySelector(".hist-body").innerHTML = `<p style="padding:18px 22px;">${escapeHtmlText(st.offline || t("histNoSteps"))}</p>`;
     return;
   }
+  st.sel = (st.list[1] || st.list[0]).version;
+  try{ await histLoadSelected(); }
+  catch(err){ if(!histOpen()) return; page.querySelector(".hist-body").innerHTML = `<p style="padding:18px 22px;">${escapeHtmlText(err && err.rejected ? sharedRejectedText() : sharedFailText(err))}</p>`; return; }
   renderSharedHistory();
 }
 function closeSharedHistory(){
   const el = document.getElementById("historyPage");
   if(el){ el.remove(); removeOverlayScrim(); }
   histState = null;
+}
+// This device's undo steps as points of History's list, newest first, with
+// "Before these changes" under the oldest. A library that isn't shared
+// lists every step Undo has kept; a shared one only those not yet synced
+// (the rest are part of its versions). A point's `undo` is how many steps
+// choosing it takes back; its version is negative, so it can't be taken
+// for one of the shared library's.
+const HIST_BEFORE = -1000000;
+function histStepEntries(st){
+  if(st.cfg.receiveOnly) return [];
+  let first = undoStack.length;
+  while(first > 0 && (st.local || !undoStack[first - 1].synced)) first--;
+  const out = [];
+  for(let i = undoStack.length - 1; i >= first; i--) out.push({version: -(i + 1), time: undoStack[i].at, by: st.local ? "" : t("histThisDevice"), text: undoLabel(undoStack[i]), step: true, undo: undoStack.length - 1 - i});
+  if(out.length) out.push({version: HIST_BEFORE, time: undoStack[first].at - 1, by: "", text: t("histBeforeSteps"), step: true, before: true, undo: undoStack.length - first});
+  return out;
 }
 async function histLoadNow(){
   const st = histState, now = await sharedGetState(st.cfg);
@@ -48029,6 +48338,14 @@ async function histDoc(v){
 }
 async function histLoadSelected(){
   const st = histState;
+  if(st.sel < 0){
+    // One of this device's steps: the library with the steps above it undone.
+    const e = st.list.find(x=> x.version === st.sel), pre = undoPreviewDoc(e ? e.undo : 0);
+    st.thenDoc = pre.doc; st.partial = pre.kept; st.beforeDoc = null;
+    histComputeRows();
+    return;
+  }
+  st.partial = 0;
   st.thenDoc = await histDoc(st.sel);
   // What that one save changed: the version before it, then it.
   const at = st.list.findIndex(x=> x.version === st.sel);
@@ -48038,7 +48355,10 @@ async function histLoadSelected(){
 }
 function histComputeRows(){
   const st = histState;
-  st.rows = st.thenDoc ? syncReviewRows(st.nowDoc, st.nowDoc, st.thenDoc).rows : [];
+  // "Now" is the shared library's newest version, or for one of this
+  // device's steps the library as this device has it.
+  const now = st.rbNow = st.sel < 0 ? st.localNow : st.nowDoc;
+  st.rows = st.thenDoc && now ? syncReviewRows(now, now, st.thenDoc).rows : [];
   st.pointRows = st.thenDoc && st.beforeDoc ? syncReviewRows(st.beforeDoc, st.beforeDoc, st.thenDoc).rows : null;
   const keys = new Set(st.rows.map(r=> r.key));
   st.choices.forEach(k=>{ if(!keys.has(k)) st.choices.delete(k); });
@@ -48140,22 +48460,26 @@ function renderSharedHistory(){
   const restoreMode = st.mode === "restore";
   const names = histNames();
   const sel = st.list.find(x=> x.version === st.sel) || st.list[0];
-  const isNow = st.sel === st.nowVersion;
-  page.querySelector(".hist-sub").textContent = t("histSubtitle", {name: st.libName});
+  const isNow = st.sel === st.list[0].version;
+  const hasSteps = st.list.some(x=> x.step), hasVersions = st.list.some(x=> !x.step);
+  page.querySelector(".hist-sub").textContent = t(hasVersions ? "histSubtitle" : "histSubtitleLocal", {name: st.libName});
   // The points, grouped by day.
   let lastDay = "", listHtml = "";
   const rollTab = st.tab === "roll", selAt = st.list.findIndex(x=> x.version === st.sel);
   st.list.forEach((p, i)=>{
+    // A shared library with changes of this device's not yet synced: two
+    // groups, each with its heading.
+    if(hasSteps && hasVersions && (i === 0 || (!p.step && st.list[i - 1].step))){ listHtml += `<div class="hist-group">${escapeHtmlText(t(p.step ? "histStepsLabel" : "histVersionsLabel"))}</div>`; lastDay = ""; }
     const day = histDay(p.time);
-    if(day !== lastDay){ listHtml += `<div class="hist-day">${escapeHtmlText(day)}</div>`; lastDay = day; }
+    if(day !== lastDay && !p.before){ listHtml += `<div class="hist-day">${escapeHtmlText(day)}</div>`; lastDay = day; }
     const on = p.version === st.sel;
     // Roll back: the saves above the chosen one are what it would undo.
     if(rollTab && on && i > 0) listHtml += `<div class="hist-undone-line">${escapeHtmlText(t("histRbUndoneAbove"))}</div>`;
     listHtml += `<button type="button" class="hist-point${on ? " on" : ""}${rollTab && i < selAt ? " hist-point-undone" : ""}" data-v="${p.version}" ${on ? 'aria-current="true"' : ""}>
-      <span class="hist-point-top"><span class="hist-point-time">${escapeHtmlText(histTime(p.time))}${i === 0 ? ` <span class="hist-now">${escapeHtmlText(t("histNow"))}</span>` : ""}</span><span class="hist-point-by">${escapeHtmlText(p.by || "")}</span></span>
-      <span class="hist-point-what">${escapeHtmlText(histSummaryText(p.what))}</span></button>`;
+      <span class="hist-point-top"><span class="hist-point-time">${escapeHtmlText(p.before ? "" : histTime(p.time))}${i === 0 ? ` <span class="hist-now">${escapeHtmlText(t("histNow"))}</span>` : ""}</span><span class="hist-point-by">${escapeHtmlText(p.by || "")}</span></span>
+      <span class="hist-point-what">${escapeHtmlText(p.step ? p.text : histSummaryText(p.what))}</span></button>`;
   });
-  listHtml += `<p class="hist-older">${escapeHtmlText(st.cfg.kind === "gdrive" ? t("histOlderDrive") : t("histOlder", {days: 30}))}</p>`;
+  listHtml += `<p class="hist-older">${escapeHtmlText(!hasVersions ? (st.offline ? t("histOfflineNote") : t("histOlderLocal", {n: UNDO_MAX})) : st.cfg.kind === "gdrive" ? t("histOlderDrive") : t("histOlder", {days: 30}))}</p>`;
   const at = st.list.findIndex(x=> x.version === st.sel);
   // The comparison.
   let rows = restoreMode ? st.rows : (st.pointRows || []);
@@ -48214,10 +48538,11 @@ function renderSharedHistory(){
       <button class="btn ghost" type="button" id="histAll">${escapeHtmlText(t(allTaken ? "histNoneBtn" : "histAll"))}</button>
       <button class="btn primary" type="button" id="histGo" ${chosen ? "" : "disabled"}>${escapeHtmlText(chosen ? t(chosen === 1 ? "histGoOne" : "histGoN", {n: chosen}) : t("histGo"))}</button>` : "";
   if(rollTab){ main = histRollMainHtml(st, sel, isNow); foot = ""; }
-  else if(st.tab === "undo"){ main = `<p class="hist-soon">${escapeHtmlText(t("histRbUndoSoon"))}</p>`; foot = ""; }
-  // The three tabs (Gen Rinzin, 14 Nov 2026). A receive-only device makes
-  // no changes of its own, so it has no first tab.
-  const tabsHtml = `<div class="hist-tabbar"><div class="mode-tabs hist-tabs" role="tablist">${[["undo", "histTabUndo"], ["roll", "histTabRoll"], ["bring", "histTabBring"]].filter(x=> x[0] !== "undo" || !st.cfg.receiveOnly).map(([k, key])=> `<button type="button" role="tab" class="mode-tab${st.tab === k ? " active" : ""}" data-tab="${k}" aria-selected="${st.tab === k}"><span class="tab-long">${escapeHtmlText(t(key))}</span><span class="tab-short">${escapeHtmlText(t(key + "Short"))}</span></button>`).join("")}</div></div>`;
+  // Two tabs (Gen Rinzin, 14 Nov 2026: Undo on this device is part of Roll
+  // back, as the steps at the top of its list). With no versions to bring
+  // anything back from (a library that isn't shared, or one that can't be
+  // reached), there is only Roll back, and no tab bar.
+  const tabsHtml = !hasVersions ? "" : `<div class="hist-tabbar"><div class="mode-tabs hist-tabs" role="tablist">${[["roll", "histTabRoll"], ["bring", "histTabBring"]].map(([k, key])=> `<button type="button" role="tab" class="mode-tab${st.tab === k ? " active" : ""}" data-tab="${k}" aria-selected="${st.tab === k}"><span class="tab-long">${escapeHtmlText(t(key))}</span><span class="tab-short">${escapeHtmlText(t(key + "Short"))}</span></button>`).join("")}</div></div>`;
   const body = page.querySelector(".hist-body");
   const keepScroll = body.querySelector(".hist-main") ? body.querySelector(".hist-main").scrollTop : 0;
   const keepList = body.querySelector(".hist-points") ? body.querySelector(".hist-points").scrollTop : null;
@@ -48229,13 +48554,17 @@ function renderSharedHistory(){
   body.querySelector(".hist-main").scrollTop = keepScroll;
   const choose = async v=>{
     if(v === st.sel) return;
+    if(v < 0) st.tab = "roll"; // one of this device's steps: Roll back shows it
     st.sel = v; st.notice = ""; st.open.clear(); st.choices.clear();
     body.querySelector(".hist-main").innerHTML = `<p class="settings-note">${escapeHtmlText(t("histLoading"))}</p>`;
     try{ await histLoadSelected(); }catch(err){ st.thenDoc = null; st.notice = sharedFailText(err); }
     renderSharedHistory();
   };
   body.querySelectorAll(".hist-point").forEach(b=> b.addEventListener("click", ()=> choose(+b.dataset.v)));
-  body.querySelectorAll(".hist-tabs .mode-tab").forEach(b=> b.addEventListener("click", ()=>{ if(st.tab === b.dataset.tab) return; st.tab = b.dataset.tab; st.notice = ""; body.querySelector(".hist-main").scrollTop = 0; renderSharedHistory(); }));
+  body.querySelectorAll(".hist-tabs .mode-tab").forEach(b=> b.addEventListener("click", ()=>{ if(st.tab === b.dataset.tab) return; st.tab = b.dataset.tab; st.notice = ""; body.querySelector(".hist-main").scrollTop = 0;
+    // Bring back works on versions: leave a step of this device's for the newest version.
+    if(st.tab === "bring" && st.sel < 0){ choose(st.list.find(x=> !x.step).version); return; }
+    renderSharedHistory(); }));
   if(rollTab) histRollWire(body);
   body.querySelectorAll(".hist-step").forEach(b=> b.addEventListener("click", ()=>{ const n = st.list[at + +b.dataset.step]; if(n) choose(n.version); }));
   body.querySelectorAll('input[name="histMode"]').forEach(inp=> inp.addEventListener("change", ()=>{ st.mode = inp.value; renderSharedHistory(); }));
@@ -48302,7 +48631,7 @@ function histRollEntries(B, D, bt, dt, lvl, key, whole){
 // The folders and playlists that differ, as a tree; opens collects the
 // keys that start open.
 function histRollPlaylists(st, opens){
-  const then = st.thenDoc, now = st.nowDoc;
+  const then = st.thenDoc, now = st.rbNow;
   const bn = syncFlattenTree(then.tree), dn = syncFlattenTree(now.tree);
   const bo = syncChildOrders(bn), dord = syncChildOrders(dn);
   const bt = new Map((then.tracks || []).map(x=> [x.id, x])), dt = new Map((now.tracks || []).map(x=> [x.id, x]));
@@ -48361,7 +48690,7 @@ function histRollPlaylists(st, opens){
 // The tracks that differ, under their artist and album. A name that
 // changed keeps its tracks together: one row, the old name and the new.
 function histRollTracks(st){
-  const then = st.thenDoc, now = st.nowDoc;
+  const then = st.thenDoc, now = st.rbNow;
   const bt = new Map((then.tracks || []).map(x=> [x.id, x])), dt = new Map((now.tracks || []).map(x=> [x.id, x]));
   const nm = s=> (s == null ? "" : String(s)).trim();
   // Groups items by a pair of names (then, now): those on both sides make
@@ -48467,7 +48796,10 @@ function histRollMainHtml(st, sel, isNow){
   if(!st.thenDoc) return notice;
   // Nothing differs (the newest save, or one the same as now): say so; and
   // if rows were seen at another save, keep them in view all the same.
-  const any = st.rows.length > 0, nothing = any ? "" : `<p class="hist-nothing">${escapeHtmlText(t(isNow ? "histRbPickEarlier" : "histNothing"))}</p>`;
+  const stepSel = st.sel < 0, hasSteps = st.list.some(x=> x.step);
+  // A version can't be rolled back to while this device holds changes not yet sent.
+  const blocked = !stepSel && hasSteps;
+  const any = st.rows.length > 0, nothing = any ? "" : `<p class="hist-nothing">${escapeHtmlText(t(isNow ? (st.list[0].step ? "histUndoPickEarlier" : "histRbPickEarlier") : "histNothing"))}</p>`;
   if(!any && !st.rbSeen.nodes.size && !st.rbSeen.tracks.size) return notice + nothing;
   const opens = [], pl = histRollPlaylists(st, opens), tr = histRollTracks(st);
   // A newly chosen save starts folded the standard way.
@@ -48482,11 +48814,11 @@ function histRollMainHtml(st, sel, isNow){
   const radio = (v, key)=> `<label><input type="radio" name="rbMode" value="${v}" ${st.rbMode === v ? "checked" : ""}> ${escapeHtmlText(t(key))}</label>`;
   return `${notice}${nothing}<div class="rb-tools"><div class="ctx-inline" id="rbBar"></div><fieldset class="hist-modes rb-modes"><legend class="sr-only">${escapeHtmlText(t("histShowLegend"))}</legend>${radio("all", "histRbShowGrey")}${radio("chg", "histRbShowChanged")}</fieldset></div>
     <div class="rb-grid${st.rbWrap ? " rb-wrap" : ""}"><div class="rb-box" aria-hidden="true"></div>
-      <div class="rb-row rb-head"><div class="rb-cell"><h3 class="hist-h3">${escapeHtmlText(t("histRbThenHead", {time: histWhen(sel.time)}))}</h3>${st.cfg.receiveOnly || !any ? "" : `<button class="btn primary" type="button" id="rbGo">${escapeHtmlText(t("histRbGo"))}</button>`}</div>
-        <div class="rb-cell"><h3 class="hist-h3">${escapeHtmlText(t("histRbNowHead"))}</h3><p class="rb-note">${escapeHtmlText(t("histRbNowNote"))}</p></div></div>
+      <div class="rb-row rb-head"><div class="rb-cell"><h3 class="hist-h3">${escapeHtmlText(t("histRbThenHead", {time: histWhen(sel.time)}))}</h3>${st.cfg.receiveOnly || !any || blocked ? "" : `<button class="btn primary" type="button" id="rbGo">${escapeHtmlText(t(stepSel ? "histUndoTo" : "histRbGo"))}</button>`}</div>
+        <div class="rb-cell"><h3 class="hist-h3">${escapeHtmlText(t("histRbNowHead"))}</h3><p class="rb-note">${escapeHtmlText(t(stepSel || st.local ? "histRbNowNoteLocal" : "histRbNowNote"))}</p></div></div>
       ${sec(t("histRbPlaylists"), "rb-sec-tree", plRows, pl.rest, ["histRbRestPlaylists", "histRbRestPlaylistOne", "histRbAllPlaylists"])}
       ${sec(t("histRbTracks"), "rb-sec-flat", trRows, tr.rest, ["histRbRestTracks", "histRbRestTrackOne", "histRbAllTracks"])}
-      <div class="rb-row rb-foot"><div class="rb-cell rb-note">${any ? escapeHtmlText(t(st.cfg.receiveOnly ? "histRbReceiveOnly" : "histRbErased")) : ""}</div><div class="rb-cell"></div></div>
+      <div class="rb-row rb-foot"><div class="rb-cell rb-note">${!any ? "" : escapeHtmlText(blocked ? t("histRbSendFirst") : stepSel ? t(st.local ? "histUndoFoot" : "histUndoFootShared") + (st.partial ? " " + t("histUndoPartial") : "") : t(st.cfg.receiveOnly ? "histRbReceiveOnly" : "histRbErased"))}</div><div class="rb-cell"></div></div>
     </div>`;
 }
 function histRollWire(body){
@@ -48500,7 +48832,23 @@ function histRollWire(body){
     el.addEventListener("keydown", e=>{ if(e.key === "Enter" || e.key === " "){ e.preventDefault(); tap(el); } });
   });
   const go = body.querySelector("#rbGo");
-  if(go) go.addEventListener("click", ()=> histRollback(go));
+  if(go) go.addEventListener("click", ()=> st.sel < 0 ? histUndoTo() : histRollback(go));
+}
+// One of this device's steps chosen: undo the steps above it, here. They go
+// to Redo, in the order that brings them back one at a time.
+async function histUndoTo(){
+  const st = histState;
+  if(!st || st.restoring || undoBusy) return;
+  const e = st.list.find(x=> x.version === st.sel);
+  if(!e || !e.undo) return;
+  st.restoring = true;
+  closeSharedHistory(); // so the screen behind is redrawn as the steps go
+  let kept = 0, n = 0;
+  undoBusy = true;
+  try{
+    for(; n < e.undo && undoStack.length; n++){ const step = undoStack.pop(); kept += await undoApply(step, "undo"); redoStack.push(step); }
+  } finally { undoBusy = false; undoPersist(); updateUndoButtons(); }
+  showToast(t(kept ? "histUndoneKept" : n === 1 ? "histUndoneOne" : "histUndone", {n}));
 }
 async function histRollback(btn){
   const st = histState;

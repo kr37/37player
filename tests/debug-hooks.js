@@ -87,7 +87,8 @@ window.__hist = {open: openSharedHistory,
   point: async (then, sel)=>{ histState.sel = sel; histState.thenDoc = then; histComputeRows(); renderSharedHistory(); },
   state: ()=> histState};
 window.__desk = {invoke: desktopInvoke};
-window.__undo = {undo: doUndo, redo: doRedo, del: deleteLibraryTracks, stacks: ()=> ({undo: undoStack.length, redo: redoStack.length, labels: undoStack.map(undoLabel)}), rebase: undoRebase};
+window.__undo = {undo: doUndo, redo: doRedo, del: deleteLibraryTracks, stacks: ()=> ({undo: undoStack.length, redo: redoStack.length, labels: undoStack.map(undoLabel)}), rebase: undoRebase,
+  age: ms=>{ undoStack.forEach(x=>{ x.at -= ms; }); }, flags: ()=> undoStack.map(x=> !!x.synced)}; // undohist.js, hist.js
 window.__split = performTrackSplit; window.__queueSplit = queueTrackSplit; window.__audioUrl = getAudioUrl; window.__retag = rewriteFileTagsIfPossible;
 window.__share.missingNote = ()=> sharedMissingNote({waiting: false, from: "Laptop"});
 window.openImportExportForTest = openImportExportDialog;

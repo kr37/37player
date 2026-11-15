@@ -106,6 +106,19 @@ const versions = async ()=> JSON.parse(require('child_process').execSync(`curl -
   ok(vs[0].what && vs[0].what.rs, 'the rollback is a new version at the top');
   await sync(B); ok(await trackName(B) === original, 'and the other device gets it');
 
+  // This device's own changes, not yet synced, sit above the versions (2.5.011).
+  ok((await A.evaluate(()=> window.__undo.flags())).every(x=> x), 'after a sync, every undo step so far is marked as sent');
+  await A.setOfflineMode(true);
+  await A.evaluate(async()=>{ window.__dbg.getRoot().library[0].name = 'Changed while offline'; await window.__dbg.saveState(); }); await sleep(1500);
+  await A.evaluate(()=> window.__hist.open()); for(let i=0;i<120;i++){ await sleep(250); if(await A.$('.hist-point')) break; }
+  const off = await A.evaluate(()=> ({points: [...document.querySelectorAll('.hist-point')].map(b=> b.innerText.replace(/\s+/g,' ').trim()), tabs: document.querySelectorAll('.hist-tabs .mode-tab').length, older: (document.querySelector('.hist-older') || {}).textContent || ''}));
+  console.log('offline:', JSON.stringify(off));
+  ok(off.points.length === 2 && /This device/.test(off.points[0]) && /Before these changes/.test(off.points[1]) && off.tabs === 0 && /can't be reached/.test(off.older), 'offline, History lists only this device\'s unsynced change, and says the versions can\'t be reached');
+  ok(await A.evaluate(()=> /Undo back to this/.test((document.getElementById('rbGo') || {}).textContent || '') && /only on this device so far/.test(document.querySelector('.rb-foot').innerText)), 'the button is Undo back to this, and the foot says it is only on this device');
+  await A.evaluate(()=> document.getElementById('rbGo').click()); await sleep(1500);
+  ok(!(await A.$('#historyPage')) && await trackName(A) === original, 'undone here: the track has its name back (' + await trackName(A) + ')');
+  await A.setOfflineMode(false); await sync(A);
+
   // Settings → Shared library
   await A.evaluate(()=>{ window.__dbg4.settings(); window.__dbg4.section('shared'); }); await sleep(600);
   const s = await A.evaluate(()=>({hist: !!document.getElementById('shHistory'), more: !!document.getElementById('shMore'), moreOpen: document.getElementById('shMore') && document.getElementById('shMore').open, reviewInMore: !!document.querySelector('#shMore #shReviewMode'), log: !!document.querySelector('#shMore #shLog'), leaveOutside: !document.querySelector('#shMore #shLeave')}));
