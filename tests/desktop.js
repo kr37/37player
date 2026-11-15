@@ -26,7 +26,7 @@ const modalText = p=> p.evaluate(()=> document.querySelector('.modal-backdrop.sh
       if(cmd === 'p37_shell_info') return {version: '1.4.159', bridge: Number(localStorage.getItem('__bridge') || 1), pages: localStorage.getItem('__pages') === '1'};
       if(cmd === 'p37_page_info'){ const i = JSON.parse(localStorage.getItem('__pageInfo') || '{}'); const once = {...i}; delete i.reverted; localStorage.setItem('__pageInfo', JSON.stringify(i)); return once; }
       if(cmd === 'p37_page_check') return JSON.parse(localStorage.getItem('__pageCheck') || '{"status":"error","error":"none"}');
-      if(cmd === 'p37_page_switch') return '9.9.001';
+      if(cmd === 'p37_page_switch') return localStorage.getItem('__switchTo') || '9.9.001';
       if(cmd === 'p37_device_put') sessionStorage.setItem('__devicejson', JSON.stringify(args.values));
     }}};
   });
@@ -95,6 +95,15 @@ const modalText = p=> p.evaluate(()=> document.querySelector('.modal-backdrop.sh
   const nav = p.waitForNavigation({waitUntil: 'networkidle0', timeout: 20000}).catch(()=>{});
   await clickText(p, '.modal button', '^Update to 9\\.9\\.004$'); await nav; await sleep(1500);
   ok((await calls()).includes('p37_page_switch'), 'Update: the shell switches to it, and the window reloads into it');
+  // The shell refusing the page (2.5.017; the Mac mini's incomplete download, 15 Nov 2026): it stays on this version, so no reload, and it says so.
+  await p.evaluate((v)=>{ localStorage.setItem('__switchTo', v); sessionStorage.removeItem('__calls'); window.__noReload = true; }, version);
+  m = await check({status: 'ready', version: '9.9.005'});
+  await clickText(p, '.modal button', '^Update to 9\\.9\\.005$'); await sleep(1200);
+  m = await modalText(p);
+  ok((await p.evaluate(()=> window.__noReload)) && /couldn't be opened/.test(m) && m.includes(version), 'Update, the shell staying on this version: no reload, and it says so (' + m.replace(/\n+/g, ' | ').slice(0, 70) + ')');
+  ok(await p.evaluate(()=> !document.getElementById('appVersion').classList.contains('has-update') && /stayed on/.test(localStorage.getItem('37player.playLog') || '')), 'Update now is no longer offered, and the playback log says why');
+  await clickText(p, '.modal button', '^OK$'); await sleep(300);
+  await p.evaluate(()=> localStorage.removeItem('__switchTo'));
   await p.evaluate(()=>{ localStorage.removeItem('__pages'); localStorage.removeItem('__pageInfo'); localStorage.removeItem('__pageCheck'); sessionStorage.removeItem('__calls'); });
   await p.reload({waitUntil:'networkidle0'}); await sleep(1200);
   await p.evaluate(()=> document.querySelectorAll('.modal [data-close]').forEach(x=> x.click()));

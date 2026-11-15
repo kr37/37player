@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.5.016">
+<meta name="app-version" content="2.5.017">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -6172,6 +6172,7 @@ const STRINGS = {
     "aboutConverterNotHere": "not on this device yet; it's downloaded the first time something needs converting",
     "aboutRunningWebsite": "Running from the website {host}.",
     "updateCheckFailed": "Couldn't check for updates — no connection, or the updates address isn't reachable.",
+    "desktopSwitchFailed": "The version waiting couldn't be opened (its download may be incomplete), so 37 Player stays on {version}. The playback log has the details.",
     "updateLatest": "You have the latest version.",
     "updateAvailableLocal": "Version {version} is available.",
     "settingsSecHistory": "Undo history",
@@ -8224,6 +8225,7 @@ const STRINGS = {
     "aboutConverterNotHere": "aún no está en este dispositivo; se descarga la primera vez que algo necesita convertirse",
     "aboutRunningWebsite": "Funcionando desde el sitio web {host}.",
     "updateCheckFailed": "No se pudo buscar actualizaciones: sin conexión, o la dirección de actualizaciones no responde.",
+    "desktopSwitchFailed": "La versión en espera no se pudo abrir (puede que su descarga esté incompleta), así que 37 Player sigue en {version}. El registro de reproducción tiene los detalles.",
     "updateLatest": "Tienes la versión más reciente.",
     "updateAvailableLocal": "La versión {version} está disponible.",
     "settingsSecHistory": "Historial para deshacer",
@@ -10276,6 +10278,7 @@ const STRINGS = {
     "aboutConverterNotHere": "pas encore sur cet appareil ; il est téléchargé la première fois qu'il faut convertir quelque chose",
     "aboutRunningWebsite": "Fonctionne depuis le site {host}.",
     "updateCheckFailed": "Impossible de vérifier les mises à jour : pas de connexion, ou l'adresse des mises à jour est injoignable.",
+    "desktopSwitchFailed": "La version en attente n'a pas pu s'ouvrir (son téléchargement est peut-être incomplet) : 37 Player reste donc en {version}. Le journal de lecture donne les détails.",
     "updateLatest": "Vous avez la dernière version.",
     "updateAvailableLocal": "La version {version} est disponible.",
     "settingsSecHistory": "Historique des annulations",
@@ -12328,6 +12331,7 @@ const STRINGS = {
     "aboutConverterNotHere": "ainda não está neste dispositivo; é baixado na primeira vez que algo precisar ser convertido",
     "aboutRunningWebsite": "Rodando a partir do site {host}.",
     "updateCheckFailed": "Não foi possível verificar atualizações — sem conexão, ou o endereço de atualizações não responde.",
+    "desktopSwitchFailed": "A versão em espera não pôde ser aberta (o download pode estar incompleto), por isso o 37 Player continua na {version}. O registo de reprodução tem os detalhes.",
     "updateLatest": "Você tem a versão mais recente.",
     "updateAvailableLocal": "A versão {version} está disponível.",
     "settingsSecHistory": "Histórico para desfazer",
@@ -14380,6 +14384,7 @@ const STRINGS = {
     "aboutConverterNotHere": "noch nicht auf diesem Gerät; er wird geladen, wenn zum ersten Mal etwas umgewandelt werden muss",
     "aboutRunningWebsite": "Läuft von der Website {host}.",
     "updateCheckFailed": "Keine Update-Prüfung möglich – keine Verbindung, oder die Update-Adresse ist nicht erreichbar.",
+    "desktopSwitchFailed": "Die wartende Version ließ sich nicht öffnen (der Download ist vielleicht unvollständig), daher bleibt 37 Player bei {version}. Einzelheiten stehen im Wiedergabeprotokoll.",
     "updateLatest": "Sie haben die neueste Version.",
     "updateAvailableLocal": "Version {version} ist verfügbar.",
     "settingsSecHistory": "Rückgängig-Verlauf",
@@ -16432,6 +16437,7 @@ const STRINGS = {
     "aboutConverterNotHere": "尚未在此设备上；第一次需要转换时会下载",
     "aboutRunningWebsite": "从网站 {host} 运行。",
     "updateCheckFailed": "无法检查更新——没有网络，或更新地址无法访问。",
+    "desktopSwitchFailed": "等待中的版本无法打开（下载可能不完整），因此 37 Player 仍为 {version}。详情见播放日志。",
     "updateLatest": "你使用的是最新版本。",
     "updateAvailableLocal": "版本 {version} 已可用。",
     "settingsSecHistory": "撤销历史",
@@ -18484,6 +18490,7 @@ const STRINGS = {
     "aboutConverterNotHere": "chưa có trên thiết bị này; nó được tải về lần đầu có thứ cần chuyển đổi",
     "aboutRunningWebsite": "Đang chạy từ trang web {host}.",
     "updateCheckFailed": "Không thể kiểm tra cập nhật — không có kết nối, hoặc không truy cập được địa chỉ cập nhật.",
+    "desktopSwitchFailed": "Không mở được phiên bản đang chờ (có thể tải về chưa trọn vẹn), nên 37 Player vẫn ở {version}. Chi tiết có trong nhật ký phát.",
     "updateLatest": "Bạn đang dùng phiên bản mới nhất.",
     "updateAvailableLocal": "Đã có phiên bản {version}.",
     "settingsSecHistory": "Lịch sử hoàn tác",
@@ -20536,6 +20543,7 @@ const STRINGS = {
     "aboutConverterNotHere": "δεν είναι ακόμη σε αυτή τη συσκευή· κατεβαίνει την πρώτη φορά που κάτι χρειάζεται μετατροπή",
     "aboutRunningWebsite": "Εκτελείται από τον ιστότοπο {host}.",
     "updateCheckFailed": "Αδυναμία ελέγχου — χωρίς σύνδεση ή η διεύθυνση ενημερώσεων δεν είναι προσβάσιμη.",
+    "desktopSwitchFailed": "Η έκδοση σε αναμονή δεν άνοιξε (η λήψη ίσως είναι ελλιπής), οπότε το 37 Player μένει στην {version}. Λεπτομέρειες στο αρχείο αναπαραγωγής.",
     "updateLatest": "Έχετε την τελευταία έκδοση.",
     "updateAvailableLocal": "Η έκδοση {version} είναι διαθέσιμη.",
     "settingsSecHistory": "Ιστορικό αναίρεσης",
@@ -22588,6 +22596,7 @@ const STRINGS = {
     "aboutConverterNotHere": "non ancora su questo dispositivo; viene scaricato la prima volta che serve convertire qualcosa",
     "aboutRunningWebsite": "In esecuzione dal sito {host}.",
     "updateCheckFailed": "Impossibile controllare: nessuna connessione, o l'indirizzo degli aggiornamenti non è raggiungibile.",
+    "desktopSwitchFailed": "La versione in attesa non si è potuta aprire (forse il download è incompleto), quindi 37 Player resta alla {version}. I dettagli sono nel registro di riproduzione.",
     "updateLatest": "Hai l'ultima versione.",
     "updateAvailableLocal": "È disponibile la versione {version}.",
     "settingsSecHistory": "Cronologia degli annullamenti",
@@ -37808,7 +37817,19 @@ if(navigator.serviceWorker) navigator.serviceWorker.addEventListener("message", 
 // so the reload opens it), then reloads. Without a worker, a plain reload.
 async function updateSiteNow(){
   // The desktop app: the shell switches to the newest page, then this reloads into it.
-  if(desktopPages()){ try{ await desktopCall("p37_page_switch"); }catch(err){} location.reload(); return; }
+  // It reloads only when the shell really switched (2.5.017): on 15 Nov
+  // 2026 the Mac mini's shell refused an incomplete download every time,
+  // and each Update now reloaded into the same version without a word.
+  if(desktopPages()){
+    let v = null;
+    try{ v = await desktopCall("p37_page_switch"); }catch(err){ playLog("Update now: the desktop app couldn't switch (" + (err && err.message || err) + ")"); }
+    if(v && v !== APP_VERSION){ playLog("Update now: opening " + v); location.reload(); return; }
+    playLog("Update now: the desktop app stayed on " + (v || APP_VERSION) + "; " + (siteUpdateReady || "the version waiting") + " couldn't be used");
+    siteUpdateReady = null; availableUpdateVersion = null;
+    document.body.classList.remove("site-update"); renderVersionButton(); updateUpdateButton();
+    await askChoice(t("checkUpdatesBtn"), `<p>${escapeHtmlText(t("desktopSwitchFailed", {version: APP_VERSION}))}</p>`, [{label: t("ok"), value: null, kind: "primary"}]);
+    return;
+  }
   const c = navigator.serviceWorker && navigator.serviceWorker.controller;
   if(c){
     await new Promise(resolve=>{
@@ -42834,6 +42855,7 @@ async function checkForUpdatesNow(){
     // The shell asks GitHub, downloads and checks a newer page, and keeps it.
     let r = null;
     try{ r = await desktopCall("p37_page_check"); }catch(err){ r = {status: "error", error: String(err)}; }
+    playLog("checked for a newer page: " + ((r && r.status) || "?") + (r && r.version ? " " + r.version : "") + (r && r.error ? " (" + r.error + ")" : ""));
     renderVersionButton();
     if(r && r.status === "needs-app"){
       await askChoice(t("updateAvailableLocal", {version: r.version}), `<p>${escapeHtmlText(t("desktopNeedsAppBody", {version: r.version}))}</p>`, [{label: t("ok"), value: null, kind: "primary"}]);
