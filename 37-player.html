@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.5.011">
+<meta name="app-version" content="2.5.012">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -4971,6 +4971,8 @@ const STRINGS = {
     "histBtnNote": "Every saved change from the last 30 days, and restoring any of it.",
     "histBtnNoteDrive": "Every saved change, and restoring any of it.",
     "histTitle": "History",
+    "undoFileAudio": "audio replaced",
+    "undoFileArt": "artwork changed",
     "histThisDevice": "This device",
     "histStepsLabel": "This device, not yet synced",
     "histVersionsLabel": "Versions of the shared library",
@@ -7021,6 +7023,8 @@ const STRINGS = {
     "histBtnNote": "Cada cambio guardado de los últimos 30 días, y restaurar cualquiera de ellos.",
     "histBtnNoteDrive": "Cada cambio guardado, y restaurar cualquiera de ellos.",
     "histTitle": "Historial",
+    "undoFileAudio": "audio reemplazado",
+    "undoFileArt": "carátula cambiada",
     "histThisDevice": "Este dispositivo",
     "histStepsLabel": "Este dispositivo, aún sin sincronizar",
     "histVersionsLabel": "Versiones de la biblioteca compartida",
@@ -9070,6 +9074,8 @@ const STRINGS = {
     "histBtnNote": "Chaque modification enregistrée des 30 derniers jours, et la possibilité d'en restaurer.",
     "histBtnNoteDrive": "Chaque modification enregistrée, et la possibilité d'en restaurer.",
     "histTitle": "Historique",
+    "undoFileAudio": "audio remplacé",
+    "undoFileArt": "pochette modifiée",
     "histThisDevice": "Cet appareil",
     "histStepsLabel": "Cet appareil, pas encore synchronisé",
     "histVersionsLabel": "Versions de la bibliothèque partagée",
@@ -11119,6 +11125,8 @@ const STRINGS = {
     "histBtnNote": "Cada alteração salva nos últimos 30 dias, e restaurar qualquer uma delas.",
     "histBtnNoteDrive": "Cada alteração salva, e restaurar qualquer uma delas.",
     "histTitle": "Histórico",
+    "undoFileAudio": "áudio substituído",
+    "undoFileArt": "capa alterada",
     "histThisDevice": "Este dispositivo",
     "histStepsLabel": "Este dispositivo, ainda não sincronizado",
     "histVersionsLabel": "Versões da biblioteca compartilhada",
@@ -13168,6 +13176,8 @@ const STRINGS = {
     "histBtnNote": "Jede gespeicherte Änderung der letzten 30 Tage, und jede davon wiederherstellen.",
     "histBtnNoteDrive": "Jede gespeicherte Änderung, und jede davon wiederherstellen.",
     "histTitle": "Verlauf",
+    "undoFileAudio": "Audio ersetzt",
+    "undoFileArt": "Cover geändert",
     "histThisDevice": "Dieses Gerät",
     "histStepsLabel": "Dieses Gerät, noch nicht synchronisiert",
     "histVersionsLabel": "Versionen der gemeinsamen Bibliothek",
@@ -15217,6 +15227,8 @@ const STRINGS = {
     "histBtnNote": "过去 30 天保存的每一次更改，并可恢复其中任何内容。",
     "histBtnNoteDrive": "保存的每一次更改，并可恢复其中任何内容。",
     "histTitle": "历史记录",
+    "undoFileAudio": "已替换音频",
+    "undoFileArt": "已更改封面",
     "histThisDevice": "此设备",
     "histStepsLabel": "此设备，尚未同步",
     "histVersionsLabel": "共享资料库的版本",
@@ -17266,6 +17278,8 @@ const STRINGS = {
     "histBtnNote": "Mọi thay đổi đã lưu trong 30 ngày qua, và khôi phục bất kỳ thay đổi nào.",
     "histBtnNoteDrive": "Mọi thay đổi đã lưu, và khôi phục bất kỳ thay đổi nào.",
     "histTitle": "Lịch sử",
+    "undoFileAudio": "đã thay âm thanh",
+    "undoFileArt": "đã đổi ảnh bìa",
     "histThisDevice": "Thiết bị này",
     "histStepsLabel": "Thiết bị này, chưa đồng bộ",
     "histVersionsLabel": "Các phiên bản của thư viện dùng chung",
@@ -19315,6 +19329,8 @@ const STRINGS = {
     "histBtnNote": "Κάθε αποθηκευμένη αλλαγή των τελευταίων 30 ημερών, και επαναφορά οποιασδήποτε.",
     "histBtnNoteDrive": "Κάθε αποθηκευμένη αλλαγή, και επαναφορά οποιασδήποτε.",
     "histTitle": "Ιστορικό",
+    "undoFileAudio": "αντικαταστάθηκε ο ήχος",
+    "undoFileArt": "άλλαξε το εξώφυλλο",
     "histThisDevice": "Αυτή η συσκευή",
     "histStepsLabel": "Αυτή η συσκευή, χωρίς συγχρονισμό ακόμη",
     "histVersionsLabel": "Εκδόσεις της κοινόχρηστης βιβλιοθήκης",
@@ -21364,6 +21380,8 @@ const STRINGS = {
     "histBtnNote": "Ogni modifica salvata negli ultimi 30 giorni, e ripristinarne qualsiasi.",
     "histBtnNoteDrive": "Ogni modifica salvata, e ripristinarne qualsiasi.",
     "histTitle": "Cronologia",
+    "undoFileAudio": "audio sostituito",
+    "undoFileArt": "copertina cambiata",
     "histThisDevice": "Questo dispositivo",
     "histStepsLabel": "Questo dispositivo, non ancora sincronizzato",
     "histVersionsLabel": "Versioni della libreria condivisa",
@@ -23258,15 +23276,17 @@ function undoPersist(){
 function undoNoteSaved(){
   if(!undoLoaded || !undoBase) return;
   const now = undoDoc();
+  // Audio or artwork a person replaced since the last save (undoKeepFile).
+  const files = undoPendingFiles; undoPendingFiles = [];
   // Most saves are background work (waveforms, loudness, tags): nothing
   // Undo compares has changed, and one string comparison says so.
-  if(JSON.stringify(now) === undoBaseStr) return;
+  if(JSON.stringify(now) === undoBaseStr && !files.length) return;
   const {rows} = syncReviewRows(undoBase, undoBase, now);
   stampTrackDates(rows);
   const full = {};
   rows.forEach(r=>{ if(r.kind === "track" && !r.r){ const tr = (undoBaseObjs.get(r.id)); if(tr) full[r.id] = syncClone(tr); } });
   undoRebase();
-  if(!rows.length) return;
+  if(!rows.length && !files.length) return;
   const changes = rows.map(r=> ({key: r.key, kind: r.kind, id: r.id, before: r.l || null, after: r.r || null}));
   const last = undoStack[undoStack.length - 1];
   if(last && !redoStack.length && Date.now() - last.at < UNDO_JOIN_MS){
@@ -23275,10 +23295,12 @@ function undoNoteSaved(){
     changes.forEach(c=>{ const o = byKey.get(c.key); if(o) o.after = c.after; else { last.changes.push(c); byKey.set(c.key, c); } });
     last.changes = last.changes.filter(c=> !undoSame(c, c.before, c.after));
     Object.assign(last.full, full);
+    // The first file kept for a track in this step is the one to go back to.
+    files.forEach(f=>{ if(!(last.files || []).some(o=> o.id === f.id && o.kind === f.kind)) (last.files = last.files || []).push(f); });
     last.at = Date.now();
-    if(!last.changes.length) undoStack.pop();
+    if(!last.changes.length && !(last.files || []).length) undoStack.pop();
   } else {
-    undoStack.push({at: Date.now(), changes, full});
+    undoStack.push(files.length ? {at: Date.now(), changes, full, files} : {at: Date.now(), changes, full});
     if(undoStack.length > UNDO_MAX) undoStack.shift();
   }
   undoOldOk = false;
@@ -23302,7 +23324,10 @@ function undoLabel(step){
     const v = c.after || c.before, k = (v && v.kind === "folder" ? "f" : "p") + (!c.before ? "a" : !c.after ? "d" : "c");
     inc(k); if(v && v.name && !w[k + "n"]) w[k + "n"] = v.name;
   });
-  return histSummaryText(w);
+  const words = step.changes.length ? [histSummaryText(w)] : [];
+  if((step.files || []).some(f=> f.kind === "audio")) words.push(t("undoFileAudio"));
+  if((step.files || []).some(f=> f.kind === "art")) words.push(t("undoFileArt"));
+  return words.length ? words.join(" · ") : histSummaryText(w);
 }
 // What applying a step to a document gives, without touching the library:
 // the tracks' fields (T), the folders and playlists (N, tree), how much had
@@ -23378,6 +23403,8 @@ async function undoApply(step, dir){
   migrateLegacyItemKinds(root.tree);
   reconcilePlaybackAfterTreeChange();
   undoRebase();
+  let keptFiles = 0;
+  for(const f of (step.files || [])){ if(!(await undoFileSwap(f))) keptFiles++; }
   for(const id of removed) await undoTrashPut(id);
   const cfg = sharedConfig();
   for(const id of restored){
@@ -23387,7 +23414,56 @@ async function undoApply(step, dir){
   }
   await saveState();
   refreshCurrentView();
-  return kept;
+  return kept + keptFiles;
+}
+/* Audio and artwork a person replaces (2.5.012; Gen Rinzin, 14 Nov 2026:
+   closer to what people expect of Undo). Undo's comparison leaves a track's
+   audio and artwork details out, so that background work (waveforms,
+   loudness, converting) never makes a step; and the replaced file used to
+   be overwritten, so there was nothing to go back to. Now the three places
+   a person does it (Edit track details, Edit several tracks, Replace audio
+   file) call undoKeepFile first: the file as it is goes aside with Undo's
+   other kept audio ("undotrash" records, a day) together with the details
+   that describe it, and the save that follows makes a step carrying it
+   (step.files). Undoing or redoing swaps: what is there now goes aside,
+   what was aside comes back. The file put back gets a new revision
+   (idbPut), so a shared library sends it on as the newest. A file whose
+   day has passed can't come back: Undo leaves the track as it is and says
+   so. Conversions are not steps ("Keep the originals?" is for those). */
+const UNDO_FILE_AUDIO = ["filename", "fileSize", "fileModified", "sampleRate", "channels", "duration", "loudness", "fileTags", "needsConvert", "peaks", "standardizeAttempts"];
+let undoPendingFiles = [];
+async function undoFileAside(track, kind){
+  const rec = await idbGet(kind === "audio" ? "audio" : "artwork", track.id).catch(()=> null);
+  const fields = {};
+  (kind === "audio" ? UNDO_FILE_AUDIO : ["hasArtwork"]).forEach(k=>{ if(track[k] !== undefined) fields[k] = syncClone(track[k]); });
+  const token = newFileRev();
+  if(rec) await idbPut("state", {key: "undotrash:" + Date.now() + ":" + track.id + ":" + kind + token, id: track.id, kind, file: rec});
+  return {token: rec ? token : null, fields};
+}
+// Before a person's change replaces or removes a track's audio or artwork.
+async function undoKeepFile(track, kind){
+  if(!undoLoaded || !track) return;
+  try{ undoPendingFiles.push({id: track.id, kind, side: await undoFileAside(track, kind)}); }
+  catch(err){ console.warn("Couldn't keep the file for Undo:", err); }
+}
+async function undoFileSwap(f){
+  const tr = findLibraryTrack(f.id);
+  if(!tr) return false;
+  const store = f.kind === "audio" ? "audio" : "artwork";
+  let key = null, rec = null;
+  if(f.side.token){
+    key = (await undoTrashKeys()).find(k=> String(k).endsWith(":" + f.kind + f.side.token));
+    rec = key ? await idbGet("state", key).catch(()=> null) : null;
+    if(!rec || !rec.file) return false; // kept for a day, and the day has passed
+  } else if(f.kind === "audio") return false;
+  const cur = await undoFileAside(tr, f.kind);
+  if(rec){ await idbPut(store, rec.file); await idbDelete("state", key).catch(()=>{}); }
+  else await idbDelete(store, f.id).catch(()=>{});
+  (f.kind === "audio" ? UNDO_FILE_AUDIO : ["hasArtwork"]).forEach(k=>{ if(f.side.fields[k] === undefined) delete tr[k]; else tr[k] = syncClone(f.side.fields[k]); });
+  f.side = cur;
+  if(f.kind === "audio") invalidateTrackWaveformBg(f.id);
+  else if(artworkUrlCache[f.id]){ URL.revokeObjectURL(artworkUrlCache[f.id]); delete artworkUrlCache[f.id]; }
+  return true;
 }
 function undoDocTrack(t){ const c = {}; Object.keys(t).forEach(k=>{ if(!SYNC_AUDIO_FIELDS.includes(k) && !SYNC_ART_FIELDS.includes(k) && !SYNC_LOCAL_TRACK_FIELDS.includes(k)) c[k] = t[k]; }); return c; }
 function undoMergeTrack(tr, fields){
@@ -33740,6 +33816,7 @@ async function openEditLibraryTrack(track, ctx){
     track.trackNo = trackNoRaw==="" ? null : parseInt(trackNoRaw,10);
     const volDb = Math.round((parseFloat(document.getElementById("editVolumeDb").value) || 0) * 10) / 10;
     if(volDb) track.volumeDb = Math.max(-30, Math.min(30, volDb)); else delete track.volumeDb;
+    if(stagedArtwork !== undefined) await undoKeepFile(track, "art");
     if(stagedArtwork === null){
       await idbDelete("artwork", track.id);
       track.hasArtwork = false;
@@ -33985,6 +34062,8 @@ async function replaceLibraryTrackFile(track){
 
   document.getElementById("replaceConfirmGo").addEventListener("click", async ()=>{
     closeModal();
+    await undoKeepFile(track, "audio");
+    if(newArtwork && artworkChoice==="new") await undoKeepFile(track, "art");
     await idbPut("audio", {id: track.id, blob: file});
     track.duration = newDuration;
     track.peaks = newPeaks;
@@ -35773,6 +35852,7 @@ function openBulkEditLibraryTracks(trackIds){
       if(artistVal) tr.artist = artistVal;
       if(albumVal) tr.album = albumVal;
       if(renumber) tr.trackNo = start + i;
+      if(bulkStagedArtwork !== undefined) await undoKeepFile(tr, "art");
       if(bulkStagedArtwork === null){
         await idbDelete("artwork", tr.id);
         tr.hasArtwork = false;
@@ -48342,10 +48422,13 @@ async function histLoadSelected(){
     // One of this device's steps: the library with the steps above it undone.
     const e = st.list.find(x=> x.version === st.sel), pre = undoPreviewDoc(e ? e.undo : 0);
     st.thenDoc = pre.doc; st.partial = pre.kept; st.beforeDoc = null;
+    // Files those steps replaced (not part of the documents compared).
+    st.stepFiles = new Map();
+    undoStack.slice(undoStack.length - (e ? e.undo : 0)).forEach(step=> (step.files || []).forEach(f=>{ if(!st.stepFiles.has(f.id)) st.stepFiles.set(f.id, new Set()); st.stepFiles.get(f.id).add(f.kind); }));
     histComputeRows();
     return;
   }
-  st.partial = 0;
+  st.partial = 0; st.stepFiles = null;
   st.thenDoc = await histDoc(st.sel);
   // What that one save changed: the version before it, then it.
   const at = st.list.findIndex(x=> x.version === st.sel);
@@ -48710,6 +48793,9 @@ function histRollTracks(st){
     if(!syncEq(fb["#audio"], fd["#audio"])) words.push(t("histOtherAudio"));
     if(!syncEq(fb["#art"], fd["#art"])) words.push(t("histOtherArt"));
     if(Object.keys(Object.assign({}, fb, fd)).some(k=> k[0] !== "#" && !skip.has(k) && !syncEq(fb[k], fd[k]))) words.push(t("histOtherDetails"));
+    const sf = st.stepFiles && st.stepFiles.get(x.id);
+    if(sf && sf.has("audio") && !words.includes(t("histOtherAudio"))) words.push(t("histOtherAudio"));
+    if(sf && sf.has("art") && !words.includes(t("histOtherArt"))) words.push(t("histOtherArt"));
     x.words = words;
     return x.B.name !== x.D.name ? "ren" : words.length ? "chg" : "un";
   };
@@ -48799,7 +48885,7 @@ function histRollMainHtml(st, sel, isNow){
   const stepSel = st.sel < 0, hasSteps = st.list.some(x=> x.step);
   // A version can't be rolled back to while this device holds changes not yet sent.
   const blocked = !stepSel && hasSteps;
-  const any = st.rows.length > 0, nothing = any ? "" : `<p class="hist-nothing">${escapeHtmlText(t(isNow ? (st.list[0].step ? "histUndoPickEarlier" : "histRbPickEarlier") : "histNothing"))}</p>`;
+  const any = st.rows.length > 0 || !!(st.stepFiles && st.stepFiles.size), nothing = any ? "" : `<p class="hist-nothing">${escapeHtmlText(t(isNow ? (st.list[0].step ? "histUndoPickEarlier" : "histRbPickEarlier") : "histNothing"))}</p>`;
   if(!any && !st.rbSeen.nodes.size && !st.rbSeen.tracks.size) return notice + nothing;
   const opens = [], pl = histRollPlaylists(st, opens), tr = histRollTracks(st);
   // A newly chosen save starts folded the standard way.

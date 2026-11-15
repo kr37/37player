@@ -88,7 +88,9 @@ window.__hist = {open: openSharedHistory,
   state: ()=> histState};
 window.__desk = {invoke: desktopInvoke};
 window.__undo = {undo: doUndo, redo: doRedo, del: deleteLibraryTracks, stacks: ()=> ({undo: undoStack.length, redo: redoStack.length, labels: undoStack.map(undoLabel)}), rebase: undoRebase,
-  age: ms=>{ undoStack.forEach(x=>{ x.at -= ms; }); }, flags: ()=> undoStack.map(x=> !!x.synced)}; // undohist.js, hist.js
+  age: ms=>{ undoStack.forEach(x=>{ x.at -= ms; }); },
+  keepFile: (id, kind)=> undoKeepFile(findLibraryTrack(id), kind), put: (store, rec)=> idbPut(store, rec), get: (store, id)=> idbGet(store, id), delRec: (store, id)=> idbDelete(store, id), trash: ()=> undoTrashKeys(),
+  flags: ()=> undoStack.map(x=> !!x.synced)}; // undohist.js, hist.js
 window.__split = performTrackSplit; window.__queueSplit = queueTrackSplit; window.__audioUrl = getAudioUrl; window.__retag = rewriteFileTagsIfPossible;
 window.__share.missingNote = ()=> sharedMissingNote({waiting: false, from: "Laptop"});
 window.openImportExportForTest = openImportExportDialog;
