@@ -45,7 +45,7 @@ struct Quitting(AtomicBool);
 const BRIDGE: u32 = 2;
 
 #[derive(serde::Serialize)]
-struct ShellInfo { version: String, bridge: u32, pages: bool, device: bool, updates: bool, zoom: bool, files_http: Option<String> }
+struct ShellInfo { version: String, bridge: u32, pages: bool, device: bool, updates: bool, zoom: bool, trash: bool, files_http: Option<String> }
 
 // The shell's version is the page's version as of the shell's own last
 // change (tauri.conf.json "version"), like sync.php's.
@@ -54,6 +54,8 @@ fn p37_shell_info(app: tauri::AppHandle) -> ShellInfo {
     // updates: it can update itself (updates.rs, shell 2.2.3).
     // zoom: it sizes the page itself (p37_zoom, shell 2.4.0).
     ShellInfo { version: app.package_info().version.to_string(), bridge: BRIDGE, pages: app.state::<Arc<pages::Pages>>().enabled(), device: true, updates: true, zoom: true,
+        // trash: a library's folder can go to the Trash (fs_root_trash, shell 2.5.2).
+        trash: true,
         // files_http: where recordings are also served, on Linux (fileserver.rs, shell 2.5.0).
         files_http: app.try_state::<fileserver::FileServer>().map(|f| f.base.clone()) }
 }
@@ -276,7 +278,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![p37_quit, p37_shell_info, p37_zoom,
             p37_page_info, p37_page_check, p37_page_ok, p37_page_switch, p37_device_get, p37_device_put,
             files::fs_roots, files::fs_root_default, files::fs_root_choose, files::fs_root_forget,
-            files::fs_place, files::fs_place_default, files::fs_root_info, files::fs_root_rename, files::fs_root_show, files::fs_places_restore, files::fs_remove_if_empty,
+            files::fs_place, files::fs_place_default, files::fs_root_info, files::fs_root_rename, files::fs_root_show, files::fs_root_trash, files::fs_places_restore, files::fs_remove_if_empty,
             oauth::p37_google_signin, oauth::p37_open_url, files::fs_find_libraries, files::fs_root_choose_library, files::fs_root_use_found,
             files::fs_list, files::fs_stat, files::fs_read, files::fs_write, files::fs_copy, files::fs_rename, files::fs_remove, files::fs_mkdir,
             updates::p37_shell_update_check, updates::p37_shell_update_install])

@@ -326,6 +326,55 @@ pub fn fs_remove_if_empty(app: tauri::AppHandle, id: String, dry: bool) -> Resul
     Ok(true)
 }
 
+// ---- A library's folder to the Trash (shell 2.5.2; kr37, 16 Nov 2026:
+// removing a library from the list can also remove its files). To the
+// Trash (the Recycle Bin on Windows, the desktop's trash on Linux), never
+// deleted outright, so a mistaken yes can still be undone; on the Mac by
+// NSFileManager, which asks for no extra permission (the Finder way would ask
+// to control Finder), though Finder may not offer Put Back for it: the folder
+// can still be dragged out. Only a library's own folder ("lib-…": the
+// recordings 37 Player keeps, never a folder used in place), only one that
+// holds its "37 Player library.json", and never the home folder or a drive's
+// top. dry: only what it holds, for the question before.
+#[derive(serde::Serialize)]
+pub struct TrashInfo { present: bool, bytes: u64, files: u64 }
+pub fn tree_size(p: &Path) -> (u64, u64) {
+    let (mut bytes, mut files) = (0u64, 0u64);
+    let Ok(rd) = fs::read_dir(p) else { return (0, 0) };
+    for e in rd.flatten() {
+        let Ok(ft) = e.file_type() else { continue };
+        if ft.is_symlink() { continue; }
+        if ft.is_dir() { let (b, f) = tree_size(&e.path()); bytes += b; files += f; }
+        else if let Ok(m) = e.metadata() { bytes += m.len(); files += 1; }
+    }
+    (bytes, files)
+}
+pub fn may_trash(p: &Path, home: Option<&Path>) -> bool {
+    if !p.join(MARKER).is_file() { return false; }
+    if p.parent().is_none() || p.parent().and_then(|q| q.parent()).is_none() { return false; } // a drive's top, or just under it
+    if let Some(h) = home { if p == h || h.starts_with(p) { return false; } }
+    true
+}
+#[tauri::command(async)]
+pub fn fs_root_trash(app: tauri::AppHandle, id: String, dry: bool) -> Result<TrashInfo, String> {
+    if !id.starts_with("lib-") { return Err("only a library's own folder".into()); }
+    let r = roots(&app);
+    let p = r.get(&id)?;
+    if !p.is_dir() { return Ok(TrashInfo { present: false, bytes: 0, files: 0 }); }
+    let home = app.path().home_dir().ok();
+    if !may_trash(&p, home.as_deref()) { return Err("not a library's folder".into()); }
+    let (bytes, files) = tree_size(&p);
+    if !dry {
+        #[allow(unused_mut)]
+        let mut ctx = trash::TrashContext::default();
+        #[cfg(target_os = "macos")]
+        { use trash::macos::{DeleteMethod, TrashContextExtMacos}; ctx.set_delete_method(DeleteMethod::NsFileManager); }
+        ctx.delete(&p).map_err(|e| e.to_string())?;
+        r.forget(&id)?;
+    }
+    Ok(TrashInfo { present: true, bytes, files })
+}
+
 // ---- A library's folder follows its name (kr37, 7 Nov 2026): renamed
 // within the folder it's in, at the app's start before the library opens
 // (Windows won't rename a folder whose files are in use). " (2)" and so on
@@ -683,6 +732,21 @@ mod tests {
         assert_eq!(r.headers().get("Access-Control-Allow-Origin").unwrap(), "*");
         assert!(r.headers().get("Access-Control-Allow-Headers").unwrap().to_str().unwrap().contains("Range"));
         assert!(r.headers().get("Access-Control-Allow-Methods").unwrap().to_str().unwrap().contains("GET"));
+    }
+    #[test]
+    fn only_a_library_folder_may_go_to_the_trash() {
+        let d = tmp("trash");
+        let lib = d.join("Music/37 Player Libraries/Kadampa");
+        fs::create_dir_all(lib.join("37 Player's own files/audio")).unwrap();
+        assert!(!may_trash(&lib, None), "no marker: not a library's folder");
+        fs::write(lib.join(MARKER), b"{}").unwrap();
+        fs::write(lib.join("37 Player's own files/audio/a.m4a"), vec![0u8; 1000]).unwrap();
+        assert!(may_trash(&lib, None));
+        assert!(!may_trash(&lib, Some(&lib)), "never the home folder");
+        assert!(!may_trash(&lib, Some(&lib.join("x"))), "never a folder holding the home folder");
+        assert!(may_trash(&lib, Some(&d.join("home"))));
+        assert_eq!(tree_size(&lib), (1002, 2));
+        assert!(!may_trash(Path::new("/"), None));
     }
     #[test]
     fn paths_must_stay_inside() {

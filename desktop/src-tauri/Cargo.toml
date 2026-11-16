@@ -22,6 +22,8 @@ serde_json = "1"
 minisign-verify = "0.2"
 base64 = "0.22"
 ureq = "3"
+# A library's folder to the Trash / Recycle Bin (fs_root_trash, shell 2.5.2).
+trash = "5"
 
 [profile.release]
 # Symbols in a separate .dSYM on the Mac (attached to each test build), so a
