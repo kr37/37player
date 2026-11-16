@@ -179,3 +179,9 @@ window.__vol = {set: (v)=> setMainVolume(v), get: ()=> mainVolume, gain: ()=> ma
 window.__lazy = {start: ()=> converterStart(), convert: (b, n, f, t)=> converterConvert(b, n, f, t), input: (b, n)=> converterInput(b, n), off: ()=> converterLazyOff, setOff: (v)=>{ converterLazyOff = v; }, stop: ()=> converterStop(), log: ()=> (typeof playLogLines !== "undefined" ? playLogLines : null)};
 // Settings → About → Check for updates (shellupd.js)
 window.__updates = {check: ()=> checkForUpdatesNow()};
+// A dialog closes first, then does its work (2.5.031; dlgfast.js). slowSaves
+// holds the save queue back for a while, as sync or another save would.
+window.__ad = {pending: ()=> afterDialogPending, idle: ()=> afterDialogIdle(), bar: ()=> [...activeOps.values()].map(o=> o.text).join(' | '),
+  closing: ()=> closingWouldStop(), slowSaves: (ms)=>{ const hold = new Promise(r=> setTimeout(r, ms)); saveChain = saveChain.then(()=> hold); },
+  edit: (id)=> openEditLibraryTrack(findLibraryTrack(id)), bulk: (ids)=> openBulkEditLibraryTracks(ids), run: (k, f, fn)=> afterDialog(k, f, fn), undo: ()=> doUndo(),
+  art: (id)=> artworkUrlCache[id], copyPic: (blob)=>{ copiedArtworkBlob = blob; }};

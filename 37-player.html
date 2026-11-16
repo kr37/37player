@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.5.030">
+<meta name="app-version" content="2.5.031">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -4406,6 +4406,14 @@ const STRINGS = {
     "closeStopsPlaying": "what's playing",
     "closeStopsSending": "sending audio to the shared library (the other devices would wait for it)",
     "closeStopsCopy": "copying into another library",
+    "bgSaving": "Saving…",
+    "bgDeleting": "Deleting…",
+    "bgReplacing": "Replacing the recording…",
+    "bgFailedTitle": "Not finished",
+    "bgSaveFailed": "Saving your change didn't finish: {error}",
+    "bgDeleteFailed": "Deleting didn't finish: {error}",
+    "bgReplaceFailed": "Replacing the recording didn't finish: {error}",
+    "closeStopsSaving": "saving your last change",
     "closeAppKeep": "Keep it open",
     "closeAppQuit": "Close anyway",
     "interruptedTitle": "A restore didn't finish",
@@ -6463,6 +6471,14 @@ const STRINGS = {
     "closeStopsPlaying": "lo que está sonando",
     "closeStopsSending": "el envío de audio a la biblioteca compartida (los otros dispositivos lo esperarían)",
     "closeStopsCopy": "la copia a otra biblioteca",
+    "bgSaving": "Guardando…",
+    "bgDeleting": "Eliminando…",
+    "bgReplacing": "Reemplazando la grabación…",
+    "bgFailedTitle": "Sin terminar",
+    "bgSaveFailed": "No se terminó de guardar tu cambio: {error}",
+    "bgDeleteFailed": "No se terminó de eliminar: {error}",
+    "bgReplaceFailed": "No se terminó de reemplazar la grabación: {error}",
+    "closeStopsSaving": "el guardado de tu último cambio",
     "closeAppKeep": "Mantenerlo abierto",
     "closeAppQuit": "Cerrar de todos modos",
     "interruptedTitle": "Una restauración no terminó",
@@ -8510,6 +8526,14 @@ const STRINGS = {
     "closeStopsPlaying": "ce qui est en lecture",
     "closeStopsSending": "l'envoi d'audio vers la bibliothèque partagée (les autres appareils l'attendraient)",
     "closeStopsCopy": "la copie vers une autre bibliothèque",
+    "bgSaving": "Enregistrement…",
+    "bgDeleting": "Suppression…",
+    "bgReplacing": "Remplacement de l'enregistrement…",
+    "bgFailedTitle": "Pas terminé",
+    "bgSaveFailed": "L'enregistrement de votre modification n'a pas abouti : {error}",
+    "bgDeleteFailed": "La suppression n'a pas abouti : {error}",
+    "bgReplaceFailed": "Le remplacement de l'enregistrement n'a pas abouti : {error}",
+    "closeStopsSaving": "l'enregistrement de votre dernière modification",
     "closeAppKeep": "Le garder ouvert",
     "closeAppQuit": "Fermer quand même",
     "interruptedTitle": "Une restauration n'a pas abouti",
@@ -10557,6 +10581,14 @@ const STRINGS = {
     "closeStopsPlaying": "o que está tocando",
     "closeStopsSending": "o envio de áudio para a biblioteca compartilhada (os outros dispositivos ficariam esperando)",
     "closeStopsCopy": "a cópia para outra biblioteca",
+    "bgSaving": "Salvando…",
+    "bgDeleting": "Excluindo…",
+    "bgReplacing": "Substituindo a gravação…",
+    "bgFailedTitle": "Não terminou",
+    "bgSaveFailed": "Não terminou de salvar sua alteração: {error}",
+    "bgDeleteFailed": "Não terminou de excluir: {error}",
+    "bgReplaceFailed": "Não terminou de substituir a gravação: {error}",
+    "closeStopsSaving": "o salvamento da sua última alteração",
     "closeAppKeep": "Manter aberto",
     "closeAppQuit": "Fechar mesmo assim",
     "interruptedTitle": "Uma restauração não terminou",
@@ -12604,6 +12636,14 @@ const STRINGS = {
     "closeStopsPlaying": "was gerade spielt",
     "closeStopsSending": "das Senden von Audio an die gemeinsame Bibliothek (die anderen Geräte würden darauf warten)",
     "closeStopsCopy": "das Kopieren in eine andere Bibliothek",
+    "bgSaving": "Wird gespeichert…",
+    "bgDeleting": "Wird gelöscht…",
+    "bgReplacing": "Aufnahme wird ersetzt…",
+    "bgFailedTitle": "Nicht fertig",
+    "bgSaveFailed": "Das Speichern deiner Änderung wurde nicht fertig: {error}",
+    "bgDeleteFailed": "Das Löschen wurde nicht fertig: {error}",
+    "bgReplaceFailed": "Das Ersetzen der Aufnahme wurde nicht fertig: {error}",
+    "closeStopsSaving": "das Speichern deiner letzten Änderung",
     "closeAppKeep": "Geöffnet lassen",
     "closeAppQuit": "Trotzdem schließen",
     "interruptedTitle": "Eine Wiederherstellung wurde nicht fertig",
@@ -14651,6 +14691,14 @@ const STRINGS = {
     "closeStopsPlaying": "正在播放的内容",
     "closeStopsSending": "向共享曲库发送音频（其他设备会一直等待）",
     "closeStopsCopy": "复制到另一个曲库",
+    "bgSaving": "正在保存…",
+    "bgDeleting": "正在删除…",
+    "bgReplacing": "正在替换录音…",
+    "bgFailedTitle": "未完成",
+    "bgSaveFailed": "你的更改未能保存完成：{error}",
+    "bgDeleteFailed": "删除未能完成：{error}",
+    "bgReplaceFailed": "替换录音未能完成：{error}",
+    "closeStopsSaving": "保存你最后的更改",
     "closeAppKeep": "保持打开",
     "closeAppQuit": "仍然关闭",
     "interruptedTitle": "恢复没有完成",
@@ -16698,6 +16746,14 @@ const STRINGS = {
     "closeStopsPlaying": "những gì đang phát",
     "closeStopsSending": "việc gửi âm thanh lên thư viện dùng chung (các thiết bị khác sẽ phải chờ)",
     "closeStopsCopy": "việc sao chép sang thư viện khác",
+    "bgSaving": "Đang lưu…",
+    "bgDeleting": "Đang xóa…",
+    "bgReplacing": "Đang thay bản ghi…",
+    "bgFailedTitle": "Chưa xong",
+    "bgSaveFailed": "Chưa lưu xong thay đổi của bạn: {error}",
+    "bgDeleteFailed": "Chưa xóa xong: {error}",
+    "bgReplaceFailed": "Chưa thay xong bản ghi: {error}",
+    "closeStopsSaving": "việc lưu thay đổi gần nhất của bạn",
     "closeAppKeep": "Giữ mở",
     "closeAppQuit": "Vẫn đóng",
     "interruptedTitle": "Việc khôi phục chưa xong",
@@ -18745,6 +18801,14 @@ const STRINGS = {
     "closeStopsPlaying": "ό,τι παίζει",
     "closeStopsSending": "η αποστολή ήχου στην κοινόχρηστη βιβλιοθήκη (οι άλλες συσκευές θα περίμεναν)",
     "closeStopsCopy": "η αντιγραφή σε άλλη βιβλιοθήκη",
+    "bgSaving": "Αποθήκευση…",
+    "bgDeleting": "Διαγραφή…",
+    "bgReplacing": "Αντικατάσταση της ηχογράφησης…",
+    "bgFailedTitle": "Δεν ολοκληρώθηκε",
+    "bgSaveFailed": "Η αποθήκευση της αλλαγής σας δεν ολοκληρώθηκε: {error}",
+    "bgDeleteFailed": "Η διαγραφή δεν ολοκληρώθηκε: {error}",
+    "bgReplaceFailed": "Η αντικατάσταση της ηχογράφησης δεν ολοκληρώθηκε: {error}",
+    "closeStopsSaving": "την αποθήκευση της τελευταίας σας αλλαγής",
     "closeAppKeep": "Να μείνει ανοιχτό",
     "closeAppQuit": "Κλείσιμο έτσι κι αλλιώς",
     "interruptedTitle": "Μια επαναφορά δεν ολοκληρώθηκε",
@@ -20792,6 +20856,14 @@ const STRINGS = {
     "closeStopsPlaying": "ciò che sta suonando",
     "closeStopsSending": "l'invio di audio alla libreria condivisa (gli altri dispositivi resterebbero in attesa)",
     "closeStopsCopy": "la copia in un'altra libreria",
+    "bgSaving": "Salvataggio…",
+    "bgDeleting": "Eliminazione…",
+    "bgReplacing": "Sostituzione della registrazione…",
+    "bgFailedTitle": "Non terminato",
+    "bgSaveFailed": "Il salvataggio della modifica non è terminato: {error}",
+    "bgDeleteFailed": "L'eliminazione non è terminata: {error}",
+    "bgReplaceFailed": "La sostituzione della registrazione non è terminata: {error}",
+    "closeStopsSaving": "il salvataggio della tua ultima modifica",
     "closeAppKeep": "Tienilo aperto",
     "closeAppQuit": "Chiudi comunque",
     "interruptedTitle": "Un ripristino non è terminato",
@@ -23150,6 +23222,60 @@ function saveState(){
   saveChain = p.catch(err=> console.error("Save failed:", err));
   return p;
 }
+/* ---- A dialog closes first, then does its work (2.5.031; kr37, 16 Nov 2026) ----
+   "When someone presses Save, can the dialog disappear before any of the
+   background work starts? Then it would feel snappy." Edit details used to
+   wait for its picture and the library's save before closing, and a save
+   waits its turn behind sync and other saves: on the SKBC Mac mini that was
+   a minute with the dialog still up (report 2026-11-15-213154). Delete closed
+   at once but changed nothing on screen until every track's audio had been
+   put aside for Undo (report 2026-11-16-073224, "laggy when deleting").
+   Now such a dialog (1) closes, (2) shows the change on screen at once (the
+   library in memory has already changed), (3) hands the rest to afterDialog,
+   which (4) puts a line in the status bar ("Saving…") only when it takes
+   longer than half a second, so a quick save doesn't flash. The jobs run
+   one at a time, in the order they were given, so a picture put aside for
+   Undo is never overtaken by the next edit of the same track.
+   Nothing is lost by not waiting: a save that fails already turns the top
+   bar red and is tried again every 30 s, the change being kept in this
+   window (noteSaveFailed). Anything else that fails (a picture's write, a
+   track's audio put aside) says so in a dialog, once the screen is free.
+   While a job waits, closing the window asks first (beforeunload, and
+   closingWouldStop in the desktop app), and Undo, Update now and switching
+   libraries wait for it: its writes go to the library that's open. */
+let afterDialogChain = Promise.resolve(), afterDialogPending = 0, afterDialogText = "", afterDialogShowTimer = null, afterDialogShown = false;
+const AFTER_DIALOG_SHOW_MS = 500;
+function afterDialog(textKey, failKey, work){
+  afterDialogPending++;
+  if(!afterDialogShowTimer && !afterDialogShown) afterDialogShowTimer = setTimeout(()=>{
+    afterDialogShowTimer = null;
+    if(afterDialogPending){ afterDialogShown = true; setActiveOperationProgress(afterDialogText || t(textKey), null, "afterDialog"); }
+  }, AFTER_DIALOG_SHOW_MS);
+  const run = async ()=>{
+    afterDialogText = t(textKey);
+    if(afterDialogShown) setActiveOperationProgress(afterDialogText, null, "afterDialog");
+    try{ await work(); }
+    catch(err){ afterDialogFailed(failKey, err); }
+    finally{
+      if(--afterDialogPending === 0){
+        clearTimeout(afterDialogShowTimer); afterDialogShowTimer = null;
+        if(afterDialogShown){ afterDialogShown = false; clearActiveOperation("afterDialog"); }
+      }
+    }
+  };
+  const p = afterDialogChain.then(run);
+  afterDialogChain = p;
+  return p;
+}
+// Resolves once every job given so far has finished.
+function afterDialogIdle(){ return afterDialogChain; }
+function afterDialogFailed(failKey, err){
+  console.error("After a dialog:", err);
+  try{ playLog(t(failKey, {error: errText(err)})); }catch(e){}
+  if(saveFailing) return; // the top bar's "Not saving" already says so, and saving is tried again
+  showWhenFree(t("bgFailedTitle"), ()=> askChoice(t("bgFailedTitle"), `<p>${escapeHtmlText(t(failKey, {error: errText(err)}))}</p>`, [{label: t("ok"), value: null, kind: "primary"}]));
+}
+window.addEventListener("beforeunload", (e)=>{ if(afterDialogPending && !leavingOnPurpose){ e.preventDefault(); e.returnValue = ""; } });
 /* ---- When saving fails ----
    A full device makes every write fail (as an aborted transaction), and
    until 1.4.060 that went only to the console: a renamed playlist looked
@@ -23527,6 +23653,7 @@ function undoMergeTrack(tr, fields){
 const UNDO_OLD_MS = 2 * 3600 * 1000;
 let undoOldOk = false;
 async function doUndo(){
+  if(afterDialogPending) await afterDialogIdle(); // the step a closed dialog is still saving (afterDialog)
   if(!undoStack.length || undoBusy || overlayPageOpen()) return;
   const top = undoStack[undoStack.length - 1];
   if(!undoOldOk && Date.now() - top.at > UNDO_OLD_MS){
@@ -23547,6 +23674,7 @@ async function doUndo(){
   } finally { undoBusy = false; }
 }
 async function doRedo(){
+  if(afterDialogPending) await afterDialogIdle();
   if(!redoStack.length || undoBusy || overlayPageOpen()) return;
   undoBusy = true;
   try{
@@ -33865,7 +33993,12 @@ async function openEditLibraryTrack(track, ctx){
     </div>
   `, "wide");
 
-  async function commitEditFields(){
+  // The fields go in at once, so the screen can show them as the dialog
+  // closes; the picture and the save follow in afterDialog (2.5.031). A new
+  // picture shows at once through the thumbnail cache; hasArtwork changes
+  // only with the write, since that's what gives it its revision (artRev),
+  // which sync goes by.
+  function commitEditFields(){
     track.name = document.getElementById("editName").value.trim() || track.name;
     track.artist = document.getElementById("editArtist").value.trim();
     track.album = document.getElementById("editAlbum").value.trim();
@@ -33873,19 +34006,22 @@ async function openEditLibraryTrack(track, ctx){
     track.trackNo = trackNoRaw==="" ? null : parseInt(trackNoRaw,10);
     const volDb = Math.round((parseFloat(document.getElementById("editVolumeDb").value) || 0) * 10) / 10;
     if(volDb) track.volumeDb = Math.max(-30, Math.min(30, volDb)); else delete track.volumeDb;
-    if(stagedArtwork !== undefined) await undoKeepFile(track, "art");
-    if(stagedArtwork === null){
-      await idbDelete("artwork", track.id);
-      track.hasArtwork = false;
-    } else if(stagedArtwork){
-      await idbPut("artwork", {id: track.id, blob: stagedArtwork});
-      track.hasArtwork = true;
-    }
-    if(stagedArtwork !== undefined){
+    const art = stagedArtwork;
+    if(art !== undefined){
       if(artworkUrlCache[track.id]) URL.revokeObjectURL(artworkUrlCache[track.id]);
-      delete artworkUrlCache[track.id]; // force a fresh fetch next time this track's thumbnail renders
+      if(art) artworkUrlCache[track.id] = URL.createObjectURL(art); else delete artworkUrlCache[track.id];
     }
-    await saveState();
+    return async ()=>{
+      if(art !== undefined){
+        await undoKeepFile(track, "art");
+        if(art === null){ await idbDelete("artwork", track.id); track.hasArtwork = false; }
+        else { await idbPut("artwork", {id: track.id, blob: art}); track.hasArtwork = true; }
+        if(artworkUrlCache[track.id]) URL.revokeObjectURL(artworkUrlCache[track.id]);
+        delete artworkUrlCache[track.id]; // read again from what was stored
+      }
+      await saveState();
+      if(art !== undefined) refreshCurrentView(); // a track that had no picture shows one only now
+    };
   }
 
   // Measured loudness, and whether the chosen volume can be reached
@@ -33992,10 +34128,13 @@ async function openEditLibraryTrack(track, ctx){
   modalCloseCallbacks.push(()=> document.removeEventListener("paste", handleClipboardPaste));
   updateArtworkActionButtons(!!initialArtworkUrl);
 
-  document.getElementById("editSaveGo").addEventListener("click", async ()=>{
-    await commitEditFields();
+  document.getElementById("editSaveGo").addEventListener("click", ()=>{
+    const rest = commitEditFields();
     closeModal(); refreshCurrentView();
-    rewriteFileTagsIfPossible(track.id); // background — the library metadata is already saved either way
+    afterDialog("bgSaving", "bgSaveFailed", async ()=>{
+      await rest();
+      rewriteFileTagsIfPossible(track.id); // background — the library metadata is already saved either way
+    });
   });
   // A format this browser can't play: say so here, with Convert (1.4.070).
   const cantE = trackCantPlay(track.id);
@@ -34003,19 +34142,21 @@ async function openEditLibraryTrack(track, ctx){
     const holder = document.getElementById("editReplaceFile").parentElement;
     const note = document.createElement("div"); note.className = "settings-note"; note.id = "editCantPlayNote"; note.style.margin = "0 0 8px 0"; note.textContent = cantE.note;
     const cb = document.createElement("button"); cb.className = "btn primary"; cb.id = "editConvertNow"; cb.style.marginRight = "8px"; cb.textContent = t("convertItNowBtn");
-    cb.addEventListener("click", async ()=>{ await commitEditFields(); closeModal(); refreshCurrentView(); convertTracks([track.id]); });
+    cb.addEventListener("click", ()=>{ const rest = commitEditFields(); closeModal(); refreshCurrentView(); afterDialog("bgSaving", "bgSaveFailed", async ()=>{ await rest(); convertTracks([track.id]); }); });
     holder.insertBefore(cb, holder.firstChild); holder.insertBefore(note, cb);
   }
-  document.getElementById("editReplaceFile").addEventListener("click", async ()=>{
-    await commitEditFields(); // don't lose in-progress name/artist/album edits when this dialog gets replaced
+  document.getElementById("editReplaceFile").addEventListener("click", ()=>{
+    const rest = commitEditFields(); // don't lose in-progress name/artist/album edits when this dialog gets replaced
     closeModal(); refreshCurrentView();
-    replaceLibraryTrackFile(track);
+    afterDialog("bgSaving", "bgSaveFailed", rest);
+    replaceLibraryTrackFile(track); // at once: the file picker needs the click (its replacing waits its turn after the save)
   });
   const splitBtn = document.getElementById("editSplit");
   if(!(track.duration > SPLIT_MIN_PIECE * 2) || cantE) splitBtn.style.display = "none";
-  splitBtn.addEventListener("click", async ()=>{
-    await commitEditFields(); // kept, as for Replace audio file
+  splitBtn.addEventListener("click", ()=>{
+    const rest = commitEditFields(); // kept, as for Replace audio file
     closeModal(); refreshCurrentView();
+    afterDialog("bgSaving", "bgSaveFailed", rest);
     openSplitter(track, {replace: ctx || null});
   });
   ["editName","editArtist","editAlbum","editTrackNo"].forEach(id=>{
@@ -34117,8 +34258,11 @@ async function replaceLibraryTrackFile(track){
     const newImg = document.createElement("img"); newImg.src = newArtUrl; btns[1].prepend(newImg);
   }
 
-  document.getElementById("replaceConfirmGo").addEventListener("click", async ()=>{
+  document.getElementById("replaceConfirmGo").addEventListener("click", ()=>{
     closeModal();
+    afterDialog("bgReplacing", "bgReplaceFailed", ()=> replaceTrackFileNow());
+  });
+  async function replaceTrackFileNow(){
     await undoKeepFile(track, "audio");
     if(newArtwork && artworkChoice==="new") await undoKeepFile(track, "art");
     await idbPut("audio", {id: track.id, blob: file});
@@ -34143,7 +34287,7 @@ async function replaceLibraryTrackFile(track){
     await saveState();
     refreshCurrentView();
     rewriteFileTagsIfPossible(track.id);
-  });
+  }
 }
 
 /* ===================== Standardize library (background) =====================
@@ -35106,7 +35250,7 @@ function renderStandardizeListInto(listEl, handlers){
     }
     row.querySelector(".sq-replace").addEventListener("click", ()=> handlers.onReplace(track));
     row.querySelector(".sq-remove").addEventListener("click", ()=>{
-      confirmDeleteTracksFromLibrary([track.id], async ()=>{ await deleteLibraryTracks([track.id]); handlers.onRemoved(); }, row);
+      confirmDeleteTracksFromLibrary([track.id], ()=>{ const done = deleteLibraryTracks([track.id]); handlers.onRemoved(); return done; }, row);
     });
     listEl.appendChild(row);
   });
@@ -35449,8 +35593,6 @@ async function deleteLibraryTracks(trackIds, opts){
   if(tidied.length && pcfg && pcfg.partial && (pcfg.deleteEverywhere || []).some(id=> idSet.has(id)))
     pcfg.deleteEverywhere = [...new Set([...pcfg.deleteEverywhere, ...tidied])];
   root.library = root.library.filter(t=>!idSet.has(t.id));
-  // Their audio is kept a day, so Undo can bring it back (undoTrashPut).
-  for(const id of trackIds) await undoTrashPut(id);
   reconcilePlaybackAfterTreeChange();
   // Deleted tracks obviously can't stay selected, but the artist/album you were
   // browsing should — deleting a track shouldn't dump you back to the whole
@@ -35458,8 +35600,17 @@ async function deleteLibraryTracks(trackIds, opts){
   libSelectedTracks.clear();
   if(opts.clearArtists) libSelectedArtists.clear();
   if(opts.clearAlbums) libSelectedAlbums.clear();
-  await saveState();
+  // The screen shows them gone at once; putting their audio aside (kept a
+  // day, so Undo can bring it back: undoTrashPut) and the save follow, one
+  // track at a time, in afterDialog (2.5.031: until then the dialog closed
+  // and the tracks stayed on screen until all of it had finished). Everything
+  // above runs before this function's first await, so a caller that doesn't
+  // wait for it can redraw its own list straight away.
   refreshCurrentView();
+  return afterDialog("bgDeleting", "bgDeleteFailed", async ()=>{
+    for(const id of trackIds) await undoTrashPut(id);
+    await saveState();
+  });
 }
 async function duplicateLibraryTrack(t){
   const rec = await idbGet("audio", t.id);
@@ -35905,26 +36056,33 @@ function openBulkEditLibraryTracks(trackIds){
     const renumber = renumberOn && !isNaN(start) && start >= 0;
     closeModal();
     if(!artistVal && !albumVal && bulkStagedArtwork===undefined && !renumber) return; // nothing entered or picked — nothing to change
+    // The details at once, the pictures shown at once (the thumbnail cache);
+    // writing the pictures and the save follow in afterDialog (2.5.031: the
+    // list used to wait for every track's picture to be written).
+    const art = bulkStagedArtwork;
+    const artUrl = art ? URL.createObjectURL(art) : null;
     for(const [i, tr] of tracks.entries()){
       if(artistVal) tr.artist = artistVal;
       if(albumVal) tr.album = albumVal;
       if(renumber) tr.trackNo = start + i;
-      if(bulkStagedArtwork !== undefined) await undoKeepFile(tr, "art");
-      if(bulkStagedArtwork === null){
-        await idbDelete("artwork", tr.id);
-        tr.hasArtwork = false;
-      } else if(bulkStagedArtwork){
-        await idbPut("artwork", {id: tr.id, blob: bulkStagedArtwork});
-        tr.hasArtwork = true;
-      }
-      if(bulkStagedArtwork !== undefined){
-        if(artworkUrlCache[tr.id]) URL.revokeObjectURL(artworkUrlCache[tr.id]);
-        delete artworkUrlCache[tr.id];
+      if(art !== undefined){
+        if(artworkUrlCache[tr.id] && artworkUrlCache[tr.id] !== artUrl) URL.revokeObjectURL(artworkUrlCache[tr.id]);
+        if(art) artworkUrlCache[tr.id] = artUrl; else delete artworkUrlCache[tr.id];
       }
     }
-    saveState();
     refreshCurrentView();
-    tracks.forEach(tr=> rewriteFileTagsIfPossible(tr.id));
+    afterDialog("bgSaving", "bgSaveFailed", async ()=>{
+      if(art !== undefined) for(const tr of tracks){
+        await undoKeepFile(tr, "art");
+        if(art === null){ await idbDelete("artwork", tr.id); tr.hasArtwork = false; }
+        else { await idbPut("artwork", {id: tr.id, blob: art}); tr.hasArtwork = true; }
+        delete artworkUrlCache[tr.id]; // read again from what was stored (the shared URL is let go below)
+      }
+      if(artUrl) URL.revokeObjectURL(artUrl);
+      await saveState();
+      refreshCurrentView();
+      tracks.forEach(tr=> rewriteFileTagsIfPossible(tr.id));
+    });
   };
   document.getElementById("bulkEditGo").addEventListener("click", goHandler);
   ["bulkEditArtist","bulkEditAlbum"].forEach(id=>{
@@ -37846,6 +38004,7 @@ if(navigator.serviceWorker) navigator.serviceWorker.addEventListener("message", 
 // Update now: asks the worker for the newest page (saved before the reload,
 // so the reload opens it), then reloads. Without a worker, a plain reload.
 async function updateSiteNow(){
+  if(afterDialogPending) await afterDialogIdle(); // let a closed dialog's save finish first (afterDialog)
   // The desktop app: the shell switches to the newest page, then this reloads into it.
   // It reloads only when the shell really switched (2.5.017): on 15 Nov
   // 2026 the Mac mini's shell refused an incomplete download every time,
@@ -39068,7 +39227,7 @@ function cleanupTrackRow(tr, usage, offerReplace){
       used.appendChild(a);
     });
   }
-  row.querySelector('[data-act="remove"]').addEventListener("click", ()=> confirmDeleteTracksFromLibrary([tr.id], async ()=>{ await deleteLibraryTracks([tr.id]); renderSettingsSection(); }, row));
+  row.querySelector('[data-act="remove"]').addEventListener("click", ()=> confirmDeleteTracksFromLibrary([tr.id], ()=>{ const done = deleteLibraryTracks([tr.id]); renderSettingsSection(); return done; }, row));
   const rb = row.querySelector('[data-act="replace"]');
   if(rb) rb.addEventListener("click", async ()=>{ await replaceLibraryTrackFile(tr); });
   return row;
@@ -39468,7 +39627,7 @@ async function renderSettingsSection(fromTimer){
       const all = document.createElement("button");
       all.className = "btn danger"; all.style.margin = "4px 0 12px 0";
       all.textContent = t("removeAllZeroBtn", {n: zero.length});
-      all.addEventListener("click", ()=> confirmDeleteTracksFromLibrary(zero.map(x=>x.id), async ()=>{ await deleteLibraryTracks(zero.map(x=>x.id)); renderSettingsSection(); }));
+      all.addEventListener("click", ()=> confirmDeleteTracksFromLibrary(zero.map(x=>x.id), ()=>{ const done = deleteLibraryTracks(zero.map(x=>x.id)); renderSettingsSection(); return done; }));
       list.appendChild(all);
       const usage = playlistsUsingTracks();
       zero.forEach(tr=>{
@@ -50903,6 +51062,7 @@ function restorePlace(){
 }
 async function switchLibrary(id){
   if(id === LIBRARY_ID) return;
+  if(afterDialogPending) await afterDialogIdle(); // its writes go to this library (afterDialog)
   const target = libraryEntry(id);
   if(!target) return;
   // Any of 37 Player's players (Edit Playlists' too: kr37 on the HP,
@@ -51550,6 +51710,7 @@ function closingWouldStop(){
   if(playingHere()) out.push(t("closeStopsPlaying"));
   if(sharedUploading && sharedStatus.transfer && sharedStatus.transfer.kind === "up") out.push(t("closeStopsSending"));
   if(copyRunning) out.push(t("closeStopsCopy"));
+  if(afterDialogPending) out.push(t("closeStopsSaving"));
   return out;
 }
 /* The page updates itself (1.4.182; desktop/PAGE-UPDATES.md). A shell
