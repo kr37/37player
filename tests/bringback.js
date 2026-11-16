@@ -45,6 +45,9 @@ const tree = p=> p.evaluate(()=>{ const out = []; (function w(ns, d){ ns.forEach
   await edit(p, "r.tree.find(n=> n.id==='fP').children = []; r.library = r.library.filter(t=> t.id !== 'gf');"); await sync(p);
   await edit(p, "r.library = r.library.filter(t=> t.id !== 'lone');"); await sync(p);
   await edit(p, "r.library.forEach(t=>{ t.loudness = {i: -17, p: -1}; t.audioFrom = 'Mac mini'; }); r.tree[0].children.find(n=> n.id==='plW').needsAttention = false;"); await sync(p);
+  // New artwork, twice: the second change shows both covers (2.5.022)
+  const art = c=> p.evaluate(async c=>{ const cv = document.createElement('canvas'); cv.width = cv.height = 8; const x = cv.getContext('2d'); x.fillStyle = c; x.fillRect(0, 0, 8, 8); const blob = await new Promise(r=> cv.toBlob(r, 'image/png')); await window.__idbPut('artwork', {id: 'osg', blob}); window.__dbg.getRoot().library.find(t=> t.id === 'osg').hasArtwork = true; await window.__dbg.saveState(); }, c);
+  await art('#c00'); await sync(p); await art('#00c'); await sync(p);
   await openBring(p);
   ok(await p.evaluate(()=> document.querySelector('.hist-body').classList.contains('hist-bring') && getComputedStyle(document.querySelector('.hist-side')).display === 'none'), 'Bring back: no list of versions on the left');
   ok(await p.evaluate(()=> /^Bring back since /.test(document.querySelector('.bb-title').textContent)), 'the title says how far back: ' + await p.evaluate(()=> document.querySelector('.bb-title').textContent));
@@ -112,9 +115,26 @@ const tree = p=> p.evaluate(()=>{ const out = []; (function w(ns, d){ ns.forEach
   a = await colA(p);
   console.log('tracks by album:', JSON.stringify(a));
   ok(a.some(x=> /^Tharpa Daily prayers$/.test(x)) && a.some(x=> /^Gen Rinzin Talks$/.test(x)), 'By album: the artist small above the album');
+  const talks = ()=> p.evaluate(()=> [...document.querySelectorAll('#bbA [data-id]')].some(e=> /^A talk on its own/.test(e.innerText)));
+  const before = await talks();
+  await p.evaluate(()=> [...document.querySelectorAll('#bbA [data-grp]')].find(e=> /Talks/.test(e.innerText)).click()); await sleep(300);
+  const shut = await talks();
+  await p.evaluate(()=> [...document.querySelectorAll('#bbA [data-grp]')].find(e=> /Talks/.test(e.innerText)).click()); await sleep(300);
+  ok(before && !shut && await talks(), 'By album: an album\'s chevron closes and opens it');
   await p.evaluate(()=> document.querySelector('input[name="bbView"][value="flat"]').click()); await sleep(400);
   a = await colA(p);
   ok(a.some(x=> /^Track08 now “Receiving Blessings” Tharpa · Daily prayers$/.test(x)) && a.some(x=> /^Receiving Blessings Tharpa · Daily prayers$/.test(x)), 'Flat list: both names, the old one saying what it\'s called now');
+  // Wrap off: the artist and album stay on one line too, and the chosen row stays where it was on the screen
+  await pick(p, '^Offering to the Spiritual Guide 1');
+  const artOk = async ()=>{ for(let i = 0; i < 40; i++){ const r = await p.evaluate(()=> [...document.querySelectorAll('#bbBD img.bb-art')].map(i=> i.complete ? i.naturalWidth : 0)); if(r.length === 2 && r.every(w=> w === 8)) return true; await sleep(150); } return false; };
+  ok(/different artwork/.test(await p.evaluate(()=> document.getElementById('bbBD').innerText)) && await artOk(), 'different artwork: the cover now and the earlier one, side by side');
+  await p.screenshot({path: path.join(SHOTS, 'bringback-6.png')});
+  const topOf = ()=> p.evaluate(()=> document.querySelector('#bbA .bb-it.sel').getBoundingClientRect().top);
+  const t0 = await topOf();
+  await p.evaluate(()=> document.querySelector('#bbBar button').click()); await sleep(200);
+  const subWs = await p.evaluate(()=> getComputedStyle(document.querySelector('#bbA [data-k="t"] .bb-sub')).whiteSpace);
+  ok(subWs === 'nowrap' && Math.abs(await topOf() - t0) < 2, 'Wrap off: the artist and album on one line (' + subWs + '); the chosen track stays put');
+  await p.evaluate(()=> document.querySelector('#bbBar button').click()); await sleep(200);
   // Replace a track (its name back)
   await pick(p, '^Track08');
   rows = await cmp(p);

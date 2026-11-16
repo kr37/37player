@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.5.021">
+<meta name="app-version" content="2.5.022">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -796,11 +796,13 @@
   .bb-tr{ font-size:15px; }
   .bb-grpname{ font-weight:700; }
   .bb-icon{ display:inline-flex; flex-shrink:0; color:var(--text-dim); }
-  .bb-sub{ flex-basis:100%; padding-left:25px; font-size:12px; color:var(--text-dim); }
+  .bb-sub{ flex-basis:100%; min-width:0; padding-left:25px; font-size:12px; color:var(--text-dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .bb-wrap .bb-sub, .bb-ver .bb-sub{ white-space:normal; overflow-wrap:anywhere; } /* the artist and album follow Wrap too (2.5.022) */
   .bb-ver{ padding-left:14px; }
   .bb-ver .bb-sub{ padding-left:0; }
   .bb-it[data-k="n"] .bb-sub{ padding-left:45px; } /* under the name, past the playlist icon */
-  .bb-small{ flex-basis:100%; padding-left:25px; font-size:11.5px; color:var(--text-dim); order:-1; }
+  .bb-small{ flex-basis:100%; min-width:0; padding-left:25px; font-size:11.5px; color:var(--text-dim); order:-1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .bb-wrap .bb-small{ white-space:normal; overflow-wrap:anywhere; }
   .bb-grp .bb-small{ padding-left:25px; }
   .bb-dim{ color:var(--text-dim); }
   .bb-gone{ color:var(--sage); font-weight:700; }
@@ -817,6 +819,8 @@
   .bb-head{ display:flex; flex-direction:column; gap:2px; padding-top:8px; padding-bottom:8px; white-space:normal; }
   .bb-head .bb-h{ padding:0; }
   .bb-big{ font-size:16px; font-weight:700; }
+  .bb-art{ display:block; width:96px; height:96px; object-fit:cover; border-radius:8px; border:1px solid var(--line); background:var(--bg-deep); }
+  .bb-art-cell{ padding-top:6px; padding-bottom:6px; white-space:normal; }
   .bb-btns{ display:flex; flex-direction:column; align-items:flex-start; gap:8px; padding-top:12px; padding-bottom:8px; white-space:normal; }
   @media (max-width: 900px){ .bb-grid{ grid-template-columns:minmax(0,1fr); } .bb-a, .bb-c{ border:0; border-bottom:1px solid var(--line); position:static; } .bb-cmp{ position:static; } }
   /* History: the tabs, and Roll back the library (2.5.007) */
@@ -861,6 +865,7 @@
   .rb-art .rb-cell{ font-size:16px; font-weight:700; padding-top:10px; }
   .rb-art .rb-line{ top:10px; }
   .rb-alb .rb-cell{ font-size:14.5px; font-weight:700; }
+  .rb-entry .rb-cell{ font-size:14px; } /* a playlist's tracks a little smaller than its name: the playlist is what is being decided on (2.5.022) */
   .rb-un{ color:var(--text-dim); }
   .rb-back{ color:var(--sage); font-weight:700; }
   .rb-lost{ color:var(--rust-bright); font-weight:700; }
@@ -5080,19 +5085,20 @@ const STRINGS = {
     "bbNowCalled": "now “{name}”",
     "bbAlsoCalled": "also called “{name}”",
     "bbNow": "Now",
-    "bbEarlier": "Earlier, as it was",
+    "bbEarlier": "Previous versions",
     "bbChoose": "Choose a playlist or track on the left.",
     "bbAlwaysSame": "Always the same since {date}.",
     "bbNoEarlier": "Nothing earlier to bring back since {date}.",
     "bbNothing": "Nothing has changed since {date}.",
     "bbNoMatch": "Nothing by that name.",
     "bbLooking": "Looking through {n} versions…",
-    "bbReplacePl": "Replace the current playlist",
-    "bbCopy": "Bring back as a copy, “{name}”",
+    "bbReplacePl": "Replace the current playlist with this",
+    "bbCopy": "Bring this back as a copy, “{name}”",
     "bbCopyName": "{name} ({date})",
-    "bbBack": "Bring back",
-    "bbReplaceTr": "Replace the current track",
+    "bbBack": "Bring this back",
+    "bbReplaceTr": "Replace the current track with this",
     "bbAudioAgain": "Its recording is downloaded again ({size}).",
+    "bbNoArt": "No artwork",
     "bbMissing": "{n} older versions were saved before 37 Player noted what each one changed, so their changes aren't listed yet.",
     "bbBuild": "Build list from history (slow)",
     "bbBuilding": "Building… {i} of {n}",
@@ -7175,19 +7181,20 @@ const STRINGS = {
     "bbNowCalled": "ahora «{name}»",
     "bbAlsoCalled": "también llamado «{name}»",
     "bbNow": "Ahora",
-    "bbEarlier": "Antes, como era",
+    "bbEarlier": "Versiones anteriores",
     "bbChoose": "Elige una lista o una pista a la izquierda.",
     "bbAlwaysSame": "Siempre igual desde el {date}.",
     "bbNoEarlier": "Nada anterior que recuperar desde el {date}.",
     "bbNothing": "Nada ha cambiado desde el {date}.",
     "bbNoMatch": "Nada con ese nombre.",
     "bbLooking": "Revisando {n} versiones…",
-    "bbReplacePl": "Reemplazar la lista actual",
-    "bbCopy": "Recuperar como copia, «{name}»",
+    "bbReplacePl": "Reemplazar la lista actual por esta",
+    "bbCopy": "Recuperar esto como copia, «{name}»",
     "bbCopyName": "{name} ({date})",
-    "bbBack": "Recuperar",
-    "bbReplaceTr": "Reemplazar la pista actual",
+    "bbBack": "Recuperar esto",
+    "bbReplaceTr": "Reemplazar la pista actual por esta",
     "bbAudioAgain": "Su grabación se descarga de nuevo ({size}).",
+    "bbNoArt": "Sin imagen",
     "bbMissing": "{n} versiones antiguas se guardaron antes de que 37 Player anotara qué cambió cada una, así que sus cambios aún no aparecen.",
     "bbBuild": "Crear la lista a partir del historial (lento)",
     "bbBuilding": "Creando… {i} de {n}",
@@ -9269,19 +9276,20 @@ const STRINGS = {
     "bbNowCalled": "maintenant « {name} »",
     "bbAlsoCalled": "aussi appelé « {name} »",
     "bbNow": "Maintenant",
-    "bbEarlier": "Avant, tel quel",
+    "bbEarlier": "Versions précédentes",
     "bbChoose": "Choisissez une playlist ou une piste à gauche.",
     "bbAlwaysSame": "Toujours pareil depuis le {date}.",
     "bbNoEarlier": "Rien d'antérieur à récupérer depuis le {date}.",
     "bbNothing": "Rien n'a changé depuis le {date}.",
     "bbNoMatch": "Rien de ce nom.",
     "bbLooking": "Examen de {n} versions…",
-    "bbReplacePl": "Remplacer la playlist actuelle",
-    "bbCopy": "Récupérer en copie, « {name} »",
+    "bbReplacePl": "Remplacer la playlist actuelle par celle-ci",
+    "bbCopy": "Récupérer ceci en copie, « {name} »",
     "bbCopyName": "{name} ({date})",
-    "bbBack": "Récupérer",
-    "bbReplaceTr": "Remplacer la piste actuelle",
+    "bbBack": "Récupérer ceci",
+    "bbReplaceTr": "Remplacer la piste actuelle par celle-ci",
     "bbAudioAgain": "Son enregistrement est de nouveau téléchargé ({size}).",
+    "bbNoArt": "Pas d'image",
     "bbMissing": "{n} versions anciennes ont été enregistrées avant que 37 Player note ce que chacune modifiait : leurs modifications ne sont pas encore listées.",
     "bbBuild": "Construire la liste à partir de l'historique (lent)",
     "bbBuilding": "Construction… {i} sur {n}",
@@ -11363,19 +11371,20 @@ const STRINGS = {
     "bbNowCalled": "agora “{name}”",
     "bbAlsoCalled": "também chamado “{name}”",
     "bbNow": "Agora",
-    "bbEarlier": "Antes, como era",
+    "bbEarlier": "Versões anteriores",
     "bbChoose": "Escolha uma playlist ou faixa à esquerda.",
     "bbAlwaysSame": "Sempre igual desde {date}.",
     "bbNoEarlier": "Nada anterior para recuperar desde {date}.",
     "bbNothing": "Nada mudou desde {date}.",
     "bbNoMatch": "Nada com esse nome.",
     "bbLooking": "Verificando {n} versões…",
-    "bbReplacePl": "Substituir a playlist atual",
-    "bbCopy": "Recuperar como cópia, “{name}”",
+    "bbReplacePl": "Substituir a playlist atual por esta",
+    "bbCopy": "Recuperar isto como cópia, “{name}”",
     "bbCopyName": "{name} ({date})",
-    "bbBack": "Recuperar",
-    "bbReplaceTr": "Substituir a faixa atual",
+    "bbBack": "Recuperar isto",
+    "bbReplaceTr": "Substituir a faixa atual por esta",
     "bbAudioAgain": "A gravação é baixada de novo ({size}).",
+    "bbNoArt": "Sem imagem",
     "bbMissing": "{n} versões antigas foram salvas antes de o 37 Player anotar o que cada uma mudou, por isso suas alterações ainda não aparecem.",
     "bbBuild": "Montar a lista pelo histórico (lento)",
     "bbBuilding": "Montando… {i} de {n}",
@@ -13457,19 +13466,20 @@ const STRINGS = {
     "bbNowCalled": "jetzt „{name}“",
     "bbAlsoCalled": "auch „{name}“ genannt",
     "bbNow": "Jetzt",
-    "bbEarlier": "Früher, wie es war",
+    "bbEarlier": "Frühere Versionen",
     "bbChoose": "Wähle links eine Playlist oder einen Titel.",
     "bbAlwaysSame": "Seit {date} immer gleich.",
     "bbNoEarlier": "Seit {date} nichts Früheres zum Zurückholen.",
     "bbNothing": "Seit {date} hat sich nichts geändert.",
     "bbNoMatch": "Nichts mit diesem Namen.",
     "bbLooking": "{n} Versionen werden durchgesehen…",
-    "bbReplacePl": "Die jetzige Playlist ersetzen",
-    "bbCopy": "Als Kopie zurückholen, „{name}“",
+    "bbReplacePl": "Die jetzige Playlist durch diese ersetzen",
+    "bbCopy": "Dies als Kopie zurückholen, „{name}“",
     "bbCopyName": "{name} ({date})",
-    "bbBack": "Zurückholen",
-    "bbReplaceTr": "Den jetzigen Titel ersetzen",
+    "bbBack": "Dies zurückholen",
+    "bbReplaceTr": "Den jetzigen Titel durch diesen ersetzen",
     "bbAudioAgain": "Seine Aufnahme wird erneut heruntergeladen ({size}).",
+    "bbNoArt": "Kein Bild",
     "bbMissing": "{n} ältere Versionen wurden gespeichert, bevor 37 Player festhielt, was jede änderte, daher sind ihre Änderungen noch nicht aufgeführt.",
     "bbBuild": "Liste aus dem Verlauf erstellen (langsam)",
     "bbBuilding": "Wird erstellt… {i} von {n}",
@@ -15551,19 +15561,20 @@ const STRINGS = {
     "bbNowCalled": "现在叫“{name}”",
     "bbAlsoCalled": "也叫“{name}”",
     "bbNow": "现在",
-    "bbEarlier": "以前的样子",
+    "bbEarlier": "以前的版本",
     "bbChoose": "在左侧选择一个播放列表或曲目。",
     "bbAlwaysSame": "自 {date} 以来一直未变。",
     "bbNoEarlier": "自 {date} 以来没有可找回的早先内容。",
     "bbNothing": "自 {date} 以来没有任何更改。",
     "bbNoMatch": "没有这个名称。",
     "bbLooking": "正在查看 {n} 个版本…",
-    "bbReplacePl": "替换现在的播放列表",
-    "bbCopy": "作为副本找回：“{name}”",
+    "bbReplacePl": "用这个替换现在的播放列表",
+    "bbCopy": "把这个作为副本找回：“{name}”",
     "bbCopyName": "{name}（{date}）",
-    "bbBack": "找回",
-    "bbReplaceTr": "替换现在的曲目",
+    "bbBack": "找回这个",
+    "bbReplaceTr": "用这个替换现在的曲目",
     "bbAudioAgain": "它的录音会重新下载（{size}）。",
+    "bbNoArt": "没有封面",
     "bbMissing": "有 {n} 个较早的版本保存于 37 Player 开始记录每个版本的更改之前，因此尚未列出它们的更改。",
     "bbBuild": "从历史记录建立列表（较慢）",
     "bbBuilding": "正在建立… 第 {i} 个，共 {n} 个",
@@ -17645,19 +17656,20 @@ const STRINGS = {
     "bbNowCalled": "giờ là “{name}”",
     "bbAlsoCalled": "còn gọi là “{name}”",
     "bbNow": "Bây giờ",
-    "bbEarlier": "Trước đây, như khi đó",
+    "bbEarlier": "Các phiên bản trước",
     "bbChoose": "Hãy chọn một danh sách phát hoặc bài ở bên trái.",
     "bbAlwaysSame": "Vẫn như vậy kể từ {date}.",
     "bbNoEarlier": "Không có gì trước đó để lấy lại kể từ {date}.",
     "bbNothing": "Không có gì thay đổi kể từ {date}.",
     "bbNoMatch": "Không có gì mang tên đó.",
     "bbLooking": "Đang xem {n} phiên bản…",
-    "bbReplacePl": "Thay danh sách phát hiện tại",
-    "bbCopy": "Lấy lại thành bản sao, “{name}”",
+    "bbReplacePl": "Thay danh sách phát hiện tại bằng bản này",
+    "bbCopy": "Lấy lại bản này thành bản sao, “{name}”",
     "bbCopyName": "{name} ({date})",
-    "bbBack": "Lấy lại",
-    "bbReplaceTr": "Thay bài hiện tại",
+    "bbBack": "Lấy lại bản này",
+    "bbReplaceTr": "Thay bài hiện tại bằng bản này",
     "bbAudioAgain": "Bản ghi âm của nó sẽ được tải lại ({size}).",
+    "bbNoArt": "Không có ảnh bìa",
     "bbMissing": "{n} phiên bản cũ được lưu trước khi 37 Player ghi lại những gì mỗi phiên bản thay đổi, nên chưa liệt kê được thay đổi của chúng.",
     "bbBuild": "Lập danh sách từ lịch sử (chậm)",
     "bbBuilding": "Đang lập… {i}/{n}",
@@ -19739,19 +19751,20 @@ const STRINGS = {
     "bbNowCalled": "τώρα «{name}»",
     "bbAlsoCalled": "λέγεται και «{name}»",
     "bbNow": "Τώρα",
-    "bbEarlier": "Παλαιότερα, όπως ήταν",
+    "bbEarlier": "Προηγούμενες εκδοχές",
     "bbChoose": "Επιλέξτε μια λίστα ή ένα κομμάτι αριστερά.",
     "bbAlwaysSame": "Πάντα ίδιο από {date}.",
     "bbNoEarlier": "Τίποτα παλαιότερο για ανάκτηση από {date}.",
     "bbNothing": "Τίποτα δεν άλλαξε από {date}.",
     "bbNoMatch": "Τίποτα με αυτό το όνομα.",
     "bbLooking": "Εξέταση {n} εκδόσεων…",
-    "bbReplacePl": "Αντικατάσταση της τωρινής λίστας",
-    "bbCopy": "Ανάκτηση ως αντίγραφο, «{name}»",
+    "bbReplacePl": "Αντικατάσταση της τωρινής λίστας με αυτήν",
+    "bbCopy": "Ανάκτηση αυτής ως αντίγραφο, «{name}»",
     "bbCopyName": "{name} ({date})",
-    "bbBack": "Ανάκτηση",
-    "bbReplaceTr": "Αντικατάσταση του τωρινού κομματιού",
+    "bbBack": "Ανάκτηση αυτού",
+    "bbReplaceTr": "Αντικατάσταση του τωρινού κομματιού με αυτό",
     "bbAudioAgain": "Η ηχογράφησή του κατεβαίνει ξανά ({size}).",
+    "bbNoArt": "Χωρίς εικόνα",
     "bbMissing": "{n} παλαιότερες εκδόσεις αποθηκεύτηκαν πριν το 37 Player σημειώνει τι άλλαξε η καθεμία, οπότε οι αλλαγές τους δεν εμφανίζονται ακόμη.",
     "bbBuild": "Δημιουργία λίστας από το ιστορικό (αργό)",
     "bbBuilding": "Δημιουργία… {i} από {n}",
@@ -21833,19 +21846,20 @@ const STRINGS = {
     "bbNowCalled": "ora «{name}»",
     "bbAlsoCalled": "chiamato anche «{name}»",
     "bbNow": "Adesso",
-    "bbEarlier": "Prima, com'era",
+    "bbEarlier": "Versioni precedenti",
     "bbChoose": "Scegli una playlist o un brano a sinistra.",
     "bbAlwaysSame": "Sempre uguale dal {date}.",
     "bbNoEarlier": "Niente di precedente da recuperare dal {date}.",
     "bbNothing": "Nulla è cambiato dal {date}.",
     "bbNoMatch": "Niente con questo nome.",
     "bbLooking": "Esame di {n} versioni…",
-    "bbReplacePl": "Sostituisci la playlist attuale",
-    "bbCopy": "Recupera come copia, «{name}»",
+    "bbReplacePl": "Sostituisci la playlist attuale con questa",
+    "bbCopy": "Recupera questa come copia, «{name}»",
     "bbCopyName": "{name} ({date})",
-    "bbBack": "Recupera",
-    "bbReplaceTr": "Sostituisci il brano attuale",
+    "bbBack": "Recupera questo",
+    "bbReplaceTr": "Sostituisci il brano attuale con questo",
     "bbAudioAgain": "La sua registrazione viene scaricata di nuovo ({size}).",
+    "bbNoArt": "Nessuna immagine",
     "bbMissing": "{n} versioni precedenti sono state salvate prima che 37 Player annotasse cosa cambiava ciascuna, quindi le loro modifiche non sono ancora elencate.",
     "bbBuild": "Crea l'elenco dalla cronologia (lento)",
     "bbBuilding": "Creazione… {i} di {n}",
@@ -49017,6 +49031,7 @@ async function openSharedHistory(){
 function closeSharedHistory(){
   const el = document.getElementById("historyPage");
   if(el){ el.remove(); removeOverlayScrim(); }
+  if(histState && histState.bb && histState.bb.art) histState.bb.art.forEach(p=> p.then(u=>{ if(u) URL.revokeObjectURL(u); }));
   histState = null;
 }
 // This device's undo steps as points of History's list, newest first, with
@@ -49328,7 +49343,7 @@ function histRollEntries(B, D, bt, dt, lvl, key, whole){
   const sans = it=> Object.assign({}, it, {order: 0});
   histRollAlign(a.map(x=> x.id), b.map(x=> x.id)).forEach(([i, j], at)=>{
     const x = i >= 0 ? a[i] : null, y = j >= 0 ? b[j] : null;
-    const row = {key: key + ":" + at, lvl, tree: true};
+    const row = {key: key + ":" + at, lvl, tree: true, cls: "rb-entry"};
     if(x && y){
       const lx = histRollLabel(x, bt), ly = histRollLabel(y, dt), itemSame = syncEq(sans(x), sans(y));
       if(itemSame){ row.un = true; same++; row.b = {text: lx, cls: "rb-un"}; row.d = {text: ly, cls: "rb-un"}; }
@@ -49342,7 +49357,7 @@ function histRollEntries(B, D, bt, dt, lvl, key, whole){
     }
     rows.push(row);
   });
-  if(B && D && same && changed){ const s = {text: t("histRbUnchanged", {n: same}), cls: "rb-un"}; rows.push({key: key + ":sum", lvl, tree: true, sum: true, b: s, d: s}); }
+  if(B && D && same && changed){ const s = {text: t("histRbUnchanged", {n: same}), cls: "rb-un"}; rows.push({key: key + ":sum", lvl, tree: true, sum: true, cls: "rb-entry", b: s, d: s}); }
   return {rows, changed};
 }
 // The folders and playlists that differ, as a tree; opens collects the
@@ -49541,10 +49556,28 @@ function histRollMainHtml(st, sel, isNow){
       <div class="rb-row rb-foot"><div class="rb-cell rb-note">${!any ? "" : escapeHtmlText(blocked ? t("histRbSendFirst") : stepSel ? t(st.local ? "histUndoFoot" : "histUndoFootShared") + (st.partial ? " " + t("histUndoPartial") : "") : t(st.cfg.receiveOnly ? "histRbReceiveOnly" : "histRbErased"))}</div><div class="rb-cell"></div></div>
     </div>`;
 }
+// Wrap turned on or off: the rows being looked at stay where they were on
+// the screen (Gen Rinzin, 15 Nov 2026). The one chosen if it's in view,
+// otherwise the first in view (below a sticky toolbar); after the change,
+// the scroller moves by however far that row moved. Returns the "after".
+function histKeepInView(rows, bar){
+  rows = [...rows];
+  if(!rows.length) return ()=>{};
+  let sc = rows[0].parentElement;
+  while(sc && sc !== document.body){ const o = getComputedStyle(sc).overflowY; if((o === "auto" || o === "scroll") && sc.scrollHeight > sc.clientHeight) break; sc = sc.parentElement; }
+  if(!sc || sc === document.body) sc = document.scrollingElement;
+  const box = sc === document.scrollingElement ? {top: 0, bottom: innerHeight} : sc.getBoundingClientRect();
+  const top = Math.max(box.top, bar ? bar.getBoundingClientRect().bottom : box.top);
+  const seen = r=>{ const b = r.getBoundingClientRect(); return b.bottom > top + 1 && b.top < box.bottom - 1; };
+  const el = rows.find(r=> r.classList.contains("sel") && seen(r)) || rows.find(seen);
+  if(!el) return ()=>{};
+  const y = el.getBoundingClientRect().top;
+  return ()=>{ const d = el.getBoundingClientRect().top - y; if(d) sc.scrollTop += d; };
+}
 function histRollWire(body){
   const st = histState;
   const bar = body.querySelector("#rbBar");
-  if(bar) fillCtxBar(bar, [{icon: "wrap", label: t("ctxWrap"), tip: t("wrapNamesLabel"), on: ()=> !!st.rbWrap, act: ()=>{ st.rbWrap = !st.rbWrap; const g = body.querySelector(".rb-grid"); if(g) g.classList.toggle("rb-wrap", st.rbWrap); }}]);
+  if(bar) fillCtxBar(bar, [{icon: "wrap", label: t("ctxWrap"), tip: t("wrapNamesLabel"), on: ()=> !!st.rbWrap, act: ()=>{ st.rbWrap = !st.rbWrap; const g = body.querySelector(".rb-grid"); if(!g) return; const back = histKeepInView(g.querySelectorAll(".rb-row")); g.classList.toggle("rb-wrap", st.rbWrap); back(); }}]);
   body.querySelectorAll('input[name="rbMode"]').forEach(inp=> inp.addEventListener("change", ()=>{ st.rbMode = inp.value; renderSharedHistory(); }));
   const tap = el=>{ const k = el.dataset.rb; if(el.dataset.rbkind === "fold" && st.rbOpen.has(k)) st.rbOpen.delete(k); else st.rbOpen.add(k); renderSharedHistory(); };
   body.querySelectorAll("[data-rb]").forEach(el=>{
@@ -49728,7 +49761,7 @@ function bbColumnA(st, m){
     });
     [...groups.values()].sort((a, b)=> a.album.localeCompare(b.album) || a.artist.localeCompare(b.artist)).forEach(g=>{
       g.ids.sort((a, b)=> ((m.T.get(a) || {}).trackNo || 1e9) - ((m.T.get(b) || {}).trackNo || 1e9) || bbName(m, "t", a).localeCompare(bbName(m, "t", b)));
-      h += bbGroup(st, "a:" + g.artist + "\u0000" + g.album, 0, g.album || t("histRbNoAlbum"), ICON_ALBUM, g.ids.map(id=> bbItem(st, m, "t", id, 1, bbName(m, "t", id)).replace(/<span class="bb-sub">[^<]*<\/span><\/div>$/, "</div>")).join(""), g.ids.some(id=> bbChanged(m, "t", id)), g.artist || t("histRbNoArtist"));
+      h += bbGroup(st, "a:" + JSON.stringify([g.artist, g.album]), 0, g.album || t("histRbNoAlbum"), ICON_ALBUM, g.ids.map(id=> bbItem(st, m, "t", id, 1, bbName(m, "t", id)).replace(/<span class="bb-sub">[^<]*<\/span><\/div>$/, "</div>")).join(""), g.ids.some(id=> bbChanged(m, "t", id)), g.artist || t("histRbNoArtist"));
     });
   }
   return h || `<p class="bb-empty">${escapeHtmlText(q ? t("bbNoMatch") : t("bbNothing", {date: bbDate(histVersionTime(st, m.oldest))}))}</p>`;
@@ -49802,6 +49835,12 @@ function bbCompareHtml(st){
       const shown = (now.name || "") !== (then.name || "") || (now.artist || "") !== (then.artist || "") || (now.album || "") !== (then.album || "");
       if(words.length) h += cell("", "") + cell("rb-chg", escapeHtmlText(words.join(" · ")));
       else if(!shown) h += cell("", "") + cell("rb-un", "");
+      // Different artwork: the two pictures (Gen Rinzin, 15 Nov 2026), from
+      // the shared library, which keeps every cover a kept version uses.
+      if(mn.artRev !== mb.artRev || !!mn.hasArtwork !== !!mb.hasArtwork){
+        const pic = r=> r.hasArtwork ? `<img class="bb-art" data-art="${escapeHtmlText(sharedArtName(r))}" alt="">` : `<span class="rb-note">${escapeHtmlText(t("bbNoArt"))}</span>`;
+        h += cell("bb-art-cell", pic(now)) + cell("bb-art-cell", pic(then));
+      }
     }
   }
   if(then){
@@ -49857,6 +49896,20 @@ function bbWireParts(st, main){
   main.querySelectorAll("#bbA [data-grp]").forEach(el=> act(el, ()=>{ const g = el.dataset.grp; bb.flip.has(g) ? bb.flip.delete(g) : bb.flip.add(g); bbRefresh(st); }));
   main.querySelectorAll("#bbC [data-ver]").forEach(el=> act(el, ()=>{ bb.ver = +el.dataset.ver; bbRefresh(st, "noA"); }));
   main.querySelectorAll("#bbBD [data-bb]").forEach(el=> el.addEventListener("click", ()=> bbApply(st, el.dataset.bb, el)));
+  main.querySelectorAll("#bbBD img[data-art]").forEach(img=> bbArtFill(st, img));
+}
+// A cover from the shared library, read once while History is open. One
+// that cleanup has since removed is simply left out.
+async function bbArtFill(st, img){
+  const bb = st.bb, name = img.dataset.art;
+  if(!bb.art) bb.art = new Map();
+  if(!bb.art.has(name)) bb.art.set(name, (async ()=>{
+    const res = await sharedFetch(st.cfg, {op: "file", kind: "artwork", name});
+    if(!res.ok) return "";
+    return URL.createObjectURL(await res.blob());
+  })().catch(()=> ""));
+  const url = await bb.art.get(name);
+  if(url && img.isConnected) img.src = url; else img.remove();
 }
 async function bbLoad(st, build, btn){
   const bb = bbState(st);
@@ -49876,7 +49929,7 @@ function histBringWire(body){
   const top = main.querySelector(".bb-top");
   if(top) main.style.setProperty("--bb-top", (top.offsetHeight - 6) + "px");
   const bar = main.querySelector("#bbBar");
-  if(bar) fillCtxBar(bar, [{icon: "wrap", label: t("ctxWrap"), tip: t("wrapNamesLabel"), on: ()=> !!bb.wrap, act: ()=>{ bb.wrap = !bb.wrap; const g = main.querySelector(".bb-grid"); if(g) g.classList.toggle("bb-wrap", bb.wrap); }}]);
+  if(bar) fillCtxBar(bar, [{icon: "wrap", label: t("ctxWrap"), tip: t("wrapNamesLabel"), on: ()=> !!bb.wrap, act: ()=>{ bb.wrap = !bb.wrap; const g = main.querySelector(".bb-grid"); if(!g) return; const back = histKeepInView(main.querySelectorAll("#bbA .bb-it"), main.querySelector(".bb-top")); g.classList.toggle("bb-wrap", bb.wrap); back(); }}]);
   const reset = ()=>{ bb.sel = null; bb.states = null; bb.flip.clear(); renderSharedHistory(); };
   main.querySelectorAll("[data-kind]").forEach(b=> b.addEventListener("click", ()=>{ if(bb.kind !== b.dataset.kind){ bb.kind = b.dataset.kind; reset(); } }));
   main.querySelectorAll("[data-trby]").forEach(b=> b.addEventListener("click", ()=>{ if(bb.trBy !== b.dataset.trby){ bb.trBy = b.dataset.trby; bb.flip.clear(); renderSharedHistory(); } }));

@@ -84,7 +84,7 @@ window.__hist = {open: openSharedHistory,
       list, sel, nowVersion: list[0].version, nowDoc: now, thenDoc: then, beforeDoc: null, libName: "Test"};
     histComputeRows(); renderSharedHistory();
   },
-  index: opts=> histChangeIndex(sharedConfig(), opts), putIndex: idx=> idbPut('state', idx), versionsOf: (idx, kind, id)=> histVersionsOf(idx, kind, id), allNames: (idx, doc)=> histAllNames(idx, doc), changed: (a, b)=> syncChangedIds(a, b), // changes.js, drive.js
+  keepInView: histKeepInView, index: opts=> histChangeIndex(sharedConfig(), opts), putIndex: idx=> idbPut('state', idx), versionsOf: (idx, kind, id)=> histVersionsOf(idx, kind, id), allNames: (idx, doc)=> histAllNames(idx, doc), changed: (a, b)=> syncChangedIds(a, b), // changes.js, drive.js
   point: async (then, sel)=>{ histState.sel = sel; histState.thenDoc = then; histComputeRows(); renderSharedHistory(); },
   state: ()=> histState};
 window.__desk = {invoke: desktopInvoke};
