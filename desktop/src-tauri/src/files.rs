@@ -179,6 +179,28 @@ pub fn append(root: &Path, rel: &str, bytes: &[u8]) -> Result<(), String> {
     f.write_all(bytes).map_err(|e| e.to_string())
 }
 
+// Bytes start..end of one file put on the end of another (made if it isn't
+// there), on disk (2.5.3): the page writes new details into a recording as
+// its new first bytes followed by the rest of the old file, and the rest
+// never passes through the page (for the spinning wheel on Gen Palden's
+// MacBook, report 2026-11-16-073224: every piece the page reads or writes
+// goes through the window's main thread on a Mac).
+pub fn append_range(from_root: &Path, from: &str, start: u64, end: u64, to_root: &Path, to: &str) -> Result<(), String> {
+    if to.is_empty() { return Err("no file name".into()); }
+    let (a, b) = (resolve(from_root, from)?, resolve(to_root, to)?);
+    if a == b { return Err("a file can't be added to itself".into()); }
+    let mut src = fs::File::open(&a).map_err(|e| e.to_string())?;
+    let len = src.metadata().map_err(|e| e.to_string())?.len();
+    if end < start || end > len { return Err(format!("bytes {}..{} of a file of {}: the file changed", start, end, len)); }
+    if let Some(dir) = b.parent() { fs::create_dir_all(dir).map_err(|e| e.to_string())?; }
+    resolve(to_root, to)?; // the folders just made are still inside
+    let mut dst = fs::OpenOptions::new().create(true).append(true).open(&b).map_err(|e| e.to_string())?;
+    src.seek(SeekFrom::Start(start)).map_err(|e| e.to_string())?;
+    let n = std::io::copy(&mut (&mut src).take(end - start), &mut dst).map_err(|e| e.to_string())?;
+    if n != end - start { return Err(format!("{} bytes copied of {}", n, end - start)); }
+    Ok(())
+}
+
 // Copy or move a file, within a root or from one to another; the target's
 // folders are made. A file already at the target is refused unless replace.
 pub fn copy(from_root: &Path, from: &str, to_root: &Path, to: &str, replace: bool) -> Result<(), String> {
@@ -613,6 +635,12 @@ pub fn fs_copy(app: tauri::AppHandle, root: String, from: String, to_root: Optio
 }
 
 #[tauri::command(async)]
+pub fn fs_append_range(app: tauri::AppHandle, root: String, from: String, start: u64, end: u64, to_root: Option<String>, to: String) -> Result<(), String> {
+    let r = roots(&app);
+    append_range(&r.get(&root)?, &from, start, end, &r.get(to_root.as_deref().unwrap_or(&root))?, &to)
+}
+
+#[tauri::command(async)]
 pub fn fs_rename(app: tauri::AppHandle, root: String, from: String, to_root: Option<String>, to: String, replace: Option<bool>) -> Result<(), String> {
     let r = roots(&app);
     rename(&r.get(&root)?, &from, &r.get(to_root.as_deref().unwrap_or(&root))?, &to, replace.unwrap_or(false))
@@ -732,6 +760,22 @@ mod tests {
         assert_eq!(r.headers().get("Access-Control-Allow-Origin").unwrap(), "*");
         assert!(r.headers().get("Access-Control-Allow-Headers").unwrap().to_str().unwrap().contains("Range"));
         assert!(r.headers().get("Access-Control-Allow-Methods").unwrap().to_str().unwrap().contains("GET"));
+    }
+    #[test]
+    fn a_stretch_of_a_file_goes_on_the_end_of_another() {
+        let d = tmp("range");
+        fs::write(d.join("old.mp3"), b"OLDTAGaudio-bytes-here").unwrap();
+        write(&d, "new.mp3.p37part", b"NEW-TAG:").unwrap();
+        append_range(&d, "old.mp3", 6, 22, &d, "new.mp3.p37part").unwrap();
+        assert_eq!(fs::read(d.join("new.mp3.p37part")).unwrap(), b"NEW-TAG:audio-bytes-here");
+        // Into a folder that isn't there yet, and nothing at all.
+        append_range(&d, "old.mp3", 0, 3, &d, "sub/x.bin").unwrap();
+        append_range(&d, "old.mp3", 3, 3, &d, "sub/x.bin").unwrap();
+        assert_eq!(fs::read(d.join("sub/x.bin")).unwrap(), b"OLD");
+        assert!(append_range(&d, "old.mp3", 0, 99, &d, "y.bin").is_err(), "past the end: the file changed");
+        assert!(append_range(&d, "old.mp3", 0, 3, &d, "old.mp3").is_err(), "not onto itself");
+        assert!(append_range(&d, "../old.mp3", 0, 3, &d, "z.bin").is_err(), "not outside the root");
+        let _ = fs::remove_dir_all(&d);
     }
     #[test]
     fn only_a_library_folder_may_go_to_the_trash() {
