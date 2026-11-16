@@ -15,7 +15,10 @@ const clickText = (p, sel, src) => p.evaluate((sel, src)=>{ const re=new RegExp(
     await window.__dbg.saveState(); window.__dbg.setMode('library');
   });
   await sleep(60000); console.log('version check:', await p.evaluate(async()=> window.__ver(await (await fetch('37-player.html', {headers:{Range:'bytes=0-4095'}})).text())));
-  const lib = await p.evaluate(()=> window.__dbg.getRoot().library.map(t=>({id:t.id, L:t.loudness, flat: t.peaks.every(v=>v===t.peaks[0])})));
+  // Up to 3 minutes more: the 2-hour recording is read a piece at a time, slower in some engines.
+  const look = ()=> p.evaluate(()=> window.__dbg.getRoot().library.map(t=>({id:t.id, L:t.loudness, flat: t.peaks.every(v=>v===t.peaks[0])})));
+  let lib = await look();
+  for(let i = 0; i < 36 && !lib.every(t=> !t.flat && t.L && t.L.i != null); i++){ await sleep(5000); lib = await look(); }
   console.log(JSON.stringify(lib));
   const good = lib.every(t=> !t.flat && t.L && t.L.i != null);
   console.log(good ? 'ok   flat stand-in waveforms repaired, loudness kept' : 'FAIL flat stand-in waveforms not repaired');

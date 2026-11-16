@@ -1,4 +1,4 @@
-// The library's format settings (Settings → File format): a WAV imported
+// The library's format settings (Settings → File conversion): a WAV imported
 // under the default "Reduce uncompressed audio" becomes an MP3; under "Don't
 // touch my files" it stays, while a WMA is still converted and its original
 // kept without asking; "Choose the rules" with a custom AAC format shows what
@@ -27,7 +27,7 @@ const tracks = p=> p.evaluate(()=> window.__dbg.getRoot().library.map(t=>({id:t.
 const import_ = (p, names)=> p.evaluate(async(names)=>{
   for(const n of names){ const blob = await (await fetch('/conv/' + n)).blob(); await window.__conv.importFiles([new File([blob], n)], window.__dbg.getRoot().tree[0], null, true); }
 }, names);
-const openFormat = async (p)=>{ await p.evaluate(()=> window.__dbg4.settings()); await sleep(400); await clickText(p, '.settings-nav-item', '^File format$'); await sleep(600); };
+const openFormat = async (p)=>{ await p.evaluate(()=> window.__dbg4.settings()); await sleep(400); await clickText(p, '.settings-nav-item', '^File conversion$'); await sleep(600); };
 const closeSettings = p=> p.evaluate(()=> document.querySelector('#settingsClose')?.click());
 (async()=>{
   const b = await puppeteer.launch({executablePath: process.env.CHROME || '/usr/bin/google-chrome', args:['--no-sandbox'], protocolTimeout: 120000});
@@ -50,7 +50,7 @@ const closeSettings = p=> p.evaluate(()=> document.querySelector('#settingsClose
   // The page, and "Don't touch my files".
   await openFormat(A);
   const page = await A.evaluate(()=> document.getElementById('settingsContent')?.innerText || '');
-  ok(/Preferred format/.test(page) && /Don't touch my files/.test(page) && /Reduce uncompressed audio/.test(page) && /Choose the rules/.test(page), 'the File format page has the preferred format and the three choices');
+  ok(/Preferred format/.test(page) && /Don't touch my files/.test(page) && /Reduce uncompressed audio/.test(page) && /Choose the rules/.test(page), 'the File conversion page has the preferred format and the three choices');
   ok(/shared library/.test(page), 'it says the settings belong to the shared library');
   await A.evaluate(()=>{ const r = document.querySelector('input[name=fmtWhen][value=untouched]'); r.checked = true; r.dispatchEvent(new Event('change', {bubbles:true})); }); await sleep(500);
   ok((await A.evaluate(()=> window.__conv.policy())).when === 'untouched', 'Don\'t touch my files is saved');
@@ -86,7 +86,7 @@ const closeSettings = p=> p.evaluate(()=> document.querySelector('#settingsClose
   await A.screenshot({path: 'shots/conv5-format.png'});
   const effect = await A.evaluate(()=> document.getElementById('fmtEffect')?.innerText || '');
   console.log('effect:', JSON.stringify(effect));
-  ok(/1 tracks already in the library would be converted \(/.test(effect) && !/AAC 192k/.test(effect) && /Review in Library cleanup/.test(effect) && !/Convert them now/.test(effect), 'File format says how many, without repeating the format, and points to Library cleanup');
+  ok(/1 tracks already in the library would be converted \(/.test(effect) && !/AAC 192k/.test(effect) && /Review in Library cleanup/.test(effect) && !/Convert them now/.test(effect), 'File conversion says how many, without repeating the format, and points to Library cleanup');
   await clickText(A, '#fmtEffect button', '^Review in Library cleanup$'); await sleep(800);
   ok(await A.evaluate(()=> document.querySelector('#settingsNav .active')?.textContent) === 'Library cleanup', 'which opens Library cleanup');
   const conv = await A.evaluate(()=> document.getElementById('cleanupConvertNote')?.innerText || '');
@@ -134,7 +134,7 @@ const closeSettings = p=> p.evaluate(()=> document.querySelector('#settingsClose
   await A.evaluate(()=>window.__dbg3.sync()); await waitIdle(A);
   ok((await A.evaluate(()=> window.__conv.policy())).when === 'reduce', 'a change made on B reaches A');
 
-  // While a long conversion runs, the File format page isn't redrawn under
+  // While a long conversion runs, the File conversion page isn't redrawn under
   // a drop-down in use.
   await import_(A, ['longtalk.wma']);
   await waitFor(A, ()=> window.__conv.state().worker, 30000);

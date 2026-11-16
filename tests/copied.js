@@ -71,9 +71,12 @@ const setName = (p, v)=> p.evaluate((v)=>{ const i = document.getElementById('sd
   // Closed unanswered.
   await reopen('fifth-install');
   await waitModal(p, /Is this another device/);
-  await p.evaluate(()=> document.querySelector('.modal [data-close]')?.click() || document.dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape', bubbles: true})));
+  // "Decide later" (2.4.003): says what closing it means, and the top bar says it isn't syncing.
+  ok(await clickText(p, '.modal button', '^Decide later \\(it won’t sync until then\\)$'), 'the question offers "Decide later (it won\'t sync until then)"');
   await sleep(800);
-  ok(!(await modal(p)), 'the question can be closed');
+  ok(!(await modal(p)), 'the question can be put off');
+  const ind = await p.evaluate(()=>{ const b = document.getElementById('backupIndicator') || document.getElementById('btnBackup'); return b ? b.textContent.trim() + ' / ' + b.title : null; });
+  ok(/Not syncing/.test(ind || '') && /which device this is/.test(ind || ''), 'the top bar says "Not syncing", not "In sync" (' + ind + ')');
   await p.evaluate(()=>{ window.__dbg.setMode('editing'); window.__dbg4.settings(); }); await sleep(300);
   await p.evaluate(()=> window.__dbg4.section('shared')); await sleep(1000);
   const st = await p.evaluate(()=> document.getElementById('shStatus')?.textContent || '');

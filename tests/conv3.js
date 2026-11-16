@@ -38,6 +38,9 @@ const import_ = (p, names)=> p.evaluate(async(names)=>{
   const B = await device(b, 'B');
   await B.evaluate((c,u)=> window.__dbg3.join(u,c,'iPad'), CODE, URL_SYNC); await waitIdle(B);
   ok(!(await A.evaluate(()=> window.__conv.stored())), 'the converter isn\'t on A yet');
+  // Apple Lossless is told from AAC inside the .m4a (2.3.003: converted at import even where it plays, as in WebKit).
+  const sniff = await A.evaluate(async()=> { const f = async n=> window.__conv.isAlac(await (await fetch('/conv/' + n)).blob()); return [await f('lossless.m4a'), await f('teaching.mp4'), await f('ok.mp3')]; });
+  ok(JSON.stringify(sniff) === '[true,false,false]', 'Apple Lossless is recognised, AAC and MP3 aren\'t (' + sniff + ')');
 
   // An import with two files this browser can't play: converted without asking.
   await import_(A, ['ok.mp3','talk.wma','lossless.m4a']);

@@ -14,7 +14,7 @@ window.__dbg4 = {settings: openSettingsPage, help: openHelpPage, section: goToSe
 window.__rv = {rows: syncReviewRows, classify: (r,m)=>syncClassifyPartial(r,m,new Set()), def: syncDefaultChoice, set: (st)=>{ const page=document.createElement("div"); page.id="reviewPage"; page.className="settings-page rv-page"; placeOverlayPage(page, closeSharedReview); page.innerHTML='<div class="rv-scroll" id="rvScroll"></div><div class="rv-foot" id="rvFoot"></div>'; document.body.appendChild(page); sharedReviewState=st; renderSharedReview(); }};
 window.__aa = {analyze: analyzeAudio};
 // files this browser can't play (conv.js)
-window.__conv = {importFiles, recheck: recheckStoredAudio, cantPlay: trackCantPlay, describe: describeFormatProblem,
+window.__conv = {importFiles, recheck: recheckStoredAudio, cantPlay: trackCantPlay, describe: describeFormatProblem, isAlac: isAppleLosslessFile,
   convert: (ids)=>convertTracks(ids), state: ()=>({queue: convertQueue.slice(), running: convertRunning, worker: !!converterWorker, bar: activeOperation && activeOperation.text}), stored: ()=>converterStored().then(r=>!!r), libPreview: (id)=>playLibraryPreview(id), overlay: (id)=>openPlaylistOverlay(id), put: (js, wasm, version)=> mainStatePut({key: "converter", version, js, wasm, size: js.size + wasm.size, at: Date.now()}).then(()=>{ converterRecCache = undefined; converterRefetched = false; }), version: ()=> converterStored().then(r=> r && r.version), stop: ()=> converterStop(), garbleProbes: (n)=>{ const real = window.__realConverterAsk || (window.__realConverterAsk = converterAsk); let left = n; converterAsk = (msg)=>{ if(left > 0 && msg && msg.file && !msg.outName){ left--; msg = Object.assign({}, msg, {file: new File([new Uint8Array(msg.file.size).fill(0x5a)], msg.file.name)}); } return real(msg); }; },
   musicEntries: (ids, convert)=>buildMusicEntries(new Set(ids), null, {convert: !!convert}), dropOriginal: (id)=>dropKeptOriginal(findLibraryTrack(id)), policy: ()=>formatPolicy(), matches: (id)=>trackMatchesPolicy(findLibraryTrack(id)), queueRecord: ()=>idbGet("state", "convertQueue").then(r=> r && r.value || null)};
 // No quiet converter download 20 s after opening, unless a test asks for it.
@@ -34,8 +34,8 @@ window.__dropAudio = (id)=> libStore.del("audio", [id]);
 // playback
 window.__play = (id)=>playItem(id);
 window.__pause = ()=> togglePlay();
-window.__aud = ()=>({src: audioEl.src, paused: audioEl.paused, t: audioEl.currentTime});
-window.__st = ()=>({src: audioEl.src, paused: audioEl.paused, t: audioEl.currentTime, d: audioEl.duration,
+window.__aud = ()=>({src: audioEl.src, paused: audioEl.paused, t: audioEl.currentTime, rs: audioEl.readyState, ns: audioEl.networkState, err: audioEl.error ? audioEl.error.code + " " + (audioEl.error.message || "") : null});
+window.__st = ()=>({src: audioEl.src, paused: audioEl.paused, t: audioEl.currentTime, d: audioEl.duration, rs: audioEl.readyState, ns: audioEl.networkState, err: audioEl.error ? audioEl.error.code + " " + (audioEl.error.message || "") : null,
   bridge: playBridge, ka: silentKeepAliveEl ? !silentKeepAliveEl.paused : null, sil: silenceState.active, cur: currentItemId,
   ms: navigator.mediaSession && navigator.mediaSession.playbackState, hold: loopHold, stopHold, pauseHold,
   title: navigator.mediaSession && navigator.mediaSession.metadata && navigator.mediaSession.metadata.title,
@@ -72,8 +72,26 @@ window.__share = {offer: (meta)=> offerNativeImport(meta, {}, {}, null, {backupR
   noteKept: ()=>{ root.backupKeepers = Object.assign({}, root.backupKeepers, {[sharedConfig().deviceName]: Date.now()}); return saveState(); },
   label: ()=> document.getElementById("btnBackup").textContent, setup: ()=> backupInfo.setupDone};
 window.__share.manualBackup = downloadManualBackup; window.__share.judge = judgeBackupFiles; window.__share.manualPlan = manualBackupPlan;
-window.__hist = {open: openSharedHistory};
-window.__undo = {undo: doUndo, redo: doRedo, del: deleteLibraryTracks, stacks: ()=> ({undo: undoStack.length, redo: redoStack.length, labels: undoStack.map(undoLabel)}), rebase: undoRebase};
+window.__hist = {open: openSharedHistory,
+  // History drawn from two documents handed in, with no shared library (rollback.js).
+  fake: (now, then, list, sel, cfg)=>{
+    closeSharedHistory();
+    const page = document.createElement("div"); page.id = "historyPage"; page.className = "settings-page rv-page hist-page";
+    placeOverlayPage(page, closeSharedHistory);
+    page.innerHTML = `<div class="hist-top"><h2 class="hist-h">${escapeHtmlText(t("histTitle"))}</h2><span class="hist-sub"></span><button class="btn" type="button" id="histClose">${escapeHtmlText(t("closeBtn"))}</button></div><div class="hist-body"></div>`;
+    document.body.appendChild(page);
+    histState = {cfg: cfg || {kind: "server"}, docs: new Map([[list[0].version, now]]), choices: new Set(), open: new Set(), mode: "restore", notice: "", tab: "roll", rbOpen: new Set(), rbMode: "all", rbWrap: true, rbInit: null, rbSeen: {nodes: new Set(), tracks: new Set()},
+      list, sel, nowVersion: list[0].version, nowDoc: now, thenDoc: then, beforeDoc: null, libName: "Test"};
+    histComputeRows(); renderSharedHistory();
+  },
+  keepInView: histKeepInView, index: opts=> histChangeIndex(sharedConfig(), opts), putIndex: idx=> idbPut('state', idx), versionsOf: (idx, kind, id)=> histVersionsOf(idx, kind, id), allNames: (idx, doc)=> histAllNames(idx, doc), changed: (a, b)=> syncChangedIds(a, b), // changes.js, drive.js
+  point: async (then, sel)=>{ histState.sel = sel; histState.thenDoc = then; histComputeRows(); renderSharedHistory(); },
+  state: ()=> histState};
+window.__desk = {invoke: desktopInvoke};
+window.__undo = {undo: doUndo, redo: doRedo, del: deleteLibraryTracks, stacks: ()=> ({undo: undoStack.length, redo: redoStack.length, labels: undoStack.map(undoLabel)}), rebase: undoRebase,
+  age: ms=>{ undoStack.forEach(x=>{ x.at -= ms; }); },
+  keepFile: (id, kind)=> undoKeepFile(findLibraryTrack(id), kind), put: (store, rec)=> idbPut(store, rec), get: (store, id)=> idbGet(store, id), delRec: (store, id)=> idbDelete(store, id), trash: ()=> undoTrashKeys(),
+  flags: ()=> undoStack.map(x=> !!x.synced)}; // undohist.js, hist.js
 window.__split = performTrackSplit; window.__queueSplit = queueTrackSplit; window.__audioUrl = getAudioUrl; window.__retag = rewriteFileTagsIfPossible;
 window.__share.missingNote = ()=> sharedMissingNote({waiting: false, from: "Laptop"});
 window.openImportExportForTest = openImportExportDialog;
@@ -153,5 +171,11 @@ window.__dbg3.trashKeys = ()=> undoTrashKeys(); // reconcile.js
 window.__dbg3.downloadPass = ()=> sharedDownloadPending(sharedConfig()); // reconcile.js
 window.__disk = {kind: ()=> STORAGE_KIND, idbPut, idbGet, DiskBlob, JoinedBlob, audioObjectUrl, writeFileTo, storageOpen, readLibraryList, writeLibraryList, libraryDbName, renameLibrary, id: ()=> LIBRARY_ID, openImportChoice, desktopImportFolder, placeFolders, placeIntoLibrary, placeLookForNew, placePathFrom, libStore: ()=> libStore, rewriteFileTagsIfPossible, tracksWithMissingAudio, showAudioMissing, confirmDeleteTracksFromLibrary, syncPlaylistFiles, placeOffline, switchLibrary, togglePlay}; // diskblob.js, desktoplibs.js, inplace.js, switchplaying.js
 window.__sil = {mp3: buildSilentMp3Bytes, entries: buildPlaceholderEntries, recognize: recognizePlaceholder, tags: parseAudioTags}; // silencemp3.js
-window.__big = {realBlob, sharedFetch, blobWithCurrentTags, convertTracks, trackIsBigFile, scheduleConvertResume, bigBytes: ()=> BIG_FILE_BYTES, queue: ()=> convertQueue.slice()}; // bigfile.js
+window.__big = {realBlob, sharedFetch, blobWithCurrentTags, convertTracks, trackIsBigFile, scheduleConvertResume, bigBytes: ()=> BIG_FILE_BYTES, fromDisk: ()=> bigFilesConvertFromDisk(), queue: ()=> convertQueue.slice()}; // bigfile.js
 window.__rejoin = {idbDelete, storedAudioIds, absent: ()=> [...sharedAudioAbsent], revs: ()=> root.library.map(t=> [t.id.slice(0,6), t.audioRev, t.fileSize])}; // rejoin.js
+// the Playing volume (volume.js)
+window.__vol = {set: (v)=> setMainVolume(v), get: ()=> mainVolume, gain: ()=> mainVolumeGain()};
+// the converter reading a file by its address (lazyconv.js)
+window.__lazy = {start: ()=> converterStart(), convert: (b, n, f, t)=> converterConvert(b, n, f, t), input: (b, n)=> converterInput(b, n), off: ()=> converterLazyOff, setOff: (v)=>{ converterLazyOff = v; }, stop: ()=> converterStop(), log: ()=> (typeof playLogLines !== "undefined" ? playLogLines : null)};
+// Settings → About → Check for updates (shellupd.js)
+window.__updates = {check: ()=> checkForUpdatesNow()};

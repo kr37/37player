@@ -1,0 +1,344 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="iCloud test">
+<link rel="manifest" href="manifest.webmanifest">
+<title>iCloud test</title>
+<!--
+  A trial of iCloud (CloudKit JS) as a home for 37 Player's shared libraries
+  (desktop/RESEARCH-icloud-mega.md). On each device: sign in with an Apple
+  ID, save a 16 MB piece and a state record in a test zone of the private
+  database, read them back, check that a save over a stale change tag is
+  refused, and copy the results. Everything goes in the zone "P37Test",
+  which "Delete the test data" removes. Served from test.37player.com, the
+  token's only allowed origin: https://test.37player.com/tests/cloudkit/
+  ?container=… and ?token=… replace the defaults below.
+-->
+<style>
+  :root{ --bg:#f5f1ea; --card:#fffdf9; --text:#2a2420; --dim:#6f655c; --line:#e3dacd; --accent:#9a5a1e; --bad:#a8392a; --good:#3f7a3a; }
+  @media (prefers-color-scheme: dark){ :root{ --bg:#1d1a17; --card:#26221e; --text:#ece6dd; --dim:#a89e92; --line:#3a342e; --accent:#d99a5b; --bad:#e2735f; --good:#8cc47f; } }
+  *{ box-sizing:border-box; }
+  body{ margin:0; background:var(--bg); color:var(--text); font:15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main{ max-width:880px; margin:0 auto; padding:20px 16px 60px; }
+  h1{ font-size:22px; margin:0 0 4px; font-weight:650; }
+  h2{ font-size:17px; margin:0 0 6px; font-weight:650; }
+  p{ margin:6px 0; }
+  .dim{ color:var(--dim); font-size:13.5px; }
+  section{ background:var(--card); border:1px solid var(--line); border-radius:10px; padding:14px 16px; margin:14px 0; }
+  button{ font:inherit; font-size:14px; padding:6px 12px; border-radius:7px; border:1px solid var(--line); background:var(--bg); color:var(--text); cursor:pointer; }
+  button.primary{ background:var(--accent); border-color:var(--accent); color:#fff; font-weight:600; }
+  button:disabled{ opacity:.5; cursor:default; }
+  .row{ display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin:8px 0; }
+  .ok{ color:var(--good); font-weight:600; }
+  .bad{ color:var(--bad); font-weight:600; }
+  pre{ white-space:pre-wrap; overflow-wrap:anywhere; font-size:12.5px; background:var(--bg); padding:8px; border-radius:6px; max-height:420px; overflow:auto; }
+</style>
+</head>
+<body>
+<main>
+  <h1>iCloud test</h1>
+  <p class="dim">A trial of iCloud (CloudKit) as a home for 37 Player's shared libraries. It saves about 16 MB of test data in your own iCloud, in a test area that "Delete the test data" removes. Nothing here touches a 37 Player library.</p>
+  <p class="dim" id="device"></p>
+
+  <section>
+    <h2>1. Sign in</h2>
+    <p id="who" class="dim">Loading CloudKit…</p>
+    <div class="row"><div id="ck-sign-in"></div><div id="ck-sign-out"></div></div>
+  </section>
+
+  <section>
+    <h2>2. Run the test</h2>
+    <p class="dim">Saves a record with no file, then 1 KB files and a 16 MB piece, through CloudKit JS and by plain web calls, reading each back; then saves a small library record three times, the last over an older version, which iCloud should refuse. Every request is listed in the results.</p>
+    <div class="row">
+      <button class="primary" id="run" disabled>Run the test</button>
+      <button id="big45" disabled>Also try 45 MB</button>
+      <button id="big60" disabled>Also try 60 MB</button>
+      <button id="clean" disabled>Delete the test data</button>
+    </div>
+  </section>
+
+  <section>
+    <h2>3. Results</h2>
+    <div class="row"><button class="primary" id="copy">Copy the results</button><span id="copied" class="dim"></span></div>
+    <pre id="log"></pre>
+  </section>
+</main>
+<script>
+"use strict";
+const params = new URLSearchParams(location.search);
+const CONTAINER = params.get("container") || "iCloud.com.player37";
+const TOKEN = params.get("token") || "ecdcec31dffc0fa8d28c42e25bc131b9d329c53cb5547d141f0ba55fbf0017ea";
+const ZONE = {zoneName: "P37Test"};
+const MB = 1024 * 1024;
+const logEl = document.getElementById("log");
+const t0 = Date.now();
+function log(msg, cls){
+  const line = document.createElement("div");
+  if(cls) line.className = cls;
+  line.textContent = ((Date.now() - t0) / 1000).toFixed(1).padStart(6) + "s  " + msg;
+  logEl.appendChild(line); logEl.scrollTop = logEl.scrollHeight;
+}
+function where(u){ try{ const x = new URL(u, location.href); return x.host + x.pathname.replace(/^(.{70}).+$/, "$1…"); }catch(e){ return String(u).slice(0, 80); } }
+{
+  const realFetch = window.fetch.bind(window);
+  window.fetch = function(input, init){
+    const url = typeof input === "string" ? input : input.url, m = ((init && init.method) || (input && input.method) || "GET").toUpperCase(), t = Date.now();
+    log("  → " + m + " " + where(url));
+    return realFetch(input, init).then(r=>{ log("  ← " + r.status + " (" + (Date.now() - t) + " ms) " + where(url), r.ok ? null : "bad"); return r; },
+      e=>{ log("  ✗ " + m + " " + where(url) + ": no answer (" + (e && e.message) + "; a refused cross-site request looks like this)", "bad"); throw e; });
+  };
+  const open = XMLHttpRequest.prototype.open, send = XMLHttpRequest.prototype.send;
+  XMLHttpRequest.prototype.open = function(m, url){ this.__p37 = {m: String(m).toUpperCase(), url: url}; return open.apply(this, arguments); };
+  XMLHttpRequest.prototype.send = function(body){
+    const info = this.__p37 || {m: "?", url: "?"}, t = Date.now();
+    const size = body && (body.size || body.length || body.byteLength);
+    log("  → " + info.m + " " + where(info.url) + (size ? " (" + size + " bytes)" : "") + " [XHR]");
+    this.addEventListener("loadend", ()=>{ log(this.status ? "  ← " + this.status + " (" + (Date.now() - t) + " ms) " + where(info.url) : "  ✗ " + info.m + " " + where(info.url) + ": no answer (" + (Date.now() - t) + " ms; a refused cross-site request looks like this)", this.status >= 200 && this.status < 300 ? null : "bad"); });
+    return send.apply(this, arguments);
+  };
+}
+function standalone(){ return matchMedia("(display-mode: standalone)").matches || navigator.standalone === true; }
+function describeError(e){
+  if(!e) return "unknown error";
+  const parts = [e.ckErrorCode, e.serverErrorCode, e.reason || e.message].filter(Boolean);
+  return (parts.length ? [...new Set(parts)].join(" · ") : String(e)).replace(/\s+/g, " ").slice(0, 300);
+}
+// A response with errors in it, as an exception, so one catch handles both kinds of failure.
+function check(resp, what){
+  if(resp && resp.hasErrors){ const e = resp.errors[0]; e.message = e.message || what; throw e; }
+  return resp;
+}
+function randomBlob(bytes){
+  const buf = new Uint8Array(bytes);
+  for(let i = 0; i < bytes; i += 65536) crypto.getRandomValues(buf.subarray(i, Math.min(bytes, i + 65536)));
+  return new Blob([buf], {type: "application/octet-stream"});
+}
+async function sha256(blob){
+  const h = new Uint8Array(await crypto.subtle.digest("SHA-256", await blob.arrayBuffer()));
+  return [...h].map(b=> b.toString(16).padStart(2, "0")).join("");
+}
+async function gz(text){
+  if(typeof CompressionStream !== "function") return new Blob([text], {type: "application/json"});
+  return await new Response(new Blob([text]).stream().pipeThrough(new CompressionStream("gzip"))).blob();
+}
+function mbps(bytes, ms){ return (bytes / MB / (ms / 1000)).toFixed(1) + " MB/s"; }
+
+document.getElementById("device").textContent =
+  navigator.userAgent + (standalone() ? " · running as an installed app" : " · in a browser tab") + " · " + location.origin;
+
+let db = null;
+function setButtons(on){ for(const id of ["run", "big45", "big60", "clean"]) document.getElementById(id).disabled = !on; }
+
+function gotUser(user){
+  document.getElementById("who").textContent = "Signed in" + (user && user.nameComponents && user.nameComponents.givenName ? " as " + user.nameComponents.givenName : "") + ".";
+  log("signed in (user record " + (user && user.userRecordName ? user.userRecordName.slice(0, 8) + "…" : "?") + ")", "ok");
+  setButtons(true);
+  container.whenUserSignsOut().then(()=>{ log("signed out"); document.getElementById("who").textContent = "Signed out."; setButtons(false); waitForSignIn(); });
+}
+function waitForSignIn(){
+  document.getElementById("who").textContent = "Not signed in. Use the Apple button below.";
+  container.whenUserSignsIn().then(gotUser, e=> log("sign-in failed: " + describeError(e), "bad"));
+}
+
+let container = null, started = false;
+function start(){
+  if(started || !window.CloudKit) return; started = true;
+  log("CloudKit JS " + (CloudKit.VERSION || "?") + " (build " + (CloudKit.BUILD_VERSION || "?") + "), container " + CONTAINER + ", development");
+  try{
+    CloudKit.configure({containers: [{
+      containerIdentifier: CONTAINER,
+      apiTokenAuth: {apiToken: TOKEN, persist: true, signInButton: {id: "ck-sign-in", theme: "black"}, signOutButton: {id: "ck-sign-out", theme: "black"}},
+      environment: "development"
+    }]});
+    container = CloudKit.getDefaultContainer();
+    db = container.privateCloudDatabase;
+  }catch(e){ log("couldn't set up CloudKit: " + describeError(e), "bad"); return; }
+  container.setUpAuth().then(user=>{
+    if(user){ log("already signed in from an earlier visit"); gotUser(user); } else waitForSignIn();
+  }, e=>{ log("setUpAuth failed: " + describeError(e), "bad"); document.getElementById("who").textContent = "CloudKit didn't start: " + describeError(e); });
+}
+
+async function ensureZone(){
+  const t = Date.now();
+  check(await db.saveRecordZones([ZONE]), "saving the zone");
+  log("test zone ready (" + (Date.now() - t) + " ms)");
+}
+
+// The data as CloudKit JS is given it. Apple's upload server (cws.icloud-
+// content.com) answers no preflight (12 Nov 2026, Chrome on the HP: "No
+// 'Access-Control-Allow-Origin' header" on the OPTIONS), and a browser sends
+// one only for a content type other than the simple ones: so data with no
+// type, or text/plain, goes without one.
+function asForm(blob, form){
+  if(form === "untyped Blob") return new Blob([blob]);
+  if(form === "text/plain Blob") return new Blob([blob], {type: "text/plain"});
+  if(form === "untyped File") return new File([blob], "piece.bin");
+  if(form === "File") return new File([blob], "piece.bin", {type: "application/octet-stream"});
+  return blob;
+}
+async function readBack(name, bytes, want, label){
+  const t = Date.now();
+  const got = check(await db.fetchRecords([name], {zoneID: ZONE}), "fetching the piece").records[0];
+  const asset = got.fields && got.fields.data && got.fields.data.value;
+  if(!asset || !asset.downloadURL) throw new Error("the fetched record has no download address");
+  const res = await fetch(asset.downloadURL.replace("${f}", "piece.bin"));
+  if(!res.ok) throw new Error("download: HTTP " + res.status);
+  const back = await res.blob(), down = Date.now() - t;
+  const same = back.size === bytes && await sha256(back) === want;
+  log(label + ": read back " + sizeText(back.size) + " in " + (down / 1000).toFixed(1) + " s (" + mbps(back.size, down) + "): " + (same ? "the same bytes" : "DIFFERENT bytes"), same ? "ok" : "bad");
+  return same;
+}
+function sizeText(bytes){ return bytes >= MB ? (bytes / MB).toFixed(bytes % MB ? 1 : 0) + " MB" : Math.round(bytes / 1024) + " KB"; }
+
+// Through CloudKit JS: saveRecords with the data in the asset field.
+async function piece(bytes, label, form){
+  const name = "piece-" + Date.now().toString(36);
+  const blob = randomBlob(bytes), want = await sha256(blob);
+  log(label + ": saving " + sizeText(bytes) + " through CloudKit JS, as a " + form + "…");
+  const t = Date.now();
+  const saved = check(await db.saveRecords([{recordType: "P37Piece", recordName: name, fields: {data: {value: asForm(blob, form)}}}], {zoneID: ZONE}), "saving the piece");
+  const up = Date.now() - t;
+  log(label + ": saved in " + (up / 1000).toFixed(1) + " s (" + mbps(bytes, up) + ")", "ok");
+  return await readBack(name, bytes, want, label);
+}
+
+// Without CloudKit JS's help, as Apple's web services reference describes:
+// ask for an upload address, send the data there, then save the record
+// with what came back. Needs the sign-in's token, which CloudKit JS keeps
+// in a cookie (persist: true).
+function webAuthToken(){
+  for(const c of document.cookie.split(";")){
+    const i = c.indexOf("="); if(i < 0) continue;
+    const k = c.slice(0, i).trim();
+    if(k.indexOf(CONTAINER) >= 0) return decodeURIComponent(c.slice(i + 1));
+  }
+  return null;
+}
+const REST = "https://api.apple-cloudkit.com/database/1/" + CONTAINER + "/development/private/";
+async function rest(op, body){
+  const tok = webAuthToken();
+  if(!tok) throw new Error("no sign-in token in this page's cookies (" + (document.cookie.split(";").map(c=> c.split("=")[0].trim()).filter(Boolean).join(", ") || "none") + ")");
+  const r = await fetch(REST + op + "?ckAPIToken=" + TOKEN + "&ckWebAuthToken=" + encodeURIComponent(tok), {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(body)});
+  const text = await r.text(); let j = null; try{ j = JSON.parse(text); }catch(e){}
+  if(!r.ok || !j) throw new Error(op + ": HTTP " + r.status + " " + text.slice(0, 200));
+  return j;
+}
+async function rawPiece(bytes, label){
+  const name = "raw-" + Date.now().toString(36);
+  const blob = randomBlob(bytes), want = await sha256(blob);
+  log(label + ": saving " + sizeText(bytes) + " by plain web calls…");
+  const t = Date.now();
+  const tokens = await rest("assets/upload", {zoneID: ZONE, tokens: [{recordType: "P37Piece", recordName: name, fieldName: "data"}]});
+  const url = tokens.tokens && tokens.tokens[0] && tokens.tokens[0].url;
+  if(!url) throw new Error("assets/upload gave no address: " + JSON.stringify(tokens).slice(0, 200));
+  log(label + ": upload address from " + new URL(url).host);
+  // Without a content type (no preflight); then as text/plain.
+  let up = null, lastErr = null;
+  for(const form of ["untyped Blob", "text/plain Blob"]){
+    try{ up = await fetch(url, {method: "POST", body: asForm(blob, form)}); log(label + ": the upload went as a " + form); break; }
+    catch(e){ lastErr = e; log(label + ": the upload as a " + form + " was refused"); }
+  }
+  if(!up) throw lastErr;
+  const upText = await up.text(); let upJson = null; try{ upJson = JSON.parse(upText); }catch(e){}
+  if(!up.ok || !upJson || !upJson.singleFile) throw new Error("upload: HTTP " + up.status + " " + upText.slice(0, 200));
+  const mod = await rest("records/modify", {zoneID: ZONE, operations: [{operationType: "create", record: {recordType: "P37Piece", recordName: name, fields: {data: {value: upJson.singleFile}}}}]});
+  const rec = mod.records && mod.records[0];
+  if(!rec || rec.serverErrorCode) throw new Error("records/modify: " + JSON.stringify(rec || mod).slice(0, 200));
+  const ms = Date.now() - t;
+  log(label + ": saved in " + (ms / 1000).toFixed(1) + " s (" + mbps(bytes, ms) + ")", "ok");
+  return await readBack(name, bytes, want, label);
+}
+
+// The change tag check, with no file in the record (so it doesn't depend
+// on uploads working).
+async function stateRecords(){
+  const name = "state-" + Date.now().toString(36);
+  // Only the field made in the console: a web page can't add fields or
+  // record types, even in Development (12 Nov 2026, on the HP).
+  const fields = n=> ({version: {value: n}});
+  let t = Date.now();
+  const r1 = check(await db.saveRecords([{recordType: "P37State", recordName: name, fields: fields(1)}], {zoneID: ZONE}), "saving state 1").records[0];
+  log("state version 1 saved (" + (Date.now() - t) + " ms)", "ok");
+  t = Date.now();
+  const r2 = check(await db.saveRecords([{recordType: "P37State", recordName: name, recordChangeTag: r1.recordChangeTag, fields: fields(2)}], {zoneID: ZONE}), "saving state 2").records[0];
+  log("state version 2 saved over version 1 (" + (Date.now() - t) + " ms)", "ok");
+  // Version 3 from a device that only saw version 1: must be refused.
+  let refused = null;
+  try{
+    const r3 = await db.saveRecords([{recordType: "P37State", recordName: name, recordChangeTag: r1.recordChangeTag, fields: fields(3)}], {zoneID: ZONE});
+    if(r3.hasErrors) refused = r3.errors[0];
+  }catch(e){ refused = e; }
+  if(refused) log("a save over the older version was refused, as it should be: " + describeError(refused), "ok");
+  else log("a save over the older version was ACCEPTED (iCloud didn't check the change tag)", "bad");
+  const now = check(await db.fetchRecords([name], {zoneID: ZONE}), "fetching the state").records[0];
+  const v = now.fields.version.value;
+  log("the record now holds version " + v + (v === 2 ? ", as it should" : ""), v === 2 ? "ok" : "bad");
+}
+
+async function step(label, fn){
+  try{ return await fn(); }
+  catch(e){ log(label + " FAILED: " + describeError(e), "bad"); return false; }
+}
+let goodForm = null, rawWorks = null;
+async function runAll(){
+  setButtons(false);
+  log("— the test —");
+  if(await step("the test zone", ensureZone) === false){ setButtons(true); return; }
+  await step("a record with no file", async ()=>{
+    const t = Date.now();
+    check(await db.saveRecords([{recordType: "P37State", recordName: "note-" + Date.now().toString(36), fields: {version: {value: 0}}}], {zoneID: ZONE}), "saving a record");
+    log("a record with no file saved (" + (Date.now() - t) + " ms)", "ok");
+  });
+  for(const form of ["untyped Blob", "untyped File", "text/plain Blob", "Blob", "File"]){
+    if(await step("1 KB as a " + form, ()=> piece(1024, "1 KB (" + form + ")", form))){ goodForm = goodForm || form; }
+  }
+  await step("16 MB", ()=> piece(16 * MB, "16 MB piece", goodForm || "untyped Blob"));
+  rawWorks = await step("1 KB by plain web calls", ()=> rawPiece(1024, "1 KB (plain)"));
+  if(rawWorks) await step("16 MB by plain web calls", ()=> rawPiece(16 * MB, "16 MB (plain)"));
+  await step("the version check", stateRecords);
+  log("— done —");
+  setButtons(true);
+}
+async function runBig(mb){
+  setButtons(false);
+  await step("the test zone", ensureZone);
+  const viaJs = await step(mb + " MB", ()=> piece(mb * MB, mb + " MB piece", goodForm || "untyped Blob"));
+  if(!viaJs && rawWorks !== false) await step(mb + " MB by plain web calls", ()=> rawPiece(mb * MB, mb + " MB (plain)"));
+  setButtons(true);
+}
+async function clean(){
+  setButtons(false);
+  try{ check(await db.deleteRecordZones([ZONE]), "deleting the zone"); log("test data deleted (the zone P37Test is gone)", "ok"); }
+  catch(e){ log("deleting FAILED: " + describeError(e), "bad"); }
+  setButtons(true);
+}
+document.getElementById("run").addEventListener("click", runAll);
+document.getElementById("big45").addEventListener("click", ()=> runBig(45));
+document.getElementById("big60").addEventListener("click", ()=> runBig(60));
+document.getElementById("clean").addEventListener("click", clean);
+document.getElementById("copy").addEventListener("click", async ()=>{
+  const text = "iCloud test, " + new Date().toISOString() + "\n" + document.getElementById("device").textContent + "\n" + logEl.innerText;
+  const note = document.getElementById("copied");
+  try{ await navigator.clipboard.writeText(text); note.textContent = "Copied."; }
+  catch(e){
+    const r = document.createRange(); r.selectNodeContents(logEl); const s = getSelection(); s.removeAllRanges(); s.addRange(r);
+    note.textContent = "Couldn't copy by itself: the results are selected, so copy them from the menu.";
+  }
+});
+window.addEventListener("error", e=> log("page error: " + e.message, "bad"));
+window.addEventListener("unhandledrejection", e=> log("page error: " + describeError(e.reason), "bad"));
+
+// CloudKit JS from Apple's address. It fires "cloudkitloaded" when it's ready.
+window.addEventListener("cloudkitloaded", start);
+const s = document.createElement("script");
+s.src = "https://cdn.apple-cloudkit.com/ck/2/cloudkit.js"; s.async = true;
+s.onload = ()=> setTimeout(start, 0); // in case the event came and went
+s.onerror = ()=> { log("couldn't load CloudKit JS from cdn.apple-cloudkit.com", "bad"); document.getElementById("who").textContent = "CloudKit JS didn't load."; };
+document.head.appendChild(s);
+</script>
+</body>
+</html>

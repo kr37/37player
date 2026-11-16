@@ -42,7 +42,9 @@ const tone = fs.readFileSync(path.join(__dirname, 'fixtures', 'tone.mp3')).toStr
     // The import converts the WMA (the converter is here), reading it from storage: an MP3 now means it was stored as itself.
     ok(talk && /\.mp3$/i.test(talk[0]) && /^494433/.test(talk[1].head) && talk[1].size > 10000, L + 'the WMA was stored as itself, and converted from storage (' + (talk && talk[0]) + ')');
     ok(mp3 && mp3[1].size === want.mp3.size, L + 'the MP3 too (its tags may be rewritten, so its size is the check)');
-    ok(wk ? st.copies >= 2 : st.copies === 0, L + (wk ? 'copies of their own were stored (' + st.copies + ')' : 'no copies made outside WebKit'));
+    // Run in WebKit itself (engines/adapter.js), the Chrome pass is WebKit too: copies there as well.
+    const realWk = wk || process.env.ENGINE === 'webkit';
+    ok(realWk ? st.copies >= 2 : st.copies === 0, L + (realWk ? 'copies of their own were stored (' + st.copies + ')' : 'no copies made outside WebKit'));
     // A recording that starts like a .zip is damaged
     const flagged = await p.evaluate(async()=>{ const tr = window.__dbg.getRoot().library[0]; await window.__dmg.put(tr.id, new Blob([new Uint8Array([0x50, 0x4b, 3, 4, 20, 0, 0, 8, 1, 2, 3])])); await window.__dmg.check(); return window.__dmg.ids().includes(tr.id); });
     ok(flagged, L + 'Library cleanup\'s check calls a track that starts like a .zip damaged');

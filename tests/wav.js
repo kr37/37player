@@ -11,7 +11,7 @@ const puppeteer = require('puppeteer-core'); const sleep=ms=>new Promise(r=>setT
     console.log(f, JSON.stringify(r)); if(r.pieces !== r.whole || +r.peakDiff > 0.01) bad.push(f);
   }
   const t0=Date.now();
-  const r = await p.evaluate(async()=>{ const blob = await (await fetch('w_big.wav')).blob(); const a = await window.__an(blob); const pk=a.peaks; return {dur:a.duration, L:a.loudness, flat: pk.every(v=>v===pk[0]), mem: Math.round(performance.memory.usedJSHeapSize/1e6)}; });
+  const r = await p.evaluate(async()=>{ const blob = await (await fetch('w_big.wav')).blob(); const a = await window.__an(blob); const pk=a.peaks; return {dur:a.duration, L:a.loudness, flat: pk.every(v=>v===pk[0]), mem: performance.memory && Math.round(performance.memory.usedJSHeapSize/1e6)}; });
   console.log('635 MB wav via analyzeAudio:', JSON.stringify(r), ((Date.now()-t0)/1000).toFixed(0)+'s');
   console.log((await p.evaluate(()=> JSON.parse(localStorage.getItem('37player.sharedLog')||'[]').slice(-1))).join('\n'));
   if(r.flat || r.L.i == null) bad.push('w_big.wav');

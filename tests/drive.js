@@ -32,8 +32,12 @@ async function signIn(p, clickFn){
   const nav = p.waitForNavigation({waitUntil: 'networkidle0', timeout: 30000});
   await p.evaluate(clickFn);
   await nav; await sleep(1200);
+  // Back on 37 Player (the sign-in is two navigations, there and back; the first may be all that was waited for).
+  for(let i = 0; i < 60; i++){ if(await p.evaluate(()=> !!(window.__dbg && document.getElementById('btnSettings'))).catch(()=> false)) break; await sleep(250); }
+  await sleep(600);
 }
-const openShared = async p=>{ await p.evaluate(()=>{ window.__dbg.setMode('editing'); document.getElementById('btnSettings').click(); }); await sleep(400); await p.evaluate(()=> [...document.querySelectorAll('#settingsNav .settings-nav-item')].find(e=> e.textContent === 'Shared library').click()); await sleep(400); };
+// (Settings may be open from a step before: then its button would close it.)
+const openShared = async p=>{ await p.evaluate(()=>{ window.__dbg.setMode('editing'); if(!document.getElementById('settingsPage')) document.getElementById('btnSettings').click(); }); await sleep(400); await p.evaluate(()=> [...document.querySelectorAll('#settingsNav .settings-nav-item')].find(e=> e.textContent === 'Shared library').click()); await sleep(400); };
 (async()=>{
   // token.php under PHP, set up for the fake Google
   const cfgFile = path.join(__dirname, 'syncdata', 'google-config.php');
@@ -105,7 +109,7 @@ const openShared = async p=>{ await p.evaluate(()=>{ window.__dbg.setMode('editi
     ok(top && top.name === '37 Player – IKRC' && top.appProperties.p37 === 'library', 'the folder "37 Player – IKRC" is in Drive, marked as a 37 Player library');
     const inFolder = id=> [...g.files.values()].filter(f=> f.parents.includes(id));
     const state = inFolder(top.appProperties.st);
-    ok(state.length === 1 && state[0].name === '000001.json.gz', 'version 1 saved as state/000001.json.gz: ' + state.map(f=> f.name).join(','));
+    ok(state.filter(f=> !/\.changes\.json$/.test(f.name)).length === 1 && state.some(f=> f.name === '000001.json.gz') && state.length <= 2, 'version 1 saved as state/000001.json.gz (with what it changed beside it, 2.5.015): ' + state.map(f=> f.name).join(','));
     const audioN = inFolder(top.appProperties.au).length, libN = await A.evaluate(()=> window.__dbg.getRoot().library.length);
     ok(audioN === libN && libN > 0, `every audio file is in Drive (${audioN} of ${libN})`);
     ok(g.uploads.some(u=> u.kind === 'chunk') , 'a file over the one-request size went up in pieces (' + g.uploads.filter(u=> u.kind === 'chunk').length + ' pieces)');
@@ -229,6 +233,16 @@ const openShared = async p=>{ await p.evaluate(()=>{ window.__dbg.setMode('editi
     g.full = false;
     await C.evaluate(()=> window.__dbg3.sync()); await sleep(800);
     ok(!/full/.test(await C.evaluate(()=> window.__dbg3.status().message || '')), 'with room again, Sync now carries on: ' + await C.evaluate(()=> window.__dbg3.status().state));
+    // ---- What each version changed (2.5.015): a small file beside each version, written by the device that saved it
+    {
+      const comps = [...g.files.values()].filter(f=> !f.trashed && /^\d{6}\.changes\.json$/.test(f.name));
+      const vers = [...g.files.values()].filter(f=> !f.trashed && /^\d{6}\.json(\.gz)?$/.test(f.name));
+      ok(comps.length >= vers.length - 1 && comps.length > 0, 'each version saved has its changes file beside it (' + comps.length + ' for ' + vers.length + ' versions)');
+      const r = await C.evaluate(async()=>{ const x = await window.__hist.index({}); const pl = window.__dbg.getRoot().tree[0]; return {n: Object.keys(x.index.versions).length, missing: x.missing.length, kept: x.kept.length, of: window.__hist.versionsOf(x.index, 'n', pl.id)}; });
+      console.log('index:', JSON.stringify(r));
+      ok(r.n > 0 && r.n + r.missing + 1 >= r.kept && r.of.length > 0, 'the device\'s index has them, and finds the versions in which a playlist changed');
+      ok(await C.evaluate(async()=> (await window.__hist.index({})).index === undefined) === false, 'asking again fetches only what is new');
+    }
     // ---- Free up space (1.4.141): earlier versions and files no kept version uses, made before the cutoff
     // C's library: a track's audio replaced, so its old file is used only by older versions.
     const before = [...g.files.values()].filter(f=> !f.trashed).length;

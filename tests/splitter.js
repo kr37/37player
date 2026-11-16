@@ -11,6 +11,8 @@ const puppeteer = require('puppeteer-core');
 const fs = require('fs'), path = require('path'), {execFileSync} = require('child_process');
 const sleep = ms=>new Promise(r=>setTimeout(r,ms));
 const clickText = (p, sel, src) => p.evaluate((sel, src)=>{ const re=new RegExp(src); const el=[...document.querySelectorAll(sel)].find(e=>e.offsetParent!==null && re.test(e.textContent.trim())); if(el){ el.click(); return true; } return false; }, sel, src);
+// WebKit or Firefox (engines/adapter.js), not Chrome.
+const OTHER_ENGINE = !!process.env.ENGINE && process.env.ENGINE !== 'chromium';
 let fails = 0; const ok=(c,m)=>{ console.log((c?'ok   ':'FAIL ')+m); if(!c) fails++; };
 const SHOTS = path.join(__dirname, 'shots');
 
@@ -138,7 +140,11 @@ function makeSignal(){
   const before = dialogs.length;
   const conv = await split('wavconv', 'wav');
   ok(conv.files.every(f=> /\.mp3$/.test(f)), 'WAV under "make big files smaller": the pieces are MP3 straight away (' + conv.files.join(', ') + ')');
-  ok(Math.abs(conv.clicks[1].at - 0.1) <= 0.004 && Math.abs(conv.clicks[2].at - 0.1) <= 0.004, 'and cut to the sample before encoding (' + conv.clicks.map(c=> c.at.toFixed(4)).join(', ') + ')');
+  // Measured by decoding the MP3 again: WebKit's decoder doesn't take off
+  // the encoder's delay (about 25 ms, as LAME's header says), so there the
+  // click comes that much later in what it decodes, not in the cut.
+  const lag = OTHER_ENGINE ? 0.03 : 0, at = (c)=> c.at - 0.1 >= -0.004 && c.at - 0.1 <= 0.004 + lag;
+  ok(at(conv.clicks[1]) && at(conv.clicks[2]), 'and cut to the sample before encoding (' + conv.clicks.map(c=> c.at.toFixed(4)).join(', ') + (lag ? '; up to 25 ms later allowed in ' + process.env.ENGINE + ', its decoder keeps the encoder\'s delay' : '') + ')');
   await sleep(1000);
   ok(!(await p.$('.modal')) || !/Keep the originals/i.test(await p.evaluate(()=> document.querySelector('.modal')?.innerText || '')), 'no "Keep the originals?" question: nothing was converted twice');
   await p.evaluate(async()=>{ const r = window.__dbg.getRoot(); r.formatPolicy = Object.assign({}, r.formatPolicy, {when: 'untouched'}); await window.__dbg.saveState(); });

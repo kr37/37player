@@ -77,6 +77,11 @@ By hand: `./serve.sh` in one terminal (servers on ports 8861 and 8870), then
 | pieces | Receiving in pieces (256 KB here): byte for byte, carried on after being cut off, a file that comes out the wrong size not kept and not retried until Sync now |
 | libdel | New library → Start empty skips the sharing question; deleting a library deletes its backup folder only if asked, only 37 Player's files, only while it's that library's |
 | bkkeep | The backup folder keeps a track's files while the track is in the library, even when this browser has lost its audio; only a track leaving the library frees its file |
+| rollback | History → Roll back the library (2.5.007), drawn from two documents handed in: the three tabs, the struck-through saves, the button inside column B's box, playlists and tracks row for row (added, deleted, renamed, a split, a renamed artist's untouched albums), blank sides and their lines, the one-way lines, Only what changed, Wrap, receive-only, a narrow window. Needs only the page server |
+| undohist | History in a library that isn't shared (2.5.011): this device's undo steps as the list, a step chosen, Undo back to this, Redo's order, Before these changes; Undo asking before a change over two hours old (Undo it, Cancel, View detailed history); a long press and a right-click on Undo. Needs only the page server |
+| undofiles | Undo for artwork and a replaced recording (2.5.012): the old file kept aside, the step that carries it, Undo and Redo swapping the files (each twice), the new revision, History showing such a step and undoing it, a kept file that has gone. Needs only the page server |
+| changes | What each version changed (2.5.015), on sync.php: the ids recorded at each save, op=changes, the device's index agreeing with the server, Build list from history for versions without a record, and timings on 2000 tracks. Needs both servers and a new library |
+| bringback | History → Bring back tracks or playlists (2.5.018) on sync.php: every way of finding an item, its earlier states, Now beside Earlier, and each kind of bringing back. Needs both servers and a new library |
 | filestore | The files store (1.4.152): records and files round-trip; a replaced or deleted file stays readable until its grace is over; unused files tidied; the library record written only at the expected revision, a damaged one reported; odd keys round-trip |
 | setup | Setting up (2.2.023): the welcome's Try it out / Install; the guide's way on Windows (the desktop app, its warnings, "I can't install apps" → Chrome's way), Mac Safari (Try it out: Chrome suggested, testing only; quiet for four imports; the fifth: "Done trying it out?" with the Mac app and bringing the library along), Linux Chrome after two days, Linux Firefox (Chrome or Edge only), iPad tab (Home Screen), iPad Home Screen app (Google Drive or by hand), installed Linux Chrome (the folder step); the top bar's Install; #setup and #try |
 | dialogq | Dialogs wait their turn (2.2.028): the person's own dialog opened during a folder import is neither replaced nor closed when it ends; the status bar says the summary is waiting; closing the dialog brings it; on its own, the summary replaces the progress dialog straight away |
@@ -123,6 +128,20 @@ By hand: `./serve.sh` in one terminal (servers on ports 8861 and 8870), then
 | exportfile | Exporting without a zip: one track as just its file, several as separate files into a chosen folder (a stand-in), a name already there kept |
 | allsettings | Settings → All settings: grouped by whose setting it is; theme, a switch, loudness and language changed in the table take effect; PIN links to its page |
 | big413 | A file the server refuses as too big isn't sent again at every sync, and the status says so |
+| id3read | An import reads an MP3's details however it's tagged: ID3v2.2, v2.3, v2.4 with frame flags, an extended header, unsynchronised, UTF-16, album artist only, and ID3v1 for what's missing |
+| savefast | Saving a big library is quick (2,000 tracks: nothing changed in a few ms), and its checks still work: a new waveform is a change, a stale window is refused, a library saved by an older version (no rootRev; root.json with its revision last) is read as before |
+| analyzebar | A folder import's looking-through, clicked away, goes on in the status bar; the bar brings it back; a dialog opened meanwhile isn't closed, and the review waits for it; Stop in the bar or the dialog imports nothing |
+| pldetails | Playlist details: a notes box of a few lines, with the name field's background, and Enter in the name saves |
+| volume | The Playing volume is kept per device (a reload doesn't put it back to full) and squared (half way is -6 dB) |
+| lazyconv | The converter reads a file of the desktop app's by its address, a block at a time (the page never reads it whole); an address it can't read that way: the file read whole first, as before, and the log says so |
+| shellupd | The desktop app updating itself: offered once a start when nothing would be stopped; Update and restart has the shell install it; Not now until the next start; Check for updates offers it again; nothing asked on an older shell |
+| denied | A save refused (a read-only library folder, "Permission denied (os error 13)") says 37 Player isn't allowed to save in the library's folder, not that the device is full; a full device keeps its own message |
+| stuckpause | Pause still pauses after a passing error on the player (it used to mark any track "stuck", and Pause then played) |
+| wrapalbum | Wrap and Album both on, a narrow window: the album wraps too and takes at most a third of the row, so the title isn't squeezed |
+| shellzoom | The Size setting in the desktop app: the shell zooms the webview and the page isn't magnified, from the start after a restart; an older shell keeps the page's own way |
+| leaveunsent | A device that leaves takes the tracks it never finished sending out of the shared library (they stay in its own library): the Leave question says so, and another device stops listing and waiting for them |
+| fileshttp | The Linux app: a track's address is the shell's local http one (files_http), by the file's place, and the player is marked cross-origin; a shell without it gives a blob as before |
+| firstplay | The desktop app: the first Play after a start plays at once, though reading which tracks are used in place is slow |
 
 ## The converter test page (tests/convert/)
 
@@ -159,3 +178,19 @@ engines on each pull request to main, and when asked; free there (public
 repository). Not every test can pass in every engine: some exercise Chrome-only
 things (folder access, CDP); the list of those is kept in NOTES.md, Testing.
 
+
+## The iCloud test page (tests/cloudkit/)
+
+A page to try iCloud (CloudKit JS) as a home for shared libraries on real
+devices before any of it goes into 37 Player
+(`desktop/RESEARCH-icloud-mega.md`): sign in with an Apple ID, save a 16 MB
+piece and read it back, save a state record over a stale change tag (which
+must be refused), and optionally 45 MB and 60 MB pieces to find the size
+limit. It works only in the zone "P37Test" of the person's private database,
+which "Delete the test data" removes, and never touches a 37 Player library.
+
+It uses the container `iCloud.com.player37` in the development environment,
+with an API token whose only allowed origin is test.37player.com, so open
+`https://test.37player.com/tests/cloudkit/` (`?container=…&token=…`
+override both). On an iPad, also add it to the Home Screen and run it from
+there. Press "Copy the results" at the end.

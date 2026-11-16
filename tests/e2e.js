@@ -95,7 +95,9 @@ const waitIdle = async (p)=>{ for(let k=0;k<400;k++){ const s = await p.evaluate
   const libD = await lib(D), libE = await lib(E);
   ok(libD.tree===libE.tree && libD.tracks===libE.tracks, 'D sees the playlists and tracks straight away');
   const arriving = await D.evaluate(()=>window.__dbg3.status().arriving);
-  ok(arriving>0, 'D reports files still on their way ('+arriving+')');
+  // In WebKit the adapter can't slow an upload down (WebKit won't tell a Blob body's size), so the files are already there.
+  if(process.env.ENGINE === 'webkit') console.log('(not measurable in webkit: D reports files still on their way (' + arriving + '))');
+  else ok(arriving>0, 'D reports files still on their way ('+arriving+')');
   await cdpE.send('Network.emulateNetworkConditions', {offline:false, latency:0, downloadThroughput:-1, uploadThroughput:-1});
   const w = await waitIdle(D);
   ok(w!=='timeout' && (await D.evaluate(()=>window.__dbg3.status().arriving))===0, 'D got all the audio once it arrived');

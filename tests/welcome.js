@@ -20,9 +20,14 @@ const ANDROID_UA = 'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 
 async function open(b, name, {ua, noFolder, touch, standalone, install, viewport, daily} = {}){
   const p = await (await b.createBrowserContext()).newPage();
   await p.setViewport(viewport || {width: 1200, height: 900, hasTouch: !!touch, isMobile: !!touch});
+  // A Chrome case in another engine says it's Chrome (WebKit's own says Safari).
+  if(!ua && process.env.ENGINE && process.env.ENGINE !== 'chromium') ua = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36';
   if(ua) await p.setUserAgent(ua);
   await p.evaluateOnNewDocument((o)=>{
     if(o.noFolder) delete window.showDirectoryPicker;
+    // Chrome's folder picker where the engine has none (WebKit, Firefox: engines/adapter.js),
+    // so a Chrome case is Chrome's; the browser's private folder stands in for the one chosen.
+    else if(!window.showDirectoryPicker && navigator.storage && navigator.storage.getDirectory) window.showDirectoryPicker = async ()=> navigator.storage.getDirectory();
     if(o.touch) Object.defineProperty(navigator, 'maxTouchPoints', {get: ()=> 5});
     if(o.standalone) Object.defineProperty(navigator, 'standalone', {get: ()=> true});
     if(o.install) window.addEventListener('load', ()=> setTimeout(()=>{ const e = new Event('beforeinstallprompt'); e.prompt = ()=>{ window.__prompted = true; return Promise.resolve(); }; e.userChoice = Promise.resolve({outcome: 'accepted'}); window.dispatchEvent(e); }, 0));
