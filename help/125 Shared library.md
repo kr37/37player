@@ -37,11 +37,11 @@ There's nothing to do. (The less used switches, the sync log and the server's ve
 - **Each device keeps its own settings**: display, PIN, backups and volume aren't shared.
 - **The shared library is this device's backup.** Once everything on a device has reached the shared library, the **Back up library** button at the top reads **In sync**, and 37 Player stops reminding you to back up. Until then (just after a change, or while audio is being sent), it says **Syncing…**. Tapping **In sync** still lets you save a backup on this device: it opens with **Up to date**, then the usual backup choices.
 - **If sending doesn't finish.** Changes and audio made on a device are only on that device until they've been sent. If something has been waiting for more than three days (the device offline, say, or the server refusing it), the button at the top turns red and reads **Sync isn't finishing**, and once a day 37 Player says so when 'Edit Playlists' or 'Library' opens, with Shared library settings and backing up as the ways out.
-- **Who keeps backups.** A shared library still needs one device that backs it up: it protects against losing a device, but not against a mistake, because a mistake is shared too. A computer with Chrome or Edge and a backup folder (see 'Backing up') does it by itself, and every device shows when it last did, for example "Backed up by Gen Rinzin's laptop, today" (on the button's tooltip, and in Settings → Backups and Shared library).
+- **Who keeps backups.** A shared library still needs one device that backs it up: it protects against losing a device, but not against a mistake, because a mistake is shared too. A computer with Chrome or Edge and a backup folder (see 'Backing up') does it by itself, and every device shows when it last did, for example "Backed up by Office laptop, today" (on the button's tooltip, and in Settings → Backups and Shared library).
 
 ### History: going back
 
-Every version of the shared library from the last 30 days is kept (on Google Drive, all of them). **History…**, here in Settings → Shared library, compares now with any of them and brings back what you choose. See 'History and Undo'.
+Every version of the shared library from the last 30 days is kept (on Google Drive, all of them). **History…**, here in Settings → Shared library (or Settings → Undo history), can roll the whole library back to any of them, or bring back one playlist or track as it was. See 'History and Undo'.
 
 ### If a device loses its library
 
