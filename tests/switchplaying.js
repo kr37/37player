@@ -1,5 +1,5 @@
 // Switching to another library while something plays asks first, whichever
-// player it is (Gen Rinzin on the HP, 7 Nov 2026: Edit Playlists' player
+// player it is (kr37 on the HP, 7 Nov 2026: Edit Playlists' player
 // playing, no question): Playing, the Library tab's player, Edit Playlists'
 // player at the bottom. Nothing playing: no question. In the desktop app
 // (the stand-in shell), where he saw it.

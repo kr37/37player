@@ -1,4 +1,4 @@
-// Recordings over http://127.0.0.1 (shell 2.5.0; Gen Rinzin's T470, 13 Nov
+// Recordings over http://127.0.0.1 (shell 2.5.0; kr37's T470, 13 Nov
 // 2026). On Linux the webview is WebKitGTK, whose player (GStreamer) takes
 // audio only from http(s) and blob: addresses:
 //  - from a blob: it played the wrong part of a recording (an ordinary CBR

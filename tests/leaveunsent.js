@@ -1,4 +1,4 @@
-// A device that leaves takes back what it never sent (2.4.002; Gen Rinzin,
+// A device that leaves takes back what it never sent (2.4.002; kr37,
 // 13 Nov 2026: tracks waited for from a device that has gone are waited for
 // for ever). A adds a track whose audio never reaches the shared library; B
 // waits for it; A leaves: the Leave question says so, the track goes from

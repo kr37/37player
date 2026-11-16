@@ -1,4 +1,4 @@
-// Wrap and Album both on, a narrow window (2.3.005; Gen Rinzin, 13 Nov
+// Wrap and Album both on, a narrow window (2.3.005; kr37, 13 Nov
 // 2026: the album kept one line at full width, leaving the title two
 // characters wide and fifteen lines tall). The album wraps too, and takes
 // at most a third of the row.

@@ -40,7 +40,7 @@ const clickText = (p, sel, src) => p.evaluate((sel, src)=>{ const re=new RegExp(
   console.log('B while A plays:', JSON.stringify(s1));
   ok(!(await A.evaluate(()=> window.__st().paused)), 'A is playing');
   ok(s1.queue.length === 1 && !s1.worker && /once nothing is playing/.test(s1.bar || ''), 'B waits, saying so, because A is playing');
-  // The converting line has Settings and Help after Stop (2.2.038, Gen Rinzin).
+  // The converting line has Settings and Help after Stop (2.2.038, kr37).
   const btns = await B.evaluate(()=> [...document.querySelectorAll('#globalOperationBar .op-part button')].map(b=> b.textContent.trim()));
   ok(btns.join(',') === 'Stop,Settings,Help', 'the converting line has Stop, Settings and Help (' + btns.join(', ') + ')');
   await B.evaluate(()=> [...document.querySelectorAll('#globalOperationBar .op-part button')].find(b=> b.textContent.trim() === 'Settings').click()); await sleep(500);

@@ -23,7 +23,7 @@ How it came out, where it differs from the design below:
   different converter version needs a new build (rare; the converter has
   changed once).
 
-## The key pair (Gen Rinzin, once)
+## The key pair (kr37, once)
 
 On the T470 (needs Node):
 
@@ -43,7 +43,7 @@ sign shell updates later (Tauri's updater uses this kind of key).
 
 ## The design
 
-For Gen Rinzin to look over. 6 Nov 2026. The aim is to make development go smoothly:
+For kr37 to look over. 6 Nov 2026. The aim is to make development go smoothly:
 GitHub builds a new desktop app only when the Rust shell changes, and every
 ordinary change reaches desktop users the way it reaches the web.
 
@@ -59,13 +59,13 @@ next start, as the web version does.
 ## How
 
 1. **Where pages come from.** A newer `37-player.html` and its signature
-   (`37-player.html.sig`). Two possible sources, for Gen Rinzin to choose:
+   (`37-player.html.sig`). Two possible sources, for kr37 to choose:
    - **GitHub (suggested).** When `main` changes, a small GitHub Actions job (a
      Linux machine, seconds, not a desktop build) signs the page and replaces
      the files of one rolling release, `page-latest`. Merging to `main` is
-     already Gen Rinzin's "approved", so desktop users get what the web gets, without
+     already kr37's "approved", so desktop users get what the web gets, without
      waiting for the droplet, and the droplet serves nothing extra.
-   - **37player.com.** The page as deployed, plus a `.sig` that Gen Rinzin makes with
+   - **37player.com.** The page as deployed, plus a `.sig` that kr37 makes with
      a script when he deploys. The private key must then live off the droplet
      (his laptop), or a hacked server could sign its own page.
    A test channel could follow `dev` the same way (`page-test`), for the
@@ -77,8 +77,8 @@ next start, as the web version does.
 
 2. **What the shell checks** before keeping a page (Rust, `pages.rs`):
    - the signature, with a public key built into the shell (ed25519; the
-     private key in GitHub's secrets, or on Gen Rinzin's laptop). A downloaded page
-     can reach the library folders (bridge 2), so only Gen Rinzin's pages may run;
+     private key in GitHub's secrets, or on kr37's laptop). A downloaded page
+     can reach the library folders (bridge 2), so only kr37's pages may run;
    - its `app-version` is newer than the page in use;
    - the bridge it needs (a new `<meta name="desktop-bridge" content="2">`,
      beside `app-version`) is one this shell has. A page that needs a newer
@@ -100,7 +100,7 @@ next start, as the web version does.
    file or from the web, rather than as the app's own page. This design
    doesn't.) After bridge 2 the libraries are folders, but the browser
    storage still holds the list of libraries, which one opens, the language,
-   theme and other settings; **Gen Rinzin, 6 Nov 2026: be as persistent as
+   theme and other settings; **kr37, 6 Nov 2026: be as persistent as
    possible**, so these move into the shell's own file too
    (FILES-DESIGN.md, "The device's own settings"), and then the address
    hardly matters.
@@ -116,7 +116,7 @@ next start, as the web version does.
    (`p37_page_ok`, once the library has loaded). If a downloaded page starts
    twice without saying so, the shell goes back to the one before it (then the
    bundled one) and stops using that version. So a bad page can't leave the
-   app unusable. The bundled page is never replaced (Gen Rinzin likes this: the page
+   app unusable. The bundled page is never replaced (kr37 likes this: the page
    the shell shipped with is always there to fall back to). One care: a
    newer page may have saved the library in a form an older page doesn't
    know, so a fallback page must at least open such a library safely, or say
@@ -129,7 +129,7 @@ next start, as the web version does.
    updater plugin, its packages signed with this same key; the page asks
    before installing (NOTES.md, "The desktop app updates itself").
 
-## What changes for Gen Rinzin
+## What changes for kr37
 
 - Nothing in the deploy routine with the GitHub source: merging to `main` is
   the release, for the web (once he pulls on the droplet) and the desktop
@@ -148,7 +148,7 @@ next start, as the web version does.
 - On a real Mac and Windows: a test channel page newer than the bundled one,
   used from the next start; then a deliberately broken one, rolled back.
 
-## Command-line options (Gen Rinzin, 6 Nov 2026: can the shell take them?)
+## Command-line options (kr37, 6 Nov 2026: can the shell take them?)
 
 Yes; a sketch, nothing decided:
 - `--bundled-page`: start with the page the shell shipped with, whatever
@@ -163,12 +163,12 @@ Yes; a sketch, nothing decided:
 - Printing from a windowed app needs a little care on Windows (attaching to
   the terminal it was started from); on the Mac it's run as
   `"/Applications/37 Player.app/Contents/MacOS/37 Player" --list-libraries`.
-  Or (Gen Rinzin) a small window with the list instead, with a Copy button: no
+  Or (kr37) a small window with the list instead, with a Copy button: no
   terminal needed at all. Perhaps both: printed when started from a
   terminal, a window otherwise.
 
-## Questions for Gen Rinzin
+## Questions for kr37
 
-- Source: GitHub's `page-latest` (suggested) or 37player.com? **Gen Rinzin, 6 Nov 2026: GitHub.**
-- Should desktop test builds follow `dev` (a test channel)? **Gen Rinzin, 6 Nov 2026: yes.**
-- From the next start only, or offer **Restart now** too? **Gen Rinzin, 6 Nov 2026: offer Restart now.**
+- Source: GitHub's `page-latest` (suggested) or 37player.com? **kr37, 6 Nov 2026: GitHub.**
+- Should desktop test builds follow `dev` (a test channel)? **kr37, 6 Nov 2026: yes.**
+- From the next start only, or offer **Restart now** too? **kr37, 6 Nov 2026: offer Restart now.**

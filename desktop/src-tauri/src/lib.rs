@@ -40,7 +40,7 @@ struct Quitting(AtomicBool);
 //     choose its storage (2.0.000).
 //     Bridge 2 is everything the shell has as of 2.2.000 (Google sign-in,
 //     folders renamed, shown and put back, Use in place's commands). The
-//     version's middle number is the bridge (Gen Rinzin, 7 Nov 2026): a new
+//     version's middle number is the bridge (kr37, 7 Nov 2026): a new
 //     command the page relies on after that makes bridge 3, version 2.3.000.
 const BRIDGE: u32 = 2;
 
@@ -60,7 +60,7 @@ fn p37_shell_info(app: tauri::AppHandle) -> ShellInfo {
 
 // The display's Size, by the webview's own zoom (as Ctrl-plus in a browser)
 // rather than the page magnifying itself with a CSS transform: WebKitGTK
-// drew transformed text blurred (Gen Rinzin's T470, 13 Nov 2026), and this
+// drew transformed text blurred (kr37's T470, 13 Nov 2026), and this
 // way Settings, Help and dialogs follow the size too. Kept between 1 and 2.
 pub fn zoom_within(scale: f64) -> f64 { if scale.is_finite() { scale.clamp(1.0, 2.0) } else { 1.0 } }
 #[tauri::command]
@@ -185,7 +185,7 @@ pub fn run() {
     let bundled = inner.get(&"/index.html".into()).and_then(|b| pages::meta(&b, "app-version")).unwrap_or_else(|| "0.0.000".into());
     // Each channel's pages in a folder of their own (pages/latest, pages/test):
     // an m build installed after a d build (or the other way) runs its own
-    // channel's newest page at once (Gen Rinzin, 7 Nov 2026), while the
+    // channel's newest page at once (kr37, 7 Nov 2026), while the
     // libraries and settings stay shared. (Pages kept by builds before this,
     // straight in pages/, are left alone and not used.)
     let pages_dir = pages::data_dir(&context.config().identifier).map(|d| d.join("pages").join(PAGE_CHANNEL)).unwrap_or_else(|| std::path::PathBuf::from("pages").join(PAGE_CHANNEL));

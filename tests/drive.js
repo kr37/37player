@@ -80,7 +80,7 @@ const openShared = async p=>{ await p.evaluate(()=>{ window.__dbg.setMode('editi
     ok(/Signed in as center@example\.org/.test(m), 'the chooser names the account signed in');
     await A.screenshot({path: 'shots/drive-chooser-empty.png'});
     ok(await A.evaluate(()=> document.getElementById('drLib').value === 'new' && document.getElementById('drNewBox').style.display !== 'none' && document.getElementById('drGo').textContent === 'Next'), 'nothing there yet: "Make a new library" chosen, its name field showing, one button');
-    // Making one and backing out at the last step: its empty folders go to the trash (1.4.134; kept so on 7 Nov 2026, Gen Rinzin: cleanest)
+    // Making one and backing out at the last step: its empty folders go to the trash (1.4.134; kept so on 7 Nov 2026, kr37: cleanest)
     await A.evaluate(()=>{ document.getElementById('drName').value = 'Chicken'; document.getElementById('drDevice').value = 'Laptop'; document.getElementById('drGo').click(); });
     let backedOut = false;
     let lastQ = '';

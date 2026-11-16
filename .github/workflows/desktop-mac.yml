@@ -8,7 +8,7 @@
 name: Desktop app (test builds)
 on:
   # A push makes a build that follows dev's pages ("d"); one started by hand
-  # can follow main's ("m"), for people other than Gen Rinzin (7 Nov 2026).
+  # can follow main's ("m"), for people other than kr37 (7 Nov 2026).
   workflow_dispatch:
     inputs:
       channel:
@@ -32,7 +32,7 @@ jobs:
         with: { node-version: 22 }
       - uses: dtolnay/rust-toolchain@stable
         with: { targets: "aarch64-apple-darwin,x86_64-apple-darwin" }
-      # Signed with Gen Rinzin's Developer ID and notarized by Apple (12 Nov
+      # Signed with kr37's Developer ID and notarized by Apple (12 Nov
       # 2026), so it opens without "can't be opened" or right-click → Open.
       # The six APPLE_* secrets: the certificate (.p12, base64) and its
       # password, the signing identity, and an App Store Connect API key
@@ -165,7 +165,7 @@ jobs:
           node copy-app.mjs
           (cd src-tauri && cargo test)
           # The .deb (Debian, Ubuntu, Mint…) and the .rpm (Fedora, openSUSE):
-          # between them most Linux computers (Gen Rinzin, 13 Nov 2026).
+          # between them most Linux computers (kr37, 13 Nov 2026).
           sudo apt-get install -y -qq rpm > /dev/null
           npx tauri build --bundles deb,rpm
           cp src-tauri/target/release/bundle/deb/*.deb ../37-Player-linux-test.deb
@@ -185,11 +185,11 @@ jobs:
         run: |
           n="${{ github.run_number }}${{ inputs.channel == 'main' && 'm' || 'd' }}"
           tag="desktop-test-$n"
-          # Named by the version first (Gen Rinzin, 7 Nov 2026), the build's
+          # Named by the version first (kr37, 7 Nov 2026), the build's
           # number after; the files carry the version too.
           v=$(curl -s "https://raw.githubusercontent.com/${{ github.repository }}/${{ inputs.channel == 'main' && 'main' || 'dev' }}/37-player.html" | head -c 4000 | grep -o 'app-version" content="[^"]*' | head -1 | sed 's/.*content="//')
           # The app's own (shell's) version too, in the title: the page's
-          # number alone hid that 31d was shell 2.2.1 (Gen Rinzin, 11 Nov 2026).
+          # number alone hid that 31d was shell 2.2.1 (kr37, 11 Nov 2026).
           sv=$(curl -s "https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/desktop/src-tauri/tauri.conf.json" | grep -o '"version": *"[^"]*' | head -1 | sed 's/.*"//')
           mv 37-Player-mac-test.dmg "37-Player-$v-mac.dmg"
           mv 37-Player-windows-test-setup.exe "37-Player-$v-windows-setup.exe"

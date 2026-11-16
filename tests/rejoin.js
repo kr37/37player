@@ -1,4 +1,4 @@
-// Joining again after leaving partway (2.2.018; Gen Rinzin's test, 11 Nov
+// Joining again after leaving partway (2.2.018; kr37's test, 11 Nov
 // 2026): tracks whose audio never arrived used to count as already here, so
 // the choices said "Downloads nothing" and the tracks stayed silent.
 //  - B joins A's library and receives everything; two tracks' audio is then

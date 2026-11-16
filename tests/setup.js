@@ -1,4 +1,4 @@
-// Setting up 37 Player (2.2.023, Gen Rinzin's design): the welcome's Try it
+// Setting up 37 Player (2.2.023, kr37's design): the welcome's Try it
 // out / Install, the guide's way for each kind of device, the Install button
 // in the top bar, #setup in the address, and the trial's end (the fifth
 // import, or two days).
@@ -176,7 +176,7 @@ const importOne = async (p)=>{
   ok(!/Install 37 Player as an app/.test(m) && /Keep the library in a folder/.test(m) && await p.evaluate(()=> !!document.querySelector('.modal [data-act="folder"]')), 'now the app\'s window: the guide redraws without the Install step, the folder step can be done (' + short(m) + ')');
   ok(await p.evaluate(()=> getComputedStyle(document.getElementById('btnInstall')).display) === 'none', 'and Install leaves the top bar');
   await clickText(p, '.modal button', '^Close$');
-  await p.evaluate(async()=>{ const r = window.__dbg.getRoot(); r.settings.sharedLibrary = {url: 'x', code: 'demo', deviceName: 'T', libraryName: 'Rinzin\'s library', installs: [localStorage.getItem('37player.install')]}; });
+  await p.evaluate(async()=>{ const r = window.__dbg.getRoot(); r.settings.sharedLibrary = {url: 'x', code: 'demo', deviceName: 'T', libraryName: 'kr37\'s library', installs: [localStorage.getItem('37player.install')]}; });
   await p.evaluate(()=>{ window.openSetupGuideForTest(); }); await sleep(500);
   await clickText(p, '.modal a', "^I can't install apps on this computer$"); await sleep(400);
   ok(await p.evaluate(()=> getComputedStyle(document.querySelector('.heads-up-step.done .step-n')).fontWeight) >= 700, 'a done step\'s ✓ is bold');

@@ -266,7 +266,7 @@ pub fn fs_root_show(app: tauri::AppHandle, id: String) -> Result<(), String> {
     r.map(|_| ()).map_err(|e| e.to_string())
 }
 
-// ---- Folders used in place, put back (Gen Rinzin's wipe test on the HP,
+// ---- Folders used in place, put back (kr37's wipe test on the HP,
 // 7 Nov 2026): the app's data folder emptied, its list of folders goes, and
 // every track used in place couldn't be read. The library's own record of
 // them ("places", in its folder) names each one and its path; the shell reads
@@ -326,7 +326,7 @@ pub fn fs_remove_if_empty(app: tauri::AppHandle, id: String, dry: bool) -> Resul
     Ok(true)
 }
 
-// ---- A library's folder follows its name (Gen Rinzin, 7 Nov 2026): renamed
+// ---- A library's folder follows its name (kr37, 7 Nov 2026): renamed
 // within the folder it's in, at the app's start before the library opens
 // (Windows won't rename a folder whose files are in use). " (2)" and so on
 // when the name is taken; nothing to do when the folder already has it.
@@ -393,7 +393,7 @@ pub struct Found {
     pub id: String, pub name: String, pub path: String,
     // Whether 37 Player can save in it, and when its library record last
     // changed (ms): two folders can hold copies of one library (a folder
-    // copied beside itself with a file manager; Gen Rinzin's T470, 13 Nov
+    // copied beside itself with a file manager; kr37's T470, 13 Nov
     // 2026: a read-only copy from 9 Nov was taken over the one in use).
     pub writable: bool, pub changed: u64,
 }
@@ -731,7 +731,7 @@ mod tests {
         assert_eq!(renamed_path(&d.join("My library"), "Teachings"), Some(d.join("Teachings")));
         assert_eq!(renamed_path(&d.join("My library"), "Prayers"), Some(d.join("Prayers (2)")));
         assert_eq!(renamed_path(&d.join("My library"), "My Library"), Some(d.join("My Library")));
-        assert_eq!(renamed_path(&d.join("My library"), "Rinzin's: 2.0"), Some(d.join("Rinzin's- 2.0")));
+        assert_eq!(renamed_path(&d.join("My library"), "kr37's: 2.0"), Some(d.join("kr37's- 2.0")));
     }
     #[test]
     fn another_drive() {
@@ -848,7 +848,7 @@ mod tests {
     }
     #[test]
     fn names_and_roots() {
-        assert_eq!(folder_name("Rinzin's library"), "Rinzin's library");
+        assert_eq!(folder_name("kr37's library"), "kr37's library");
         assert_eq!(folder_name("A/B: c?. "), "A-B- c-");
         assert_eq!(folder_name("   "), "Library");
         let d = tmp("roots");
@@ -859,6 +859,6 @@ mod tests {
         assert_eq!(again.get("lib1").unwrap(), d.join("one"));
         again.forget("lib1").unwrap();
         assert!(Roots::load(d.join("roots.json")).get("lib1").is_err());
-        assert_eq!(percent_decode("Rinzin%27s%20library%2F%E2%80%93"), "Rinzin's library/–");
+        assert_eq!(percent_decode("kr37%27s%20library%2F%E2%80%93"), "kr37's library/–");
     }
 }

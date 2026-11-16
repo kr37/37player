@@ -1,4 +1,4 @@
-// Silence and stops in an export (2.0.002, Gen Rinzin, 7 Nov 2026): MP3s, not
+// Silence and stops in an export (2.0.002, kr37, 7 Nov 2026): MP3s, not
 // WAVs, tagged Artist "Silence" and Album "Silence" (stops: "Stops"), filed
 // as any track is: music/Silence/Silence/, music/Silence/Stops/. Made without
 // an encoder (frames of zeros): they decode as silence of the right length,

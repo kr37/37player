@@ -19,7 +19,7 @@ const dist = join(here, "dist");
 
 mkdirSync(join(dist, "libraries"), { recursive: true });
 // A build for people carries the newest page of the branch its pages follow
-// (P37_PAGE_BRANCH: main for m builds, dev for d builds; Gen Rinzin, 13 Nov
+// (P37_PAGE_BRANCH: main for m builds, dev for d builds; kr37, 13 Nov
 // 2026). This branch's own copy is whatever it was when main was last merged
 // in (2.2.031 for weeks): a new install ran that, with its since-fixed bugs,
 // until its first page check, and it is the page gone back to if a newer

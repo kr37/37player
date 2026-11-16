@@ -1,6 +1,6 @@
 // The Playlist details dialog (✎ on a playlist in Edit Playlists): a notes
 // box of a few lines (it took most of the window), with the dialog fields'
-// own background, and Enter in the name saves (2.2.038, Gen Rinzin).
+// own background, and Enter in the name saves (2.2.038, kr37).
 //   node pldetails.js
 const puppeteer = require('puppeteer-core'); const sleep = ms=>new Promise(r=>setTimeout(r,ms));
 const clickText = (p, sel, src) => p.evaluate((sel, src)=>{ const re=new RegExp(src); const el=[...document.querySelectorAll(sel)].find(e=>e.offsetParent!==null && re.test(e.textContent.trim())); if(el){ el.click(); return true; } return false; }, sel, src);

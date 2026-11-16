@@ -1,5 +1,5 @@
 // A folder import's first step, looking through the folder, can be clicked
-// away (2.2.037; Gen Rinzin: on a big folder of near-duplicates it was easy
+// away (2.2.037; kr37: on a big folder of near-duplicates it was easy
 // to dismiss and seemed lost, then the review turned up many minutes later).
 // Clicked away, it goes on in the status bar ("Checking what to import:
 // n of N…"); clicking the bar brings the dialog back, live; when it's done,

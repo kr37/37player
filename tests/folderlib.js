@@ -58,7 +58,7 @@ const waitModal = async (p, re, ms)=>{ for(let i=0; i<(ms||15000)/200; i++){ con
   ok(/Automatic backups stop/.test(ask), 'the dialog explains (where, how much, backups)');
   ok(/empty folder for this library/.test(ask), 'it says an empty folder made for the library can be chosen');
   await clickText(p, '.modal button', '^Choose where');
-  // "picked" is empty (1.4.180, Gen Rinzin): use it as it is, or make the library's folder inside it.
+  // "picked" is empty (1.4.180, kr37): use it as it is, or make the library's folder inside it.
   const which = await waitModal(p, /Use this folder/);
   const btns = await p.evaluate(()=> [...document.querySelectorAll('#askButtons button')].map(b=> b.textContent.trim() + (b.classList.contains('primary') ? '*' : '')));
   ok(/is empty/.test(which) && btns[0] === 'Use “picked”*' && /^Make “.+” inside$/.test(btns[1]), 'an empty folder: use it, or make the library\'s folder inside (' + btns.join(' | ') + ')');
@@ -107,7 +107,7 @@ const waitModal = async (p, re, ms)=>{ for(let i=0; i<(ms||15000)/200; i++){ con
   ok(/"music"/.test(pl.README) && /"playlists"/.test(pl.README), 'and the README says what\'s where');
   // The album renamed again, with the details written into the file (as the edit dialog does): the
   // recording is written anew under its new name, and the old one goes a minute later, once nothing
-  // plays it, not after a day at the next opening (2.2.033; Gen Rinzin: each rename left a whole copy).
+  // plays it, not after a day at the next opening (2.2.033; kr37: each rename left a whole copy).
   await p.evaluate(async()=>{ const tr = window.__dbg.getRoot().library.find(t=> t.name === 'Renamed tone'); tr.album = 'Other Album'; await window.__dbg.saveState(); await window.__retag(tr.id); await window.__dbg.saveState(); });
   await sleep(4500);
   const both = await ls(after.folder);

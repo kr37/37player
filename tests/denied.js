@@ -1,4 +1,4 @@
-// Saving refused, not a full device (2.2.041; Gen Rinzin's T470, 13 Nov
+// Saving refused, not a full device (2.2.041; kr37's T470, 13 Nov
 // 2026: a library's folder was a read-only copy, and the message blamed a
 // full device). Saves fail with the shell's "Permission denied (os error
 // 13)": the message says 37 Player isn't allowed to save in the library's

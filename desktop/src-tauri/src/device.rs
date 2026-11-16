@@ -1,5 +1,5 @@
 // The device's own settings, kept by the shell (desktop/FILES-DESIGN.md,
-// "Everything the page keeps in browser storage"; Gen Rinzin, 6 Nov 2026:
+// "Everything the page keeps in browser storage"; kr37, 6 Nov 2026:
 // deleting the app's webview storage, as CCleaner does, must lose nothing).
 //
 // device.json, in the app's data folder beside roots.json and pages/, holds

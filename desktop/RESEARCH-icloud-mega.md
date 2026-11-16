@@ -1,6 +1,6 @@
 # iCloud (CloudKit) and MEGA for shared libraries: research
 
-12 Nov 2026. Gen Rinzin asked whether iCloud through CloudKit and MEGA would
+12 Nov 2026. kr37 asked whether iCloud through CloudKit and MEGA would
 be good homes for a cloud library, besides the droplet (`sync.php`) and
 Google Drive. Nothing is built. This is what was found, from Apple's
 documentation and developer forums and MEGA's JavaScript library, with no
@@ -23,7 +23,7 @@ by plain HTTPS calls (CloudKit Web Services). It works on Windows and
 Android too: anyone with an Apple ID can sign in, and Apple's sign-in page
 offers to make one.
 
-**Setting it up needs Gen Rinzin's Apple Developer account** (which he now
+**Setting it up needs kr37's Apple Developer account** (which he now
 has): an iCloud container (e.g. `iCloud.com.37player`), the record types
 (the schema) made in the CloudKit Console or by CKTool JS, and an API token
 for web services, which can be limited to the allowed origins
@@ -76,7 +76,7 @@ saving at once).
 **Verdict.** It's a good fit for Apple households and Centers that already
 pay for iCloud+. It's free to run, and the data is the person's own. It
 falls short when the free 5 GB is all they have. Before any adapter work,
-it's worth a small test (half a day), which needs Gen Rinzin to make the
+it's worth a small test (half a day), which needs kr37 to make the
 container and a development API token:
 1. Sign in from a Chrome tab on Windows, Safari on the Mac, an iPad in
    Safari and as a Home Screen app, and the desktop app through the browser.
@@ -105,7 +105,7 @@ the community, maintained) that works in browsers.
 **Verdict.** Lower priority than CloudKit. The password sign-in is a real
 step back from the other homes.
 
-## Setting up the sign-in test (Gen Rinzin's part)
+## Setting up the sign-in test (kr37's part)
 
 1. **Make the container.** developer.apple.com → Account → Certificates,
    Identifiers & Profiles → Identifiers → + → **iCloud Containers** →
@@ -131,7 +131,7 @@ step back from the other homes.
 
 Then Claude writes `tests/cloudkit/index.html`, the test page: sign in, save
 a 16 MB piece and a state record, read them back, save over a stale change
-tag, and a button that copies the results. Gen Rinzin deploys it to
+tag, and a button that copies the results. kr37 deploys it to
 test.37player.com and opens it on each device in turn: Windows in Chrome,
 the Mac in Safari, the iPad in Safari, then the iPad as a Home Screen app.
 The desktop app's sign-in through the browser needs a second token, with a
@@ -169,7 +169,7 @@ Worth looking again only if Apple fixes the uploads; a run of
 and its development token stay; the test's zone can be deleted from the
 page.
 
-## MEGA: dropped (Gen Rinzin, 12 Nov 2026)
+## MEGA: dropped (kr37, 12 Nov 2026)
 
 Hardly anyone has a MEGA account, so using it means signing up for one,
 and a second Google account just for the audio does the same with 15 GB

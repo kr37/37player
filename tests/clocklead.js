@@ -1,6 +1,6 @@
 // The Linux app's clock and the sound (2.5.005). Through Web Audio, WebKitGTK
 // counts about a second of sound as played the moment a track starts or is
-// moved, so the seekbar ran a second ahead of what was heard (Gen Rinzin's
+// moved, so the seekbar ran a second ahead of what was heard (kr37's
 // T470) until a pause. The page now holds the clock still (speed 0, which
 // leaves the sound going) for as long as it's ahead. Chrome has no such
 // leap, so the test says how far ahead the clock is (__fakeClockLead).

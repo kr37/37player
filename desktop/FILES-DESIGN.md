@@ -1,6 +1,6 @@
 # Design note: the desktop app's files backend (bridge 2)
 
-For Gen Rinzin to review before anything is built. 5 Nov 2026; Gen Rinzin's answers the same
+For kr37 to review before anything is built. 5 Nov 2026; kr37's answers the same
 evening are worked in (see the end).
 
 ## What it's for
@@ -90,7 +90,7 @@ watched in Activity Monitor, answers it in a few minutes.
 
 ## Where libraries live, and the small things around it
 
-- **Where (Gen Rinzin):** a new library in the desktop app goes in
+- **Where (kr37):** a new library in the desktop app goes in
   `Music/37 Player Libraries/<library name>/`, unless the person chooses elsewhere (the system's folder dialog,
   through Tauri). The same layout as today's folder libraries, with
   `37 Player library.json` saying which library it is, so a folder can be moved
@@ -99,7 +99,7 @@ watched in Activity Monitor, answers it in a few minutes.
 - **The list of libraries and their folders:** today in localStorage and a tiny
   IndexedDB database; in the desktop app, a small file in the app's own data
   folder, kept by Rust, so it can't be lost along with the webview's storage.
-- **Moving a library in** from the webview's storage **happens by itself (Gen Rinzin; dropped 6 Nov 2026, see below)**:
+- **Moving a library in** from the webview's storage **happens by itself (kr37; dropped 6 Nov 2026, see below)**:
   on the first start of a desktop app with bridge 2, each library in the
   webview's storage is copied into its folder, checked (every record and file
   read back), and then used from there; a notice says where it went. The
@@ -115,16 +115,16 @@ watched in Activity Monitor, answers it in a few minutes.
 - **Bridge number 2** for the shell that has all this; a page that needs it on
   an older shell says to download the new desktop app.
 
-## Readable names (Gen Rinzin: integral, the same week)
+## Readable names (kr37: integral, the same week)
 
-Gen Rinzin: readable artist / album / track file names are part of this move, not a
+kr37: readable artist / album / track file names are part of this move, not a
 later step. So the files store names recordings readably from the start, and
 nothing is first laid out by ID and then moved again:
 
 A proposal for the layout:
 
 ```
-Music/37 Player Libraries/Rinzin's library/
+Music/37 Player Libraries/kr37's library/
   37 Player library.json
   README.txt
   music/<Artist>/<Album>/<NN> <Title>.mp3
@@ -132,7 +132,7 @@ Music/37 Player Libraries/Rinzin's library/
   37 Player's own files/   (playlists and details, artwork, the waiting room; not for editing)
 ```
 
-(Gen Rinzin, 6 Nov 2026, built in 1.4.179: recordings under `music/` and a visible
+(kr37, 6 Nov 2026, built in 1.4.179: recordings under `music/` and a visible
 `playlists/`, so the top of the folder reads like a table of contents.)
 
 The names are made the way the portable export already makes them
@@ -152,7 +152,7 @@ The names are made the way the portable export already makes them
 - The order of work: readable names go into step 2 (the store learns them
   while it's being given Rust's handles), tested through the same fake.
 
-## Use in place (Gen Rinzin likes it)
+## Use in place (kr37 likes it)
 
 Of the three import modes planned for v2 (Copy, **Use in place**, Move), Use in
 place leaves the recordings where they are: the person's own music folder
@@ -165,12 +165,12 @@ stays theirs, and the library only points into it.
 - Its recordings play by address and are read in pieces like the library's own.
 - A shared library still gets a copy of the audio when it syncs (another
   device can't reach this computer's folder).
-- **Edits to a track used in place** (Gen Rinzin's three ways, 5 Nov 2026: a) copy
+- **Edits to a track used in place** (kr37's three ways, 5 Nov 2026: a) copy
   the recording into the library and point there, b) keep the edited details
   in the library's records only, c) write them into the file, which may
-  belong to Music.app's library; Gen Rinzin leaned to a), and also floated setup
+  belong to Music.app's library; kr37 leaned to a), and also floated setup
   options: no edits at all, ask each time, or a lasting choice).
-  **Suggested (waiting for Gen Rinzin): b) as the rule, no prompts, plus one switch
+  **Suggested (waiting for kr37): b) as the rule, no prompts, plus one switch
   per folder, "Also write my changes into these files" (c), off by default.**
   a) quietly turns Use in place back into copying, one edit at a time (the
   disk fills unpredictably); under b) nothing inside 37 Player loses the
@@ -178,7 +178,7 @@ stays theirs, and the library only points into it.
   copy) gets the edited tags written into its own copy, so only the original
   file stays as it was, which is what Music.app would want. "No edits at all"
   can come later if someone asks.
-- **Gen Rinzin, 5 Nov 2026: b) it is, explained at the start of the import.** While
+- **kr37, 5 Nov 2026: b) it is, explained at the start of the import.** While
   a folder is used in place, its files **will not be touched**: edits live only
   in 37 Player's library (its records, `meta.json` and so on). Anyone who wants
   their edits in ordinary files to use elsewhere can export from 37 Player, or
@@ -206,7 +206,7 @@ stays theirs, and the library only points into it.
   warning. When the drive isn't connected, its tracks show as "on a drive
   that isn't connected" (not missing, not damaged, nothing offered to delete)
   and come back when it is.
-- **playlists/ with tracks used in place** (Gen Rinzin, 6 Nov 2026): the .m3u8
+- **playlists/ with tracks used in place** (kr37, 6 Nov 2026): the .m3u8
   points to the file where it is, with as many `../` as it takes
   (`../../../Music/iTunes/…`), so the playlist still works if the whole
   drive's tree moves together. Where no relative path exists (on Windows, a
@@ -216,7 +216,7 @@ stays theirs, and the library only points into it.
 - Use in place and Move come after the backend and readable names work (they
   need the roots and the addresses, nothing more).
 
-## The device's own settings (Gen Rinzin, 6 Nov 2026: as persistent as possible)
+## The device's own settings (kr37, 6 Nov 2026: as persistent as possible)
 
 With libraries in folders, the webview's storage still holds a little: the
 list of libraries and where each is, which one opens, the language, theme and
@@ -234,13 +234,13 @@ for folders with a `37 Player library.json`. Each library's own settings
 already live in its folder.
 
 - The app's identifier (`com.player37.app` from the bridge-2 builds, 1.4.196;
-  the 1.4 test builds were `com.player37.spike`; Gen Rinzin, 6 Nov 2026) names that data folder, and
+  the 1.4 test builds were `com.player37.spike`; kr37, 6 Nov 2026) names that data folder, and
   the webview's storage, so the real one is set before friends' beta tests
   and then never changed.
 
 ## Everything the page keeps in browser storage, and where it goes (6 Nov 2026)
 
-Gen Rinzin's test for 2.0: **delete the app's webview storage (CCleaner, CleanMyMac),
+kr37's test for 2.0: **delete the app's webview storage (CCleaner, CleanMyMac),
 start again, and nothing is missing.** So everything a person would miss lives
 in a file the shell can reach; the webview's storage holds only copies and
 caches. Inventory of 1.4.190:
@@ -289,7 +289,7 @@ data folder: AppData on Windows, `~/Library/Application Support/<identifier>/`
 on the Mac. A cleaner that empties that too (or a new computer) loses the list
 of libraries: the app then looks for folders with a `37 Player library.json`
 in the libraries' default place (`Music/37 Player Libraries/`), and **Find a
-library folder…** opens any other (Gen Rinzin: the place is the person's choice; the
+library folder…** opens any other (kr37: the place is the person's choice; the
 default is only a suggestion).
 
 **Reading the list before the page starts:** the page reads the library list
@@ -298,9 +298,9 @@ so the shell hands the page `device.json` as it starts (an initialization
 script setting `window.__p37Device`); the page uses localStorage when it has
 it, and that when it doesn't (a wiped webview), writing it back.
 
-**Built (1.4.195–196):** see NOTES.md, "The desktop app's libraries". **Changed (Gen Rinzin, 6 Nov 2026):** no move from the webview's storage after all: only he had used the 1.4 desktop app, with test libraries, and the real identifier starts the 2.0 app with an empty webview storage. Libraries from a browser come over by the shared library or a .37p. The rest stands: the place is asked, libraries are found again by their markers, Find a library folder….
+**Built (1.4.195–196):** see NOTES.md, "The desktop app's libraries". **Changed (kr37, 6 Nov 2026):** no move from the webview's storage after all: only he had used the 1.4 desktop app, with test libraries, and the real identifier starts the 2.0 app with an empty webview storage. Libraries from a browser come over by the shared library or a .37p. The rest stands: the place is asked, libraries are found again by their markers, Find a library folder….
 
-**The move (step 4, Gen Rinzin):** the first start of 2.0 asks where the libraries
+**The move (step 4, kr37):** the first start of 2.0 asks where the libraries
 should live, suggesting `Music/37 Player Libraries/` with **Choose another
 place…**, then copies each library from browser storage into its folder,
 checks every file, and switches. The browser-storage copy stays 30 days as a
@@ -350,11 +350,11 @@ fallback, then goes.
    not connected, playlist files with `../`. Removable drives are told apart
    by where they're mounted (`/Volumes/`, `/media/`, another drive letter).
 
-## Gen Rinzin's answers (5 Nov 2026)
+## kr37's answers (5 Nov 2026)
 
 - **Default place:** `Music/37 Player Libraries/`.
 - **Moving libraries out of the webview's storage:** automatic (few people use
-  37 Player yet, and Gen Rinzin can tell them; still, it should just happen).
+  37 Player yet, and kr37 can tell them; still, it should just happen).
 - **Readable names:** integral to the move, ideally the same week: built into
   the store in step 2, above.
 - **Use in place:** Rust's access covers those folders too, as roots the
