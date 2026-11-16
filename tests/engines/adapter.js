@@ -45,6 +45,10 @@ class Page {
   // once for the page already loaded: drive's sign-in round trip).
   waitForNavigation(o){ return this.p.waitForNavigation(waitOpts(o)); }
   setViewport(v){ return this.p.setViewportSize({width: v.width, height: v.height}); }
+  // Puppeteer's offline mode (hist.js: this device's changes while the
+  // shared library can't be reached). Playwright's is the whole context's,
+  // which here is the one device's.
+  setOfflineMode(on){ return this.ctx.c.setOffline(!!on); }
   screenshot(o){ return this.p.screenshot(o); }
   $(sel){ return this.p.$(sel).then(x=> x && new Element(x)); }
   $$(sel){ return this.p.$$(sel).then(xs=> xs.map(x=> new Element(x))); }
