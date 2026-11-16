@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.5.031">
+<meta name="app-version" content="2.5.032">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -1339,6 +1339,7 @@
   .review-cmp-art{ font-size:12px; color:var(--text-faint); }
   .review-cmp-art img{ width:56px; height:56px; border-radius:5px; object-fit:cover; display:block; }
   .delete-used{ color:var(--rust-bright); margin:10px 0; }
+  .trash-risk{ margin:10px 0; padding:9px 12px; border-radius:8px; border-left:4px solid var(--rust-bright); background:rgba(176,74,48,0.10); color:var(--rust-bright); font-weight:600; }
   .delete-used ul{ margin:4px 0 0 0; padding-left:20px; }
   .lib-row .lloud{ color:var(--text-dim); font-size:13px; flex-shrink:0; min-width:6.2em; text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }
   .lib-row .lloud .ladj{ color:var(--amber); margin-left:4px; }
@@ -4754,6 +4755,7 @@ const STRINGS = {
     "importFolderBtn": "Import a folder…",
     "nothingPlayingYetTitle": "Nothing playing yet",
     "choosePlaylistToBegin": "Choose a playlist from the list to begin.",
+    "noPlaylistsYetToBegin": "First, make a playlist on “{tab}”.",
     "choosePlaylistPlain": "Choose a playlist.",
     "choosePlaylistToEditDot": "Choose a playlist to edit.",
     "editHereBar": "Edit playlist here",
@@ -5299,6 +5301,29 @@ const STRINGS = {
     "libForgetTitle": "Remove “{name}” from the list?",
     "libForgetBody": "37 Player forgets this library. Its folder and everything in it, recordings included, stay on this computer; the shared library, if it’s joined to one, isn’t touched. Find a library folder… brings it back.",
     "libForgetConfirmBtn": "Remove from the list",
+    "libTrashBtn": "Remove and move its folder to the Trash…",
+    "libTrashBtnWin": "Remove and move its folder to the Recycle Bin…",
+    "libTrashLooking": "Looking at what's in it…",
+    "libTrashTitle": "Move “{name}” to the Trash?",
+    "libTrashTitleWin": "Move “{name}” to the Recycle Bin?",
+    "libTrashWhat": "Its folder goes, with everything in it: {playlists}, {tracks}, {size} on this computer.",
+    "libTrashPlOne": "1 playlist",
+    "libTrashPl": "{n} playlists",
+    "libTrashTrOne": "1 track",
+    "libTrashTr": "{n} tracks",
+    "libTrashPlace": "Your own files used in place ({n} tracks) stay where they are.",
+    "libTrashShared": "Everything in it is also in the shared library “{shared}”: joining that library again brings it back to this computer.",
+    "libTrashSharedNotAll": "When this library was last open, not all of it had reached the shared library “{shared}” yet. Whatever hadn't would be lost.",
+    "libTrashBackup": "Its last backup, {date}, has all of it.",
+    "libTrashOldBackup": "This library isn't shared, and its last backup, {date}, doesn't have its latest changes. Whatever is newer would be lost.",
+    "libTrashOnlyCopy": "This is the only copy of this library: it isn't shared, and it has no backup.",
+    "libTrashUndo": "Until the Trash is emptied, the folder can be taken back out of it, and Find a library folder… brings the library back.",
+    "libTrashUndoWin": "Until the Recycle Bin is emptied, the folder can be restored from it, and Find a library folder… brings the library back.",
+    "libTrashGo": "Move to the Trash",
+    "libTrashGoWin": "Move to the Recycle Bin",
+    "libTrashFailed": "“{name}” is off the list, but its folder couldn't be moved to the Trash: {error}. It's still on this computer; Find a library folder… brings it back.",
+    "libTrashDone": "“{name}” was moved to the Trash.",
+    "libTrashDoneWin": "“{name}” was moved to the Recycle Bin.",
     "sdLaterBtn": "Decide later (it won’t sync until then)",
     "sdHeldIndicator": "Not syncing",
     "sharedJoinBtn": "Join",
@@ -6810,6 +6835,7 @@ const STRINGS = {
     "importFolderBtn": "Importar una carpeta…",
     "nothingPlayingYetTitle": "Nada reproduciéndose todavía",
     "choosePlaylistToBegin": "Elige una lista de reproducción para empezar.",
+    "noPlaylistsYetToBegin": "Primero, crea una lista en «{tab}».",
     "choosePlaylistPlain": "Elige una lista de reproducción.",
     "choosePlaylistToEditDot": "Elige una lista de reproducción para editar.",
     "editHereBar": "Edita la lista aquí",
@@ -7355,6 +7381,29 @@ const STRINGS = {
     "libForgetTitle": "¿Quitar «{name}» de la lista?",
     "libForgetBody": "37 Player olvida esta biblioteca. Su carpeta y todo lo que contiene, incluidas las grabaciones, se quedan en este ordenador; la biblioteca compartida, si está unida a una, no se toca. Buscar la carpeta de una biblioteca… la recupera.",
     "libForgetConfirmBtn": "Quitar de la lista",
+    "libTrashBtn": "Quitar y mover su carpeta a la Papelera…",
+    "libTrashBtnWin": "Quitar y mover su carpeta a la Papelera de reciclaje…",
+    "libTrashLooking": "Mirando qué contiene…",
+    "libTrashTitle": "¿Mover «{name}» a la Papelera?",
+    "libTrashTitleWin": "¿Mover «{name}» a la Papelera de reciclaje?",
+    "libTrashWhat": "Su carpeta se va, con todo lo que contiene: {playlists}, {tracks}, {size} en este ordenador.",
+    "libTrashPlOne": "1 lista",
+    "libTrashPl": "{n} listas",
+    "libTrashTrOne": "1 pista",
+    "libTrashTr": "{n} pistas",
+    "libTrashPlace": "Tus propios archivos usados en su sitio ({n} pistas) se quedan donde están.",
+    "libTrashShared": "Todo lo que contiene está también en la biblioteca compartida «{shared}»: unirse de nuevo a esa biblioteca lo trae de vuelta a este ordenador.",
+    "libTrashSharedNotAll": "La última vez que se abrió esta biblioteca, no todo había llegado aún a la biblioteca compartida «{shared}». Lo que no hubiera llegado se perdería.",
+    "libTrashBackup": "Su última copia de seguridad, {date}, lo tiene todo.",
+    "libTrashOldBackup": "Esta biblioteca no está compartida, y su última copia de seguridad, {date}, no tiene sus últimos cambios. Lo más reciente se perdería.",
+    "libTrashOnlyCopy": "Esta es la única copia de esta biblioteca: no está compartida y no tiene copia de seguridad.",
+    "libTrashUndo": "Hasta que se vacíe la Papelera, la carpeta puede sacarse de ella, y Buscar la carpeta de una biblioteca… recupera la biblioteca.",
+    "libTrashUndoWin": "Hasta que se vacíe la Papelera de reciclaje, la carpeta puede restaurarse, y Buscar la carpeta de una biblioteca… recupera la biblioteca.",
+    "libTrashGo": "Mover a la Papelera",
+    "libTrashGoWin": "Mover a la Papelera de reciclaje",
+    "libTrashFailed": "«{name}» ya no está en la lista, pero su carpeta no se pudo mover a la Papelera: {error}. Sigue en este ordenador; Buscar la carpeta de una biblioteca… la recupera.",
+    "libTrashDone": "«{name}» se movió a la Papelera.",
+    "libTrashDoneWin": "«{name}» se movió a la Papelera de reciclaje.",
     "sdLaterBtn": "Decidir más tarde (no se sincroniza hasta entonces)",
     "sdHeldIndicator": "Sin sincronizar",
     "sharedJoinBtn": "Unirse",
@@ -8865,6 +8914,7 @@ const STRINGS = {
     "importFolderBtn": "Importer un dossier…",
     "nothingPlayingYetTitle": "Rien ne joue pour l'instant",
     "choosePlaylistToBegin": "Choisissez une playlist dans la liste pour commencer.",
+    "noPlaylistsYetToBegin": "D’abord, créez une playlist dans « {tab} ».",
     "choosePlaylistPlain": "Choisissez une playlist.",
     "choosePlaylistToEditDot": "Choisissez une playlist à modifier.",
     "editHereBar": "Modifiez la playlist ici",
@@ -9410,6 +9460,29 @@ const STRINGS = {
     "libForgetTitle": "Retirer « {name} » de la liste ?",
     "libForgetBody": "37 Player oublie cette bibliothèque. Son dossier et tout ce qu’il contient, enregistrements compris, restent sur cet ordinateur ; la bibliothèque partagée, si elle y est reliée, n’est pas touchée. Retrouver le dossier d’une bibliothèque… la fait revenir.",
     "libForgetConfirmBtn": "Retirer de la liste",
+    "libTrashBtn": "Retirer et mettre son dossier à la Corbeille…",
+    "libTrashBtnWin": "Retirer et mettre son dossier à la Corbeille…",
+    "libTrashLooking": "Examen de son contenu…",
+    "libTrashTitle": "Mettre « {name} » à la Corbeille ?",
+    "libTrashTitleWin": "Mettre « {name} » à la Corbeille ?",
+    "libTrashWhat": "Son dossier s'en va, avec tout ce qu'il contient : {playlists}, {tracks}, {size} sur cet ordinateur.",
+    "libTrashPlOne": "1 playlist",
+    "libTrashPl": "{n} playlists",
+    "libTrashTrOne": "1 piste",
+    "libTrashTr": "{n} pistes",
+    "libTrashPlace": "Vos propres fichiers utilisés sur place ({n} pistes) restent où ils sont.",
+    "libTrashShared": "Tout ce qu'il contient est aussi dans la bibliothèque partagée « {shared} » : la rejoindre à nouveau le ramène sur cet ordinateur.",
+    "libTrashSharedNotAll": "À la dernière ouverture de cette bibliothèque, tout n'avait pas encore atteint la bibliothèque partagée « {shared} ». Ce qui ne l'avait pas atteinte serait perdu.",
+    "libTrashBackup": "Sa dernière sauvegarde, {date}, contient tout.",
+    "libTrashOldBackup": "Cette bibliothèque n'est pas partagée, et sa dernière sauvegarde, {date}, n'a pas ses derniers changements. Ce qui est plus récent serait perdu.",
+    "libTrashOnlyCopy": "C'est la seule copie de cette bibliothèque : elle n'est pas partagée et n'a pas de sauvegarde.",
+    "libTrashUndo": "Tant que la Corbeille n'est pas vidée, le dossier peut en être ressorti, et Retrouver le dossier d’une bibliothèque… ramène la bibliothèque.",
+    "libTrashUndoWin": "Tant que la Corbeille n'est pas vidée, le dossier peut y être restauré, et Retrouver le dossier d’une bibliothèque… ramène la bibliothèque.",
+    "libTrashGo": "Mettre à la Corbeille",
+    "libTrashGoWin": "Mettre à la Corbeille",
+    "libTrashFailed": "« {name} » n'est plus dans la liste, mais son dossier n'a pas pu être mis à la Corbeille : {error}. Il est toujours sur cet ordinateur ; Retrouver le dossier d’une bibliothèque… le ramène.",
+    "libTrashDone": "« {name} » a été mis à la Corbeille.",
+    "libTrashDoneWin": "« {name} » a été mis à la Corbeille.",
     "sdLaterBtn": "Décider plus tard (pas de synchronisation d’ici là)",
     "sdHeldIndicator": "Pas de synchronisation",
     "sharedJoinBtn": "Rejoindre",
@@ -10920,6 +10993,7 @@ const STRINGS = {
     "importFolderBtn": "Importar uma pasta…",
     "nothingPlayingYetTitle": "Nada tocando ainda",
     "choosePlaylistToBegin": "Escolha uma playlist na lista para começar.",
+    "noPlaylistsYetToBegin": "Primeiro, crie uma playlist em “{tab}”.",
     "choosePlaylistPlain": "Escolha uma playlist.",
     "choosePlaylistToEditDot": "Escolha uma playlist para editar.",
     "editHereBar": "Edite a lista aqui",
@@ -11465,6 +11539,29 @@ const STRINGS = {
     "libForgetTitle": "Retirar «{name}» da lista?",
     "libForgetBody": "O 37 Player esquece esta biblioteca. A pasta e tudo o que contém, incluindo as gravações, ficam neste computador; a biblioteca partilhada, se estiver ligada a uma, não é tocada. Procurar a pasta de uma biblioteca… trá-la de volta.",
     "libForgetConfirmBtn": "Retirar da lista",
+    "libTrashBtn": "Remover e mover a pasta para o Lixo…",
+    "libTrashBtnWin": "Remover e mover a pasta para a Lixeira…",
+    "libTrashLooking": "Vendo o que há nela…",
+    "libTrashTitle": "Mover “{name}” para o Lixo?",
+    "libTrashTitleWin": "Mover “{name}” para a Lixeira?",
+    "libTrashWhat": "A pasta vai embora, com tudo o que tem: {playlists}, {tracks}, {size} neste computador.",
+    "libTrashPlOne": "1 playlist",
+    "libTrashPl": "{n} playlists",
+    "libTrashTrOne": "1 faixa",
+    "libTrashTr": "{n} faixas",
+    "libTrashPlace": "Seus próprios arquivos usados no lugar ({n} faixas) ficam onde estão.",
+    "libTrashShared": "Tudo nela também está na biblioteca partilhada “{shared}”: entrar nela de novo traz tudo de volta a este computador.",
+    "libTrashSharedNotAll": "Quando esta biblioteca foi aberta pela última vez, nem tudo tinha chegado à biblioteca partilhada “{shared}”. O que não tivesse chegado se perderia.",
+    "libTrashBackup": "O último backup, {date}, tem tudo.",
+    "libTrashOldBackup": "Esta biblioteca não é partilhada, e o último backup, {date}, não tem as alterações mais recentes. O que for mais novo se perderia.",
+    "libTrashOnlyCopy": "Esta é a única cópia desta biblioteca: não é partilhada e não tem backup.",
+    "libTrashUndo": "Até o Lixo ser esvaziado, a pasta pode ser tirada dele, e Procurar a pasta de uma biblioteca… traz a biblioteca de volta.",
+    "libTrashUndoWin": "Até a Lixeira ser esvaziada, a pasta pode ser restaurada, e Procurar a pasta de uma biblioteca… traz a biblioteca de volta.",
+    "libTrashGo": "Mover para o Lixo",
+    "libTrashGoWin": "Mover para a Lixeira",
+    "libTrashFailed": "“{name}” saiu da lista, mas a pasta não pôde ser movida para o Lixo: {error}. Ela continua neste computador; Procurar a pasta de uma biblioteca… a traz de volta.",
+    "libTrashDone": "“{name}” foi movida para o Lixo.",
+    "libTrashDoneWin": "“{name}” foi movida para a Lixeira.",
     "sdLaterBtn": "Decidir mais tarde (não sincroniza até lá)",
     "sdHeldIndicator": "Sem sincronizar",
     "sharedJoinBtn": "Aderir",
@@ -12975,6 +13072,7 @@ const STRINGS = {
     "importFolderBtn": "Ordner importieren…",
     "nothingPlayingYetTitle": "Noch nichts spielt",
     "choosePlaylistToBegin": "Wählen Sie eine Playlist aus der Liste, um zu beginnen.",
+    "noPlaylistsYetToBegin": "Lege zuerst unter „{tab}“ eine Playlist an.",
     "choosePlaylistPlain": "Wählen Sie eine Playlist.",
     "choosePlaylistToEditDot": "Wählen Sie eine zu bearbeitende Playlist.",
     "editHereBar": "Playlist hier bearbeiten",
@@ -13520,6 +13618,29 @@ const STRINGS = {
     "libForgetTitle": "„{name}“ aus der Liste nehmen?",
     "libForgetBody": "37 Player vergisst diese Bibliothek. Ihr Ordner und alles darin, auch die Aufnahmen, bleiben auf diesem Computer; die gemeinsame Bibliothek, falls sie einer beigetreten ist, wird nicht berührt. „Ordner einer Bibliothek suchen…“ holt sie zurück.",
     "libForgetConfirmBtn": "Aus der Liste nehmen",
+    "libTrashBtn": "Entfernen und den Ordner in den Papierkorb legen…",
+    "libTrashBtnWin": "Entfernen und den Ordner in den Papierkorb legen…",
+    "libTrashLooking": "Inhalt wird angesehen…",
+    "libTrashTitle": "„{name}“ in den Papierkorb legen?",
+    "libTrashTitleWin": "„{name}“ in den Papierkorb legen?",
+    "libTrashWhat": "Der Ordner geht mit allem, was darin ist: {playlists}, {tracks}, {size} auf diesem Computer.",
+    "libTrashPlOne": "1 Playlist",
+    "libTrashPl": "{n} Playlists",
+    "libTrashTrOne": "1 Titel",
+    "libTrashTr": "{n} Titel",
+    "libTrashPlace": "Deine eigenen, an Ort und Stelle genutzten Dateien ({n} Titel) bleiben, wo sie sind.",
+    "libTrashShared": "Alles darin ist auch in der gemeinsamen Bibliothek „{shared}“: Wenn du ihr wieder beitrittst, kommt es auf diesen Computer zurück.",
+    "libTrashSharedNotAll": "Als diese Bibliothek zuletzt offen war, war noch nicht alles in der gemeinsamen Bibliothek „{shared}“ angekommen. Was noch fehlte, ginge verloren.",
+    "libTrashBackup": "Ihre letzte Sicherung, {date}, enthält alles.",
+    "libTrashOldBackup": "Diese Bibliothek ist nicht geteilt, und ihrer letzten Sicherung, {date}, fehlen die neuesten Änderungen. Was neuer ist, ginge verloren.",
+    "libTrashOnlyCopy": "Das ist die einzige Kopie dieser Bibliothek: Sie ist nicht geteilt und hat keine Sicherung.",
+    "libTrashUndo": "Bis der Papierkorb geleert wird, kann der Ordner wieder herausgeholt werden, und „Ordner einer Bibliothek suchen…“ holt die Bibliothek zurück.",
+    "libTrashUndoWin": "Bis der Papierkorb geleert wird, kann der Ordner wiederhergestellt werden, und „Ordner einer Bibliothek suchen…“ holt die Bibliothek zurück.",
+    "libTrashGo": "In den Papierkorb",
+    "libTrashGoWin": "In den Papierkorb",
+    "libTrashFailed": "„{name}“ ist nicht mehr in der Liste, aber der Ordner konnte nicht in den Papierkorb gelegt werden: {error}. Er ist noch auf diesem Computer; „Ordner einer Bibliothek suchen…“ holt ihn zurück.",
+    "libTrashDone": "„{name}“ liegt jetzt im Papierkorb.",
+    "libTrashDoneWin": "„{name}“ liegt jetzt im Papierkorb.",
     "sdLaterBtn": "Später entscheiden (bis dahin keine Synchronisierung)",
     "sdHeldIndicator": "Keine Synchronisierung",
     "sharedJoinBtn": "Beitreten",
@@ -15030,6 +15151,7 @@ const STRINGS = {
     "importFolderBtn": "导入文件夹…",
     "nothingPlayingYetTitle": "尚未播放任何内容",
     "choosePlaylistToBegin": "从列表中选择一个播放列表以开始。",
+    "noPlaylistsYetToBegin": "请先在“{tab}”中创建一个播放列表。",
     "choosePlaylistPlain": "选择一个播放列表。",
     "choosePlaylistToEditDot": "选择一个要编辑的播放列表。",
     "editHereBar": "在这里编辑播放列表",
@@ -15575,6 +15697,29 @@ const STRINGS = {
     "libForgetTitle": "把“{name}”从列表中移除？",
     "libForgetBody": "37 Player 会忘记这个曲库。它的文件夹和其中的一切（包括录音）都留在这台电脑上；如果它加入了共享曲库，共享曲库不受影响。用“查找曲库文件夹…”可以把它找回来。",
     "libForgetConfirmBtn": "从列表中移除",
+    "libTrashBtn": "移除并将其文件夹移到废纸篓…",
+    "libTrashBtnWin": "移除并将其文件夹移到回收站…",
+    "libTrashLooking": "正在查看其中内容…",
+    "libTrashTitle": "将“{name}”移到废纸篓？",
+    "libTrashTitleWin": "将“{name}”移到回收站？",
+    "libTrashWhat": "其文件夹及其中所有内容将被移走：{playlists}、{tracks}，在这台电脑上占 {size}。",
+    "libTrashPlOne": "1 个播放列表",
+    "libTrashPl": "{n} 个播放列表",
+    "libTrashTrOne": "1 首曲目",
+    "libTrashTr": "{n} 首曲目",
+    "libTrashPlace": "你自己的就地使用的文件（{n} 首曲目）保留在原处。",
+    "libTrashShared": "其中所有内容也都在共享曲库“{shared}”中：再次加入该曲库即可将其带回这台电脑。",
+    "libTrashSharedNotAll": "这个曲库上次打开时，并非所有内容都已到达共享曲库“{shared}”。尚未到达的内容将会丢失。",
+    "libTrashBackup": "它的最近一次备份（{date}）包含全部内容。",
+    "libTrashOldBackup": "这个曲库没有共享，而它最近一次备份（{date}）不含最新的更改。较新的内容将会丢失。",
+    "libTrashOnlyCopy": "这是这个曲库唯一的副本：它没有共享，也没有备份。",
+    "libTrashUndo": "在清空废纸篓之前，可以把文件夹从中取回，“查找曲库文件夹…”会带回该曲库。",
+    "libTrashUndoWin": "在清空回收站之前，可以把文件夹还原，“查找曲库文件夹…”会带回该曲库。",
+    "libTrashGo": "移到废纸篓",
+    "libTrashGoWin": "移到回收站",
+    "libTrashFailed": "“{name}”已从列表中移除，但其文件夹无法移到废纸篓：{error}。它仍在这台电脑上；“查找曲库文件夹…”可将其带回。",
+    "libTrashDone": "“{name}”已移到废纸篓。",
+    "libTrashDoneWin": "“{name}”已移到回收站。",
     "sdLaterBtn": "稍后决定（在此之前不同步）",
     "sdHeldIndicator": "未同步",
     "sharedJoinBtn": "加入",
@@ -17085,6 +17230,7 @@ const STRINGS = {
     "importFolderBtn": "Nhập một thư mục…",
     "nothingPlayingYetTitle": "Chưa phát gì cả",
     "choosePlaylistToBegin": "Chọn một danh sách phát từ danh sách để bắt đầu.",
+    "noPlaylistsYetToBegin": "Trước tiên, hãy tạo một danh sách phát ở “{tab}”.",
     "choosePlaylistPlain": "Chọn một danh sách phát.",
     "choosePlaylistToEditDot": "Chọn một danh sách phát để chỉnh sửa.",
     "editHereBar": "Sửa danh sách phát ở đây",
@@ -17630,6 +17776,29 @@ const STRINGS = {
     "libForgetTitle": "Bỏ “{name}” khỏi danh sách?",
     "libForgetBody": "37 Player quên thư viện này. Thư mục của nó và mọi thứ bên trong, kể cả các bản ghi, vẫn ở trên máy tính này; thư viện chung, nếu nó đã tham gia, không bị đụng đến. Tìm thư mục của một thư viện… sẽ đưa nó trở lại.",
     "libForgetConfirmBtn": "Bỏ khỏi danh sách",
+    "libTrashBtn": "Gỡ và chuyển thư mục vào Thùng rác…",
+    "libTrashBtnWin": "Gỡ và chuyển thư mục vào Thùng rác (Recycle Bin)…",
+    "libTrashLooking": "Đang xem bên trong có gì…",
+    "libTrashTitle": "Chuyển “{name}” vào Thùng rác?",
+    "libTrashTitleWin": "Chuyển “{name}” vào Thùng rác (Recycle Bin)?",
+    "libTrashWhat": "Thư mục sẽ đi, cùng mọi thứ trong đó: {playlists}, {tracks}, {size} trên máy này.",
+    "libTrashPlOne": "1 danh sách phát",
+    "libTrashPl": "{n} danh sách phát",
+    "libTrashTrOne": "1 bản nhạc",
+    "libTrashTr": "{n} bản nhạc",
+    "libTrashPlace": "Các tệp của riêng bạn được dùng tại chỗ ({n} bản nhạc) vẫn ở nguyên chỗ cũ.",
+    "libTrashShared": "Mọi thứ trong đó cũng có trong thư viện chung “{shared}”: tham gia lại thư viện đó sẽ đưa chúng về máy này.",
+    "libTrashSharedNotAll": "Lần cuối thư viện này được mở, chưa phải mọi thứ đã đến thư viện chung “{shared}”. Phần chưa đến sẽ bị mất.",
+    "libTrashBackup": "Bản sao lưu gần nhất, {date}, có tất cả.",
+    "libTrashOldBackup": "Thư viện này không được chia sẻ, và bản sao lưu gần nhất, {date}, không có các thay đổi mới nhất. Phần mới hơn sẽ bị mất.",
+    "libTrashOnlyCopy": "Đây là bản duy nhất của thư viện này: nó không được chia sẻ và không có bản sao lưu.",
+    "libTrashUndo": "Cho đến khi Thùng rác được dọn, có thể lấy thư mục ra lại, và Tìm thư mục của một thư viện… sẽ đưa thư viện trở lại.",
+    "libTrashUndoWin": "Cho đến khi Thùng rác được dọn, có thể khôi phục thư mục, và Tìm thư mục của một thư viện… sẽ đưa thư viện trở lại.",
+    "libTrashGo": "Chuyển vào Thùng rác",
+    "libTrashGoWin": "Chuyển vào Thùng rác",
+    "libTrashFailed": "“{name}” đã khỏi danh sách, nhưng không chuyển được thư mục vào Thùng rác: {error}. Nó vẫn ở trên máy này; Tìm thư mục của một thư viện… sẽ đưa nó trở lại.",
+    "libTrashDone": "Đã chuyển “{name}” vào Thùng rác.",
+    "libTrashDoneWin": "Đã chuyển “{name}” vào Thùng rác.",
     "sdLaterBtn": "Quyết định sau (chưa đồng bộ cho đến lúc đó)",
     "sdHeldIndicator": "Chưa đồng bộ",
     "sharedJoinBtn": "Tham gia",
@@ -19140,6 +19309,7 @@ const STRINGS = {
     "importFolderBtn": "Εισαγωγή φακέλου…",
     "nothingPlayingYetTitle": "Δεν παίζει τίποτα ακόμη",
     "choosePlaylistToBegin": "Επιλέξτε μια λίστα αναπαραγωγής από τη λίστα για να ξεκινήσετε.",
+    "noPlaylistsYetToBegin": "Πρώτα, φτιάξτε μια λίστα στο «{tab}».",
     "choosePlaylistPlain": "Επιλέξτε μια λίστα αναπαραγωγής.",
     "choosePlaylistToEditDot": "Επιλέξτε μια λίστα αναπαραγωγής προς επεξεργασία.",
     "editHereBar": "Επεξεργασία λίστας εδώ",
@@ -19685,6 +19855,29 @@ const STRINGS = {
     "libForgetTitle": "Αφαίρεση της «{name}» από τη λίστα;",
     "libForgetBody": "Το 37 Player ξεχνά αυτή τη βιβλιοθήκη. Ο φάκελός της και ό,τι περιέχει, μαζί με τις ηχογραφήσεις, μένουν σε αυτόν τον υπολογιστή· η κοινόχρηστη βιβλιοθήκη, αν έχει ενταχθεί σε κάποια, δεν αγγίζεται. Η Εύρεση φακέλου βιβλιοθήκης… τη φέρνει πίσω.",
     "libForgetConfirmBtn": "Αφαίρεση από τη λίστα",
+    "libTrashBtn": "Αφαίρεση και μεταφορά του φακέλου στον Κάδο…",
+    "libTrashBtnWin": "Αφαίρεση και μεταφορά του φακέλου στον Κάδο Ανακύκλωσης…",
+    "libTrashLooking": "Εξετάζεται τι περιέχει…",
+    "libTrashTitle": "Μεταφορά της «{name}» στον Κάδο;",
+    "libTrashTitleWin": "Μεταφορά της «{name}» στον Κάδο Ανακύκλωσης;",
+    "libTrashWhat": "Ο φάκελός της φεύγει, με ό,τι περιέχει: {playlists}, {tracks}, {size} σε αυτόν τον υπολογιστή.",
+    "libTrashPlOne": "1 λίστα",
+    "libTrashPl": "{n} λίστες",
+    "libTrashTrOne": "1 κομμάτι",
+    "libTrashTr": "{n} κομμάτια",
+    "libTrashPlace": "Τα δικά σας αρχεία που χρησιμοποιούνται επιτόπου ({n} κομμάτια) μένουν εκεί που είναι.",
+    "libTrashShared": "Όλα όσα περιέχει υπάρχουν και στην κοινόχρηστη βιβλιοθήκη «{shared}»: αν συμμετάσχετε ξανά, επιστρέφουν σε αυτόν τον υπολογιστή.",
+    "libTrashSharedNotAll": "Την τελευταία φορά που ήταν ανοιχτή αυτή η βιβλιοθήκη, δεν είχαν φτάσει όλα στην κοινόχρηστη βιβλιοθήκη «{shared}». Ό,τι δεν είχε φτάσει θα χανόταν.",
+    "libTrashBackup": "Το τελευταίο αντίγραφο ασφαλείας, {date}, τα έχει όλα.",
+    "libTrashOldBackup": "Αυτή η βιβλιοθήκη δεν είναι κοινόχρηστη, και το τελευταίο αντίγραφο ασφαλείας, {date}, δεν έχει τις πιο πρόσφατες αλλαγές. Ό,τι είναι νεότερο θα χανόταν.",
+    "libTrashOnlyCopy": "Αυτό είναι το μόνο αντίγραφο αυτής της βιβλιοθήκης: δεν είναι κοινόχρηστη και δεν έχει αντίγραφο ασφαλείας.",
+    "libTrashUndo": "Μέχρι να αδειάσει ο Κάδος, ο φάκελος μπορεί να βγει πάλι από εκεί, και η Εύρεση φακέλου βιβλιοθήκης… φέρνει πίσω τη βιβλιοθήκη.",
+    "libTrashUndoWin": "Μέχρι να αδειάσει ο Κάδος Ανακύκλωσης, ο φάκελος μπορεί να επαναφερθεί, και η Εύρεση φακέλου βιβλιοθήκης… φέρνει πίσω τη βιβλιοθήκη.",
+    "libTrashGo": "Μεταφορά στον Κάδο",
+    "libTrashGoWin": "Μεταφορά στον Κάδο Ανακύκλωσης",
+    "libTrashFailed": "Η «{name}» βγήκε από τη λίστα, αλλά ο φάκελός της δεν μπόρεσε να μεταφερθεί στον Κάδο: {error}. Είναι ακόμη σε αυτόν τον υπολογιστή· η Εύρεση φακέλου βιβλιοθήκης… τη φέρνει πίσω.",
+    "libTrashDone": "Η «{name}» μεταφέρθηκε στον Κάδο.",
+    "libTrashDoneWin": "Η «{name}» μεταφέρθηκε στον Κάδο Ανακύκλωσης.",
     "sdLaterBtn": "Απόφαση αργότερα (δεν συγχρονίζεται ως τότε)",
     "sdHeldIndicator": "Χωρίς συγχρονισμό",
     "sharedJoinBtn": "Συμμετοχή",
@@ -21195,6 +21388,7 @@ const STRINGS = {
     "importFolderBtn": "Importa una cartella…",
     "nothingPlayingYetTitle": "Ancora nulla in riproduzione",
     "choosePlaylistToBegin": "Scegli una playlist dall'elenco per iniziare.",
+    "noPlaylistsYetToBegin": "Prima, crea una playlist in “{tab}”.",
     "choosePlaylistPlain": "Scegli una playlist.",
     "choosePlaylistToEditDot": "Scegli una playlist da modificare.",
     "editHereBar": "Modifica la playlist qui",
@@ -21740,6 +21934,29 @@ const STRINGS = {
     "libForgetTitle": "Togliere «{name}» dall’elenco?",
     "libForgetBody": "37 Player dimentica questa libreria. La sua cartella e tutto ciò che contiene, registrazioni comprese, restano su questo computer; la libreria condivisa, se è unita a una, non viene toccata. Trova la cartella di una libreria… la riporta.",
     "libForgetConfirmBtn": "Togli dall’elenco",
+    "libTrashBtn": "Rimuovi e sposta la sua cartella nel Cestino…",
+    "libTrashBtnWin": "Rimuovi e sposta la sua cartella nel Cestino…",
+    "libTrashLooking": "Controllo del contenuto…",
+    "libTrashTitle": "Spostare “{name}” nel Cestino?",
+    "libTrashTitleWin": "Spostare “{name}” nel Cestino?",
+    "libTrashWhat": "La sua cartella se ne va, con tutto ciò che contiene: {playlists}, {tracks}, {size} su questo computer.",
+    "libTrashPlOne": "1 playlist",
+    "libTrashPl": "{n} playlist",
+    "libTrashTrOne": "1 brano",
+    "libTrashTr": "{n} brani",
+    "libTrashPlace": "I tuoi file usati sul posto ({n} brani) restano dove sono.",
+    "libTrashShared": "Tutto ciò che contiene è anche nella libreria condivisa “{shared}”: unirti di nuovo a quella libreria lo riporta su questo computer.",
+    "libTrashSharedNotAll": "L'ultima volta che questa libreria è stata aperta, non tutto era ancora arrivato nella libreria condivisa “{shared}”. Ciò che non era arrivato andrebbe perso.",
+    "libTrashBackup": "Il suo ultimo backup, {date}, contiene tutto.",
+    "libTrashOldBackup": "Questa libreria non è condivisa, e il suo ultimo backup, {date}, non ha le modifiche più recenti. Ciò che è più recente andrebbe perso.",
+    "libTrashOnlyCopy": "Questa è l'unica copia di questa libreria: non è condivisa e non ha backup.",
+    "libTrashUndo": "Finché il Cestino non viene svuotato, la cartella può esserne ripresa, e Trova la cartella di una libreria… riporta la libreria.",
+    "libTrashUndoWin": "Finché il Cestino non viene svuotato, la cartella può essere ripristinata, e Trova la cartella di una libreria… riporta la libreria.",
+    "libTrashGo": "Sposta nel Cestino",
+    "libTrashGoWin": "Sposta nel Cestino",
+    "libTrashFailed": "“{name}” non è più nella lista, ma la sua cartella non si è potuta spostare nel Cestino: {error}. È ancora su questo computer; Trova la cartella di una libreria… la riporta.",
+    "libTrashDone": "“{name}” è stata spostata nel Cestino.",
+    "libTrashDoneWin": "“{name}” è stata spostata nel Cestino.",
     "sdLaterBtn": "Decidi più tardi (fino ad allora non si sincronizza)",
     "sdHeldIndicator": "Nessuna sincronizzazione",
     "sharedJoinBtn": "Unisciti",
@@ -26181,7 +26398,9 @@ function renderPlayer(){
   playerEl.dataset.browsedPlaylistId = browsedPl ? browsedPl.id : "";
 
   if(!playingCtx && !browsedPl){
-    playerEl.insertAdjacentHTML("beforeend", `<div class="empty-state"><div class="glyph">♪</div><h2>${t("nothingPlayingYetTitle")}</h2><p>${t("choosePlaylistToBegin")}</p></div>`);
+    // No playlists at all: say where to make one (kr37, 16 Nov 2026).
+    const none = !countPlaylistsIn(root.tree || []);
+    playerEl.insertAdjacentHTML("beforeend", `<div class="empty-state"><div class="glyph">♪</div><h2>${t("nothingPlayingYetTitle")}</h2><p>${none ? escapeHtmlText(t("noPlaylistsYetToBegin", {tab: t("tabEditPlaylists")})) : t("choosePlaylistToBegin")}</p></div>`);
     return;
   }
 
@@ -40872,9 +41091,11 @@ function autoBackupActive(){
 // track's details, the whole playlist tree, and storageRev (bumped by every
 // audio/artwork write — see idbPut). Deliberately leaves out playback
 // position and display settings, which never need backing up.
-function libraryFingerprint(){
-  const lib = root.library.map(t=> [t.id, t.name, t.artist, t.album, t.trackNo, t.filename, t.fileSize, t.hasArtwork, t.duration]);
-  return hashString(JSON.stringify([lib, root.tree, root.storageRev||0]));
+// (r: another library's records, for the Trash question: libraryTrashFacts.)
+function libraryFingerprint(r){
+  r = r || root;
+  const lib = r.library.map(t=> [t.id, t.name, t.artist, t.album, t.trackNo, t.filename, t.fileSize, t.hasArtwork, t.duration]);
+  return hashString(JSON.stringify([lib, r.tree, r.storageRev||0]));
 }
 // An empty library never counts as needing a backup — which also means a
 // freshly wiped browser can never overwrite a good backup with nothing.
@@ -51252,7 +51473,75 @@ async function deleteLibraryBackupFolder(dir, copyId){
 // Removes a library from this device. Never the open one (switch first).
 // The first library's database is emptied rather than deleted, because it
 // also holds this device's converter.
-async function deleteLibrary(id){
+/* ---- Removing a library can move its folder to the Trash (2.5.032, shell
+   2.5.2; kr37, 16 Nov 2026: "Remove local library files from disk (20
+   playlists, 300 tracks, 4.5 GB)", with a second, stern question). Only in
+   the desktop app (a web page can't use the Trash, only delete outright),
+   only with a shell that says it can (desktopShell.trash), and to the Trash
+   or Recycle Bin, never deleted outright, so a mistaken yes can be undone.
+   Only the library's own folder goes: files used in place (the person's own,
+   where they lie) are outside it and stay, and the question says how many.
+   How stern the second question is follows what would be lost, worked out
+   from the library's own records with no connection needed: everything also
+   in its shared library (its "sharedCovered" fingerprint matches the library
+   as it is: sharedNoteCovered) is a calm note; joined but not all of it sent
+   when it was last open, stern; not shared and no backup with all of it
+   (the backup record's lastFingerprint), sternest ("the only copy"). */
+async function libraryTrashFacts(id){
+  const out = {playlists: 0, tracks: 0, place: 0, bytes: null, shared: null, covered: false, backupAt: null, backupAll: false};
+  const d = storageOpen(id);
+  try{
+    const rec = await d.get("state", "root").catch(()=> null);
+    const view = await d.get("state", "view").catch(()=> null);
+    const r = rec && rec.value;
+    if(r && Array.isArray(r.library)){
+      out.tracks = r.library.length;
+      (function walk(nodes){ (nodes || []).forEach(n=>{ if(n.kind === "playlist") out.playlists++; else walk(n.children); }); })(r.tree);
+      const fp = libraryFingerprint({library: r.library, tree: r.tree || [], storageRev: r.storageRev});
+      const settings = (view && view.value && view.value.settings) || r.settings || {};
+      const cfg = settings.sharedLibrary;
+      if(cfg){
+        out.shared = cfg.libraryName || cfg.name || t("libDefaultName");
+        const cov = await d.get("state", "sharedCovered").catch(()=> null);
+        out.covered = !!(cov && cov.fingerprint === fp);
+      }
+      const bk = await d.get("state", "backup").catch(()=> null);
+      if(bk && bk.lastBackupAt){ out.backupAt = bk.lastBackupAt; out.backupAll = bk.lastFingerprint === fp; }
+    }
+    try{ if(d.placeRefs) out.place = (await d.placeRefs()).size; }catch(err){}
+  } finally { try{ d.close(); }catch(err){} }
+  try{ const info = await desktopInvoke("fs_root_trash", {id: desktopRootOf(id), dry: true}); if(info && info.present) out.bytes = info.bytes; }catch(err){ out.error = errText(err); }
+  return out;
+}
+function canTrashLibraries(){ return STORAGE_KIND === "desktop" && !!(desktopShell && desktopShell.trash); }
+function trashWord(key, vars){ return t(deviceOs() === "windows" ? key + "Win" : key, vars); } // Trash or Recycle Bin
+// The second question (libraryTrashFacts), then the folder to the Trash.
+async function trashLibraryAsked(l){
+  const name = libraryDisplayName(l);
+  showToast(t("libTrashLooking"));
+  const f = await libraryTrashFacts(l.id);
+  const esc = escapeHtmlText;
+  const what = t("libTrashWhat", {playlists: f.playlists === 1 ? t("libTrashPlOne") : t("libTrashPl", {n: f.playlists}), tracks: f.tracks === 1 ? t("libTrashTrOne") : t("libTrashTr", {n: f.tracks}), size: fmtBytes(f.bytes)});
+  // How much would be lost: calm, stern or sternest (the strip in red).
+  let risk, stern;
+  if(f.shared){ stern = !f.covered; risk = t(f.covered ? "libTrashShared" : "libTrashSharedNotAll", {shared: f.shared}); }
+  else if(f.backupAt && f.backupAll){ stern = false; risk = t("libTrashBackup", {date: fmtDate(f.backupAt)}); }
+  else if(f.backupAt){ stern = true; risk = t("libTrashOldBackup", {date: fmtDate(f.backupAt)}); }
+  else { stern = true; risk = t("libTrashOnlyCopy"); }
+  const body = `<p>${esc(what)}</p>`
+    + (stern ? `<p class="trash-risk">${esc(risk)}</p>` : `<p>${esc(risk)}</p>`)
+    + (f.place ? `<p>${esc(t("libTrashPlace", {n: f.place}))}</p>` : "")
+    + `<p class="settings-note">${esc(trashWord("libTrashUndo"))}</p>`;
+  const go = await askChoice(trashWord("libTrashTitle", {name}), body,
+    [{label: t("cancel"), value: null, kind: "primary"}, {label: trashWord("libTrashGo"), value: "trash", kind: "danger"}]);
+  if(go !== "trash") return;
+  const res = await deleteLibrary(l.id, {trash: true});
+  updateLibrarySwitch();
+  renderSettingsSection();
+  if(res && res.trashError) await askChoice(trashWord("libTrashTitle", {name}), `<p>${esc(t("libTrashFailed", {name, error: res.trashError}))}</p>`, [{label: t("ok"), value: null, kind: "primary"}]);
+  else showToast(trashWord("libTrashDone", {name}));
+}
+async function deleteLibrary(id, opts){
   if(id === LIBRARY_ID) return;
   const reg = readLibraryList();
   if(!reg.list.some(l=> l.id === id)) return;
@@ -51272,7 +51561,13 @@ async function deleteLibrary(id){
   // records and recordings stay (2.4.003: the first library went through
   // the clearing below, which emptied its folder's records; found while
   // answering kr37's "would that delete any audio?", 13 Nov 2026).
-  if(libraryInDesktopFolder(id)){ await storageRemove(id); return; }
+  if(libraryInDesktopFolder(id)){
+    // To the Trash, if asked (libraryTrashFacts), once other windows have let go of it.
+    let trashError = null;
+    if(opts && opts.trash){ try{ await desktopInvoke("fs_root_trash", {id: desktopRootOf(id), dry: false}); desktopRootsCache = null; }catch(err){ trashError = errText(err); } }
+    await storageRemove(id);
+    return {trashError};
+  }
   if(id === MAIN_LIBRARY_ID){
     // Everything but the converter (backup and libraryInfo go too).
     const d = storageOpen(MAIN_LIBRARY_ID);
@@ -51366,14 +51661,16 @@ function renderLibrariesSection(body){
         // forgotten: its folder and recordings stay, and the wording says so
         // (2.4.003, kr37, 13 Nov 2026: "would that delete any audio?").
         const kept = !!l.folder || libraryInDesktopFolder(l.id);
+        const trashable = kept && canTrashLibraries();
         const asked = askChoice(t(kept ? "libForgetTitle" : "libDeleteTitle", {name: libraryDisplayName(l)}), `<p>${escapeHtmlText(t(kept ? "libForgetBody" : "libDeleteBody"))}</p>`
           + (folder ? `<label class="join-partial" style="font-weight:normal;"><input type="checkbox" id="libDelBackup"> ${escapeHtmlText(t("libDeleteBackupCheck", {folder: folder.name}))}</label>` : "")
           + (hadFiles ? `<p class="settings-note">${escapeHtmlText(t("libDeleteBackupFiles", {name: fileSlug(libraryDisplayName(l)) || "…"}))}</p>` : "")
           + (l.folder ? `<p class="settings-note">${escapeHtmlText(t("folderLibDeleteNote", {name: l.folder}))}</p>` : ""),
-          [{label: t(kept ? "libForgetConfirmBtn" : "libDeleteConfirmBtn"), value: "delete", kind: "danger"}, {label: t("cancel"), value: null}]);
+          [{label: t(kept ? "libForgetConfirmBtn" : "libDeleteConfirmBtn"), value: "delete", kind: "danger"}].concat(trashable ? [{label: trashWord("libTrashBtn"), value: "trash", kind: "danger"}] : []).concat([{label: t("cancel"), value: null}]));
         const box = document.getElementById("libDelBackup");
         if(box) box.addEventListener("change", ()=>{ wantBackup = box.checked; });
         const ok = await asked;
+        if(ok === "trash"){ await trashLibraryAsked(l); return; }
         if(ok !== "delete") return;
         // Asked for straight away, while the click still counts as the person's.
         let allowed = false;
@@ -51692,7 +51989,7 @@ if(IN_DESKTOP_APP){
   window.addEventListener("resize", fitHeight);
 }
 const DESKTOP_BRIDGE_NEEDED = +((document.querySelector('meta[name="desktop-bridge"]') || {}).content || 1);
-let desktopShell = null; // {version, bridge, pages, device, updates, zoom, files_http}
+let desktopShell = null; // {version, bridge, pages, device, updates, zoom, trash (2.5.2), files_http}
 async function desktopShellCheck(){
   if(!IN_DESKTOP_APP || !window.__TAURI__ || !window.__TAURI__.core) return;
   try{ desktopShell = await window.__TAURI__.core.invoke("p37_shell_info"); }catch(err){ desktopShell = {version: "?", bridge: 0}; }

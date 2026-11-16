@@ -185,3 +185,5 @@ window.__ad = {pending: ()=> afterDialogPending, idle: ()=> afterDialogIdle(), b
   closing: ()=> closingWouldStop(), slowSaves: (ms)=>{ const hold = new Promise(r=> setTimeout(r, ms)); saveChain = saveChain.then(()=> hold); },
   edit: (id)=> openEditLibraryTrack(findLibraryTrack(id)), bulk: (ids)=> openBulkEditLibraryTracks(ids), run: (k, f, fn)=> afterDialog(k, f, fn), undo: ()=> doUndo(),
   art: (id)=> artworkUrlCache[id], copyPic: (blob)=>{ copiedArtworkBlob = blob; }};
+// Removing a library can move its folder to the Trash (2.5.032; libtrash.js).
+window.__trash = {fp: (r)=> libraryFingerprint(r), facts: (id)=> libraryTrashFacts(id), shell: ()=> desktopShell, noTrash: ()=>{ desktopShell = Object.assign({}, desktopShell, {trash: false}); }};

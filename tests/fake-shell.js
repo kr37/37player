@@ -43,7 +43,7 @@
     window.__fakeShellPaths.push(cmd + ' ' + ((args && (args.path || args.from)) || '')); // which file, for tests that count reads of one file
     args = args || {};
     switch(cmd){
-      case 'p37_shell_info': return {version: '2.0.000', bridge: 2, pages: false, device: true, updates: !!window.__fakeShellUpdates, zoom: !!window.__fakeShellZoom, files_http: window.__fakeFilesHttp || null};
+      case 'p37_shell_info': return {version: '2.0.000', bridge: 2, pages: false, device: true, updates: !!window.__fakeShellUpdates, zoom: !!window.__fakeShellZoom, trash: window.__fakeShellTrash !== false, files_http: window.__fakeFilesHttp || null};
       // The Size setting, by the shell (2.4.000): what it was asked for is kept for the test.
       case 'p37_zoom': if(!window.__fakeShellZoom) throw new Error('unknown command'); (window.__fakeZooms = window.__fakeZooms || []).push(args.scale); return null;
       // The shell updating itself (shellupd.js): window.__fakeShellUpdates = {version, current} or null (none).
@@ -99,6 +99,19 @@
         let n = 0;
         for(const e of (rec && rec.value) || []){ if(!String(e.root).startsWith('in-' + libId + '-') || (r[e.root] && await pathDir(r[e.root])) || !(await pathDir(e.label))) continue; r[e.root] = e.label; n++; }
         await writeRoots(r); return n;
+      }
+      // A library's folder to the Trash (shell 2.5.2): here it's removed, and
+      // its path noted in __fakeTrash.
+      case 'fs_root_trash': {
+        if(!String(args.id).startsWith('lib-')) throw new Error("only a library's own folder");
+        const r = await readRoots(); if(!(args.id in r)) throw new Error('no folder called ' + args.id + ' on the list');
+        const d = await pathDir(r[args.id]); if(!d) return {present: false, bytes: 0, files: 0};
+        if(!(await markerOf(d))) throw new Error("not a library's folder");
+        let bytes = 0, files = 0;
+        const walk = async dd=>{ for await (const [nm, h] of dd.entries()){ if(h.kind === 'directory') await walk(h); else { bytes += (await h.getFile()).size; files++; } } };
+        await walk(d);
+        if(!args.dry){ const segs = parts(r[args.id]), nm = segs.pop(); await (await pathDir(segs.join('/'))).removeEntry(nm, {recursive: true}); (window.__fakeTrash = window.__fakeTrash || []).push(r[args.id]); delete r[args.id]; await writeRoots(r); }
+        return {present: true, bytes, files};
       }
       case 'fs_remove_if_empty': {
         const r = await readRoots(); if(!(args.id in r)) throw new Error('no folder called ' + args.id + ' on the list');
