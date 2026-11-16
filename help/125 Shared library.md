@@ -41,7 +41,7 @@ There's nothing to do. (The less used switches, the sync log and the server's ve
 
 ### History: going back
 
-Every version of the shared library from the last 30 days is kept (on Google Drive, all of them). **History…**, here in Settings → Shared library, compares now with any of them and brings back what you choose. See 'History and Undo'.
+Every version of the shared library from the last 30 days is kept (on Google Drive, all of them). **History…**, here in Settings → Shared library (or Settings → Undo history), can roll the whole library back to any of them, or bring back one playlist or track as it was. See 'History and Undo'.
 
 ### If a device loses its library
 
