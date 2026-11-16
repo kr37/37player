@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.5.026">
+<meta name="app-version" content="2.5.027">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -737,28 +737,11 @@
   .hist-older{ margin:12px 14px 0; font-size:12.5px; color:var(--text-dim); line-height:1.4; }
   .hist-mainwrap{ flex:1; min-width:0; display:flex; flex-direction:column; min-height:0; }
   .hist-main{ flex:1; overflow-y:auto; padding:16px 22px 22px; }
-  .hist-mainhead{ max-width:920px; margin:0 auto; }
   .hist-h3{ margin:0; font-size:18px; }
-  .hist-by{ margin:3px 0 8px; color:var(--text-dim); font-size:13.5px; }
   .hist-modes{ border:0; margin:0 0 6px; padding:0; display:flex; flex-wrap:wrap; gap:4px 22px; }
   .hist-modes label{ display:flex; align-items:center; gap:8px; min-height:40px; cursor:pointer; margin:0; }
   .hist-modes input{ width:20px; height:20px; margin:0; accent-color:var(--amber); }
   .sr-only{ position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
-  .hist-page .rv-colheads, .hist-list{ max-width:920px; margin-left:auto; margin-right:auto; }
-  .hist-row .rv-name{ align-items:center; }
-  .hist-badge{ font-size:11.5px; font-weight:700; padding:1px 8px; border-radius:99px; border:1px solid currentColor; white-space:nowrap; }
-  .hist-badge-add{ color:var(--sage); }
-  .hist-badge-del{ color:var(--rust-bright); }
-  .hist-badge-chg{ color:var(--amber); }
-  .hist-arrow-plain{ text-align:center; color:var(--text-dim); font-size:20px; }
-  .hist-open{ margin-top:4px; background:none; border:0; color:var(--amber); font:inherit; font-size:13px; cursor:pointer; padding:6px 0; min-height:32px; }
-  .hist-versions{ margin-top:6px; align-items:start; }
-  .hist-items{ margin:0; padding:8px 10px 8px 30px; border-radius:8px; background:var(--bg-panel); font-size:13px; line-height:1.65; }
-  .hist-items-none{ padding:8px 10px; color:var(--text-dim); }
-  .hist-it-add{ color:var(--sage); font-weight:700; }
-  .hist-it-del{ color:var(--rust-bright); font-weight:700; }
-  .hist-it-changed{ color:var(--amber); font-weight:700; }
-  .hist-it-word{ font-weight:400; font-size:12px; }
   .hist-nothing{ max-width:920px; margin:18px auto; color:var(--text-dim); }
   .hist-nothing + .rb-tools{ margin-top:14px; }
   /* History: Bring back (2.5.018) */
@@ -835,7 +818,6 @@
   .hist-tabbar{ display:flex; padding:10px 22px 0; }
   .hist-tabs{ max-width:100%; flex-wrap:wrap; border-radius:18px; }
   .hist-tabs .tab-short{ display:none; }
-  .hist-soon{ max-width:620px; color:var(--text-dim); }
   .hist-point-undone .hist-point-time, .hist-point-undone .hist-point-by, .hist-point-undone .hist-point-what{ text-decoration:line-through; color:var(--text-dim); }
   .hist-undone-line{ display:flex; align-items:center; gap:8px; margin:6px 16px 4px; color:var(--rust-bright); font-size:12px; text-align:center; line-height:1.3; }
   .hist-undone-line::before, .hist-undone-line::after{ content:""; flex:1; min-width:14px; height:1px; background:var(--rust-bright); } /* a longer wording (2.5.024) wraps between its lines */
@@ -5225,61 +5207,13 @@ const STRINGS = {
     "histSumFolderOne": "1 folder changed",
     "histSumFolders": "{n} folders changed",
     "histSumOrder": "order changed",
-    "histNowTitle": "The shared library now",
-    "histRestoreTitle": "Restore to {time}",
-    "histPointTitle": "What changed at {time}",
     "histShowLegend": "What to show",
-    "histShowRestore": "What restoring would change",
-    "histShowPoint": "What changed at this point",
-    "histIntroRestore": "Everything starts as Keep now. Tap a row's button to bring back how it was then. Restoring never erases anything: it's saved as a new version at the top of this list, so it can be undone here too.",
-    "histIntroPoint": "Only what this one save changed, before and after.",
-    "histIntroNow": "This is the shared library as it is now. Choose an earlier version to compare.",
-    "histCantPoint": "The version before this one is no longer kept, so what this save changed can't be shown.",
-    "histReceiveOnly": "This device receives updates only, so it can't restore. Restore from a device that sends changes.",
-    "histColNow": "Now",
-    "histColThen": "Then: {time}",
-    "histColBefore": "Before",
-    "histColAfter": "After",
-    "histKeepNow": "Keep now",
-    "histRestoreWord": "Restore",
-    "histBadgeAdded": "Added since",
-    "histBadgeDeleted": "Deleted since",
-    "histBadgeChanged": "Changed since",
-    "histBadgeAddedHere": "Added here",
-    "histBadgeDeletedHere": "Deleted here",
-    "histBadgeChangedHere": "Changed here",
-    "histNotThere": "Not there",
-    "histInLibrary": "In the library",
-    "histUsedBy": "Used by {names}",
-    "histNameIs": "named “{name}”",
     "histOtherAudio": "different audio",
     "histOtherArt": "different artwork",
     "histOtherDetails": "different details",
-    "histPlInfoOne": "1 item · {length}",
-    "histPlInfo": "{n} items · {length}",
-    "histInFolder": "in “{name}”",
-    "histOrder": "Order: {list}",
-    "histShowVersions": "Show the two versions side by side",
-    "histHideVersions": "Hide the two versions",
     "histItemSilence": "Silence · {time}",
     "histItemStop": "Stop: {name}",
-    "histItemChanged": "changed",
-    "histItemSince": "added since",
-    "histItemGoneSince": "gone since",
-    "histItemAddedHere": "added here",
-    "histItemRemovedHere": "removed here",
-    "histNeededBy": "Comes back with {names}",
     "histNothing": "Nothing differs between now and then.",
-    "histNothingPoint": "This save changed nothing that shows here.",
-    "histFooterNoneOne": "Nothing chosen yet: 1 difference between now and then.",
-    "histFooterNone": "Nothing chosen yet: {n} differences between now and then.",
-    "histFooterSome": "Restores {k} of {n}. The other devices get it at their next sync.",
-    "histAll": "Restore everything",
-    "histNoneBtn": "Keep everything as now",
-    "histGo": "Restore",
-    "histGoOne": "Restore 1 change",
-    "histGoN": "Restore {n} changes",
-    "histChangedMeanwhile": "The shared library changed meanwhile. The list is up to date again, with your choices kept where nothing changed: check it, then restore.",
     "sharedMore": "More",
     "sharedMoreNote": "review changes, receive only, screen off, sync log, server",
     "rvIntro": "Each row is something that differs. The arrow says which version wins: → sends this device's version to the shared library, ← takes the shared library's version, ✕ skips it for now (it comes up again next time). Tap an arrow to change it.",
@@ -7324,61 +7258,13 @@ const STRINGS = {
     "histSumFolderOne": "1 carpeta cambiada",
     "histSumFolders": "{n} carpetas cambiadas",
     "histSumOrder": "orden cambiado",
-    "histNowTitle": "La biblioteca compartida ahora",
-    "histRestoreTitle": "Restaurar a {time}",
-    "histPointTitle": "Qué cambió a las {time}",
     "histShowLegend": "Qué mostrar",
-    "histShowRestore": "Qué cambiaría al restaurar",
-    "histShowPoint": "Qué cambió en este punto",
-    "histIntroRestore": "Todo empieza en Mantener ahora. Toca el botón de una fila para recuperar cómo estaba entonces. Restaurar nunca borra nada: se guarda como una nueva versión al principio de esta lista, así que también se puede deshacer aquí.",
-    "histIntroPoint": "Solo lo que cambió este guardado, antes y después.",
-    "histIntroNow": "Esta es la biblioteca compartida tal como está ahora. Elige una versión anterior para comparar.",
-    "histCantPoint": "La versión anterior a esta ya no se guarda, así que no se puede mostrar qué cambió este guardado.",
-    "histReceiveOnly": "Este dispositivo solo recibe actualizaciones, así que no puede restaurar. Restaura desde un dispositivo que envíe cambios.",
-    "histColNow": "Ahora",
-    "histColThen": "Entonces: {time}",
-    "histColBefore": "Antes",
-    "histColAfter": "Después",
-    "histKeepNow": "Mantener ahora",
-    "histRestoreWord": "Restaurar",
-    "histBadgeAdded": "Añadido desde entonces",
-    "histBadgeDeleted": "Borrado desde entonces",
-    "histBadgeChanged": "Cambiado desde entonces",
-    "histBadgeAddedHere": "Añadido aquí",
-    "histBadgeDeletedHere": "Borrado aquí",
-    "histBadgeChangedHere": "Cambiado aquí",
-    "histNotThere": "No está",
-    "histInLibrary": "En la biblioteca",
-    "histUsedBy": "Usada en {names}",
-    "histNameIs": "llamada «{name}»",
     "histOtherAudio": "otro audio",
     "histOtherArt": "otra imagen",
     "histOtherDetails": "otros datos",
-    "histPlInfoOne": "1 elemento · {length}",
-    "histPlInfo": "{n} elementos · {length}",
-    "histInFolder": "en «{name}»",
-    "histOrder": "Orden: {list}",
-    "histShowVersions": "Mostrar las dos versiones lado a lado",
-    "histHideVersions": "Ocultar las dos versiones",
     "histItemSilence": "Silencio · {time}",
     "histItemStop": "Parada: {name}",
-    "histItemChanged": "cambiado",
-    "histItemSince": "añadido desde entonces",
-    "histItemGoneSince": "quitado desde entonces",
-    "histItemAddedHere": "añadido aquí",
-    "histItemRemovedHere": "quitado aquí",
-    "histNeededBy": "Vuelve con {names}",
     "histNothing": "No hay diferencias entre ahora y entonces.",
-    "histNothingPoint": "Este guardado no cambió nada que se muestre aquí.",
-    "histFooterNoneOne": "Nada elegido todavía: 1 diferencia entre ahora y entonces.",
-    "histFooterNone": "Nada elegido todavía: {n} diferencias entre ahora y entonces.",
-    "histFooterSome": "Restaura {k} de {n}. Los demás dispositivos lo recibirán en su próxima sincronización.",
-    "histAll": "Restaurar todo",
-    "histNoneBtn": "Mantener todo como ahora",
-    "histGo": "Restaurar",
-    "histGoOne": "Restaurar 1 cambio",
-    "histGoN": "Restaurar {n} cambios",
-    "histChangedMeanwhile": "La biblioteca compartida cambió mientras tanto. La lista vuelve a estar al día, con tus elecciones donde nada cambió: revísala y luego restaura.",
     "sharedMore": "Más",
     "sharedMoreNote": "revisar cambios, solo recibir, pantalla apagada, registro, servidor",
     "rvIntro": "Cada fila es algo que difiere. La flecha indica qué versión gana: → envía la versión de este dispositivo a la biblioteca compartida, ← toma la versión de la biblioteca compartida, ✕ lo omite por ahora (vuelve a aparecer la próxima vez). Toca una flecha para cambiarla.",
@@ -9422,61 +9308,13 @@ const STRINGS = {
     "histSumFolderOne": "1 dossier modifié",
     "histSumFolders": "{n} dossiers modifiés",
     "histSumOrder": "ordre modifié",
-    "histNowTitle": "La bibliothèque partagée maintenant",
-    "histRestoreTitle": "Restaurer à {time}",
-    "histPointTitle": "Ce qui a changé à {time}",
     "histShowLegend": "Ce qu'il faut afficher",
-    "histShowRestore": "Ce que la restauration changerait",
-    "histShowPoint": "Ce qui a changé à ce moment",
-    "histIntroRestore": "Tout commence sur Garder l'actuel. Touchez le bouton d'une ligne pour revenir à ce qu'elle était alors. Restaurer n'efface jamais rien : c'est enregistré comme une nouvelle version en haut de cette liste, et peut donc aussi être annulé ici.",
-    "histIntroPoint": "Seulement ce que cet enregistrement a changé, avant et après.",
-    "histIntroNow": "C'est la bibliothèque partagée telle qu'elle est maintenant. Choisissez une version plus ancienne pour comparer.",
-    "histCantPoint": "La version précédente n'est plus gardée : ce qu'a changé cet enregistrement ne peut pas être affiché.",
-    "histReceiveOnly": "Cet appareil ne fait que recevoir les mises à jour : il ne peut pas restaurer. Restaurez depuis un appareil qui envoie des modifications.",
-    "histColNow": "Maintenant",
-    "histColThen": "Alors : {time}",
-    "histColBefore": "Avant",
-    "histColAfter": "Après",
-    "histKeepNow": "Garder l'actuel",
-    "histRestoreWord": "Restaurer",
-    "histBadgeAdded": "Ajouté depuis",
-    "histBadgeDeleted": "Supprimé depuis",
-    "histBadgeChanged": "Modifié depuis",
-    "histBadgeAddedHere": "Ajouté ici",
-    "histBadgeDeletedHere": "Supprimé ici",
-    "histBadgeChangedHere": "Modifié ici",
-    "histNotThere": "Absent",
-    "histInLibrary": "Dans la bibliothèque",
-    "histUsedBy": "Utilisée par {names}",
-    "histNameIs": "nommée « {name} »",
     "histOtherAudio": "autre audio",
     "histOtherArt": "autre illustration",
     "histOtherDetails": "autres détails",
-    "histPlInfoOne": "1 élément · {length}",
-    "histPlInfo": "{n} éléments · {length}",
-    "histInFolder": "dans « {name} »",
-    "histOrder": "Ordre : {list}",
-    "histShowVersions": "Afficher les deux versions côte à côte",
-    "histHideVersions": "Masquer les deux versions",
     "histItemSilence": "Silence · {time}",
     "histItemStop": "Arrêt : {name}",
-    "histItemChanged": "modifié",
-    "histItemSince": "ajouté depuis",
-    "histItemGoneSince": "retiré depuis",
-    "histItemAddedHere": "ajouté ici",
-    "histItemRemovedHere": "retiré ici",
-    "histNeededBy": "Revient avec {names}",
     "histNothing": "Rien ne diffère entre maintenant et alors.",
-    "histNothingPoint": "Cet enregistrement n'a rien changé qui s'affiche ici.",
-    "histFooterNoneOne": "Rien de choisi : 1 différence entre maintenant et alors.",
-    "histFooterNone": "Rien de choisi : {n} différences entre maintenant et alors.",
-    "histFooterSome": "Restaure {k} sur {n}. Les autres appareils le recevront à leur prochaine synchronisation.",
-    "histAll": "Tout restaurer",
-    "histNoneBtn": "Tout garder tel quel",
-    "histGo": "Restaurer",
-    "histGoOne": "Restaurer 1 modification",
-    "histGoN": "Restaurer {n} modifications",
-    "histChangedMeanwhile": "La bibliothèque partagée a changé entre-temps. La liste est de nouveau à jour, vos choix gardés là où rien n'a changé : vérifiez-la, puis restaurez.",
     "sharedMore": "Plus",
     "sharedMoreNote": "vérifier les modifications, réception seule, écran éteint, journal, serveur",
     "rvIntro": "Chaque ligne est une différence. La flèche indique quelle version l’emporte : → envoie la version de cet appareil à la bibliothèque partagée, ← prend la version de la bibliothèque partagée, ✕ l’ignore pour l’instant (elle revient la prochaine fois). Touchez une flèche pour la changer.",
@@ -11520,61 +11358,13 @@ const STRINGS = {
     "histSumFolderOne": "1 pasta alterada",
     "histSumFolders": "{n} pastas alteradas",
     "histSumOrder": "ordem alterada",
-    "histNowTitle": "A biblioteca compartilhada agora",
-    "histRestoreTitle": "Restaurar para {time}",
-    "histPointTitle": "O que mudou às {time}",
     "histShowLegend": "O que mostrar",
-    "histShowRestore": "O que restaurar mudaria",
-    "histShowPoint": "O que mudou neste ponto",
-    "histIntroRestore": "Tudo começa como Manter o atual. Toque no botão de uma linha para trazer de volta como estava. Restaurar nunca apaga nada: é salvo como uma nova versão no topo desta lista, então também pode ser desfeito aqui.",
-    "histIntroPoint": "Só o que este salvamento mudou, antes e depois.",
-    "histIntroNow": "Esta é a biblioteca compartilhada como está agora. Escolha uma versão anterior para comparar.",
-    "histCantPoint": "A versão anterior a esta não é mais guardada, então não dá para mostrar o que este salvamento mudou.",
-    "histReceiveOnly": "Este dispositivo só recebe atualizações, então não pode restaurar. Restaure a partir de um dispositivo que envia alterações.",
-    "histColNow": "Agora",
-    "histColThen": "Então: {time}",
-    "histColBefore": "Antes",
-    "histColAfter": "Depois",
-    "histKeepNow": "Manter o atual",
-    "histRestoreWord": "Restaurar",
-    "histBadgeAdded": "Adicionado desde então",
-    "histBadgeDeleted": "Apagado desde então",
-    "histBadgeChanged": "Alterado desde então",
-    "histBadgeAddedHere": "Adicionado aqui",
-    "histBadgeDeletedHere": "Apagado aqui",
-    "histBadgeChangedHere": "Alterado aqui",
-    "histNotThere": "Não existe",
-    "histInLibrary": "Na biblioteca",
-    "histUsedBy": "Usada em {names}",
-    "histNameIs": "chamada “{name}”",
     "histOtherAudio": "outro áudio",
     "histOtherArt": "outra arte",
     "histOtherDetails": "outros detalhes",
-    "histPlInfoOne": "1 item · {length}",
-    "histPlInfo": "{n} itens · {length}",
-    "histInFolder": "em “{name}”",
-    "histOrder": "Ordem: {list}",
-    "histShowVersions": "Mostrar as duas versões lado a lado",
-    "histHideVersions": "Ocultar as duas versões",
     "histItemSilence": "Silêncio · {time}",
     "histItemStop": "Parada: {name}",
-    "histItemChanged": "alterado",
-    "histItemSince": "adicionado desde então",
-    "histItemGoneSince": "removido desde então",
-    "histItemAddedHere": "adicionado aqui",
-    "histItemRemovedHere": "removido aqui",
-    "histNeededBy": "Volta junto com {names}",
     "histNothing": "Nada difere entre agora e então.",
-    "histNothingPoint": "Este salvamento não mudou nada que apareça aqui.",
-    "histFooterNoneOne": "Nada escolhido ainda: 1 diferença entre agora e então.",
-    "histFooterNone": "Nada escolhido ainda: {n} diferenças entre agora e então.",
-    "histFooterSome": "Restaura {k} de {n}. Os outros dispositivos recebem na próxima sincronização.",
-    "histAll": "Restaurar tudo",
-    "histNoneBtn": "Manter tudo como está",
-    "histGo": "Restaurar",
-    "histGoOne": "Restaurar 1 alteração",
-    "histGoN": "Restaurar {n} alterações",
-    "histChangedMeanwhile": "A biblioteca compartilhada mudou nesse meio tempo. A lista está atualizada de novo, com suas escolhas mantidas onde nada mudou: confira e depois restaure.",
     "sharedMore": "Mais",
     "sharedMoreNote": "revisar alterações, só receber, tela desligada, registro, servidor",
     "rvIntro": "Cada linha é algo diferente. A seta diz qual versão vale: → envia a versão deste dispositivo para a biblioteca compartilhada, ← pega a versão da biblioteca compartilhada, ✕ pula por agora (aparece de novo na próxima vez). Toque numa seta para mudá-la.",
@@ -13618,61 +13408,13 @@ const STRINGS = {
     "histSumFolderOne": "1 Ordner geändert",
     "histSumFolders": "{n} Ordner geändert",
     "histSumOrder": "Reihenfolge geändert",
-    "histNowTitle": "Die gemeinsame Bibliothek jetzt",
-    "histRestoreTitle": "Auf {time} zurücksetzen",
-    "histPointTitle": "Was sich um {time} geändert hat",
     "histShowLegend": "Was angezeigt wird",
-    "histShowRestore": "Was das Wiederherstellen ändern würde",
-    "histShowPoint": "Was sich hier geändert hat",
-    "histIntroRestore": "Alles beginnt bei „Jetzt behalten“. Tippe auf die Schaltfläche einer Zeile, um zurückzuholen, wie es damals war. Wiederherstellen löscht nie etwas: Es wird als neue Version oben in dieser Liste gespeichert und lässt sich auch hier rückgängig machen.",
-    "histIntroPoint": "Nur, was diese eine Speicherung geändert hat, vorher und nachher.",
-    "histIntroNow": "Das ist die gemeinsame Bibliothek, wie sie jetzt ist. Wähle eine frühere Version zum Vergleichen.",
-    "histCantPoint": "Die Version davor wird nicht mehr aufbewahrt, daher lässt sich nicht zeigen, was diese Speicherung geändert hat.",
-    "histReceiveOnly": "Dieses Gerät empfängt nur Aktualisierungen und kann daher nicht wiederherstellen. Stelle von einem Gerät aus wieder her, das Änderungen sendet.",
-    "histColNow": "Jetzt",
-    "histColThen": "Damals: {time}",
-    "histColBefore": "Vorher",
-    "histColAfter": "Nachher",
-    "histKeepNow": "Jetzt behalten",
-    "histRestoreWord": "Wiederherstellen",
-    "histBadgeAdded": "Seitdem hinzugefügt",
-    "histBadgeDeleted": "Seitdem gelöscht",
-    "histBadgeChanged": "Seitdem geändert",
-    "histBadgeAddedHere": "Hier hinzugefügt",
-    "histBadgeDeletedHere": "Hier gelöscht",
-    "histBadgeChangedHere": "Hier geändert",
-    "histNotThere": "Nicht vorhanden",
-    "histInLibrary": "In der Bibliothek",
-    "histUsedBy": "Verwendet in {names}",
-    "histNameIs": "heißt „{name}“",
     "histOtherAudio": "anderes Audio",
     "histOtherArt": "anderes Cover",
     "histOtherDetails": "andere Angaben",
-    "histPlInfoOne": "1 Eintrag · {length}",
-    "histPlInfo": "{n} Einträge · {length}",
-    "histInFolder": "in „{name}“",
-    "histOrder": "Reihenfolge: {list}",
-    "histShowVersions": "Beide Versionen nebeneinander zeigen",
-    "histHideVersions": "Beide Versionen ausblenden",
     "histItemSilence": "Stille · {time}",
     "histItemStop": "Stopp: {name}",
-    "histItemChanged": "geändert",
-    "histItemSince": "seitdem hinzugefügt",
-    "histItemGoneSince": "seitdem entfernt",
-    "histItemAddedHere": "hier hinzugefügt",
-    "histItemRemovedHere": "hier entfernt",
-    "histNeededBy": "Kommt mit {names} zurück",
     "histNothing": "Zwischen jetzt und damals gibt es keinen Unterschied.",
-    "histNothingPoint": "Diese Speicherung hat nichts geändert, was hier erscheint.",
-    "histFooterNoneOne": "Noch nichts gewählt: 1 Unterschied zwischen jetzt und damals.",
-    "histFooterNone": "Noch nichts gewählt: {n} Unterschiede zwischen jetzt und damals.",
-    "histFooterSome": "Stellt {k} von {n} wieder her. Die anderen Geräte erhalten es bei ihrer nächsten Synchronisierung.",
-    "histAll": "Alles wiederherstellen",
-    "histNoneBtn": "Alles wie jetzt behalten",
-    "histGo": "Wiederherstellen",
-    "histGoOne": "1 Änderung wiederherstellen",
-    "histGoN": "{n} Änderungen wiederherstellen",
-    "histChangedMeanwhile": "Die gemeinsame Bibliothek hat sich inzwischen geändert. Die Liste ist wieder aktuell, deine Auswahl bleibt, wo sich nichts geändert hat: Prüfe sie und stelle dann wieder her.",
     "sharedMore": "Mehr",
     "sharedMoreNote": "Änderungen prüfen, nur empfangen, Bildschirm aus, Protokoll, Server",
     "rvIntro": "Jede Zeile ist ein Unterschied. Der Pfeil sagt, welche Version gilt: → sendet die Version dieses Geräts an die gemeinsame Bibliothek, ← übernimmt die Version der gemeinsamen Bibliothek, ✕ überspringt es vorerst (es erscheint beim nächsten Mal wieder). Tippen Sie auf einen Pfeil, um ihn zu ändern.",
@@ -15716,61 +15458,13 @@ const STRINGS = {
     "histSumFolderOne": "更改了 1 个文件夹",
     "histSumFolders": "更改了 {n} 个文件夹",
     "histSumOrder": "顺序已更改",
-    "histNowTitle": "共享曲库的现状",
-    "histRestoreTitle": "恢复到 {time}",
-    "histPointTitle": "{time} 更改了什么",
     "histShowLegend": "显示内容",
-    "histShowRestore": "恢复会更改什么",
-    "histShowPoint": "此时更改了什么",
-    "histIntroRestore": "全部默认为“保留现状”。轻点某一行的按钮，可恢复当时的样子。恢复从不删除任何内容：它会作为新版本保存在此列表顶部，因此也可以在这里撤销。",
-    "histIntroPoint": "仅显示这一次保存所更改的内容，前后对比。",
-    "histIntroNow": "这是共享曲库的现状。选择一个更早的版本来比较。",
-    "histCantPoint": "此版本之前的版本已不再保留，因此无法显示这次保存更改了什么。",
-    "histReceiveOnly": "这台设备只接收更新，因此无法恢复。请在会发送更改的设备上恢复。",
-    "histColNow": "现在",
-    "histColThen": "当时：{time}",
-    "histColBefore": "之前",
-    "histColAfter": "之后",
-    "histKeepNow": "保留现状",
-    "histRestoreWord": "恢复",
-    "histBadgeAdded": "此后添加",
-    "histBadgeDeleted": "此后删除",
-    "histBadgeChanged": "此后更改",
-    "histBadgeAddedHere": "此时添加",
-    "histBadgeDeletedHere": "此时删除",
-    "histBadgeChangedHere": "此时更改",
-    "histNotThere": "不存在",
-    "histInLibrary": "在曲库中",
-    "histUsedBy": "被 {names} 使用",
-    "histNameIs": "名为“{name}”",
     "histOtherAudio": "不同的音频",
     "histOtherArt": "不同的封面",
     "histOtherDetails": "不同的详细信息",
-    "histPlInfoOne": "1 项 · {length}",
-    "histPlInfo": "{n} 项 · {length}",
-    "histInFolder": "在“{name}”中",
-    "histOrder": "顺序：{list}",
-    "histShowVersions": "并排显示两个版本",
-    "histHideVersions": "隐藏两个版本",
     "histItemSilence": "静音 · {time}",
     "histItemStop": "停止：{name}",
-    "histItemChanged": "已更改",
-    "histItemSince": "此后添加",
-    "histItemGoneSince": "此后移除",
-    "histItemAddedHere": "此时添加",
-    "histItemRemovedHere": "此时移除",
-    "histNeededBy": "随 {names} 一起恢复",
     "histNothing": "现在与当时没有差异。",
-    "histNothingPoint": "这次保存没有更改这里显示的任何内容。",
-    "histFooterNoneOne": "尚未选择：现在与当时有 1 处差异。",
-    "histFooterNone": "尚未选择：现在与当时有 {n} 处差异。",
-    "histFooterSome": "恢复 {n} 处中的 {k} 处。其他设备会在下次同步时收到。",
-    "histAll": "全部恢复",
-    "histNoneBtn": "全部保留现状",
-    "histGo": "恢复",
-    "histGoOne": "恢复 1 处更改",
-    "histGoN": "恢复 {n} 处更改",
-    "histChangedMeanwhile": "共享曲库在此期间发生了变化。列表已重新更新，未变化之处保留了你的选择：请检查后再恢复。",
     "sharedMore": "更多",
     "sharedMoreNote": "审阅更改、仅接收、熄屏同步、同步日志、服务器",
     "rvIntro": "每一行都是一处差异。箭头表示采用哪个版本：→ 把此设备的版本发送到共享资料库，← 采用共享资料库的版本，✕ 暂时跳过（下次会再次出现）。点按箭头可更改。",
@@ -17814,61 +17508,13 @@ const STRINGS = {
     "histSumFolderOne": "đổi 1 thư mục",
     "histSumFolders": "đổi {n} thư mục",
     "histSumOrder": "đổi thứ tự",
-    "histNowTitle": "Thư viện chung hiện tại",
-    "histRestoreTitle": "Khôi phục về {time}",
-    "histPointTitle": "Những gì đã đổi lúc {time}",
     "histShowLegend": "Hiển thị gì",
-    "histShowRestore": "Khôi phục sẽ thay đổi gì",
-    "histShowPoint": "Những gì đã đổi ở thời điểm này",
-    "histIntroRestore": "Mọi thứ bắt đầu ở Giữ hiện tại. Chạm nút của một dòng để lấy lại như lúc đó. Khôi phục không bao giờ xóa gì: nó được lưu thành phiên bản mới ở đầu danh sách này, nên cũng có thể hoàn tác ở đây.",
-    "histIntroPoint": "Chỉ những gì lần lưu này đã đổi, trước và sau.",
-    "histIntroNow": "Đây là thư viện chung như hiện tại. Chọn một phiên bản trước để so sánh.",
-    "histCantPoint": "Phiên bản trước phiên bản này không còn được giữ, nên không thể hiện những gì lần lưu này đã đổi.",
-    "histReceiveOnly": "Thiết bị này chỉ nhận cập nhật, nên không thể khôi phục. Hãy khôi phục từ thiết bị có gửi thay đổi.",
-    "histColNow": "Hiện tại",
-    "histColThen": "Lúc đó: {time}",
-    "histColBefore": "Trước",
-    "histColAfter": "Sau",
-    "histKeepNow": "Giữ hiện tại",
-    "histRestoreWord": "Khôi phục",
-    "histBadgeAdded": "Thêm sau đó",
-    "histBadgeDeleted": "Xóa sau đó",
-    "histBadgeChanged": "Đổi sau đó",
-    "histBadgeAddedHere": "Thêm ở đây",
-    "histBadgeDeletedHere": "Xóa ở đây",
-    "histBadgeChangedHere": "Đổi ở đây",
-    "histNotThere": "Không có",
-    "histInLibrary": "Trong thư viện",
-    "histUsedBy": "Dùng trong {names}",
-    "histNameIs": "tên “{name}”",
     "histOtherAudio": "âm thanh khác",
     "histOtherArt": "ảnh bìa khác",
     "histOtherDetails": "thông tin khác",
-    "histPlInfoOne": "1 mục · {length}",
-    "histPlInfo": "{n} mục · {length}",
-    "histInFolder": "trong “{name}”",
-    "histOrder": "Thứ tự: {list}",
-    "histShowVersions": "Hiện hai phiên bản cạnh nhau",
-    "histHideVersions": "Ẩn hai phiên bản",
     "histItemSilence": "Im lặng · {time}",
     "histItemStop": "Dừng: {name}",
-    "histItemChanged": "đã đổi",
-    "histItemSince": "thêm sau đó",
-    "histItemGoneSince": "bỏ sau đó",
-    "histItemAddedHere": "thêm ở đây",
-    "histItemRemovedHere": "bỏ ở đây",
-    "histNeededBy": "Trở lại cùng {names}",
     "histNothing": "Không có gì khác giữa hiện tại và lúc đó.",
-    "histNothingPoint": "Lần lưu này không đổi gì hiện ở đây.",
-    "histFooterNoneOne": "Chưa chọn gì: 1 khác biệt giữa hiện tại và lúc đó.",
-    "histFooterNone": "Chưa chọn gì: {n} khác biệt giữa hiện tại và lúc đó.",
-    "histFooterSome": "Khôi phục {k} / {n}. Các thiết bị khác nhận được ở lần đồng bộ tới.",
-    "histAll": "Khôi phục tất cả",
-    "histNoneBtn": "Giữ mọi thứ như hiện tại",
-    "histGo": "Khôi phục",
-    "histGoOne": "Khôi phục 1 thay đổi",
-    "histGoN": "Khôi phục {n} thay đổi",
-    "histChangedMeanwhile": "Thư viện chung đã thay đổi trong lúc đó. Danh sách đã cập nhật lại, giữ lựa chọn của bạn ở chỗ không đổi: hãy kiểm tra rồi khôi phục.",
     "sharedMore": "Thêm",
     "sharedMoreNote": "xem lại thay đổi, chỉ nhận, tắt màn hình, nhật ký, máy chủ",
     "rvIntro": "Mỗi dòng là một điểm khác biệt. Mũi tên cho biết phiên bản nào được dùng: → gửi phiên bản của thiết bị này lên thư viện dùng chung, ← lấy phiên bản của thư viện dùng chung, ✕ bỏ qua lúc này (lần sau sẽ hiện lại). Chạm vào mũi tên để đổi.",
@@ -19912,61 +19558,13 @@ const STRINGS = {
     "histSumFolderOne": "1 φάκελος άλλαξε",
     "histSumFolders": "{n} φάκελοι άλλαξαν",
     "histSumOrder": "άλλαξε η σειρά",
-    "histNowTitle": "Η κοινή βιβλιοθήκη τώρα",
-    "histRestoreTitle": "Επαναφορά στις {time}",
-    "histPointTitle": "Τι άλλαξε στις {time}",
     "histShowLegend": "Τι να εμφανίζεται",
-    "histShowRestore": "Τι θα άλλαζε η επαναφορά",
-    "histShowPoint": "Τι άλλαξε σε αυτό το σημείο",
-    "histIntroRestore": "Όλα ξεκινούν ως «Κράτα το τωρινό». Πατήστε το κουμπί μιας γραμμής για να επανέλθει όπως ήταν τότε. Η επαναφορά δεν σβήνει ποτέ τίποτα: αποθηκεύεται ως νέα έκδοση στην κορυφή αυτής της λίστας, οπότε αναιρείται κι εδώ.",
-    "histIntroPoint": "Μόνο ό,τι άλλαξε αυτή η αποθήκευση, πριν και μετά.",
-    "histIntroNow": "Αυτή είναι η κοινή βιβλιοθήκη όπως είναι τώρα. Επιλέξτε μια παλαιότερη έκδοση για σύγκριση.",
-    "histCantPoint": "Η έκδοση πριν από αυτή δεν κρατιέται πια, οπότε δεν μπορεί να φανεί τι άλλαξε αυτή η αποθήκευση.",
-    "histReceiveOnly": "Αυτή η συσκευή μόνο λαμβάνει ενημερώσεις, οπότε δεν μπορεί να κάνει επαναφορά. Κάντε επαναφορά από συσκευή που στέλνει αλλαγές.",
-    "histColNow": "Τώρα",
-    "histColThen": "Τότε: {time}",
-    "histColBefore": "Πριν",
-    "histColAfter": "Μετά",
-    "histKeepNow": "Κράτα το τωρινό",
-    "histRestoreWord": "Επαναφορά",
-    "histBadgeAdded": "Προστέθηκε από τότε",
-    "histBadgeDeleted": "Διαγράφηκε από τότε",
-    "histBadgeChanged": "Άλλαξε από τότε",
-    "histBadgeAddedHere": "Προστέθηκε εδώ",
-    "histBadgeDeletedHere": "Διαγράφηκε εδώ",
-    "histBadgeChangedHere": "Άλλαξε εδώ",
-    "histNotThere": "Δεν υπάρχει",
-    "histInLibrary": "Στη βιβλιοθήκη",
-    "histUsedBy": "Χρησιμοποιείται από {names}",
-    "histNameIs": "με όνομα «{name}»",
     "histOtherAudio": "άλλος ήχος",
     "histOtherArt": "άλλο εξώφυλλο",
     "histOtherDetails": "άλλα στοιχεία",
-    "histPlInfoOne": "1 στοιχείο · {length}",
-    "histPlInfo": "{n} στοιχεία · {length}",
-    "histInFolder": "στο «{name}»",
-    "histOrder": "Σειρά: {list}",
-    "histShowVersions": "Εμφάνιση των δύο εκδόσεων δίπλα-δίπλα",
-    "histHideVersions": "Απόκρυψη των δύο εκδόσεων",
     "histItemSilence": "Σιωπή · {time}",
     "histItemStop": "Στάση: {name}",
-    "histItemChanged": "άλλαξε",
-    "histItemSince": "προστέθηκε από τότε",
-    "histItemGoneSince": "αφαιρέθηκε από τότε",
-    "histItemAddedHere": "προστέθηκε εδώ",
-    "histItemRemovedHere": "αφαιρέθηκε εδώ",
-    "histNeededBy": "Επιστρέφει μαζί με {names}",
     "histNothing": "Τίποτα δεν διαφέρει ανάμεσα στο τώρα και το τότε.",
-    "histNothingPoint": "Αυτή η αποθήκευση δεν άλλαξε τίποτα που εμφανίζεται εδώ.",
-    "histFooterNoneOne": "Τίποτα επιλεγμένο ακόμα: 1 διαφορά ανάμεσα στο τώρα και το τότε.",
-    "histFooterNone": "Τίποτα επιλεγμένο ακόμα: {n} διαφορές ανάμεσα στο τώρα και το τότε.",
-    "histFooterSome": "Επαναφέρει {k} από {n}. Οι άλλες συσκευές θα το πάρουν στον επόμενο συγχρονισμό τους.",
-    "histAll": "Επαναφορά όλων",
-    "histNoneBtn": "Κράτα τα όλα όπως τώρα",
-    "histGo": "Επαναφορά",
-    "histGoOne": "Επαναφορά 1 αλλαγής",
-    "histGoN": "Επαναφορά {n} αλλαγών",
-    "histChangedMeanwhile": "Η κοινή βιβλιοθήκη άλλαξε στο μεταξύ. Η λίστα είναι ξανά ενημερωμένη, με τις επιλογές σας όπου δεν άλλαξε τίποτα: ελέγξτε την και μετά κάντε επαναφορά.",
     "sharedMore": "Περισσότερα",
     "sharedMoreNote": "έλεγχος αλλαγών, μόνο λήψη, σβηστή οθόνη, αρχείο, διακομιστής",
     "rvIntro": "Κάθε γραμμή είναι μια διαφορά. Το βέλος δείχνει ποια έκδοση κρατιέται: → στέλνει την έκδοση αυτής της συσκευής στην κοινή βιβλιοθήκη, ← παίρνει την έκδοση της κοινής βιβλιοθήκης, ✕ την παραλείπει προς το παρόν (θα εμφανιστεί ξανά την επόμενη φορά). Πατήστε ένα βέλος για να το αλλάξετε.",
@@ -22010,61 +21608,13 @@ const STRINGS = {
     "histSumFolderOne": "1 cartella modificata",
     "histSumFolders": "{n} cartelle modificate",
     "histSumOrder": "ordine modificato",
-    "histNowTitle": "La libreria condivisa ora",
-    "histRestoreTitle": "Ripristina a {time}",
-    "histPointTitle": "Cosa è cambiato alle {time}",
     "histShowLegend": "Cosa mostrare",
-    "histShowRestore": "Cosa cambierebbe il ripristino",
-    "histShowPoint": "Cosa è cambiato in questo punto",
-    "histIntroRestore": "Tutto parte da Mantieni com'è ora. Tocca il pulsante di una riga per riportarla com'era allora. Il ripristino non cancella mai nulla: viene salvato come nuova versione in cima a questo elenco, quindi si può annullare anche qui.",
-    "histIntroPoint": "Solo ciò che ha cambiato questo salvataggio, prima e dopo.",
-    "histIntroNow": "Questa è la libreria condivisa com'è ora. Scegli una versione precedente da confrontare.",
-    "histCantPoint": "La versione precedente non è più conservata, quindi non si può mostrare cosa ha cambiato questo salvataggio.",
-    "histReceiveOnly": "Questo dispositivo riceve solo aggiornamenti, quindi non può ripristinare. Ripristina da un dispositivo che invia modifiche.",
-    "histColNow": "Ora",
-    "histColThen": "Allora: {time}",
-    "histColBefore": "Prima",
-    "histColAfter": "Dopo",
-    "histKeepNow": "Mantieni ora",
-    "histRestoreWord": "Ripristina",
-    "histBadgeAdded": "Aggiunto da allora",
-    "histBadgeDeleted": "Eliminato da allora",
-    "histBadgeChanged": "Modificato da allora",
-    "histBadgeAddedHere": "Aggiunto qui",
-    "histBadgeDeletedHere": "Eliminato qui",
-    "histBadgeChangedHere": "Modificato qui",
-    "histNotThere": "Non c'è",
-    "histInLibrary": "Nella libreria",
-    "histUsedBy": "Usato da {names}",
-    "histNameIs": "chiamato «{name}»",
     "histOtherAudio": "audio diverso",
     "histOtherArt": "copertina diversa",
     "histOtherDetails": "dettagli diversi",
-    "histPlInfoOne": "1 elemento · {length}",
-    "histPlInfo": "{n} elementi · {length}",
-    "histInFolder": "in «{name}»",
-    "histOrder": "Ordine: {list}",
-    "histShowVersions": "Mostra le due versioni affiancate",
-    "histHideVersions": "Nascondi le due versioni",
     "histItemSilence": "Silenzio · {time}",
     "histItemStop": "Stop: {name}",
-    "histItemChanged": "modificato",
-    "histItemSince": "aggiunto da allora",
-    "histItemGoneSince": "tolto da allora",
-    "histItemAddedHere": "aggiunto qui",
-    "histItemRemovedHere": "tolto qui",
-    "histNeededBy": "Torna insieme a {names}",
     "histNothing": "Nulla differisce tra ora e allora.",
-    "histNothingPoint": "Questo salvataggio non ha cambiato nulla che compaia qui.",
-    "histFooterNoneOne": "Ancora niente di scelto: 1 differenza tra ora e allora.",
-    "histFooterNone": "Ancora niente di scelto: {n} differenze tra ora e allora.",
-    "histFooterSome": "Ripristina {k} di {n}. Gli altri dispositivi lo riceveranno alla prossima sincronizzazione.",
-    "histAll": "Ripristina tutto",
-    "histNoneBtn": "Mantieni tutto com'è ora",
-    "histGo": "Ripristina",
-    "histGoOne": "Ripristina 1 modifica",
-    "histGoN": "Ripristina {n} modifiche",
-    "histChangedMeanwhile": "La libreria condivisa è cambiata nel frattempo. L'elenco è di nuovo aggiornato, con le tue scelte mantenute dove nulla è cambiato: controllalo, poi ripristina.",
     "sharedMore": "Altro",
     "sharedMoreNote": "rivedi modifiche, solo ricezione, schermo spento, registro, server",
     "rvIntro": "Ogni riga è una differenza. La freccia indica quale versione vale: → invia la versione di questo dispositivo alla libreria condivisa, ← prende la versione della libreria condivisa, ✕ la salta per ora (ricompare la prossima volta). Tocca una freccia per cambiarla.",
@@ -45551,17 +45101,6 @@ function setupResizableColumns(columns){
   });
 }
 function initResizableColumns(){
-  // One-time reset, bumped to v2: on top of the v1 bugs, a CSS min-width on
-  // .editor-col/.lib-col (220px/200px) was silently higher than the JS resize
-  // floor (140px), so the browser refused to shrink a column as far as the
-  // math assumed and quietly handed the difference to its neighbor. Testing
-  // against that bug could again have written bad widths to settings, so
-  // clear it once more now that the floors actually agree.
-  if(root.settings.columnWidths && !root.settings._columnWidthsResetV2){
-    delete root.settings.columnWidths;
-    root.settings._columnWidthsResetV2 = true;
-    saveState();
-  }
   setupResizableColumns([
     { el: document.getElementById("rail"), key:"viewerRail", defaultPx:260 }
   ]);
@@ -49026,7 +48565,7 @@ async function openSharedHistory(){
     <div class="hist-body"><p class="settings-note" style="padding:18px 22px;">${escapeHtmlText(t("histLoading"))}</p></div>`;
   document.body.appendChild(page);
   page.querySelector("#histClose").addEventListener("click", closeSharedHistory);
-  histState = {cfg: cfg || {kind: "local"}, local: !cfg, docs: new Map(), choices: new Set(), open: new Set(), mode: "restore", notice: "", tab: "roll", rbOpen: new Set(), rbMode: "all", rbWrap: true, rbInit: null, rbSeen: {nodes: new Set(), tracks: new Set()}};
+  histState = {cfg: cfg || {kind: "local"}, local: !cfg, docs: new Map(), notice: "", tab: "roll", rbOpen: new Set(), rbMode: "all", rbWrap: true, rbInit: null, rbSeen: {nodes: new Set(), tracks: new Set()}};
   const st = histState;
   st.list = []; st.libName = currentLibraryName();
   if(cfg){
@@ -49100,7 +48639,7 @@ async function histLoadSelected(){
   if(st.sel < 0){
     // One of this device's steps: the library with the steps above it undone.
     const e = st.list.find(x=> x.version === st.sel), pre = undoPreviewDoc(e ? e.undo : 0);
-    st.thenDoc = pre.doc; st.partial = pre.kept; st.beforeDoc = null;
+    st.thenDoc = pre.doc; st.partial = pre.kept;
     // Files those steps replaced (not part of the documents compared).
     st.stepFiles = new Map();
     undoStack.slice(undoStack.length - (e ? e.undo : 0)).forEach(step=> (step.files || []).forEach(f=>{ if(!st.stepFiles.has(f.id)) st.stepFiles.set(f.id, new Set()); st.stepFiles.get(f.id).add(f.kind); }));
@@ -49109,10 +48648,6 @@ async function histLoadSelected(){
   }
   st.partial = 0; st.stepFiles = null;
   st.thenDoc = await histDoc(st.sel);
-  // What that one save changed: the version before it, then it.
-  const at = st.list.findIndex(x=> x.version === st.sel);
-  const prev = st.list[at + 1];
-  st.beforeDoc = prev && prev.version === st.sel - 1 ? await histDoc(prev.version).catch(()=> null) : (st.sel === 1 ? syncEmptyDoc() : await histDoc(st.sel - 1).catch(()=> null));
   histComputeRows();
 }
 function histComputeRows(){
@@ -49121,9 +48656,6 @@ function histComputeRows(){
   // device's steps the library as this device has it.
   const now = st.rbNow = st.sel < 0 ? st.localNow : st.nowDoc;
   st.rows = st.thenDoc && now ? syncReviewRows(now, now, st.thenDoc).rows : [];
-  st.pointRows = st.thenDoc && st.beforeDoc ? syncReviewRows(st.beforeDoc, st.beforeDoc, st.thenDoc).rows : null;
-  const keys = new Set(st.rows.map(r=> r.key));
-  st.choices.forEach(k=>{ if(!keys.has(k)) st.choices.delete(k); });
 }
 // A save's summary in words (what each version says it changed).
 function histSummaryText(w){
@@ -49153,74 +48685,9 @@ function histDay(ms){
 }
 function histTime(ms){ return new Date(ms).toLocaleTimeString(undefined, {hour: "numeric", minute: "2-digit"}); }
 function histWhen(ms){ const day = histDay(ms); return (day === t("histToday") ? "" : day + " ") + histTime(ms); }
-// Names of tracks, folders and playlists in either document.
-function histNames(){
-  const st = histState, tracks = new Map(), nodes = new Map();
-  [st.beforeDoc, st.thenDoc, st.nowDoc].forEach(d=>{
-    if(!d) return;
-    (d.tracks || []).forEach(tr=> tracks.set(tr.id, tr));
-    syncFlattenTree(d.tree).forEach((n, id)=> nodes.set(id, n));
-  });
-  return {tracks, nodes};
-}
-function histPlaylistLength(pl, doc){
-  const byId = new Map((doc.tracks || []).map(tr=> [tr.id, tr]));
-  let secs = 0;
-  (pl.items || []).forEach(it=>{ if(it.kind === "track"){ const tr = byId.get(it.refId); secs += tr && tr.duration || 0; } else if(it.kind === "silence") secs += it.seconds || 0; });
-  return fmtTimeLong(secs);
-}
-function histUsedBy(id, doc){
-  const names = [];
-  syncFlattenTree(doc.tree).forEach(n=>{ if((n.items || []).some(it=> it.kind === "track" && it.refId === id)) names.push("“" + (n.name || "") + "”"); });
-  return names;
-}
-// One side of a row, said against the other side.
-function histSide(row, v, other, doc, names){
-  if(row.kind === "order"){
-    const list = (v || []).map(id=> (names.nodes.get(id) || {}).name || "?");
-    return list.length ? t("histOrder", {list: list.slice(0, 5).join(", ") + (list.length > 5 ? ", …" : "")}) : t("histNotThere");
-  }
-  if(!v) return t("histNotThere");
-  const parts = [];
-  if(row.kind === "track"){
-    const used = histUsedBy(row.id, doc);
-    parts.push(used.length ? t("histUsedBy", {names: used.join(", ")}) : t("histInLibrary"));
-    if(other){
-      if(v.name !== other.name) parts.push(t("histNameIs", {name: v.name || ""}));
-      if(!syncEq(v["#audio"], other["#audio"])) parts.push(t("histOtherAudio"));
-      if(!syncEq(v["#art"], other["#art"])) parts.push(t("histOtherArt"));
-      if(Object.keys(Object.assign({}, v, other)).some(k=> k !== "name" && k[0] !== "#" && !syncEq(v[k], other[k]))) parts.push(t("histOtherDetails"));
-    }
-  } else {
-    if(v.kind === "playlist") parts.push(t((v.items || []).length === 1 ? "histPlInfoOne" : "histPlInfo", {n: (v.items || []).length, length: histPlaylistLength(v, doc)}));
-    if(other && v.name !== other.name) parts.push(t("histNameIs", {name: v.name || ""}));
-    if(!other || (v.parent || null) !== (other.parent || null)) parts.push(v.parent != null ? t("histInFolder", {name: (names.nodes.get(v.parent) || {}).name || ""}) : t("rvTopLevel"));
-  }
-  return parts.join(" · ");
-}
-function histRowName(row, names){
-  if(row.kind === "order") return row.id === SYNC_ROOT_KEY ? t("rvTopLevel") : t("rvOrderIn", {name: (names.nodes.get(row.id) || {}).name || ""});
-  const v = row.l || row.r || row.b;
-  return (v && v.name) || "";
-}
-function histItemsHtml(pl, otherPl, doc, names, onlyHereCls, onlyHereWord){
-  if(!pl) return `<div class="hist-items hist-items-none">${escapeHtmlText(t("histNotThere"))}</div>`;
-  const others = new Map(((otherPl && otherPl.items) || []).map(it=> [it.id, it]));
-  const items = (pl.items || []).slice().sort((a, b)=> (a.order || 0) - (b.order || 0));
-  const label = it=> it.kind === "track" ? ((names.tracks.get(it.refId) || {}).name || "?")
-    : it.kind === "silence" ? t("histItemSilence", {time: fmtTime(it.seconds || 0)}) : t("histItemStop", {name: it.name || ""});
-  return `<ol class="hist-items">${items.map(it=>{
-    const o = others.get(it.id);
-    const cls = !o ? onlyHereCls : !syncEq(Object.assign({}, it, {order: 0}), Object.assign({}, o, {order: 0})) ? "hist-it-changed" : "";
-    const word = !o ? onlyHereWord : cls ? t("histItemChanged") : "";
-    return `<li class="${cls}">${escapeHtmlText(label(it))}${word ? `<span class="hist-it-word"> · ${escapeHtmlText(word)}</span>` : ""}</li>`;
-  }).join("")}</ol>`;
-}
 function renderSharedHistory(){
   const st = histState, page = document.getElementById("historyPage");
   if(!st || !page) return;
-  const restoreMode = st.mode === "restore";
-  const names = histNames();
   const sel = st.list.find(x=> x.version === st.sel) || st.list[0];
   const isNow = st.sel === st.list[0].version;
   const hasSteps = st.list.some(x=> x.step), hasVersions = st.list.some(x=> !x.step);
@@ -49243,64 +48710,7 @@ function renderSharedHistory(){
   });
   listHtml += `<p class="hist-older">${escapeHtmlText(!hasVersions ? (st.offline ? t("histOfflineNote") : t("histOlderLocal", {n: UNDO_MAX})) : st.cfg.kind === "gdrive" ? t("histOlderDrive") : t("histOlder", {days: 30}))}</p>`;
   const at = st.list.findIndex(x=> x.version === st.sel);
-  // The comparison.
-  let rows = restoreMode ? st.rows : (st.pointRows || []);
-  const leftDoc = restoreMode ? st.nowDoc : st.beforeDoc, rightDoc = st.thenDoc;
-  let needs = new Map(), forced = new Set();
-  if(restoreMode){
-    const choices = {};
-    st.rows.forEach(r=> choices[r.key] = st.choices.has(r.key) ? "take" : "skip");
-    needs = syncApplyDependencies(st.rows, choices);
-    st.rows.forEach(r=>{ if(choices[r.key] === "take" && !st.choices.has(r.key)) forced.add(r.key); });
-  }
-  const order = r=> r.kind === "node" ? 0 : r.kind === "order" ? 1 : 2;
-  rows = rows.slice().sort((a, b)=> order(a) - order(b) || histRowName(a, names).localeCompare(histRowName(b, names)));
-  const badge = r=>{
-    const left = restoreMode ? r.l : r.l, right = r.r;
-    const k = !right ? (restoreMode ? "histBadgeAdded" : "histBadgeDeletedHere") : !left ? (restoreMode ? "histBadgeDeleted" : "histBadgeAddedHere") : (restoreMode ? "histBadgeChanged" : "histBadgeChangedHere");
-    const tone = (!right && restoreMode) || (!left && !restoreMode) ? "add" : (!left && restoreMode) || (!right && !restoreMode) ? "del" : "chg";
-    return `<span class="hist-badge hist-badge-${tone}">${escapeHtmlText(t(k))}</span>`;
-  };
-  const rowHtml = r=>{
-    const take = restoreMode && (st.choices.has(r.key) || forced.has(r.key));
-    const isPl = r.kind === "node" && ((r.l || r.r || {}).kind === "playlist");
-    const icon = r.kind === "track" ? "♪" : r.kind === "order" ? "⇅" : ((r.l || r.r || r.b).kind === "folder" ? ICON_FOLDER : ICON_PLAYLIST);
-    const open = st.open.has(r.key);
-    const note = forced.has(r.key) && needs.has(r.id) ? `<div class="rv-note rv-note-quiet">${escapeHtmlText(t("histNeededBy", {names: needs.get(r.id).join(", ")}))}</div>` : "";
-    return `<div class="rv-row hist-row" data-key="${escapeHtmlText(r.key)}">
-      <div class="rv-name"><span class="rv-icon">${icon}</span><span class="rv-title">${escapeHtmlText(histRowName(r, names))}</span>${badge(r)}</div>
-      <div class="rv-cols"><div class="rv-side rv-here">${escapeHtmlText(histSide(r, r.l, r.r, leftDoc, names))}</div>
-      ${restoreMode ? `<button class="rv-arrow ${take ? "rv-take" : "rv-skip"}" type="button" data-pick ${forced.has(r.key) ? "disabled" : ""} aria-pressed="${take}"><span class="rv-glyph">${take ? "←" : "="}</span><span class="rv-word">${escapeHtmlText(t(take ? "histRestoreWord" : "histKeepNow"))}</span></button>` : `<div class="rv-arrowhead hist-arrow-plain">→</div>`}
-      <div class="rv-side rv-there">${escapeHtmlText(histSide(r, r.r, r.l, rightDoc, names))}</div></div>
-      ${note}
-      ${isPl ? `<button class="hist-open" type="button" data-open>${escapeHtmlText(t(open ? "histHideVersions" : "histShowVersions"))}</button>` : ""}
-      ${isPl && open ? `<div class="rv-cols hist-versions">${histItemsHtml(r.l, r.r, leftDoc, names, restoreMode ? "hist-it-add" : "hist-it-del", t(restoreMode ? "histItemSince" : "histItemRemovedHere"))}<div class="rv-arrowhead"></div>${histItemsHtml(r.r, r.l, rightDoc, names, restoreMode ? "hist-it-del" : "hist-it-add", t(restoreMode ? "histItemGoneSince" : "histItemAddedHere"))}</div>` : ""}
-    </div>`;
-  };
-  const chosen = restoreMode ? st.rows.filter(r=> st.choices.has(r.key) || forced.has(r.key)).length : 0;
-  const thenLabel = histWhen(sel.time);
-  let main = `<div class="hist-mainhead">
-      <h3 class="hist-h3">${escapeHtmlText(isNow ? t("histNowTitle") : restoreMode ? t("histRestoreTitle", {time: thenLabel}) : t("histPointTitle", {time: thenLabel}))}</h3>
-      <p class="hist-by">${escapeHtmlText([sel.by, histSummaryText(sel.what)].filter(Boolean).join(" · "))}</p>
-      <fieldset class="hist-modes"><legend class="sr-only">${escapeHtmlText(t("histShowLegend"))}</legend>
-        <label><input type="radio" name="histMode" value="restore" ${restoreMode ? "checked" : ""}> ${escapeHtmlText(t("histShowRestore"))}</label>
-        <label><input type="radio" name="histMode" value="point" ${restoreMode ? "" : "checked"}> ${escapeHtmlText(t("histShowPoint"))}</label>
-      </fieldset>
-      ${st.notice ? `<p class="rv-notice">${escapeHtmlText(st.notice)}</p>` : ""}
-      <p class="settings-note">${escapeHtmlText(isNow ? t("histIntroNow") : restoreMode ? t(st.cfg.receiveOnly ? "histReceiveOnly" : "histIntroRestore") : st.pointRows ? t("histIntroPoint") : t("histCantPoint"))}</p>
-    </div>`;
-  if(!isNow && (restoreMode || st.pointRows)){
-    main += rows.length ? `<div class="rv-cols rv-colheads"><div class="rv-side">${escapeHtmlText(restoreMode ? t("histColNow") : t("histColBefore"))}</div><div class="rv-arrowhead"></div><div class="rv-side">${escapeHtmlText(restoreMode ? t("histColThen", {time: thenLabel}) : t("histColAfter"))}</div></div>
-      <div class="rv-list hist-list">${rows.map(rowHtml).join("")}</div>`
-      : `<p class="hist-nothing">${escapeHtmlText(t(restoreMode ? "histNothing" : "histNothingPoint"))}</p>`;
-  }
-  const canRestore = restoreMode && !isNow && !st.cfg.receiveOnly && st.rows.length;
-  const allTaken = canRestore && chosen === st.rows.length;
-  let foot = canRestore ? `<span class="rv-summary">${escapeHtmlText(chosen ? t("histFooterSome", {k: chosen, n: st.rows.length}) : t(st.rows.length === 1 ? "histFooterNoneOne" : "histFooterNone", {n: st.rows.length}))}</span>
-      <button class="btn ghost" type="button" id="histAll">${escapeHtmlText(t(allTaken ? "histNoneBtn" : "histAll"))}</button>
-      <button class="btn primary" type="button" id="histGo" ${chosen ? "" : "disabled"}>${escapeHtmlText(chosen ? t(chosen === 1 ? "histGoOne" : "histGoN", {n: chosen}) : t("histGo"))}</button>` : "";
-  if(rollTab){ main = histRollMainHtml(st, sel, isNow); foot = ""; }
-  else if(st.tab === "bring"){ main = histBringMainHtml(st); foot = ""; }
+  const main = rollTab ? histRollMainHtml(st, sel, isNow) : histBringMainHtml(st);
   // Two tabs (Gen Rinzin, 14 Nov 2026: Undo on this device is part of Roll
   // back, as the steps at the top of its list). With no versions to bring
   // anything back from (a library that isn't shared, or one that can't be
@@ -49312,13 +48722,13 @@ function renderSharedHistory(){
   body.innerHTML = `<aside class="hist-side">
       <div class="hist-steps"><button class="btn ghost hist-step" type="button" data-step="1" aria-label="${escapeHtmlText(t("histEarlier"))}" ${at >= st.list.length - 1 ? "disabled" : ""}>‹</button><span class="hist-pos">${escapeHtmlText(t("histPosition", {i: at + 1, n: st.list.length}))}</span><button class="btn ghost hist-step" type="button" data-step="-1" aria-label="${escapeHtmlText(t("histLater"))}" ${at <= 0 ? "disabled" : ""}>›</button></div>
       <div class="hist-points">${listHtml}</div></aside>
-    <div class="hist-mainwrap">${tabsHtml}<div class="hist-main">${main}</div>${foot ? `<div class="rv-foot">${foot}</div>` : ""}</div>`;
+    <div class="hist-mainwrap">${tabsHtml}<div class="hist-main">${main}</div></div>`;
   if(keepList != null) body.querySelector(".hist-points").scrollTop = keepList;
   body.querySelector(".hist-main").scrollTop = keepScroll;
   const choose = async v=>{
     if(v === st.sel) return;
     if(v < 0) st.tab = "roll"; // one of this device's steps: Roll back shows it
-    st.sel = v; st.notice = ""; st.open.clear(); st.choices.clear();
+    st.sel = v; st.notice = "";
     body.querySelector(".hist-main").innerHTML = `<p class="settings-note">${escapeHtmlText(t("histLoading"))}</p>`;
     try{ await histLoadSelected(); }catch(err){ st.thenDoc = null; st.notice = sharedFailText(err); }
     renderSharedHistory();
@@ -49333,21 +48743,9 @@ function renderSharedHistory(){
   body.classList.toggle("hist-bring", st.tab === "bring");
   if(st.tab === "bring") histBringWire(body);
   body.querySelectorAll(".hist-step").forEach(b=> b.addEventListener("click", ()=>{ const n = st.list[at + +b.dataset.step]; if(n) choose(n.version); }));
-  body.querySelectorAll('input[name="histMode"]').forEach(inp=> inp.addEventListener("change", ()=>{ st.mode = inp.value; renderSharedHistory(); }));
-  body.querySelectorAll(".hist-row").forEach(el=>{
-    const key = el.dataset.key;
-    const pick = el.querySelector("[data-pick]");
-    if(pick) pick.addEventListener("click", ()=>{ if(st.choices.has(key)) st.choices.delete(key); else st.choices.add(key); renderSharedHistory(); });
-    const op = el.querySelector("[data-open]");
-    if(op) op.addEventListener("click", ()=>{ if(st.open.has(key)) st.open.delete(key); else st.open.add(key); renderSharedHistory(); });
-  });
-  const all = body.querySelector("#histAll");
-  if(all) all.addEventListener("click", ()=>{ if(allTaken) st.choices.clear(); else st.rows.forEach(r=> st.choices.add(r.key)); renderSharedHistory(); });
-  const go = body.querySelector("#histGo");
-  if(go) go.addEventListener("click", ()=> histRestore(go));
 }
 /* ---- History: Roll back the library (2.5.007) ----
-   One of History's three tabs (Gen Rinzin's design, 14 Nov 2026): the
+   One of History's two tabs (Gen Rinzin's design, 14 Nov 2026): the
    library as it was at the chosen save (column B, in a box with the one
    button) beside the library now (column D), row for row, showing only what
    differs. Rolling back restores every difference at once (syncRestore
@@ -50052,39 +49450,12 @@ async function bbApply(st, how, btn){
     if(histState === st) st.restoring = false;
   }
 }
-async function histRestore(btn){
-  const st = histState;
-  if(!st || st.restoring) return;
-  st.restoring = true; btn.disabled = true;
-  const cfg = st.cfg;
-  try{
-    // Someone saved meanwhile? Then compare again, keeping the choices
-    // where the difference is still the same, and ask again.
-    const fresh = await sharedGetState(cfg);
-    if(fresh.version !== st.nowVersion){ await histRecompare(fresh); return; }
-    const sel = st.list.find(x=> x.version === st.sel);
-    const {doc, keys} = syncRestore(st.nowDoc, st.thenDoc, st.choices);
-    const res = await sharedPostState(cfg, st.nowVersion, doc, st.nowDoc, {rs: sel.time});
-    if(res.status === 409){ await histRecompare(await sharedGetState(cfg)); return; }
-    sharedLog("restored " + keys.size + " differences from version " + st.sel + " (" + new Date(sel.time).toLocaleString() + ")");
-    closeSharedHistory();
-    await runSharedSync({force: true});
-  }catch(err){
-    if(histState){ st.notice = err && err.rejected ? sharedRejectedText() : sharedFailText(err); renderSharedHistory(); }
-  }finally{
-    if(histState) histState.restoring = false;
-  }
-}
 async function histRecompare(fresh){
   const st = histState;
-  const before = new Map(st.rows.map(r=> [r.key, syncStable([r.l, r.r])]));
   st.nowVersion = fresh.version; st.nowDoc = fresh.doc; st.docs.set(fresh.version, fresh.doc);
   try{ const list = await sharedHistoryList(st.cfg); st.list = list.filter(x=> x.version <= st.nowVersion); }catch(err){}
   if(!st.list.length || st.list[0].version !== st.nowVersion) st.list.unshift({version: st.nowVersion, time: Date.now()});
   histComputeRows();
-  st.rows.forEach(r=>{ if(st.choices.has(r.key) && before.get(r.key) !== syncStable([r.l, r.r])) st.choices.delete(r.key); });
-  st.notice = t("histChangedMeanwhile");
-  renderSharedHistory();
 }
 
 async function sharedReviewLoad(keepChoices){
