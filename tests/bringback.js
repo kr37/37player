@@ -155,8 +155,19 @@ const tree = p=> p.evaluate(()=>{ const out = []; (function w(ns, d){ ns.forEach
   await pick(p, '^Weekend$');
   ok(/Always the same since/.test((await colC(p)).join() + await p.evaluate(()=> document.getElementById('bbC').innerText)), 'an unchanged playlist: Always the same since …');
   await p.screenshot({path: path.join(SHOTS, 'bringback-3.png')});
-  // Several hundred tracks: column A scrolls by itself, and an arrow goes back to the top (2.5.023)
+  // A playlist only moved out of its folder: listed, with where it was; Replace puts it back (2.5.025)
   await p.evaluate(()=> document.getElementById('histClose').click()); await sleep(300);
+  await edit(p, "const d = r.tree.find(n=> n.id==='fD'); const w = d.children.find(n=> n.id==='plW'); d.children = d.children.filter(n=> n !== w); r.tree.push(w);"); await sync(p);
+  await openBring(p);
+  await pick(p, '^Weekend$');
+  rows = await cmp(p);
+  console.log('Weekend moved:', JSON.stringify(rows));
+  ok(rows.some(r=> /^At the top level \| In the folder “Daily”$/.test(r)), 'a playlist moved out of its folder: where it is and where it was');
+  ok(await p.evaluate(()=> document.querySelector('#bbBD .bb-head:nth-of-type(3) .bb-h').textContent !== 'Previous versions'), 'the box is headed by the time, not "Previous versions"');
+  await p.evaluate(()=> document.querySelector('#bbBD [data-bb="replace"]').click()); for(let i=0;i<60;i++){ await sleep(250); if(!(await p.$('#historyPage'))) break; } await waitIdle(p); await sleep(800);
+  ok(await p.evaluate(()=> !!window.__dbg.getRoot().tree.find(n=> n.id==='fD').children.find(n=> n.id==='plW')), 'Replace puts it back in Daily');
+  // Several hundred tracks: column A scrolls by itself, and an arrow goes back to the top (2.5.023)
+  await p.evaluate(()=>{ const c = document.getElementById('histClose'); if(c) c.click(); }); await sleep(300);
   await edit(p, "for(let i = 0; i < 400; i++) r.library.push({id: 'many' + i, name: 'Many ' + String(i).padStart(3, '0'), artist: 'Tharpa', album: 'Many', trackNo: i + 1, duration: 60, filename: 'm' + i + '.mp3', fileSize: 1000, audioRev: 1});"); await sync(p);
   await openBring(p);
   await p.evaluate(()=> document.querySelector('[data-kind="tr"]').click()); await sleep(400);
