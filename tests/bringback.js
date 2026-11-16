@@ -166,6 +166,16 @@ const tree = p=> p.evaluate(()=>{ const out = []; (function w(ns, d){ ns.forEach
   ok(await p.evaluate(()=> document.querySelector('#bbBD .bb-head:nth-of-type(3) .bb-h').textContent !== 'Previous versions'), 'the box is headed by the time, not "Previous versions"');
   await p.evaluate(()=> document.querySelector('#bbBD [data-bb="replace"]').click()); for(let i=0;i<60;i++){ await sleep(250); if(!(await p.$('#historyPage'))) break; } await waitIdle(p); await sleep(800);
   ok(await p.evaluate(()=> !!window.__dbg.getRoot().tree.find(n=> n.id==='fD').children.find(n=> n.id==='plW')), 'Replace puts it back in Daily');
+  // Moved out, and then its folder deleted: Replace brings the folder back too (2.5.026)
+  await edit(p, "r.tree.push({id: 'fG', kind: 'folder', name: 'Guru Yoga Retreat', children: [{id: 'plG', kind: 'playlist', name: 'GarageBand', items: [{id: 'g1', kind: 'track', refId: 'pm'}]}]});"); await sync(p);
+  await edit(p, "const g = r.tree.find(n=> n.id==='fG'); r.tree.push(g.children[0]); r.tree = r.tree.filter(n=> n.id !== 'fG');"); await sync(p);
+  await openBring(p);
+  await pick(p, '^GarageBand$');
+  rows = await cmp(p);
+  ok(rows.some(r=> /^At the top level \| In the folder “Guru Yoga Retreat”$/.test(r)), 'its folder deleted since: still says where it was');
+  await p.evaluate(()=> document.querySelector('#bbBD [data-bb="replace"]').click()); for(let i=0;i<60;i++){ await sleep(250); if(!(await p.$('#historyPage'))) break; } await waitIdle(p); await sleep(800);
+  tr = await tree(p);
+  ok(tr.some(x=> /^Guru Yoga Retreat$/.test(x)) && tr.some(x=> /^ GarageBand: Prayers for Meditation$/.test(x)) && !tr.some(x=> /^GarageBand/.test(x)), 'Replace brings the folder back, with the playlist in it (' + JSON.stringify(tr) + ')');
   // Several hundred tracks: column A scrolls by itself, and an arrow goes back to the top (2.5.023)
   await p.evaluate(()=>{ const c = document.getElementById('histClose'); if(c) c.click(); }); await sleep(300);
   await edit(p, "for(let i = 0; i < 400; i++) r.library.push({id: 'many' + i, name: 'Many ' + String(i).padStart(3, '0'), artist: 'Tharpa', album: 'Many', trackNo: i + 1, duration: 60, filename: 'm' + i + '.mp3', fileSize: 1000, audioRev: 1});"); await sync(p);

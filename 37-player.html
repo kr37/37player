@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.5.025">
+<meta name="app-version" content="2.5.026">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -46005,8 +46005,10 @@ function syncApplyDependencies(rows, choices){
       if(r.kind !== "node") return;
       const c = choices[r.key];
       const parentRow = id=> id != null ? byKey.get("n:" + id) : null;
-      if(c === "take" && !r.l && r.r){ const pr = parentRow(r.r.parent); if(pr && !pr.l && pr.r && choices[pr.key] !== "take"){ choices[pr.key] = "take"; changed = true; } }
-      if(c === "send" && !r.r && r.l){ const pr = parentRow(r.l.parent); if(pr && !pr.r && pr.l && choices[pr.key] !== "send"){ choices[pr.key] = "send"; changed = true; } }
+      // Also one that is there on both sides but was in another folder, gone
+      // since (Bring back, 2.5.026: a playlist moved out, its folder deleted).
+      if(c === "take" && r.r){ const pr = parentRow(r.r.parent); if(pr && !pr.l && pr.r && choices[pr.key] !== "take"){ choices[pr.key] = "take"; changed = true; } }
+      if(c === "send" && r.l){ const pr = parentRow(r.l.parent); if(pr && !pr.r && pr.l && choices[pr.key] !== "send"){ choices[pr.key] = "send"; changed = true; } }
     });
     ["shared", "local"].forEach(side=> wantIn[side].forEach(id=>{
       const r = byKey.get("t:" + id);
