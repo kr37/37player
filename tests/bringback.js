@@ -155,6 +155,23 @@ const tree = p=> p.evaluate(()=>{ const out = []; (function w(ns, d){ ns.forEach
   await pick(p, '^Weekend$');
   ok(/Always the same since/.test((await colC(p)).join() + await p.evaluate(()=> document.getElementById('bbC').innerText)), 'an unchanged playlist: Always the same since …');
   await p.screenshot({path: path.join(SHOTS, 'bringback-3.png')});
+  // Several hundred tracks: column A scrolls by itself, and an arrow goes back to the top (2.5.023)
+  await p.evaluate(()=> document.getElementById('histClose').click()); await sleep(300);
+  await edit(p, "for(let i = 0; i < 400; i++) r.library.push({id: 'many' + i, name: 'Many ' + String(i).padStart(3, '0'), artist: 'Tharpa', album: 'Many', trackNo: i + 1, duration: 60, filename: 'm' + i + '.mp3', fileSize: 1000, audioRev: 1});"); await sync(p);
+  await openBring(p);
+  await p.evaluate(()=> document.querySelector('[data-kind="tr"]').click()); await sleep(400);
+  await p.evaluate(()=> document.querySelector('input[name="bbView"][value="flat"]').click()); await sleep(300);
+  await p.evaluate(()=> document.querySelector('input[name="bbShow"][value="all"]').click()); await sleep(400);
+  const sc = await p.evaluate(()=>{ const l = document.getElementById('bbA'), a = document.querySelector('.bb-a').getBoundingClientRect(), m = document.querySelector('#historyPage .hist-main'); return {own: l.scrollHeight > l.clientHeight + 100, edge: Math.abs(l.getBoundingClientRect().right - a.right) < 3, fits: a.bottom <= m.getBoundingClientRect().bottom + 1, upHidden: document.getElementById('bbUp').hidden}; });
+  ok(sc.own && sc.edge && sc.fits && sc.upHidden, 'a long list: column A scrolls by itself, its scrollbar at its edge; no arrow at the top (' + JSON.stringify(sc) + ')');
+  await p.evaluate(()=> document.getElementById('bbA').scrollTop = 6000); await sleep(300);
+  const shown = await p.evaluate(()=> !document.getElementById('bbUp').hidden);
+  await p.screenshot({path: path.join(SHOTS, 'bringback-7.png')});
+  await pick(p, '^Many 350');
+  const kept = await p.evaluate(()=> document.getElementById('bbA').scrollTop > 3000);
+  await p.evaluate(()=> document.getElementById('bbUp').click());
+  for(let i = 0; i < 30 && await p.evaluate(()=> document.getElementById('bbA').scrollTop > 0); i++) await sleep(150);
+  ok(shown && kept && await p.evaluate(()=> document.getElementById('bbA').scrollTop === 0 && document.getElementById('bbUp').hidden), 'scrolled down: the arrow shows; choosing a track keeps the place; the arrow goes back to the top');
   console.log(fails ? fails+' FAILED' : 'ALL OK');
   await b.close();
 })();

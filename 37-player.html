@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.5.022">
+<meta name="app-version" content="2.5.023">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -777,7 +777,12 @@
   .bb-spacer{ flex:1; }
   .bb-missing{ display:flex; align-items:center; flex-wrap:wrap; gap:8px 12px; margin:0 0 12px; color:var(--text-dim); font-size:13px; }
   .bb-grid{ display:grid; grid-template-columns:minmax(200px, 1fr) minmax(0, 2.1fr) minmax(130px, 0.75fr); gap:0; align-items:start; border:1px solid var(--line); border-radius:12px; }
-  .bb-a{ border-right:1px solid var(--line); padding:8px 0; min-width:0; }
+  .bb-a{ border-right:1px solid var(--line); padding:8px 0 0; min-width:0; display:flex; flex-direction:column; position:sticky; top:var(--bb-top, 60px); max-height:var(--bb-room, none); }
+  .bb-a > .bb-h, .bb-a > .bb-ctabs, .bb-a > .bb-q{ flex-shrink:0; }
+  #bbA{ flex:1 1 auto; min-height:0; overflow-y:auto; overscroll-behavior:contain; padding-bottom:8px; } /* its own scrollbar, beside it (2.5.023) */
+  .bb-up{ position:absolute; left:10px; bottom:10px; z-index:2; width:38px; height:38px; display:inline-flex; align-items:center; justify-content:center; border-radius:50%; border:1px solid var(--line); background:var(--bg-panel-raised); color:var(--text); cursor:pointer; box-shadow:0 2px 8px rgba(0,0,0,0.25); }
+  .bb-up:hover{ border-color:var(--amber); }
+  .bb-up[hidden]{ display:none; }
   .bb-c{ border-left:1px solid var(--line); padding:8px 0; min-width:0; position:sticky; top:var(--bb-top, 60px); }
   .bb-h{ display:block; font-size:12px; color:var(--text-dim); padding:0 12px 6px; }
   .bb-q{ display:block; width:calc(100% - 24px); margin:0 12px 8px; }
@@ -822,7 +827,7 @@
   .bb-art{ display:block; width:96px; height:96px; object-fit:cover; border-radius:8px; border:1px solid var(--line); background:var(--bg-deep); }
   .bb-art-cell{ padding-top:6px; padding-bottom:6px; white-space:normal; }
   .bb-btns{ display:flex; flex-direction:column; align-items:flex-start; gap:8px; padding-top:12px; padding-bottom:8px; white-space:normal; }
-  @media (max-width: 900px){ .bb-grid{ grid-template-columns:minmax(0,1fr); } .bb-a, .bb-c{ border:0; border-bottom:1px solid var(--line); position:static; } .bb-cmp{ position:static; } }
+  @media (max-width: 900px){ .bb-grid{ grid-template-columns:minmax(0,1fr); } .bb-a, .bb-c{ border:0; border-bottom:1px solid var(--line); position:static; } .bb-a{ max-height:none; } #bbA{ overflow:visible; } .bb-up{ position:fixed; left:16px; bottom:16px; } .bb-cmp{ position:static; } }
   /* History: the tabs, and Roll back the library (2.5.007) */
   .hist-group{ margin:10px 16px 0; padding-top:10px; border-top:1px solid var(--line); color:var(--text); font-size:13px; font-weight:700; }
   .hist-group:first-child{ border-top:0; padding-top:0; }
@@ -5099,6 +5104,7 @@ const STRINGS = {
     "bbReplaceTr": "Replace the current track with this",
     "bbAudioAgain": "Its recording is downloaded again ({size}).",
     "bbNoArt": "No artwork",
+    "bbToTop": "Back to the top",
     "bbMissing": "{n} older versions were saved before 37 Player noted what each one changed, so their changes aren't listed yet.",
     "bbBuild": "Build list from history (slow)",
     "bbBuilding": "Building… {i} of {n}",
@@ -7195,6 +7201,7 @@ const STRINGS = {
     "bbReplaceTr": "Reemplazar la pista actual por esta",
     "bbAudioAgain": "Su grabación se descarga de nuevo ({size}).",
     "bbNoArt": "Sin imagen",
+    "bbToTop": "Volver arriba",
     "bbMissing": "{n} versiones antiguas se guardaron antes de que 37 Player anotara qué cambió cada una, así que sus cambios aún no aparecen.",
     "bbBuild": "Crear la lista a partir del historial (lento)",
     "bbBuilding": "Creando… {i} de {n}",
@@ -9290,6 +9297,7 @@ const STRINGS = {
     "bbReplaceTr": "Remplacer la piste actuelle par celle-ci",
     "bbAudioAgain": "Son enregistrement est de nouveau téléchargé ({size}).",
     "bbNoArt": "Pas d'image",
+    "bbToTop": "Revenir en haut",
     "bbMissing": "{n} versions anciennes ont été enregistrées avant que 37 Player note ce que chacune modifiait : leurs modifications ne sont pas encore listées.",
     "bbBuild": "Construire la liste à partir de l'historique (lent)",
     "bbBuilding": "Construction… {i} sur {n}",
@@ -11385,6 +11393,7 @@ const STRINGS = {
     "bbReplaceTr": "Substituir a faixa atual por esta",
     "bbAudioAgain": "A gravação é baixada de novo ({size}).",
     "bbNoArt": "Sem imagem",
+    "bbToTop": "Voltar ao topo",
     "bbMissing": "{n} versões antigas foram salvas antes de o 37 Player anotar o que cada uma mudou, por isso suas alterações ainda não aparecem.",
     "bbBuild": "Montar a lista pelo histórico (lento)",
     "bbBuilding": "Montando… {i} de {n}",
@@ -13480,6 +13489,7 @@ const STRINGS = {
     "bbReplaceTr": "Den jetzigen Titel durch diesen ersetzen",
     "bbAudioAgain": "Seine Aufnahme wird erneut heruntergeladen ({size}).",
     "bbNoArt": "Kein Bild",
+    "bbToTop": "Nach oben",
     "bbMissing": "{n} ältere Versionen wurden gespeichert, bevor 37 Player festhielt, was jede änderte, daher sind ihre Änderungen noch nicht aufgeführt.",
     "bbBuild": "Liste aus dem Verlauf erstellen (langsam)",
     "bbBuilding": "Wird erstellt… {i} von {n}",
@@ -15575,6 +15585,7 @@ const STRINGS = {
     "bbReplaceTr": "用这个替换现在的曲目",
     "bbAudioAgain": "它的录音会重新下载（{size}）。",
     "bbNoArt": "没有封面",
+    "bbToTop": "回到顶部",
     "bbMissing": "有 {n} 个较早的版本保存于 37 Player 开始记录每个版本的更改之前，因此尚未列出它们的更改。",
     "bbBuild": "从历史记录建立列表（较慢）",
     "bbBuilding": "正在建立… 第 {i} 个，共 {n} 个",
@@ -17670,6 +17681,7 @@ const STRINGS = {
     "bbReplaceTr": "Thay bài hiện tại bằng bản này",
     "bbAudioAgain": "Bản ghi âm của nó sẽ được tải lại ({size}).",
     "bbNoArt": "Không có ảnh bìa",
+    "bbToTop": "Về đầu danh sách",
     "bbMissing": "{n} phiên bản cũ được lưu trước khi 37 Player ghi lại những gì mỗi phiên bản thay đổi, nên chưa liệt kê được thay đổi của chúng.",
     "bbBuild": "Lập danh sách từ lịch sử (chậm)",
     "bbBuilding": "Đang lập… {i}/{n}",
@@ -19765,6 +19777,7 @@ const STRINGS = {
     "bbReplaceTr": "Αντικατάσταση του τωρινού κομματιού με αυτό",
     "bbAudioAgain": "Η ηχογράφησή του κατεβαίνει ξανά ({size}).",
     "bbNoArt": "Χωρίς εικόνα",
+    "bbToTop": "Επιστροφή στην αρχή",
     "bbMissing": "{n} παλαιότερες εκδόσεις αποθηκεύτηκαν πριν το 37 Player σημειώνει τι άλλαξε η καθεμία, οπότε οι αλλαγές τους δεν εμφανίζονται ακόμη.",
     "bbBuild": "Δημιουργία λίστας από το ιστορικό (αργό)",
     "bbBuilding": "Δημιουργία… {i} από {n}",
@@ -21860,6 +21873,7 @@ const STRINGS = {
     "bbReplaceTr": "Sostituisci il brano attuale con questo",
     "bbAudioAgain": "La sua registrazione viene scaricata di nuovo ({size}).",
     "bbNoArt": "Nessuna immagine",
+    "bbToTop": "Torna in cima",
     "bbMissing": "{n} versioni precedenti sono state salvate prima che 37 Player annotasse cosa cambiava ciascuna, quindi le loro modifiche non sono ancora elencate.",
     "bbBuild": "Crea l'elenco dalla cronologia (lento)",
     "bbBuilding": "Creazione… {i} di {n}",
@@ -49377,9 +49391,14 @@ function histRollPlaylists(st, opens){
   // A folder whose order changed: everything in it, each side in its own order.
   const ord = new Set(st.rows.filter(r=> r.kind === "order").map(r=> r.id));
   const orderNode = (key, lvl, a, b, top)=>{
-    const side = (list, map, i)=>{ const rec = list && list[i] != null ? map.get(list[i]) : null; return rec ? {text: rec.name || "", cls: "rb-un", icon: rec.kind === "playlist" ? ICON_PLAYLIST : ICON_FOLDER} : null; };
+    // The whole list on each side, in its own order; what moved is bold, the
+    // rest grey (Gen Rinzin, 15 Nov 2026). Moved: not in the longest run
+    // that is in the same order on both sides.
+    const stayA = new Set(), stayB = new Set();
+    histRollAlign(a || [], b || []).forEach(([i, j])=>{ if(i >= 0 && j >= 0){ stayA.add(i); stayB.add(j); } });
+    const side = (list, map, i, stay)=>{ const rec = list && list[i] != null ? map.get(list[i]) : null; return rec ? {text: rec.name || "", cls: stay.has(i) ? "rb-un" : "rb-chg", icon: rec.kind === "playlist" ? ICON_PLAYLIST : ICON_FOLDER} : null; };
     const kids = [], n = Math.max((a || []).length, (b || []).length);
-    for(let i = 0; i < n; i++) kids.push({key: key + ":o" + i, lvl: lvl + 1, tree: true, b: side(a, bn, i), d: side(b, dn, i)});
+    for(let i = 0; i < n; i++) kids.push({key: key + ":o" + i, lvl: lvl + 1, tree: true, b: side(a, bn, i, stayA), d: side(b, dn, i, stayB)});
     opens.push(key + ":o");
     const tag = {tag: t("histRbOrderChanged"), tagCls: "rb-t-chg", cls: "rb-chg"};
     return {key: key + ":o", lvl, tree: true, kind: "fold", kids, b: Object.assign({text: t(top ? "histRbTopOrderThen" : "histRbOrderThen")}, tag), d: Object.assign({text: t(top ? "histRbTopOrderNow" : "histRbOrderNow")}, tag)};
@@ -49785,7 +49804,8 @@ function histBringMainHtml(st){
       <div class="bb-a"><div class="bb-h">${escapeHtmlText(t(bb.view === "flat" ? "bbFlatHead" : bb.kind === "pl" ? "bbTreeHead" : "bbFindTrack"))}</div>
         ${bb.kind === "tr" && bb.view === "tree" ? `<div class="editor-tabs bb-ctabs">${[["pl", "bbByPlaylist"], ["al", "bbByAlbum"]].map(([v, key])=> `<button type="button" class="editor-tab${bb.trBy === v ? " active" : ""}" data-trby="${v}" aria-pressed="${bb.trBy === v}">${escapeHtmlText(t(key))}</button>`).join("")}</div>` : ""}
         <input type="search" class="bb-q" id="bbQ" placeholder="${escapeHtmlText(t("bbSearch"))}" value="${escapeHtmlText(bb.q)}">
-        <div id="bbA">${bbColumnA(st, m)}</div></div>
+        <div id="bbA">${bbColumnA(st, m)}</div>
+        <button type="button" class="bb-up" id="bbUp" hidden aria-label="${escapeHtmlText(t("bbToTop"))}" title="${escapeHtmlText(t("bbToTop"))}"><svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 16V4M4.5 9.5 10 4l5.5 5.5"/></svg></button></div>
       <div class="bb-cmp" id="bbBD">${bbCompareHtml(st)}</div>
       <div class="bb-c"><div class="bb-h">${escapeHtmlText(t("bbEarlier"))}</div><div id="bbC">${bbStatesHtml(st)}</div></div>
     </div>`;
@@ -49884,7 +49904,7 @@ function bbRefresh(st, partsOnly){
   if(!main || !st.bb || !st.bb.model) return;
   const a = main.querySelector("#bbA"), bd = main.querySelector("#bbBD"), c = main.querySelector("#bbC");
   if(!a) return;
-  if(partsOnly !== "noA") a.innerHTML = bbColumnA(st, st.bb.model);
+  if(partsOnly !== "noA"){ const y = a.scrollTop; a.innerHTML = bbColumnA(st, st.bb.model); a.scrollTop = y; }
   bd.innerHTML = bbCompareHtml(st);
   c.innerHTML = bbStatesHtml(st);
   bbWireParts(st, main);
@@ -49922,12 +49942,33 @@ async function bbLoad(st, build, btn){
   finally{ bb.loading = false; }
   if(histState === st && st.tab === "bring") renderSharedHistory();
 }
+// Column A's height: the room under the toolbar.
+function bbSizeA(main){
+  const top = main.querySelector(".bb-top");
+  if(!top) return;
+  main.style.setProperty("--bb-top", (top.offsetHeight - 6) + "px");
+  // From where column A starts with the page at its top, so that it fits
+  // without the page scrolling (once stuck under the toolbar it is higher still).
+  const grid = main.querySelector(".bb-grid");
+  if(grid) main.style.setProperty("--bb-room", Math.max(240, main.clientHeight - (grid.getBoundingClientRect().top - main.getBoundingClientRect().top + main.scrollTop) - 14) + "px");
+}
+window.addEventListener("resize", ()=>{ const main = histState && histState.tab === "bring" && document.querySelector("#historyPage .hist-main"); if(main) bbSizeA(main); });
 function histBringWire(body){
   const st = histState, bb = bbState(st);
   if(!bb.idx){ bbLoad(st); return; }
   const main = body.querySelector(".hist-main");
-  const top = main.querySelector(".bb-top");
-  if(top) main.style.setProperty("--bb-top", (top.offsetHeight - 6) + "px");
+  bbSizeA(main);
+  // Column A scrolls by itself, its scrollbar beside it; several thousand
+  // tracks under Flat list and Everything (Gen Rinzin, 15 Nov 2026). Past
+  // a screenful, an arrow in its lower left goes back to the top. On a
+  // narrow screen column A is part of the page, and the arrow scrolls that.
+  const up = main.querySelector("#bbUp"), list = main.querySelector("#bbA");
+  const scroller = ()=> list.scrollHeight > list.clientHeight + 1 && getComputedStyle(list).overflowY !== "visible" ? list : main;
+  const showUp = ()=>{ const sc = scroller(); up.hidden = sc.scrollTop < Math.max(400, sc.clientHeight); };
+  list.addEventListener("scroll", showUp, {passive: true});
+  main.addEventListener("scroll", showUp, {passive: true});
+  up.addEventListener("click", ()=>{ scroller().scrollTo({top: 0, behavior: "smooth"}); });
+  showUp();
   const bar = main.querySelector("#bbBar");
   if(bar) fillCtxBar(bar, [{icon: "wrap", label: t("ctxWrap"), tip: t("wrapNamesLabel"), on: ()=> !!bb.wrap, act: ()=>{ bb.wrap = !bb.wrap; const g = main.querySelector(".bb-grid"); if(!g) return; const back = histKeepInView(main.querySelectorAll("#bbA .bb-it"), main.querySelector(".bb-top")); g.classList.toggle("bb-wrap", bb.wrap); back(); }}]);
   const reset = ()=>{ bb.sel = null; bb.states = null; bb.flip.clear(); renderSharedHistory(); };

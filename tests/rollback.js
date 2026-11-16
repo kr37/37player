@@ -94,6 +94,8 @@ const rowsOf = p=> p.evaluate(()=> [...document.querySelectorAll('.rb-row')].map
   rows = await rowsOf(p);
   const at = rows.findIndex(r=> /^Top level: order then order changed$/.test(r.b) && /^Top level: order now order changed$/.test(r.d));
   ok(at >= 0 && rows[at + 1].b === 'Pujas' && rows[at + 1].d === 'Daily' && rows[at + 2].b === 'Daily' && rows[at + 2].d === 'Pujas', 'an order that changed: everything in the folder, each side in its own order');
+  const moved = await p.evaluate(()=>{ const head = [...document.querySelectorAll('.rb-row')].find(r=> /Top level: order then/.test(r.innerText)); const out = []; let r = head.nextElementSibling; for(let k = 0; k < 4 && r; k++, r = r.nextElementSibling){ const [b, d] = r.querySelectorAll('.rb-text'); out.push([b.textContent, b.className.includes('rb-chg'), d.textContent, d.className.includes('rb-chg')]); } return out; });
+  ok(moved.length === 4 && moved.filter(x=> x[1]).length === 1 && moved.filter(x=> x[3]).length === 1 && moved.slice(2).every(x=> !x[1] && !x[3]), 'what moved is bold, the rest grey (' + JSON.stringify(moved) + ')');
   await p.screenshot({path: path.join(SHOTS, 'rollback-7.png')});
   await p.evaluate((now, then, list)=> window.__hist.fake(now, then, list, 6), now, then, list); await sleep(300);
   rows = await rowsOf(p);
