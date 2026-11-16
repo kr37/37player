@@ -137,13 +137,17 @@ const modalText = p=> p.evaluate(()=> document.querySelector('.modal-backdrop.sh
   ok(kept['37player.libraries'] && /"theme":"dark"/.test(kept['37player.device'] || ''), 'the shell is given the device\'s settings, a second after they change (' + Object.keys(kept).join(', ') + ')');
   const libBefore = await p.evaluate(()=> localStorage.getItem('37player.libraries'));
   await p.evaluate(()=> localStorage.clear()); // as CCleaner would
-  await p.reload({waitUntil: 'networkidle0'}); await sleep(1500);
+  // 'load', not 'networkidle0', from here on: a track was playing, and the
+  // page restores it, so its audio element may hold a paused load of the
+  // recording open, and the network never goes quiet (a timeout in about
+  // one run in four, 16 Nov 2026).
+  await p.reload({waitUntil: 'load'}); await sleep(2500);
   const back = await p.evaluate(()=> ({lib: localStorage.getItem('37player.libraries'), dark: /"theme":"dark"/.test(localStorage.getItem('37player.device') || ''), log: window.__log().join('\n')}));
   ok(back.lib === libBefore && back.dark, 'storage emptied: the list of libraries and the settings come back from the shell\'s copy');
   ok(/settings came back from the app's own copy/.test(back.log), 'and the playback log says so');
   // A plain browser: none of it.
   const p2 = await b.newPage();
-  await p2.goto('http://localhost:8861/37-player.html', {waitUntil:'networkidle0'}); await sleep(800);
+  await p2.goto('http://localhost:8861/37-player.html', {waitUntil:'load'}); await sleep(1800);
   ok(await p2.evaluate(()=> !window.__TAURI_INTERNALS__ && window.__inDesktop() === false), 'in a browser, IN_DESKTOP_APP is false');
   console.log(fails ? fails + ' FAILED' : 'ALL OK'); await b.close();
 })();
