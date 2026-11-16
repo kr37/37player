@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.5.032">
+<meta name="app-version" content="2.5.033">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -36990,10 +36990,19 @@ function showAudioMissing(libraryId, why){
     openModal(`<h3>${t("sharedAudioArrivingTitle")}</h3><p id="audioMissingBody"></p>
       <div class="modal-actions"><button class="btn primary" data-close>${t("ok")}</button></div>`);
     const name = tr ? tr.name : "?";
+    // Which device has to send it only when the shared library doesn't have
+    // it: a 404 just now ("absent"), or not there at the last check, as the
+    // lists say (sharedMissingNote). 2.5.033, kr37's new Mac, still
+    // downloading: going on to the next track named the phone that had once
+    // sent it, though the file was already in the shared library and arrived
+    // a moment later (the dialog went by who sent it, whatever the server had).
+    const m = sharedTrackMissing(libraryId) || {waiting: why === "absent", from: (tr && tr.audioFrom) || ""};
+    const notThere = why === "absent" || m.waiting, cfg = sharedConfig();
     document.getElementById("audioMissingBody").textContent =
-      why === "fetching" ? t("sharedAudioFetchingBody", {name, size: tr && tr.fileSize ? (tr.fileSize / 1e6).toFixed(1) + " MB" : "…"})
-      : why === "failed" ? t("sharedAudioFetchFailBody", {name})
-      : tr && tr.audioFrom ? t("sharedAudioWaitingFromBody", {name, device: tr.audioFrom})
+      why === "failed" ? t("sharedAudioFetchFailBody", {name})
+      : why === "fetching" || !notThere ? t("sharedAudioFetchingBody", {name, size: tr && tr.fileSize ? (tr.fileSize / 1e6).toFixed(1) + " MB" : "…"})
+      : m.from && cfg && cfg.deviceName && m.from === cfg.deviceName ? t("notHereLostHere", {btn: t("replaceFileBtn")})
+      : m.from ? t("sharedAudioWaitingFromBody", {name, device: m.from})
       : t("sharedAudioArrivingBody", {name});
     return;
   }
@@ -48326,7 +48335,8 @@ async function sharedEnsureAudioWithin(id, ms){
   const pending = await sharedLoadPending();
   if(pending.audio[id] === undefined) return "here";
   const p = sharedFetchFile(cfg, "audio", id).then(
-    ()=> pending.audio[id] === undefined ? "here" : "absent",
+    // Fetched, yet still not here: "absent" only if the shared library didn't have it (2.5.033).
+    ()=> pending.audio[id] === undefined ? "here" : sharedNotOnServer.has(id) ? "absent" : "fetching",
     err=> /\b404\b/.test(err && err.message || "") || sharedNotOnServer.has(id) ? "absent" : "failed");
   return Promise.race([p, new Promise(r=> setTimeout(()=> r("fetching"), ms))]);
 }

@@ -66,9 +66,21 @@ const waitIdle = async (p)=>{ for(let k=0;k<400;k++){ const s = await p.evaluate
   const own = await B.evaluate(()=>{ const me = window.__dbg.getRoot().settings.sharedLibrary.deviceName; return {me, note: window.__share.note({waiting: true, from: me})}; });
   ok(/no longer has it/.test(own.note) && !/waiting for/.test(own.note), 'waiting for itself (' + own.me + '): "it was to send this copy, but no longer has it"');
   await B.screenshot({path:'shots/miss-b.png'});
-  // A's upload gets through
+  // Its "Not here yet" dialog (2.5.033) names Laptop only while the shared library doesn't have it.
+  const dlg = async ()=>{ await B.evaluate(()=> window.__disk.showAudioMissing('newtrk')); await sleep(300); const tx = await B.evaluate(()=> document.getElementById('audioMissingBody')?.textContent || ''); await B.evaluate(()=> document.querySelectorAll('.modal [data-close]').forEach(x=> x.click())); await sleep(200); return tx; };
+  let tx = await dlg();
+  ok(/Laptop still has to send it/.test(tx), 'not in the shared library: the dialog says Laptop still has to send it (' + tx + ')');
+  // A's upload gets through; B sees the shared library has it, but its download is held up.
+  let blockGet = true;
+  B.removeAllListeners('request');
+  B.on('request', r=>{ const u=r.url(); if(!(u.startsWith('http://localhost')||u.startsWith('http://127.0.0.1'))) return r.abort(); if(blockGet && r.method()==='GET' && /newtrk/.test(u)) return r.abort(); r.continue(); });
   blockPut = false;
   await A.evaluate(()=>window.__dbg3.sync()); await sleep(3000); await waitIdle(A);
+  await B.evaluate(()=>window.__dbg3.sync()); await sleep(3000);
+  const m2 = await B.evaluate(()=> window.__dbg3.missing('newtrk'));
+  tx = await dlg();
+  ok(m2 && !m2.waiting && /on its way to this device/.test(tx) && !/Laptop/.test(tx), 'in the shared library, not downloaded yet: on its way, no device named (' + JSON.stringify(m2) + ': ' + tx + ')');
+  blockGet = false;
   await B.evaluate(()=>window.__dbg3.sync()); await sleep(3000); await waitIdle(B); await sleep(2000);
   const after = await B.evaluate(()=>({m: window.__dbg3.missing('newtrk'), banner: !!document.querySelector('.not-here-banner')}));
   console.log('B after:', JSON.stringify(after));
