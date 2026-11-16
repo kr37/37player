@@ -1,4 +1,4 @@
-// Dialogs that open by themselves wait their turn (2.2.028; Gen Rinzin:
+// Dialogs that open by themselves wait their turn (2.2.028; kr37:
 // "Import finished" replaced the dialog he was working in). A folder import
 // runs while the person opens a dialog of their own: it's neither replaced
 // nor closed when the import ends; the status bar says the summary is

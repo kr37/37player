@@ -1,6 +1,6 @@
 # Where the library lives, backups and shared libraries: the plan
 
-For Gen Rinzin to agree before any message changes. Written 11 Nov 2026 against page 2.2.009 (`dev`). Nothing here is built yet.
+For kr37 to agree before any message changes. Written 11 Nov 2026 against page 2.2.009 (`dev`). Nothing here is built yet.
 
 How sure each statement is:
 
@@ -97,24 +97,24 @@ The desktop app has Find a library folder…; Chrome and Edge have nothing like 
 | In the browser's storage, still only the starter (every new first library) | The folder's library takes its place and name; the browser's copy is left alone. This is the T470 rebuild |
 | In the browser's storage, with tracks or playlists of its own | Refused, nothing changed |
 
-**T** folderlib.js for all four. **Decided by Gen Rinzin (12 Nov):** the last row keeps refusing; he will try it. The other way would be to open the folder as a separate library by giving the folder a new ID. The catch: anything else that knows the folder by its old ID (another browser profile, the desktop app on the same computer) would then see it as another library's folder and refuse it. Seeding a new computer by USB isn't affected, since its first library is still empty.
+**T** folderlib.js for all four. **Decided by kr37 (12 Nov):** the last row keeps refusing; he will try it. The other way would be to open the folder as a separate library by giving the folder a new ID. The catch: anything else that knows the folder by its old ID (another browser profile, the desktop app on the same computer) would then see it as another library's folder and refuse it. Seeding a new computer by USB isn't affected, since its first library is still empty.
 
 ## 6. Proposed order of work, once the tables are agreed
 
 1. Test and fix 5.1. **Done, 2.2.019.**
 2. **Open a library folder…** in Chrome/Edge (5.2). **Done, 2.2.020** (named Find a library folder…, as in the desktop app; see 5.2).
 3. A copied library notices it is on a new device (an ID per install, kept outside the folder) and asks for this device's name before syncing. **Done, 2.2.021:** "Is this another device?" with a name field, **Another device: use this name** / **This is still “X”**; nothing syncs until answered. The desktop app's two-stage wipe test now asks once (the install ID goes with the data folder): "This is still" answers it. **T** copied.js.
-4. The message changes in section 2. **First part done, 2.2.022:** the quiet "Your library is ordinary files" notice after the first import (desktop app and folder libraries), and "Where should this library be kept?" (a folder suggested) for a new library made in Settings in Chrome/Edge. **Second part, 2.2.023:** Gen Rinzin replaced the drafted wizard with his own design (12 Nov): Try it out / Install, on the home page and in the welcome; Install assesses the device and offers only the best way (Mac/Windows: the desktop app only, with how to get past the unsigned-build warnings; other computers: Chrome or Edge, installed, the library in a folder; iPad/iPhone: the Home Screen, then Google Drive or backups by hand); Try it out is quiet for two days or until the fifth import, then asks once; an Install button in the top bar wherever 37 Player isn't installed. Automatic backup folders are left in Settings → Backups only. **T** setup.js.
+4. The message changes in section 2. **First part done, 2.2.022:** the quiet "Your library is ordinary files" notice after the first import (desktop app and folder libraries), and "Where should this library be kept?" (a folder suggested) for a new library made in Settings in Chrome/Edge. **Second part, 2.2.023:** kr37 replaced the drafted wizard with his own design (12 Nov): Try it out / Install, on the home page and in the welcome; Install assesses the device and offers only the best way (Mac/Windows: the desktop app only, with how to get past the unsigned-build warnings; other computers: Chrome or Edge, installed, the library in a folder; iPad/iPhone: the Home Screen, then Google Drive or backups by hand); Try it out is quiet for two days or until the fifth import, then asks once; an Install button in the top bar wherever 37 Player isn't installed. Automatic backup folders are left in Settings → Backups only. **T** setup.js.
 5. Joining with plain files (row C): where a match has the same size and the same first and last 64 KB as the shared copy, keep this device's file as that track's audio instead of removing it and downloading. Then any copy of the files seeds a device. **Done, 2.2.025**, for all three choices (Use the shared library here, Combine, Only what I choose); in a library kept as files the recording isn't copied, only its small record is rewritten. **T** dup.js, folderlib.js.
-6. **Leaving a shared library cleans up after itself** (added by Gen Rinzin, 11 Nov 2026: tracks that never synced, left sitting without audio, are a bug). On leaving: tracks whose audio never arrived are removed from the library; then it asks about playlists left empty (default: remove them) and playlists left with some tracks missing. Since 2.2.018 such tracks are fetched if the device joins again, but a device that stays out keeps them, silent, with nothing to show it until one is played. **Done, 2.2.027:** the Leave question says how many tracks never arrived; leaving removes them, then asks about playlists left empty (Remove them / Keep them, empty) and left with some missing (Remove the missing tracks from them / Remove these playlists); closing takes the default. **T** leave.js.
+6. **Leaving a shared library cleans up after itself** (added by kr37, 11 Nov 2026: tracks that never synced, left sitting without audio, are a bug). On leaving: tracks whose audio never arrived are removed from the library; then it asks about playlists left empty (default: remove them) and playlists left with some tracks missing. Since 2.2.018 such tracks are fetched if the device joins again, but a device that stays out keeps them, silent, with nothing to show it until one is played. **Done, 2.2.027:** the Leave question says how many tracks never arrived; leaving removes them, then asks about playlists left empty (Remove them / Keep them, empty) and left with some missing (Remove the missing tracks from them / Remove these playlists); closing takes the default. **T** leave.js.
 
-## 7. Questions for Gen Rinzin
+## 7. Questions for kr37
 
 1. **Gen Palden's backup prompts.** The desktop app (2.0 on) never offers a backup folder, and its web view can't ask for folder permission. Was he on Chrome, or an older desktop build? It changes whether there's a bug to find.
 2. **Automatic backup folders.** Keep them as a Settings option for browser-storage libraries (this plan), or retire them once Chrome can open and keep libraries in folders?
 3. **Safari and Firefox on Mac and Windows**: desktop app first, Chrome/Edge second, as proposed?
 
-## 8. Gen Rinzin's notes on section 2 (11 Nov 2026), with Claude's replies. Nothing decided yet.
+## 8. kr37's notes on section 2 (11 Nov 2026), with Claude's replies. Nothing decided yet.
 
 1. **Rule 5, "say it once": a welcome wizard instead, with "Just trying it out" or "Install it".** Claude: agreed, and it fits rule 1. "Just trying it out" keeps the library in browser storage and says nothing more until the library has grown (a number of tracks, or a day or two of use: to choose), then asks once. "Set it up properly" walks through where the library lives (desktop app, or a folder in Chrome/Edge), installing, and a shared library. It would replace the Heads-up before the first import.
 2. **A new library made in Settings (Chrome/Edge): force a folder?** Claude: make the folder the choice already selected, with browser storage as a smaller second choice, not forced. In a tab that isn't installed, a folder library can't open after a restart until permission is given again, and Brave needs its flag; someone hitting either needs a way through. Needs 5.1 fixed first.
@@ -125,9 +125,9 @@ The desktop app has Find a library folder…; Chrome and Edge have nothing like 
 
 He is in the desktop app (page 2.2.002). What keeps asking for permission is macOS itself ("allow access to…"), not a backup folder. The test builds aren't signed with a Developer ID, so macOS doesn't keep his answer the way it does for a signed app. His MacBook has also failed to send 15 of its 21 recordings to his Drive library since 10 Nov, most likely because the app can't read them; 2.2.017 makes that visible in the sync log. For the table: the desktop app's row needs "signed, so macOS asks once" before it can be recommended to Centers.
 
-## 10. Gen Rinzin's notes on sections 3 to 9 (11 Nov 2026), with Claude's replies
+## 10. kr37's notes on sections 3 to 9 (11 Nov 2026), with Claude's replies
 
-**Decided by Gen Rinzin:**
+**Decided by kr37:**
 
 - Order of work (section 6): agreed.
 - Question 2: automatic backup folders aren't retired yet, but are made much less prominent.
@@ -148,6 +148,6 @@ He is in the desktop app (page 2.2.002). What keeps asking for permission is mac
 **Section 4 (rejoining):**
 
 7. *"Use the shared library here": does it delete what was just restored?* No. It removes only tracks the shared library doesn't have, and downloads only recordings whose revision differs. Restored tracks with the same IDs and revisions stay and aren't fetched.
-8. **Found by Gen Rinzin's test: a bug.** Join, leave partway (100 of the files received), join again: all three choices said "Downloads nothing", though 438 tracks had no audio. The cause: leaving clears the list of files still to fetch but keeps the tracks, and "the same recording" (`sharedSameAudio`) compares revision and size, never whether the audio is actually here. So after rejoining, those tracks would stay silent and the device would say In sync. To fix: a track whose audio isn't on the device counts as needing it, at joining and in each round. Also his proposals for leaving: remove tracks whose audio never arrived, and ask about playlists left empty (default yes) or left with missing audio.
+8. **Found by kr37's test: a bug.** Join, leave partway (100 of the files received), join again: all three choices said "Downloads nothing", though 438 tracks had no audio. The cause: leaving clears the list of files still to fetch but keeps the tracks, and "the same recording" (`sharedSameAudio`) compares revision and size, never whether the audio is actually here. So after rejoining, those tracks would stay silent and the device would say In sync. To fix: a track whose audio isn't on the device counts as needing it, at joining and in each round. Also his proposals for leaving: remove tracks whose audio never arrived, and ask about playlists left empty (default yes) or left with missing audio.
 9. *A copied library folder: Find a library folder… first, then link to the shared library?* Find it first; it is then already linked (the join travels in the folder). Give the device its own name.
 10. *The Google Drive dialog jumps when "checking…" appears above the button:* to-do list, to sit on the button's line.

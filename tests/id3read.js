@@ -1,4 +1,4 @@
-// Reading an MP3's details at import (2.2.034; Gen Rinzin, 12 Nov 2026:
+// Reading an MP3's details at import (2.2.034; kr37, 12 Nov 2026:
 // Rak-ma imported an album and only the first track got its artwork,
 // artist and album). The import had its own ID3 reader, which knew only
 // plain v2.3/v2.4 frames; it now uses the tag writer's (parseId3Block).

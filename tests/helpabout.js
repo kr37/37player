@@ -1,4 +1,4 @@
-// About in Help (2.5.006, Gen Rinzin): people without the PIN can't open
+// About in Help (2.5.006, kr37): people without the PIN can't open
 // Settings, so Help's last topic, just above Send feedback, says what
 // Settings → About says: the version, where it runs from, the converter,
 // Check for updates. The version popover's About button goes there too.

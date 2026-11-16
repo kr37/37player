@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.5.029">
+<meta name="app-version" content="2.5.030">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -279,7 +279,7 @@
   .library-header .lib-search-input{ flex:1 1 120px; min-width:90px; }
   .lib-table-totals{ flex-wrap:wrap; row-gap:2px; border-bottom:1px solid var(--line); background:var(--bg-panel); flex-shrink:0; }
   .library-screen:not(.lib-table-mode) #libTableTotals{ display:none; }
-  /* The player is one line at the bottom of the page (1.4.168, Gen Rinzin), in Browse
+  /* The player is one line at the bottom of the page (1.4.168, kr37), in Browse
      and Table alike; the Player button hides it. The panel at the top of the
      tracks keeps only what the selection offers (Convert, Done), and goes
      when there's nothing (the count is in the Tracks heading or the bar). */
@@ -478,7 +478,7 @@
   .pending-delete{ outline:2px solid var(--rust-bright); outline-offset:-2px; background:rgba(200,80,50,0.10); border-radius:4px; }
   /* The track being deleted is playing (1.4.162): a strip at the top in the
      colours of what's playing now, with the playing bars, so it isn't read
-     past in a busy dialog (1.4.176: Gen Rinzin did, deleting an album used in two
+     past in a busy dialog (1.4.176: kr37 did, deleting an album used in two
      playlists). */
   .delete-playing{ margin:0 0 12px; padding:9px 12px; border-radius:8px; display:flex; gap:9px; align-items:center;
     background:var(--now-playing-bg, rgba(127,169,139,0.19)); color:var(--now-playing-text, var(--sage)); border-left:4px solid var(--sage); }
@@ -530,7 +530,7 @@
      folders (open or closed) included. Until 1.4.133 folders had a wider gap
      above them (and playlists after a folder), which made two playlists
      above a folder look like one wrapped title; the folder lines (1.4.130)
-     now show what belongs where (Gen Rinzin, 30 Oct 2026). */
+     now show what belongs where (kr37, 30 Oct 2026). */
   #rail .folder-head .chev{ display:none; }
   #rail .folder-head, #rail .playlist-row{ line-height:1.2; padding-top:calc(5px * var(--density)); padding-bottom:calc(5px * var(--density)); }
   #rail .tree-children{ border-left:none; }
@@ -1115,13 +1115,13 @@
   .heads-up-steps{ display:flex; flex-direction:column; gap:12px; margin:6px 0 18px; }
   .heads-up-step{ display:flex; gap:12px; align-items:flex-start; padding:12px 14px; border:1px solid var(--line); border-radius:10px; background:var(--bg-panel); }
   .heads-up-step.done .heads-up-text{ opacity:0.75; } /* (not the Step box: its ✓ stays clear) */
-  /* "Step 1" in an unfilled, rounded box (2.2.026, Gen Rinzin: a dark
+  /* "Step 1" in an unfilled, rounded box (2.2.026, kr37: a dark
      number on the amber circle was nearly unreadable, and didn't say it was a step). */
   .heads-up-num{ flex-shrink:0; min-width:46px; padding:4px 6px 5px; border:1.5px solid var(--text-dim); border-radius:8px; background:transparent; color:var(--text); display:flex; flex-direction:column; align-items:center; line-height:1.15; }
   .heads-up-num .step-word{ font-size:11px; color:var(--text-dim); }
   .heads-up-num .step-n{ font-size:17px; font-weight:700; }
   .heads-up-step.done .heads-up-num{ border-color:var(--sage); }
-  /* A done step's ✓: as dark and bold as the text, a little larger (2.2.030, Gen Rinzin: the green ✓ was hard to see). */
+  /* A done step's ✓: as dark and bold as the text, a little larger (2.2.030, kr37: the green ✓ was hard to see). */
   .heads-up-step.done .heads-up-num .step-n{ color:var(--text); font-weight:800; font-size:20px; line-height:1; }
   .heads-up-text{ flex:1; min-width:0; }
   .modal .heads-up-text p{ margin:0 0 8px; color:var(--text); font-size:15px; line-height:1.5; }
@@ -1231,7 +1231,7 @@
   .item-row .tdur{ color:var(--text-dim); font-size:13px; font-variant-numeric:tabular-nums; flex-shrink:0; }
   .item-row .talbum{ color:var(--folder); font-size:12.5px; flex-shrink:0; max-width:170px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   /* With Wrap on, the album wraps too and takes under a third of the row
-     (28%; 2.3.005, Gen Rinzin, 13 Nov 2026: on one line at its full width it left
+     (28%; 2.3.005, kr37, 13 Nov 2026: on one line at its full width it left
      the title two characters wide and fifteen lines tall on a narrow window). */
   body.wrap-names .item-row .talbum{ white-space:normal; overflow:visible; text-overflow:clip; overflow-wrap:break-word; flex:0 1 auto; min-width:0; max-width:min(170px, 28%); }
   .item-row .drag-handle{ cursor:grab; color:var(--text-faint); display:none; flex-shrink:0; }
@@ -1267,7 +1267,7 @@
   .modal p{ font-size:14px; color:var(--text-dim); line-height:1.5; margin:0 0 16px 0; }
   /* Explanatory dialogs (setup wizard, backup choices): these are read, not
      glanced at, so a point larger and in the full-strength text color. */
-  /* A question's buttons (2.2.030, Gen Rinzin): one column, as wide as the
+  /* A question's buttons (2.2.030, kr37): one column, as wide as the
      widest button rather than the whole dialog, at the right. */
   .modal-actions.ask-buttons{ display:grid; grid-template-columns:minmax(0, max-content); justify-content:end; gap:8px; }
   .modal-actions.ask-buttons .btn{ white-space:normal; }
@@ -1704,10 +1704,10 @@
   .lib-preview-transport-row .tbtn-sm{ width:30px; height:30px; font-size:18px; border-radius:8px; }
   .lib-preview-transport-row .tbtn-play-sm{ width:36px; height:36px; border-radius:9px; }
 
-  /* Folder trees: no ▶ triangles (Gen Rinzin: too many icons in a row; a triangle
+  /* Folder trees: no ▶ triangles (kr37: too many icons in a row; a triangle
      also means Play). The line down from an open folder shows what's in it. */
   .folder-head .chev{ display:none; }
-  /* Dialogs and pages too (1.4.167, Gen Rinzin): every other section that opens and
+  /* Dialogs and pages too (1.4.167, kr37): every other section that opens and
      closes (an import's file lists, Feedback's sent list, Join's server
      address, File conversion's list…) has Settings' logs' chevron and the line
      down the left of what opens, not the browser's triangle. The trees of
@@ -2023,7 +2023,7 @@ const ICON_PLAYLIST = `<svg class="icon" viewBox="0 0 20 20" fill="none" xmlns="
    with a newer one about them. */
 const LIBRARY_LIST_KEY = "37player.libraries";
 /* The device's settings, kept by the desktop app's shell too (device.json;
-   1.4.192, the 2.0 groundwork; desktop/FILES-DESIGN.md). Gen Rinzin's test:
+   1.4.192, the 2.0 groundwork; desktop/FILES-DESIGN.md). kr37's test:
    delete the app's webview storage (CCleaner), start again, nothing missing.
    These localStorage values are the ones a person would miss on a device:
    the list of libraries and where each is, the device's settings, the
@@ -2432,7 +2432,7 @@ class IdbLibraryStore {
    no lock, as each .json is replaced whole (createWritable writes aside and
    swaps it in on close). A write puts its files first and the .json last,
    so an interruption leaves the previous record as it was.
-   Readable names (1.4.174; v2, Gen Rinzin: "integral"): when opts.recordingPath is
+   Readable names (1.4.174; v2, kr37: "integral"): when opts.recordingPath is
    given (the app's own libraries), recordings are kept as
      music/<Artist>/<Album>/<NN> <Title>.<ext>   (music/ since 1.4.179)
    and playlists/ holds an .m3u8 for each playlist (syncPlaylistFiles)
@@ -2462,7 +2462,7 @@ function recordingPathPart(str, fallback){
 }
 // "music/Artist/Album/01 Title" (without the extension), from a track's
 // details. Under music/, as in the portable export, so the library folder's
-// top reads like a table of contents (Gen Rinzin, 6 Nov 2026): music/, playlists/,
+// top reads like a table of contents (kr37, 6 Nov 2026): music/, playlists/,
 // 37 Player's own files/, the marker, the README.
 function recordingPathFor(track){
   if(!track) return null;
@@ -2883,7 +2883,7 @@ class FolderLibraryStore {
   /* Each recording's file details ($path, $blob or $place: its record's
      "blob"), by track id, kept in memory (2.5.018). renameRecordings and
      recordingPaths run 2.5 seconds after every save, and each read all the
-     audio records: on Gen Rinzin's 2014 Mac mini (707 tracks, the desktop
+     audio records: on kr37's 2014 Mac mini (707 tracks, the desktop
      app, three calls to the shell per record) that held the library's lock
      for most of a minute, so the next edit's Save waited that long (15 Nov
      2026, pasting artwork into several tracks). Now the records are read
@@ -2933,7 +2933,7 @@ class FolderLibraryStore {
   // A readable recording replaced by a new version of the same track (its
   // details written into it again: an album renamed, say) goes about a
   // minute later, once no player here holds it, instead of after the day's
-  // grace (2.2.033; Gen Rinzin, 12 Nov 2026: each rename of an album left a
+  // grace (2.2.033; kr37, 12 Nov 2026: each rename of an album left a
   // whole copy of it in the folder, and the T470 stays open for days). The
   // record already points at the new file. A deleted track's recording
   // still waits its day. (Another window playing the old version would
@@ -3156,7 +3156,7 @@ async function moveLibraryToFolder(){
     if(e.id === LIBRARY_ID){ leavingOnPurpose = true; location.reload(); return; }
     switchLibrary(e.id);
   };
-  // The folder picked may be the library's own (Gen Rinzin, 6 Nov 2026: with
+  // The folder picked may be the library's own (kr37, 6 Nov 2026: with
   // several libraries, he made an empty folder for this one first, and got
   // "Name/Name"). This library's folder, or an empty folder with its name,
   // is used as it is; another empty folder, the person says which.
@@ -3316,7 +3316,7 @@ async function openLibraryFolder(given){
   return e;
 }
 /* ---- The desktop app's libraries at its start (2.0, step 4) ----
-   Gen Rinzin's test for 2.0: the app's webview storage deleted (CCleaner,
+   kr37's test for 2.0: the app's webview storage deleted (CCleaner,
    CleanMyMac), nothing is missing. Every library of the desktop app is in a
    folder of its own (FolderLibraryStore over the shell's folders), made in
    the libraries' place, which the person chooses at the first start
@@ -3330,7 +3330,7 @@ async function openLibraryFolder(given){
    - A library whose folder was made but can't be found now (a drive not
      plugged in, a folder moved) is asked about, never made again empty
      (ensureDesktopFolder).
-   Libraries aren't moved in from browser storage (Gen Rinzin, 6 Nov 2026: only
+   Libraries aren't moved in from browser storage (kr37, 6 Nov 2026: only
    he had used the 1.4 desktop app, with test libraries; the 2.0 app has an
    identifier of its own, so its webview storage starts empty anyway). A
    library from a browser comes over as a shared library, or as a .37p. */
@@ -3364,7 +3364,7 @@ async function desktopLibrariesAtStart(){
   let place = null; try{ place = await desktopInvoke("fs_place"); }catch(err){}
   // Copies of one library (the same ID in two folders): the shell took one
   // it can save in, the most recently changed; the person says which
-  // (2.2.041; Gen Rinzin's T470, 13 Nov 2026: a read-only copy, older, was
+  // (2.2.041; kr37's T470, 13 Nov 2026: a read-only copy, older, was
   // taken because its folder's name came first).
   const byId = new Map();
   for(const f of found){ if(!byId.has(f.id)) byId.set(f.id, []); byId.get(f.id).push(f); }
@@ -3388,7 +3388,7 @@ async function desktopLibrariesAtStart(){
   writeLibraryList(reg);
   if(!LIBRARY_LIST_WAS_EMPTY) return added > 0;
   // Said once the window is open, and kept until it's closed: a toast was
-  // missed under the first start's own messages (Gen Rinzin, 13 Nov 2026).
+  // missed under the first start's own messages (kr37, 13 Nov 2026).
   const names = [...byId.values()].map(c=> (c.find(f=> f.name) || {}).name || t("libRecoveredName"));
   try{ sessionStorage.setItem("37player.desktopNote", JSON.stringify({names, path: (place && place.path) || ""})); }catch(err){}
   return true;
@@ -3441,7 +3441,7 @@ async function desktopFindLibraryFolder(){
   writeLibraryList(reg);
   return e;
 }
-// A library's folder follows its name (Gen Rinzin, 7 Nov 2026): renamed by
+// A library's folder follows its name (kr37, 7 Nov 2026): renamed by
 // the shell within the folder it's in, here, before the library opens (a
 // folder whose files are in use can't be renamed on Windows). A first
 // library without a name keeps "My library".
@@ -3479,7 +3479,7 @@ async function ensureDesktopFolder(){
   }
 }
 /* ---- Use in place (2.0, the desktop app) ----
-   desktop/FILES-DESIGN.md, "Use in place" (Gen Rinzin, 5–7 Nov 2026). The
+   desktop/FILES-DESIGN.md, "Use in place" (kr37, 5–7 Nov 2026). The
    Library's Import → A folder asks how to take its recordings:
    - Use in place: they stay where they are; the library's audio records
      point at them ({$place: root, $at: path}, FolderLibraryStore). 37 Player
@@ -3609,7 +3609,7 @@ async function finishPlaceImport(){
 // became (f.seen: {path: track id}): a track converted (a .wma, say) is the
 // library's own afterwards, and once its original is let go nothing points
 // into the folder for it, but it's still that file's track, so Look for new
-// files doesn't bring the file in again (Gen Rinzin on the HP, 7 Nov 2026).
+// files doesn't bring the file in again (kr37 on the HP, 7 Nov 2026).
 async function placeRemember(f){
   f.seen = f.seen || {};
   for(const [key, r] of await libStore.placeRefs()) if(r.root === f.root) f.seen[r.at] = key.startsWith(ORIGINAL_KEY_PREFIX) ? key.slice(ORIGINAL_KEY_PREFIX.length) : key;
@@ -3645,7 +3645,7 @@ async function placeIntoLibrary(rootId, move){
   }
   clearActiveOperation("placeCopy");
   // Moved, the folder may be left with nothing in it: offer to remove it
-  // (Gen Rinzin, 7 Nov 2026).
+  // (kr37, 7 Nov 2026).
   if(!failed && move){
     let empty = false;
     try{ empty = await desktopInvoke("fs_remove_if_empty", {id: rootId, dry: true}); }catch(err){}
@@ -3705,7 +3705,7 @@ function placeOfTrack(id){
   const m = libStore && libStore.places;
   return m ? m.get(id) || null : null;
 }
-// A drive unplugged while one of its tracks plays (Gen Rinzin on the HP, 7 Nov
+// A drive unplugged while one of its tracks plays (kr37 on the HP, 7 Nov
 // 2026: it played on from what was buffered, then stood still, and Play did
 // nothing even once the stick was back). Each of the three players is
 // watched: an error, or waiting more than 3 s, on a track used in place
@@ -3755,7 +3755,7 @@ async function placeAwarePlay(el, trackId){
   // Which tracks are used in place isn't known until every track's record
   // has been read once (placeRefs: seconds, for hundreds of tracks). Waiting
   // for that before the first Play after a start left the button a triangle
-  // through a click or two (Gen Rinzin's T470, 14 Nov 2026), and a play()
+  // through a click or two (kr37's T470, 14 Nov 2026), and a play()
   // that comes that long after the click may be refused. So until it's
   // known the track starts at once, inside the click, and is looked at
   // after: a file used in place that has gone stops again and says so.
@@ -3851,7 +3851,7 @@ async function renderPlaceFolders(el){
    address is in (desktop/FILES-DESIGN.md); until then getFile() reads the
    whole file. Tested through a stand-in for the shell (desktophandles.js). */
 // Every call to the shell passes through here, and this is where 37 Player
-// is kept from changing a folder used in place (Gen Rinzin, 14 Nov 2026: a
+// is kept from changing a folder used in place (kr37, 14 Nov 2026: a
 // limit at the lowest level, so that nothing anywhere in 37 Player can
 // write, rename or delete there, whatever the code above it gets wrong).
 // A folder used in place is a root whose id starts "in-" (addPlaceFolder);
@@ -3928,7 +3928,7 @@ async function placeMarkMissing(rootId){
 }
 const DISK_BLOB_MIN = window.__diskBlobMin != null ? window.__diskBlobMin : 32 * 1048576;
 const DISK_READ_PIECE = 8 * 1048576;
-// A big file (2.2.010, Gen Rinzin, 11 Nov 2026): above this, nothing that
+// A big file (2.2.010, kr37, 11 Nov 2026): above this, nothing that
 // needs the whole file in memory happens by itself. It isn't converted
 // automatically (only when asked, with a warning), and its details aren't
 // written into it. The converter holds its input whole, so a 2.7 GB WAV
@@ -3948,7 +3948,7 @@ class DiskBlob {
   }
   // Read in pieces of DISK_READ_PIECE: one request for a whole big file
   // made the shell hold it twice and, before shell 2.2.1, froze the window
-  // while a slow disk read it (Gen Rinzin's Mac mini, 8 Nov 2026).
+  // while a slow disk read it (kr37's Mac mini, 8 Nov 2026).
   async arrayBuffer(){
     if(!this.size) return new ArrayBuffer(0);
     const piece = async (a, b)=>{
@@ -3990,7 +3990,7 @@ class JoinedBlob {
 // The converter's input is a real File, handed to its worker: a file read
 // where it lies is read whole for it (its memory, as before 2.0).
 async function converterFile(blob, name){ return new File([await realBlob(blob)], name); }
-// What the converter is given for a file (2.2.039; Gen Rinzin's 8 GB Mac
+// What the converter is given for a file (2.2.039; kr37's 8 GB Mac
 // mini, 11 Nov 2026: converting a 2.7 GB WAV after a 1 GB one, WebKit's
 // Networking process held 4–6 GB, the inputs read whole into Blobs, and
 // macOS restarted itself). A file of the desktop app's, read where it lies
@@ -4023,7 +4023,7 @@ async function converterInput(blob, name){
 let converterBigUnasked = false; // set by the queue for a big file the person wasn't asked about
 // In the desktop app a file is converted from the disk a block at a time
 // (converterInput), so a big one needs no warning and no asking, and the
-// rule to convert uncompressed files covers it too (2.5.001; Gen Rinzin's
+// rule to convert uncompressed files covers it too (2.5.001; kr37's
 // 8 GB Mac mini, 13 Nov 2026: a 2.53 GB WAV converted while playing and
 // syncing, the app's memory never above about 650 MB; before, it had been
 // sent to the shared library as it was, since big files were left alone
@@ -4039,7 +4039,7 @@ function blobParts(list){ const out = []; for(const p of list){ if(p instanceof 
 // A real Blob for something that may be a DiskBlob: read whole (memory!).
 // Piece by piece, each piece a Blob of its own at once (2.2.010): reading
 // into one buffer the size of the file and then copying that into a Blob
-// held a big file twice (a 2.7 GB WAV: 5.48 GB in the page, Gen Rinzin's
+// held a big file twice (a 2.7 GB WAV: 5.48 GB in the page, kr37's
 // 8 GB Mac mini, 11 Nov 2026, and the whole Mac swapping).
 async function realBlob(b, type){
   if(!isDiskBlob(b)) return b;
@@ -4059,7 +4059,7 @@ const DISK_TYPES = {mp3: "audio/mpeg", m4a: "audio/mp4", mp4: "audio/mp4", aac: 
 // object URL of the blob, typed.
 // The Linux app (2.5.000, shell 2.5.0): its webview, WebKitGTK, played a
 // recording handed to it as a blob from the wrong place (the clock from 0,
-// the sound from the middle, with dropouts: Gen Rinzin's T470, 13 Nov 2026;
+// the sound from the middle, with dropouts: kr37's T470, 13 Nov 2026;
 // reproduced in a bare WebKitGTK window), and won't take audio from
 // p37lib:// at all. It plays correctly from http://127.0.0.1, so there the
 // shell serves the libraries' files too (fileserver.rs) and says where
@@ -22972,7 +22972,7 @@ async function storageLooksUsedBefore(){
   // that had to be created just now. Only in WebKit (Safari, the iPad), the
   // engine that hands over empty storage: Chrome lends an incognito window
   // the persistence it gave the normal profile, so a fresh incognito
-  // window looked like a lost library (Gen Rinzin, 6 Nov 2026, 1.4.181).
+  // window looked like a lost library (kr37, 6 Nov 2026, 1.4.181).
   try{ if(WEBKIT_ENGINE && dbJustCreated && navigator.storage && navigator.storage.persisted && await navigator.storage.persisted()) return true; }catch(err){}
   return false;
 }
@@ -23173,7 +23173,7 @@ function noteSaveFailed(err){
 }
 // Not allowed to write (2.2.041): a read-only folder (EACCES, EROFS, from the
 // desktop app's shell), or a folder the browser no longer may change. Not a
-// full device, which the message had said (Gen Rinzin's T470, 13 Nov 2026).
+// full device, which the message had said (kr37's T470, 13 Nov 2026).
 function isDeniedError(err){
   if(err && (err.name === "NotAllowedError" || err.name === "NoModificationAllowedError")) return true;
   return /permission denied|os error 13\b|os error 30\b|read-only file system|access is denied|os error 5\b|operation not permitted/i.test(errText(err));
@@ -23463,7 +23463,7 @@ async function undoApply(step, dir){
   refreshCurrentView();
   return kept + keptFiles;
 }
-/* Audio and artwork a person replaces (2.5.012; Gen Rinzin, 14 Nov 2026:
+/* Audio and artwork a person replaces (2.5.012; kr37, 14 Nov 2026:
    closer to what people expect of Undo). Undo's comparison leaves a track's
    audio and artwork details out, so that background work (waveforms,
    loudness, converting) never makes a step; and the replaced file used to
@@ -23520,7 +23520,7 @@ function undoMergeTrack(tr, fields){
   return out;
 }
 // Undoing a change more than two hours old asks first, and offers History
-// (Gen Rinzin, 14 Nov 2026: on a shared device a newcomer pressing Undo
+// (kr37, 14 Nov 2026: on a shared device a newcomer pressing Undo
 // again and again takes apart what someone did there days ago; the history
 // display is "much safer than trying to remember what you did hours ago").
 // One yes covers the run of undos, until the next change made here.
@@ -23598,7 +23598,7 @@ async function undoTrashPurge(){
     if(old.length) await idbDeleteMany("state", old);
   }catch(err){}
 }
-// A long press on Undo, or a right-click, opens History (Gen Rinzin, 14 Nov 2026).
+// A long press on Undo, or a right-click, opens History (kr37, 14 Nov 2026).
 (function(){
   const b = document.getElementById("btnUndo"); let timer = null, held = false;
   b.addEventListener("pointerdown", ()=>{ held = false; clearTimeout(timer); timer = setTimeout(()=>{ held = true; if(!overlayPageOpen()) openSharedHistory(); }, 600); });
@@ -25129,7 +25129,7 @@ function playingLevelControl(id, noCaption){
 }
 function buildPlayingCtxBar(){
   // Display switches | Loudness picker | Playback
-  // (Gen Rinzin, 30 Oct 2026; a "Display:" label with the switches as icons only
+  // (kr37, 30 Oct 2026; a "Display:" label with the switches as icons only
   // was tried in 1.4.129 and dropped: the words are wanted).
   fillCtxBar(playingCtxBar, [
     {icon: "wrap", label: t("ctxWrap"), tip: t("wrapNamesLabel"), on: ()=> !!root.settings.wrapNames, act: ()=> ctxToggleSetting("wrapNamesToggle")},
@@ -25240,7 +25240,7 @@ function libSplitNow(){
 }
 // Table's own view controls, on its totals line (the header's bar would
 // otherwise run to two rows): columns, wrapping, waveforms, width.
-// Table's lower bar (1.4.107, Gen Rinzin's layout): how the table is shown (width,
+// Table's lower bar (1.4.107, kr37's layout): how the table is shown (width,
 // wrap, columns, player, waveforms), then the selection — its count always
 // there — and what can be done with it (Undo, Redo, Edit, Copy track,
 // Delete). What's shown at all (search, chips, the totals) is in the bar above.
@@ -25303,12 +25303,12 @@ function libFocusTrackId(){
   const c = libTableLastClicked && libSelectedTracks.has(libTableLastClicked) ? libTableLastClicked : null;
   return c || (libSelectedTracks.size === 1 ? [...libSelectedTracks][0] : null);
 }
-// Library's bars (1.4.112, Gen Rinzin's layout). The top bar chooses what's shown:
+// Library's bars (1.4.112, kr37's layout). The top bar chooses what's shown:
 // Browse | Table, search, Show, and (Browse) Duplicates. In Browse each
 // column has its own bar under its heading: Artists and Albums, Edit and
 // Delete for those selected (Edit with several gives them one name);
 // Tracks, the selection's count and time, Undo, Redo | Wrap, Player,
-// Loudness | Edit, Split, Delete (Gen Rinzin, 31 Oct 2026). When narrow, Undo and Redo lose their words first.
+// Loudness | Edit, Split, Delete (kr37, 31 Oct 2026). When narrow, Undo and Redo lose their words first.
 // Table's actions are on its lower bar.
 function buildLibraryCtxActions(){
   const el = document.getElementById("libCtxActions");
@@ -26385,7 +26385,7 @@ function renderPlayer(){
 // tags, an extended header, v2.4's frame flags and its wrongly-sized frames),
 // then any field still empty from ID3v1 at the end. Before 2.2.034 the import
 // had its own reader that knew only v2.3/v2.4 plain frames, so a file tagged
-// any other way came in with no title, artist, album or picture (Gen Rinzin,
+// any other way came in with no title, artist, album or picture (kr37,
 // 12 Nov 2026: Rak-ma's album, where only the first track got them).
 async function parseId3Tags(blob){
   const result = {title:"", artist:"", album:"", artwork:null, trackNo:null};
@@ -28242,7 +28242,7 @@ async function rewriteFileTagsIfPossible(libraryId){
     if(!rec) return false;
     const blob = rec.blob;
     // A very big recording in WebKit's browser storage keeps the details
-    // inside it as they were (1.4.187, Gen Rinzin): rewriting means reading it all
+    // inside it as they were (1.4.187, kr37): rewriting means reading it all
     // into memory (putRewrittenAudio), and on the Mac mini a 1.3 GB WAV
     // restarted the page, then had to go to the shared library again in
     // full. The library's details (and a folder's file names) still follow;
@@ -28250,7 +28250,7 @@ async function rewriteFileTagsIfPossible(libraryId){
     // itself see its old ones. (In a folder, rewriting in place, piece by
     // piece, can come later.)
     // So also for a big file of the desktop app's, read where it lies.
-    // A recording used in place is never changed (Gen Rinzin, 5 Nov 2026: b):
+    // A recording used in place is never changed (kr37, 5 Nov 2026: b):
     // the library's details are its own, and go into exported copies.
     if(isDiskBlob(blob) && blob.inPlace){ if(!track.filename && blob.name) track.filename = blob.name; return false; }
     if(((IS_WEBKIT && typeof IdbLibraryStore !== "undefined" && libStore instanceof IdbLibraryStore) || isDiskBlob(blob)) && blob.size > BIG_REWRITE_BYTES){
@@ -28496,7 +28496,7 @@ function renderOperationBar(){
       part.appendChild(btn);
     }
     // More buttons after Stop (opts.links: [{label, fn}]), e.g. converting's
-    // Settings and Help (2.2.038, Gen Rinzin).
+    // Settings and Help (2.2.038, kr37).
     (op.links || []).forEach(l=>{
       const b = document.createElement("button");
       b.className = "btn ghost"; b.type = "button"; b.textContent = l.label;
@@ -29180,7 +29180,7 @@ async function converterConvert(blob, sourceName, onFraction, target){
 }
 
 /* ---- Dialogs that open by themselves wait their turn (2.2.028) ----
-   Gen Rinzin: while he was working in a dialog, "Import finished" (or
+   kr37: while he was working in a dialog, "Import finished" (or
    another dialog that opens when background work ends) replaced it, and
    what he was doing was gone. There is one dialog area, and openModal puts
    each dialog in place of the last: right for the steps of one task, wrong
@@ -29345,7 +29345,7 @@ function convertQueueSave(){
   if(convertQueue.length) idbPut("state", {key: "convertQueue", value: {ids: convertQueue.slice(), total: convertTotal, done: convertDone}}).catch(()=>{});
   else idbDelete("state", "convertQueue").catch(()=>{});
 }
-// A minute after opening, not six seconds (2.2.010, Gen Rinzin): nothing
+// A minute after opening, not six seconds (2.2.010, kr37): nothing
 // heavy right at the start, so Settings can be reached first.
 const CONVERT_RESUME_AFTER_MS = window.__convertResumeMs || 60000;
 function scheduleConvertResume(){
@@ -29469,7 +29469,7 @@ async function runConvertQueue(){
 }
 // Converting's line in the status bar: Settings (File conversion, where the
 // preferred format is chosen) and Help (where converting is explained),
-// after Stop (2.2.038, Gen Rinzin).
+// after Stop (2.2.038, kr37).
 function convertBarLinks(){
   return [
     {label: t("settingsTitle"), fn: ()=>{ closeHelpPage(); openSettingsPage(); goToSettingsSection("standardization"); }},
@@ -29485,7 +29485,7 @@ function stopConverting(){
 // run, with their size.
 async function showKeepOriginals(ids, failures){
   // An original used in place stays where it is and takes no room: kept,
-  // and not asked about (Gen Rinzin, 7 Nov 2026: a disconcerting question
+  // and not asked about (kr37, 7 Nov 2026: a disconcerting question
   // for a folder used in place).
   if(STORAGE_KIND === "desktop" && libStore.placeRefs) await libStore.placeRefs();
   const tracks = ids.map(id=> findLibraryTrack(id)).filter(tr=> tr && tr.original && !placeOfTrack(ORIGINAL_KEY_PREFIX + tr.id));
@@ -29557,7 +29557,7 @@ const convertSoon = new Set();
 // Apple Lossless plays in WebKit (Safari, iPads, the Mac app) but not in
 // Chrome, Edge or the Windows app, so it's converted wherever it's imported,
 // as Chrome must, and every device of a shared library can play it (2.3.003,
-// Gen Rinzin, 13 Nov 2026: one conversion where the original is, rather
+// kr37, 13 Nov 2026: one conversion where the original is, rather
 // than each other device converting the same file and sending it back).
 // Where it plays, it isn't marked as unplayable: just converted after the
 // import, the original kept as for any conversion.
@@ -29845,7 +29845,7 @@ const WAV_FADE_MS = 5;
 // MP3: how far each frame is turned down, in global-gain steps of 1.5 dB
 // (Infinity: silent), from the cut outwards. Just the one frame each side
 // (about 26 ms at 44.1 kHz): the one that may lean on the other part's
-// data. A ramp after it (1.4.080) only lengthened the dip (1.4.081, Gen Rinzin).
+// data. A ramp after it (1.4.080) only lengthened the dip (1.4.081, kr37).
 const MP3_FADE_STEPS = [Infinity];
 function fadeCurve(x){ x = Math.max(0, Math.min(1, x)); return 0.5 - 0.5 * Math.cos(Math.PI * x); }
 function concatBytes(a, b){ const o = new Uint8Array(a.length + b.length); o.set(a, 0); o.set(b, a.length); return o; }
@@ -30659,7 +30659,7 @@ function splitZoom(dir, aroundTime){
 // Playing: from the cursor (Play), the two seconds up to the cursor (stopping
 // on it), the two seconds after it, or one piece. The cursor goes back to
 // where it was after a "hear".
-// On an iPad (Gen Rinzin, 30 Oct 2026), playing a piece a second time, the last
+// On an iPad (kr37, 30 Oct 2026), playing a piece a second time, the last
 // one above all, did nothing, or played from the start of the track with the
 // cursor stopping at the mark: Safari seeks in its own time, and play() on an
 // element that still counts as "ended" starts again from 0. So: wait for the
@@ -30752,7 +30752,7 @@ function splitColors(){
   return {wave: v("--amber", "#D9A441"), waveOff: v("--text-faint", "#66655F"), text: v("--text", "#EDE9E0"), dim: v("--text-dim", "#9A9689"),
     line: v("--line", "#343947"), mark: splitMarkColor(), sel: v("--sage", "#7FA98B"), bg: v("--bg-panel", "#20232C"), deep: v("--bg-deep", "#181A22")};
 }
-// Marks are bright red, apart from every piece's colour (Gen Rinzin, 1.4.087).
+// Marks are bright red, apart from every piece's colour (kr37, 1.4.087).
 function splitMarkColor(){ return document.body.classList.contains("theme-light") ? "#D00000" : "#FF3333"; }
 // Each piece has a colour, as albums do in a playlist (buildAlbumColorMap):
 // the first the usual amber, then the album colours in turn; a piece left
@@ -31582,7 +31582,7 @@ async function analyzeFolderImport(audioFiles, m3u8Files, imageFiles, xmlFiles){
   const analyzeFileEl = document.getElementById("analyzingFolderFile");
   // Clicked away, it goes on in the status bar, and clicking there brings it
   // back; Stop (here or there) ends it with nothing imported (2.2.037; Gen
-  // Rinzin: on a big folder of near-duplicates it was easy to dismiss and
+  // kr37: on a big folder of near-duplicates it was easy to dismiss and
   // seemed lost, then the review turned up many minutes later).
   let analyzeStopped = false;
   const analyzeKey = "analyze:" + uid();
@@ -32356,7 +32356,7 @@ async function commitFolderImportSteps(analysis){
   if(leftOut) lines.push(leftOut===1 ? t("folderImportLeftOutOne") : t("folderImportLeftOutMany",{n:leftOut}));
   if(artAdded) lines.push(artAdded===1 ? t("folderImportArtAddedOne") : t("folderImportArtAddedMany",{n:artAdded}));
   if(overwritten) lines.push(t("folderImportOverwrittenLine",{n:overwritten}));
-  // Said by where they came from (Gen Rinzin: an .m3u8 import said it had
+  // Said by where they came from (kr37: an .m3u8 import said it had
   // mirrored the folders).
   if(playlistsFromFiles) lines.push(t("folderImportPlaylistsFromFilesLine",{n:playlistsFromFiles}));
   if(playlistsCreated - playlistsFromFiles) lines.push(t("folderImportPlaylistsLine",{n:playlistsCreated - playlistsFromFiles}));
@@ -33532,7 +33532,7 @@ function nameComboHtml(id, value){
 
 // Keep the number's normal keyboard editing but supply identical, full-height
 // up/down controls in all browsers (including touch browsers with no native arrows).
-// Silences' minutes and seconds; since 1.4.167 (Gen Rinzin) also the track details'
+// Silences' minutes and seconds; since 1.4.167 (kr37) also the track details'
 // track number and volume, which has its own minimum and step (opts.min,
 // opts.step: −30 to +30 dB in half decibels; opts.compact: as tall as the
 // text fields beside it).
@@ -34810,7 +34810,7 @@ function fmtDb(v){ return (v > 0 ? "+" : v < 0 ? "\u2212" : "") + (Math.round(Ma
      as a whole (its combined loudness), keeping its own quiet and loud parts;
    - the track's own adjustment, track.volumeDb (its details dialog), on top.
    Since 1.4.098 nothing limits turning up: past the track's loudest peak it
-   starts to distort, and the details dialog says by how much (Gen Rinzin: better
+   starts to distort, and the details dialog says by how much (kr37: better
    loud enough on small speakers, with a warning, than too quiet). Nothing
    here touches the file.
 
@@ -34823,12 +34823,12 @@ function fmtDb(v){ return (v > 0 ? "+" : v < 0 ? "\u2212" : "") + (Math.round(Ma
    without the boost (or with what the volume slider has room for). */
 const LEVEL_REFERENCE_LUFS = -18;
 // The Playing volume slider (0..1). Kept per device with the theme and the
-// like (2.2.038; Gen Rinzin: a page update put it back to full, since it
+// like (2.2.038; kr37: a page update put it back to full, since it
 // wasn't kept anywhere and every reload started at 1).
 let mainVolume = (()=>{ const d = readDeviceSettings(), v = d && d.volume; return typeof v === "number" && v >= 0 && v <= 1 ? v : 1; })();
 // The slider's position isn't the gain: hearing goes by ratios, so a straight
 // line felt unchanged until the bottom 40%. Squared (2.2.038): cubed, the
-// bottom half went silent too soon (Gen Rinzin; half way was -18 dB, a
+// bottom half went silent too soon (kr37; half way was -18 dB, a
 // quarter -36 dB). Squared, three quarters is about -2.5 dB, half way -6 dB,
 // a quarter -12 dB, a tenth -20 dB, and 0 is still silence.
 function mainVolumeGain(){ return mainVolume * mainVolume; }
@@ -34851,7 +34851,7 @@ function albumLevelText(tracks){
   const uniq = [...new Set(parts)];
   return uniq.length ? uniq.join(" / ") + " dB" : null;
 }
-// An album is its name and its artist (1.4.131, Gen Rinzin): two albums called
+// An album is its name and its artist (1.4.131, kr37): two albums called
 // "Volume 1" by different artists are evened out separately. No album
 // name: no album (each such track is evened out by itself).
 function albumLevelKey(tr){ const a = (tr.album || "").trim().toLowerCase(); return a ? a + "\u0001" + (tr.artist || "").trim().toLowerCase() : ""; }
@@ -34903,7 +34903,7 @@ function fillLoudnessCell(cell, tr){
     cell.appendChild(adj);
   }
 }
-// Playing's loudness column (1.4.128, Gen Rinzin): whole dB only. With Loudness on,
+// Playing's loudness column (1.4.128, kr37): whole dB only. With Loudness on,
 // what evening out does to the track in the mode chosen (0 when it's off);
 // a track's own volume (✎) always, in bold, whether Loudness is on or not.
 function fmtDbInt(v){ const n = Math.round(v); return n > 0 ? "+" + n : n < 0 ? "\u2212" + (-n) : (v > 0 ? "+0" : v < 0 ? "\u22120" : "0"); }
@@ -34997,7 +34997,7 @@ function applyLevel(el, trackId, atStart){
     el.volume = Math.min(1, Math.max(0, base * g));
   }
 }
-// The Linux app, a player routed through Web Audio (2.5.005; Gen Rinzin's
+// The Linux app, a player routed through Web Audio (2.5.005; kr37's
 // T470): whenever a track starts or is moved, the engine (WebKitGTK) hands
 // about a second of sound ahead to Web Audio at once, and its clock counts
 // that second as played. The sound is on time; the clock, and so the seekbar,
@@ -35279,7 +35279,7 @@ function scheduleRecordingRenames(){
   recordingRenameTimer = setTimeout(()=> libStore.renameRecordings().then(()=> syncPlaylistFiles()).catch(err=> console.warn("Renaming recordings:", err)), 2500);
 }
 // A library kept as files has playlists/: an .m3u8 for each playlist, in its
-// folders, pointing into ../music/ (Gen Rinzin, 6 Nov 2026: a courtesy for other
+// folders, pointing into ../music/ (kr37, 6 Nov 2026: a courtesy for other
 // players; 37 Player never reads them). Written as the portable export
 // writes them (buildPlaylistEntries), tracks only: silences and stops are
 // left out. Kept in step after each change (FolderLibraryStore.keepFiles).
@@ -35323,7 +35323,7 @@ function playingTrackIdsAmong(trackIds){
   if(edPreviewTrackId && ids.has(edPreviewTrackId) && ed && !ed.paused && !out.includes(edPreviewTrackId)) out.push(edPreviewTrackId);
   return out;
 }
-// Deleting a track that's playing (Gen Rinzin, 4 Nov 2026): most likely a mistake,
+// Deleting a track that's playing (kr37, 4 Nov 2026): most likely a mistake,
 // so the confirmation says so first, and going ahead stops it. (Deletions
 // nobody here asked for, from another device or window, let it finish.)
 function confirmDeleteTracksFromLibrary(trackIds, onConfirm, rowEl){
@@ -35379,7 +35379,7 @@ function confirmDeleteTracksFromLibrary(trackIds, onConfirm, rowEl){
     modalCloseCallbacks.push(()=> rowEl.classList.remove("pending-delete"));
   }
 }
-// Deleting tracks that playlists use (Gen Rinzin, 5 Nov 2026): after the first
+// Deleting tracks that playlists use (kr37, 5 Nov 2026): after the first
 // "Delete", a second question, with two choices: the playlists and folders
 // this leaves empty (ticked), and the playlists that used the tracks but
 // still hold others (not ticked, listed). Only what this deletion empties:
@@ -35444,7 +35444,7 @@ async function deleteLibraryTracks(trackIds, opts){
   // Tracks deleted everywhere (Partial sync): the playlists and folders the
   // tidy-up takes with them go everywhere too. Left behind in the shared
   // library, a playlist still holding them kept them there, and this device
-  // took them back (Gen Rinzin, 6 Nov 2026).
+  // took them back (kr37, 6 Nov 2026).
   const pcfg = typeof sharedConfig === "function" ? sharedConfig() : null;
   if(tidied.length && pcfg && pcfg.partial && (pcfg.deleteEverywhere || []).some(id=> idSet.has(id)))
     pcfg.deleteEverywhere = [...new Set([...pcfg.deleteEverywhere, ...tidied])];
@@ -35982,7 +35982,7 @@ function renderLibraryPreviewPanel(){
   const curLabel = track ? "0:00" : "-:--";
   const durLabel = track ? fmtTime(track.duration) : "-:--";
 
-  // The player: one line at the bottom of the page (1.4.168, Gen Rinzin): ⏮ ▶ ⏭,
+  // The player: one line at the bottom of the page (1.4.168, kr37): ⏮ ▶ ⏭,
   // album · artist over the name, the time, the waveform (under them on a
   // narrow screen).
   const playerBar = document.getElementById("libPlayerBar");
@@ -36431,7 +36431,7 @@ function openLibTableColumns(){
   document.getElementById("libColsReset").addEventListener("click", ()=>{ libTable.hidden = LIB_TABLE_DEFAULT.hidden.slice(); saveLibTable(); renderLibraryTable(); draw(); });
 }
 
-// Redrawn once typing pauses (2.2.036; Gen Rinzin: typing in Table's
+// Redrawn once typing pauses (2.2.036; kr37: typing in Table's
 // search lagged on the T470). A redraw takes 30–45 ms with 2,500 tracks on a
 // fast computer, several times that on an old laptop, and one per letter
 // held up the letters themselves. Emptying the box redraws at once.
@@ -36625,7 +36625,7 @@ function showAudioMissing(libraryId, why){
   document.getElementById("audioMissingBody").textContent = t("audioMissingBody", {name: tr ? tr.name : "?"});
   wireOpenCleanup();
 }
-// "Library cleanup" in the can't-be-played dialogs (2.2.029, Gen Rinzin):
+// "Library cleanup" in the can't-be-played dialogs (2.2.029, kr37):
 // straight to Settings → Library cleanup, which lists every such track.
 function wireOpenCleanup(){
   const b = document.getElementById("openCleanup");
@@ -37887,7 +37887,7 @@ function effectiveMoreContrast(){ const v = root.settings.moreContrast; return v
 [mqLight, mqMoreContrast].forEach(mq=>{ if(mq && mq.addEventListener) mq.addEventListener("change", ()=>{ try{ applyDisplaySettings(); }catch(err){} }); });
 // The Size setting in the desktop app: the webview's own zoom, set by the
 // shell (p37_zoom), not the transform the page uses in a browser. WebKitGTK
-// drew transformed text blurred (Gen Rinzin's T470, 13 Nov 2026: sharp at
+// drew transformed text blurred (kr37's T470, 13 Nov 2026: sharp at
 // the smallest size, soft above it), and zoom is the more coherent: Settings,
 // Help and every dialog follow the size, and narrow-window rules go by the
 // room there really is. Whether the shell can is known once it has answered
@@ -38638,7 +38638,7 @@ function openPlaylistDetails(playlist){
     saveState();
   });
   nameInp.focus(); nameInp.select();
-  // Enter in the name saves (2.2.038, Gen Rinzin); in the notes it's a new line.
+  // Enter in the name saves (2.2.038, kr37); in the notes it's a new line.
   nameInp.addEventListener("keydown", (e)=>{ if(e.key === "Enter" && !e.isComposing){ e.preventDefault(); document.getElementById("pdSaveBtn").click(); } });
   document.getElementById("pdSaveBtn").addEventListener("click", ()=>{
     const newName = nameInp.value.trim();
@@ -38725,7 +38725,7 @@ function confirmDelete(title, body, onOk, sync){
       closeModal();
       // Playlists in the shared library that this device doesn't hold may
       // use these tracks too: it asks, as a device with everything would
-      // show them (1.4.186, Gen Rinzin). Not reachable: they're kept for them.
+      // show them (1.4.186, kr37). Not reachable: they're kept for them.
       let purge = [];
       if(trackIds.length){
         const elsewhere = await sharedPlaylistsElsewhereUsing(cfg, trackIds);
@@ -38768,10 +38768,10 @@ function confirmDelete(title, body, onOk, sync){
    10-minute auto-revert). Display settings deliberately stay in their own
    top-bar popover, usable without the PIN. */
 const SETTINGS_SECTIONS = [
-  // Library info and Switch libraries are one page since 1.4.132 (Gen Rinzin): all
+  // Library info and Switch libraries are one page since 1.4.132 (kr37): all
   // libraries folded away at the top, then this one. "libraries" still
   // opens it, with the fold open (renderSettingsSection).
-  // Not a section: opens History over Settings (Gen Rinzin, 15 Nov 2026:
+  // Not a section: opens History over Settings (kr37, 15 Nov 2026:
   // first in the list, since once people have settled in they'll come for
   // this more than to change settings).
   {id:"history", key:"settingsSecHistory", open: ()=> openSharedHistory()},
@@ -39187,7 +39187,7 @@ async function renderSettingsSection(fromTimer){
     document.getElementById("libsMore").addEventListener("toggle", (e)=>{ libsMoreOpen = e.target.open; });
     document.getElementById("infoThis").textContent = t("infoThisLibrary", {name: currentLibraryName()});
     document.getElementById("infoSync").textContent = librarySyncText();
-    // The desktop app (2.0; Gen Rinzin, 7 Nov 2026): the app, the library's
+    // The desktop app (2.0; kr37, 7 Nov 2026): the app, the library's
     // folder, where its recordings are, and no backups of 37 Player's own.
     let desktopBytes = null;
     if(STORAGE_KIND === "desktop"){
@@ -39267,7 +39267,7 @@ async function renderSettingsSection(fromTimer){
       if(!e.target.checked && pauseHold) setPauseHold(false, "setting off");
     });
     // One drop-down, the same three choices as the one on Playing's bar and
-    // the same setting (Gen Rinzin, 15 Nov 2026: the switch with two radio
+    // the same setting (kr37, 15 Nov 2026: the switch with two radio
     // buttons looked like a main switch that overrode Playing's).
     document.getElementById("levelModeSlot").append(playingLevelControl("levelModeSelect", true));
     wireIdleSwitch();
@@ -39548,7 +39548,7 @@ async function renderSettingsSection(fromTimer){
   else if(sec.id==="about"){ aboutSectionInto(body, true); }
   box.scrollTop = keepScroll;
 }
-// What About says, in Settings and (2.5.006, Gen Rinzin: for people without
+// What About says, in Settings and (2.5.006, kr37: for people without
 // the PIN, who can't reach Settings) as Help's last topic. Help has Send
 // feedback just below its list, so it isn't repeated there.
 function aboutSectionInto(body, withFeedback){
@@ -39566,7 +39566,7 @@ function aboutSectionInto(body, withFeedback){
   body.querySelector("#checkUpdates").addEventListener("click", ()=> checkForUpdatesNow());
   aboutConverterLine(body.querySelector("#aboutConverter"));
 }
-// About's third version (2.2.031, Gen Rinzin): the converter's, beside the
+// About's third version (2.2.031, kr37): the converter's, beside the
 // page's and the desktop app's (it was in Library cleanup). The copy on this
 // device names its own; with none here yet, the one beside the app
 // (ffmpeg/VERSION, on the site and in the desktop app) is the one a first
@@ -39581,7 +39581,7 @@ async function aboutConverterLine(el){
   if(!el.isConnected) return;
   el.textContent = t("aboutConverter", {version: version || "?"}) + (rec ? "" : " (" + t("aboutConverterNotHere") + ")");
 }
-// A second press closes Settings, as ? does Help (2.2.029, Gen Rinzin).
+// A second press closes Settings, as ? does Help (2.2.029, kr37).
 document.getElementById("btnSettings").addEventListener("click", (e)=>{
   if(settingsPageOpen()) closeSettingsPage(); else { closeHelpPage(); openSettingsPage(); }
   e.currentTarget.blur();
@@ -40223,7 +40223,7 @@ async function dupUndo(){
 }
 function closeHelpPage(){ const el = document.getElementById("helpPage"); if(el){ el.remove(); removeOverlayScrim(); } }
 /* ===================== Send feedback (1.4.136) =====================
-   Help and Settings → About: a message to Gen Rinzin, posted to the site's
+   Help and Settings → About: a message to kr37, posted to the site's
    feedback.php, which mails it (only ever to him) with the chosen logs and
    keeps a copy on the server (see feedback.php). Each log is listed with a
    box, so nothing goes that isn't shown. Only on the website (a copy opened
@@ -40695,7 +40695,7 @@ async function requestBackupPermission(){
 }
 // The library is a folder of ordinary files: one a browser keeps (1.4.153),
 // or any library of the desktop app (2.0). It needs no backup of its own,
-// and 37 Player doesn't ask for one (Gen Rinzin, 7 Nov 2026: in the desktop
+// and 37 Player doesn't ask for one (kr37, 7 Nov 2026: in the desktop
 // app, no Heads up before the first import, no Time for a backup).
 function libraryIsFolder(){ return !!libraryFolderName(LIBRARY_ID) || libraryInDesktopFolder(LIBRARY_ID); }
 // Its folder's name, for the button at the top.
@@ -40906,7 +40906,7 @@ async function runFolderBackupHere(){
     // a full disk, a restore whose writes failed, or storage the browser
     // threw away while the track list came back from the shared library,
     // and each backup emptied the folder of exactly the files it was there
-    // to keep (Gen Rinzin's T470, 1 Nov 2026: 2,586 of 2,587 recordings gone from
+    // to keep (kr37's T470, 1 Nov 2026: 2,586 of 2,587 recordings gone from
     // the backup). Only a track leaving the library frees its file.
     let keptFromFolder = 0;
     for(const tr of toCheck){
@@ -41174,7 +41174,7 @@ async function downloadManualBackup(){
   let kind = "full";
   let ask = backupAskChoice;
   // A phone or tablet whose library is all in the shared library has its
-  // backup already, and a zip of a big library is a poor second: on Gen Rinzin's
+  // backup already, and a zip of a big library is a poor second: on kr37's
   // iPad a 13.8 GB one took ten minutes before Safari offered to save it,
   // and needed that much free space meanwhile. So say so, and make one
   // only on request.
@@ -41888,7 +41888,7 @@ function updateBackupIndicator(){
   else if(needs){ label = t("backupIndicatorNeeded"); cls = urgent ? "urgent" : "warn"; title = lastTip; }
   // The desktop app makes no backups: a library there that's in a shared
   // library but not yet (or no longer) counted as all there says where it
-  // is, never "Backed up" (Gen Rinzin's Mac mini, 11 Nov 2026).
+  // is, never "Backed up" (kr37's Mac mini, 11 Nov 2026).
   else if(libraryInDesktopFolder(LIBRARY_ID)){ label = t("folderLibIndicator"); cls = "ok"; title = t("folderLibIndicatorTip", {name: libraryFolderLabel()}); }
   else { label = t("backupIndicatorBackedUp"); cls = "ok"; title = lastTip; }
   btn.textContent = label;
@@ -41914,7 +41914,7 @@ setInterval(updateBackupIndicator, 60*1000); // a sync that stops finishing show
 
 // ---- The first run (1.4.092) ----
 // People trying 37 Player were put off by questions about libraries,
-// browsers and backups before they'd even played anything (Gen Rinzin, 28 Oct
+// browsers and backups before they'd even played anything (kr37, 28 Oct
 // 2026). So the first run asks only the language and whether to join a
 // shared library; everything about keeping a library safe waits for the
 // first import (the Heads-up, below), when there's something to keep. The
@@ -42031,9 +42031,9 @@ async function finishSetup(){
 async function firstRunDone(){
   backupInfo.headsUpPending = !sharedConfig();
   // The glow is for someone new to 37 Player: not again for a second or third
-  // library on the same device (2.2.029, Gen Rinzin).
+  // library on the same device (2.2.029, kr37).
   backupInfo.glow = readLibraryList().list.length > 1 ? [] : ["play", "import", "display"];
-  // Even out loudness: By album from the start (2.2.029, Gen Rinzin), for a
+  // Even out loudness: By album from the start (2.2.029, kr37), for a
   // new install or library that hasn't chosen. Not in a shared library, whose
   // own setting comes with it.
   if(root.settings && root.settings.levelMode === undefined && !sharedConfig()){ root.settings.levelMode = "album"; root.settings.levelKind = "album"; await saveState(); }
@@ -42117,7 +42117,7 @@ function openHeadsUp(purpose){
     const render = ()=>{
       const steps = headsUpSteps(env);
       // Installed already (a Home Screen app, say) where the only step left
-      // is keeping the library safe (1.4.134, Gen Rinzin): no "Do these first", since
+      // is keeping the library safe (1.4.134, kr37): no "Do these first", since
       // backing up by hand can't be done before anything is imported. Praise,
       // why a shared library is the easy way here, then the two ways.
       const installedOnly = purpose === "import" && env.standalone && !env.folder && steps.every(s=> s.id === "protect");
@@ -42183,7 +42183,7 @@ function openHeadsUp(purpose){
 }
 
 /* ===================== Setting up 37 Player (2.2.023) =====================
-   Gen Rinzin's design (12 Nov 2026), in place of the first run's "join a
+   kr37's design (12 Nov 2026), in place of the first run's "join a
    shared library?" and most of the Heads-up: the first question is Try it
    out or Install, in the app's welcome and on the home page (index.html
    links to 37-player.html#try and #setup).
@@ -42194,7 +42194,7 @@ function openHeadsUp(purpose){
      "Done trying it out?".
    - Install, and the Install button in the top bar wherever 37 Player isn't
      installed: the device assessed, and only the best way offered.
-     · Mac or Windows: the desktop app only (Gen Rinzin: with whatever
+     · Mac or Windows: the desktop app only (kr37: with whatever
        guidance gets people past the warnings, the builds being unsigned),
        a direct download; "I can't install apps on this computer" leads to
        the Chrome/Edge way.
@@ -42235,7 +42235,7 @@ function desktopDownloadUrl(os, file){
   return "https://github.com/kr37/37player/releases/download/" + tag + "/" + name;
 }
 // The desktop app is offered on a Mac, Windows and Linux (2.3.000, Gen
-// Rinzin, 13 Nov 2026: the .deb works on his T470); Linux on ARM (a
+// kr37, 13 Nov 2026: the .deb works on his T470); Linux on ARM (a
 // Raspberry Pi, when the browser says so) has no build, so Chrome's way.
 function desktopAppOffered(os){ return os === "mac" || os === "windows" || (os === "linux" && !/aarch64|armv\d|arm64/i.test(navigator.userAgent || "")); }
 // This page's address with a step to carry on from (a copy opened from a
@@ -42309,7 +42309,7 @@ function updateInstallButton(){
 }
 document.getElementById("btnInstall").addEventListener("click", (e)=>{ e.currentTarget.blur(); openSetupGuide(); });
 // Chrome and Edge install by moving this very tab into the app's own window,
-// without reloading it (Gen Rinzin, 12 Nov: the guide still offered to
+// without reloading it (kr37, 12 Nov: the guide still offered to
 // install, and Install stayed in the top bar): so follow the display mode.
 function setupDisplayModeChanged(){
   updateInstallButton();
@@ -42820,7 +42820,7 @@ document.getElementById("btnUpdate").addEventListener("click", ()=> performAppUp
 // website copy updates by reloading (the page always comes fresh from the
 // site when online); a copy opened from a file rewrites itself as above.
 /* The desktop app updating itself (2.2.040, with shell 2.2.3; planned in
-   desktop/PAGE-UPDATES.md, item 6, once the builds were signed; Gen Rinzin,
+   desktop/PAGE-UPDATES.md, item 6, once the builds were signed; kr37,
    13 Nov 2026: "is that possible to make it earlier for folks?"). A shell
    that says `updates` looks on its channel's release for a newer version of
    itself (p37_shell_update_check: latest.json, signed with the page key),
@@ -43374,7 +43374,7 @@ function offerNativeImportNow(meta, audioMap, artworkMap, onDone, opts){
   `);
   let audioKept = 0;
   // Tracks already here whose details or recording differ in the file, kept
-  // as they are here when the person says so (1.4.187, Gen Rinzin: merging an older
+  // as they are here when the person says so (1.4.187, kr37: merging an older
   // .37p put a renamed track's old name back).
   let mergeKeep = new Set();
   async function writeAudio(id){
@@ -43555,7 +43555,7 @@ async function buildWavBytesFromAudioBuffer(audioBuffer, startSample, endSample)
   }
   return new Uint8Array(buf);
 }
-// Silence as an MP3 (Gen Rinzin, 7 Nov 2026: smaller, and tagged so other
+// Silence as an MP3 (kr37, 7 Nov 2026: smaller, and tagged so other
 // players file it with Artist and Album "Silence"). No encoder is needed:
 // an MPEG-1 Layer III frame whose side information and audio are all zeros
 // decodes as silence, so the file is an ID3 tag and that frame, repeated.
@@ -44719,7 +44719,7 @@ function renderDamagedSection(){
     const fix = document.createElement("button"); fix.className = "btn ghost"; fix.textContent = t("damagedRepairBtn");
     // Repair puts back the old file Safari left inside a re-tagged one;
     // anything else (a .zip in its place, data cut short) can't be, so it
-    // says so at once instead of offering it (1.4.186, Gen Rinzin).
+    // says so at once instead of offering it (1.4.186, kr37).
     const cantRepair = ()=>{ fix.remove(); const s3 = document.createElement("div"); s3.className = "zero-used settings-note"; s3.textContent = t("damagedCantRepair", {btn: t("replaceFileBtn")}); info.appendChild(s3); };
     fix.hidden = true;
     idbGet("audio", id).then(async rec=>{ if(rec && rec.blob && await looksDoubled(rec.blob)) fix.hidden = false; else cantRepair(); }).catch(cantRepair);
@@ -44771,7 +44771,7 @@ function goToSettingsSection(id, anchorId){
 // within a scrolling page kept catching the mouse wheel).
 let fmtListState = {open: false, key: "name", up: true};
 // pick ({sel: a Set of track ids, onChange, open}): a box to tick in front of
-// each row, and one in the heading for all or none (Library cleanup: Gen Rinzin,
+// each row, and one in the heading for all or none (Library cleanup: kr37,
 // 11 Nov 2026, there was no way to convert big files one at a time).
 function fmtEffectList(list, pick){
   const d = document.createElement("details");
@@ -45184,7 +45184,7 @@ function syncStable(v){
 }
 function syncEq(a, b){ return syncStable(a) === syncStable(b); }
 /* What each version of a shared library changed (2.5.015; the first step
-   of Bring back's redesign, Gen Rinzin 15 Nov 2026): the ids of the tracks
+   of Bring back's redesign, kr37 15 Nov 2026): the ids of the tracks
    and of the folders and playlists that differ from the version before.
    Kept for each version beside it (sync.php works it out itself into the
    version's info file; on Drive the saving device writes
@@ -45199,7 +45199,7 @@ function syncEq(a, b){ return syncStable(a) === syncStable(b); }
 // folder's or playlist's kind and folder (nx: {id: [kind, parent]}), a
 // track's artist, album and the playlists it was in (tx: {id: [artist,
 // album, [playlist ids]]}).
-// Only what a person changes counts (2.5.020; Gen Rinzin found hundreds of
+// Only what a person changes counts (2.5.020; kr37 found hundreds of
 // tracks "changed" on 13 Nov when his Mac mini filled in loudness, lengths
 // and which device each recording came from): a track without the details
 // 37 Player works out by itself, a folder or playlist without its place
@@ -45677,7 +45677,7 @@ function syncMergePartial(base, local, remote, opts){
   });
   const keepT = new Map();
   // A track deleted everywhere that the shared library keeps, because a
-  // playlist there still uses it, stays off this device (6 Nov 2026, Gen Rinzin:
+  // playlist there still uses it, stays off this device (6 Nov 2026, kr37:
   // the Mac took its deleted tracks back and downloaded them again), unless
   // one of this device's own playlists uses it (below).
   mt.forEach((f, id)=>{ if(!removed.has(id) && !del.has(id) && (lt.has(id) || bt.has(id))) keepT.set(id, f); });
@@ -45810,7 +45810,7 @@ function keeperWhen(ms){
   const days = Math.round((day(Date.now()) - day(ms)) / 86400000);
   try{ return new Intl.RelativeTimeFormat(root.settings.language || undefined, {numeric: "auto"}).format(-days, "day"); }catch(err){ return new Date(ms).toLocaleDateString(); }
 }
-// "Backed up by Gen Rinzin's laptop, today" — the most recent first.
+// "Backed up by kr37's laptop, today" — the most recent first.
 function keeperLines(){
   const k = root.backupKeepers || {};
   return Object.keys(k).sort((a, b)=> k[b] - k[a]).map(name=> t("keeperLine", {device: name, when: keeperWhen(k[name])}));
@@ -46267,14 +46267,14 @@ async function driveGz(text){
 }
 // Without DecompressionStream (WebKit before Safari 16.4, as in the desktop
 // app on macOS 12), every existing Drive library's state couldn't be read:
-// joining one went quietly back to the Shared library page (Gen Rinzin's
+// joining one went quietly back to the Shared library page (kr37's
 // Mac mini, 8 Nov 2026; a new, empty library worked).
 async function driveGunzip(blob){
   if(typeof DecompressionStream !== "function") return new TextDecoder().decode(gunzipBytes(new Uint8Array(await blob.arrayBuffer())));
   return await new Response(blob.stream().pipeThrough(new DecompressionStream("gzip"))).text();
 }
 // Raw DEFLATE (RFC 1951), for WebKit without DecompressionStream (Safari
-// before 16.4: the desktop app on macOS 12, Gen Rinzin's Mac mini). Slow
+// before 16.4: the desktop app on macOS 12, kr37's Mac mini). Slow
 // beside the browser's own, but only used where that's missing.
 function inflateRawBytes(src){
   let pos = 0, bit = 0, out = new Uint8Array(Math.max(1024, src.length * 4)), n = 0;
@@ -46539,7 +46539,7 @@ async function driveCreateLibrary(cfg, name){
 }
 // A library just made on Drive whose joining was cancelled (or failed)
 // before anything was saved in it: its folders go to the Drive's trash, so
-// an empty "37 Player – Name" isn't left behind (1.4.134, Gen Rinzin). Anything in
+// an empty "37 Player – Name" isn't left behind (1.4.134, kr37). Anything in
 // any of its four folders and it stays.
 async function driveRemoveIfUnused(cfg, topId){
   try{
@@ -46741,7 +46741,7 @@ async function openDriveChooser(res, intent){
       msg.textContent = t("driveCreating");
       let id = null;
       // Cancelled at the last question (mobile data, say) or failed: the new,
-      // empty library goes to the Drive's trash (1.4.134; Gen Rinzin, 7 Nov
+      // empty library goes to the Drive's trash (1.4.134; kr37, 7 Nov
       // 2026: cleanest, in case another shared library is chosen later).
       try{ id = await driveCreateLibrary(temp, name); const r = await join(id, true); if(!(r && r.ok)) driveRemoveIfUnused(temp, id); }
       catch(err){ if(id) driveRemoveIfUnused(temp, id); msg.textContent = t("driveSignInFailed", {error: err.message || String(err)}); }
@@ -47265,7 +47265,7 @@ async function sharedSyncOnce(opts){
     sharedSetStatus({state: "error", message: sharedFailText(err)});
   }
 }
-/* ---- Two copies of one recording (1.4.190, Gen Rinzin's five cases)
+/* ---- Two copies of one recording (1.4.190, kr37's five cases)
    Joining a shared library with tracks already here, or rejoining one, has
    no history in common to say whose change a different recording is. A
    track both have, with different recording revisions, is decided by what
@@ -47480,7 +47480,7 @@ async function sharedUploadFiles(cfg, doc){
     const tr = j.kind === "peaks" ? null : findLibraryTrack(j.id);
     if(tr) sharedLog("sending " + (j.kind === "artwork" ? "artwork of " : "") + "“" + (tr.name || j.id) + "” (#" + j.id.slice(0, 4) + ", " + (body.size / 1e6).toFixed(1) + " MB)");
     // A big file goes in pieces: the status bar says how much of it has gone
-    // (2.2.011, Gen Rinzin: "sending 1 of 1" for an hour says nothing).
+    // (2.2.011, kr37: "sending 1 of 1" for an hour says nothing).
     const partDone = (have, total)=> sharedSetStatus({transfer: {kind: "up", done, total: fileJobs, part: {have, total}}});
     if(j.kind === "audio" && body.size >= SHARED_PIECE_UP_MIN && sharedPiecesUpOk(cfg)){
       let lastLog = 0;
@@ -47614,7 +47614,7 @@ async function sharedUploadInBackgroundHere(cfg){
 // whose audio never arrived counted as already here: leaving a shared
 // library partway through receiving and joining again said "Downloads
 // nothing" with 438 tracks silent, and would then have said In sync (Gen
-// Rinzin's test, 11 Nov 2026). A file used in place whose drive is away
+// kr37's test, 11 Nov 2026). A file used in place whose drive is away
 // still has its record, so it isn't counted: nothing is fetched for those.
 let sharedAudioAbsent = new Set(), sharedAudioAbsentBefore = new Set();
 async function sharedFindAbsentAudio(){
@@ -47689,7 +47689,7 @@ async function sharedDownloadPendingHere(cfg){
       if(!tr) continue;
       // Named as the sender, or (2.4.002) any device that holds the very
       // recording waited for, to the byte: the sender may have left, been
-      // renamed, or be a copy of this library elsewhere (Gen Rinzin, 13 Nov
+      // renamed, or be a copy of this library elsewhere (kr37, 13 Nov
       // 2026: tracks waited for from a name no device answers to any more).
       const mine = !!cfg.deviceName && tr.audioFrom === cfg.deviceName;
       const rec = await idbGet("audio", id).catch(()=> null);
@@ -47708,7 +47708,7 @@ async function sharedDownloadPendingHere(cfg){
     if(list.length) sharedLog("receiving " + list.length + " files" + (waiting ? ", " + waiting + " still on their way" : ""));
     let done = 0;
     for(const [kind, id] of list){
-      // With the track's name (2.4.001, Gen Rinzin, 13 Nov 2026: a long download, and no way to tell which file).
+      // With the track's name (2.4.001, kr37, 13 Nov 2026: a long download, and no way to tell which file).
       if(list.length > 1){ const nt = findLibraryTrack(id); sharedSetStatus({transfer: {kind: "down", done, total: list.length, name: nt && nt.name ? nt.name : ""}}); }
       await sharedWaitForTransfers();
       if(!sharedConfig()) break;
@@ -47877,7 +47877,7 @@ async function sharedFetchFileOnce(cfg, kind, id){
     // A file that already starts with Safari's pattern as it comes from the
     // shared library (an MP3 with two tags in a row, which still plays) is
     // taken as it is: refusing it changed nothing and left it missing on
-    // this device for good (1.4.082, four files on Gen Rinzin's iPad).
+    // this device for good (1.4.082, four files on kr37's iPad).
     const doubledAlready = pieces && pieces.length ? await looksDoubled(pieces[0]) : false;
     const before = got.pieceKeys ? await idbGet(store, id).catch(()=> null) : null;
     syncWritingFiles = true;
@@ -48171,7 +48171,7 @@ function sharedFoldFoldersAndPlaylists(remoteDoc){
 // opts.partial: partial sync was ticked with the join code, so it's chosen
 // already: the question that offers it (with the sizes) leads with it.
 // opts.cfg: a library that isn't joined by code (Google Drive): its settings.
-// The first sync of a join can take a while (54 s on Gen Rinzin's Mac mini,
+// The first sync of a join can take a while (54 s on kr37's Mac mini,
 // 11 Nov 2026, combining a library with one on Google Drive), and Settings
 // still showed "Join or create" meanwhile, as if it had failed: the status
 // bar says it's joining, and Settings → Shared library is drawn again at the
@@ -48271,7 +48271,7 @@ async function leaveSharedLibrary(){
   await saveState();
 }
 /* ---- Leaving cleans up after itself (2.2.027; the plan's item 6) ----
-   Gen Rinzin (11 Nov 2026): tracks that never synced, left sitting without
+   kr37 (11 Nov 2026): tracks that never synced, left sitting without
    audio, are a bug. A device leaving while recordings were still coming, or
    with Only what I choose, kept those tracks, silent, with nothing to show
    it until one was played. So leaving (the Leave buttons; not the internal
@@ -48327,7 +48327,7 @@ async function sharedLeaveCleanup(missing){
   refreshCurrentView();
 }
 /* A device that leaves takes back what it promised and never sent (2.4.002,
-   Gen Rinzin, 13 Nov 2026). Its tracks whose audio never reached the shared
+   kr37, 13 Nov 2026). Its tracks whose audio never reached the shared
    library are in the shared library's list all the same, and every other
    device waits for them ("Waiting for X to send it") for ever once X has
    gone. So leaving removes them from the shared library first, playlists'
@@ -48684,7 +48684,7 @@ function renderSharedHistory(){
   listHtml += `<p class="hist-older">${escapeHtmlText(!hasVersions ? (st.offline ? t("histOfflineNote") : t("histOlderLocal", {n: UNDO_MAX})) : st.cfg.kind === "gdrive" ? t("histOlderDrive") : t("histOlder", {days: 30}))}</p>`;
   const at = st.list.findIndex(x=> x.version === st.sel);
   const main = rollTab ? histRollMainHtml(st, sel, isNow) : histBringMainHtml(st);
-  // Two tabs (Gen Rinzin, 14 Nov 2026: Undo on this device is part of Roll
+  // Two tabs (kr37, 14 Nov 2026: Undo on this device is part of Roll
   // back, as the steps at the top of its list). With no versions to bring
   // anything back from (a library that isn't shared, or one that can't be
   // reached), there is only Roll back, and no tab bar.
@@ -48718,7 +48718,7 @@ function renderSharedHistory(){
   body.querySelectorAll(".hist-step").forEach(b=> b.addEventListener("click", ()=>{ const n = st.list[at + +b.dataset.step]; if(n) choose(n.version); }));
 }
 /* ---- History: Roll back the library (2.5.007) ----
-   One of History's two tabs (Gen Rinzin's design, 14 Nov 2026): the
+   One of History's two tabs (kr37's design, 14 Nov 2026): the
    library as it was at the chosen save (column B, in a box with the one
    button) beside the library now (column D), row for row, showing only what
    differs. Rolling back restores every difference at once (syncRestore
@@ -48777,13 +48777,13 @@ function histRollPlaylists(st, opens){
   const plain = rec=>{ const c = syncNodeSansOrder(rec); delete c.name; delete c.parent; delete c.items; return c; };
   // Rows seen at another save stay listed (in grey once both sides agree),
   // so that moving between saves never makes one vanish, which read as
-  // "deleted" (Gen Rinzin, 14 Nov 2026).
+  // "deleted" (kr37, 14 Nov 2026).
   const seen = st.rbSeen.nodes, shown = []; let rest = 0;
   // A folder whose order changed: everything in it, each side in its own order.
   const ord = new Set(st.rows.filter(r=> r.kind === "order").map(r=> r.id));
   const orderNode = (key, lvl, a, b, top)=>{
     // The whole list on each side, in its own order; what moved is bold, the
-    // rest grey (Gen Rinzin, 15 Nov 2026). Moved: not in the longest run
+    // rest grey (kr37, 15 Nov 2026). Moved: not in the longest run
     // that is in the same order on both sides.
     const stayA = new Set(), stayB = new Set();
     histRollAlign(a || [], b || []).forEach(([i, j])=>{ if(i >= 0 && j >= 0){ stayA.add(i); stayB.add(j); } });
@@ -48967,7 +48967,7 @@ function histRollMainHtml(st, sel, isNow){
     </div>`;
 }
 // Wrap turned on or off: the rows being looked at stay where they were on
-// the screen (Gen Rinzin, 15 Nov 2026). The one chosen if it's in view,
+// the screen (kr37, 15 Nov 2026). The one chosen if it's in view,
 // otherwise the first in view (below a sticky toolbar); after the change,
 // the scroller moves by however far that row moved. Returns the "after".
 function histKeepInView(rows, bar){
@@ -49017,7 +49017,7 @@ async function histRollback(btn){
   const st = histState;
   if(!st || st.restoring) return;
   const sel = st.list.find(x=> x.version === st.sel);
-  // What it costs the devices (Gen Rinzin, 14 Nov 2026: say it before they
+  // What it costs the devices (kr37, 14 Nov 2026: say it before they
   // commit): recordings that come back are downloaded again by each device;
   // those added since leave every device.
   const bt = new Map((st.thenDoc.tracks || []).map(x=> [x.id, x])), dt = new Map((st.nowDoc.tracks || []).map(x=> [x.id, x]));
@@ -49049,7 +49049,7 @@ async function histRollback(btn){
   }
 }
 /* ---- History: Bring back tracks or playlists (2.5.018) ----
-   Gen Rinzin's design (15 Nov 2026): find the playlist or track first, then
+   kr37's design (15 Nov 2026): find the playlist or track first, then
    choose among its earlier states. Column A finds it (Playlists | Tracks;
    By folder | Flat list; Show: Changes | Everything); then Now beside
    Earlier, row for row, with the earlier one in the box holding the
@@ -49251,7 +49251,7 @@ function bbCompareHtml(st){
       const shown = (now.name || "") !== (then.name || "") || (now.artist || "") !== (then.artist || "") || (now.album || "") !== (then.album || "");
       if(words.length) h += cell("", "") + cell("rb-chg", escapeHtmlText(words.join(" · ")));
       else if(!shown) h += cell("", "") + cell("rb-un", "");
-      // Different artwork: the two pictures (Gen Rinzin, 15 Nov 2026), from
+      // Different artwork: the two pictures (kr37, 15 Nov 2026), from
       // the shared library, which keeps every cover a kept version uses.
       if(mn.artRev !== mb.artRev || !!mn.hasArtwork !== !!mb.hasArtwork){
         const pic = r=> r.hasArtwork ? `<img class="bb-art" data-art="${escapeHtmlText(sharedArtName(r))}" alt="">` : `<span class="rb-note">${escapeHtmlText(t("bbNoArt"))}</span>`;
@@ -49358,7 +49358,7 @@ function histBringWire(body){
   const main = body.querySelector(".hist-main");
   bbSizeA(main);
   // Column A scrolls by itself, its scrollbar beside it; several thousand
-  // tracks under Flat list and Everything (Gen Rinzin, 15 Nov 2026). Past
+  // tracks under Flat list and Everything (kr37, 15 Nov 2026). Past
   // a screenful, an arrow in its lower left goes back to the top. On a
   // narrow screen column A is part of the page, and the arrow scrolls that.
   const up = main.querySelector("#bbUp"), list = main.querySelector("#bbA");
@@ -50209,7 +50209,7 @@ async function fillDriveSpace(cfg){
     el.appendChild(b);
   }
 }
-/* Freeing space in a Google Drive library (1.4.141, Gen Rinzin; the plan's part 1).
+/* Freeing space in a Google Drive library (1.4.141, kr37; the plan's part 1).
    Settings → Shared library → Free up space…: choose how far back History
    should still reach (1, 7 or 30 days), see what that frees, then delete
    for good (not to Drive's trash, so the space comes back at once):
@@ -50565,7 +50565,7 @@ function showNewerVersionBanner(version){
   b.addEventListener("click", ()=> location.reload());
 }
 /* ===================== Copying to another library on this device =====================
-   (1.4.126, Gen Rinzin's design) Import/Export → Copy to another library, shown only
+   (1.4.126, kr37's design) Import/Export → Copy to another library, shown only
    when there's more than one library: the same "what" list as Export, and a
    library to copy into ("Choose a library…" every time, so nothing goes to
    the wrong one by habit).
@@ -50586,7 +50586,7 @@ function showNewerVersionBanner(version){
      there, and no window ever writes another library's library record.
    - Nothing stays linked: it's a one-time copy. */
 const INCOMING_KEY = "incomingCopies";
-// Interruptions (1.4.129, Gen Rinzin): while a copy runs, a refresh or closing the
+// Interruptions (1.4.129, kr37): while a copy runs, a refresh or closing the
 // window asks first (beforeunload), and switching libraries says, in words,
 // that the copy would stop (switchLibrary). If the page goes anyway (a
 // crash, a closed laptop), the other library tidies up: before writing any
@@ -50905,7 +50905,7 @@ async function switchLibrary(id){
   if(id === LIBRARY_ID) return;
   const target = libraryEntry(id);
   if(!target) return;
-  // Any of 37 Player's players (Edit Playlists' too: Gen Rinzin on the HP,
+  // Any of 37 Player's players (Edit Playlists' too: kr37 on the HP,
   // 7 Nov 2026, switched while one played and wasn't asked), or a silence.
   if(playingHere()){
     const ok = await askChoice(t("libSwitchTitle"), `<p>${escapeHtmlText(t("libSwitchPlaying", {name: libraryDisplayName(target)}))}</p>`,
@@ -51111,7 +51111,7 @@ async function deleteLibrary(id){
   // The desktop app only forgets a library, the first one too: its folder,
   // records and recordings stay (2.4.003: the first library went through
   // the clearing below, which emptied its folder's records; found while
-  // answering Gen Rinzin's "would that delete any audio?", 13 Nov 2026).
+  // answering kr37's "would that delete any audio?", 13 Nov 2026).
   if(libraryInDesktopFolder(id)){ await storageRemove(id); return; }
   if(id === MAIN_LIBRARY_ID){
     // Everything but the converter (backup and libraryInfo go too).
@@ -51204,7 +51204,7 @@ function renderLibrariesSection(body){
         let wantBackup = false;
         // A library kept in a folder (always, in the desktop app) is only
         // forgotten: its folder and recordings stay, and the wording says so
-        // (2.4.003, Gen Rinzin, 13 Nov 2026: "would that delete any audio?").
+        // (2.4.003, kr37, 13 Nov 2026: "would that delete any audio?").
         const kept = !!l.folder || libraryInDesktopFolder(l.id);
         const asked = askChoice(t(kept ? "libForgetTitle" : "libDeleteTitle", {name: libraryDisplayName(l)}), `<p>${escapeHtmlText(t(kept ? "libForgetBody" : "libDeleteBody"))}</p>`
           + (folder ? `<label class="join-partial" style="font-weight:normal;"><input type="checkbox" id="libDelBackup"> ${escapeHtmlText(t("libDeleteBackupCheck", {folder: folder.name}))}</label>` : "")
@@ -51512,7 +51512,7 @@ function openFilePlayer(files){
      shell can't (driveNotInDesktop).
    Everything here is inert in a browser. */
 const IN_DESKTOP_APP = !!window.__TAURI_INTERNALS__;
-/* Versions in the desktop app (1.4.160; Gen Rinzin's choice, 5 Nov 2026). The page
+/* Versions in the desktop app (1.4.160; kr37's choice, 5 Nov 2026). The page
    has its own version (APP_VERSION) whether on the website or in the app.
    The desktop shell (desktop/src-tauri) has the page's version as of when
    the shell itself last changed, like sync.php's SYNC_VERSION; it's also the
@@ -51553,7 +51553,7 @@ function closingWouldStop(){
   return out;
 }
 /* The page updates itself (1.4.182; desktop/PAGE-UPDATES.md). A shell
-   that says `pages` fetches newer pages Gen Rinzin's GitHub job signed, once a day
+   that says `pages` fetches newer pages kr37's GitHub job signed, once a day
    and when asked (Check for updates), and uses one from the next start; or
    at once with Update now (the window reloads into it, as on the website).
    This page tells the shell it started (p37_page_ok, from signalAppUp);

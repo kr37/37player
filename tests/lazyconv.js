@@ -1,5 +1,5 @@
 // The converter reads a file of the desktop app's from the disk as it goes
-// (2.2.039; Gen Rinzin's 8 GB Mac mini, 11 Nov 2026: converting big WAVs
+// (2.2.039; kr37's 8 GB Mac mini, 11 Nov 2026: converting big WAVs
 // one after another, WebKit's Networking process held 4–6 GB, the inputs
 // read whole into Blobs, and macOS restarted itself). The page runs as the
 // desktop app with the stand-in shell (fake-shell.js), whose addresses

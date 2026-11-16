@@ -1,4 +1,4 @@
-// Saving a big library quickly (2.2.035; Gen Rinzin: Save in the Edit dialog
+// Saving a big library quickly (2.2.035; kr37: Save in the Edit dialog
 // took seconds, and typing in Table lagged, while imports and syncing ran).
 // A save turned every waveform into text to see whether anything changed,
 // and read the whole stored library back to check its revision. Now a

@@ -1,6 +1,6 @@
 // The Size setting in the desktop app (2.4.000, shell 2.4.0): the shell
 // zooms the webview and the page isn't magnified (WebKitGTK drew the
-// page's transform blurred; Gen Rinzin's T470, 13 Nov 2026). A shell that
+// page's transform blurred; kr37's T470, 13 Nov 2026). A shell that
 // can't keeps the page's own way.
 //   node shellzoom.js
 const puppeteer = require('puppeteer-core'); const fs = require('fs'); const sleep = ms=>new Promise(r=>setTimeout(r,ms));

@@ -5,12 +5,12 @@ name: Desktop app on the home page
 # "desktop-latest-dev", for test.37player.com:
 #   https://github.com/kr37/37player/releases/download/desktop-latest/37-Player-mac.dmg
 #   …/37-Player-windows-setup.exe and …/37-Player-windows.msi
-# Gen Rinzin chooses which build goes there (Actions → this workflow → Run
+# kr37 chooses which build goes there (Actions → this workflow → Run
 # workflow, with the build, "28m" say; empty means the newest m build), so a
 # build reaches a home page only once he's happy with it. (Builds up to 27
 # have no letter: they follow dev's pages.)
 # A "d" build goes to desktop-latest-dev by itself as soon as it's built
-# (Gen Rinzin, 11 Nov 2026: test.37player.com was still offering a build four
+# (kr37, 11 Nov 2026: test.37player.com was still offering a build four
 # days old); 37player.com's stays his choice. That needs this file on the
 # default branch (main): GitHub only runs workflow_run from there. The build
 # workflow has had two names, so both are listed.

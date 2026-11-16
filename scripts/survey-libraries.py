@@ -7,7 +7,7 @@ Reads only; changes nothing.
 
     python3 survey-libraries.py ~/Music/"37 Player Libraries"
 
-(12 Nov 2026: Gen Rinzin saw an album's recordings copied with each rename
+(12 Nov 2026: kr37 saw an album's recordings copied with each rename
 on the T470, in Chrome, while one of them was playing.)
 """
 import json, os, sys, time

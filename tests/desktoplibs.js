@@ -1,4 +1,4 @@
-// The desktop app's libraries (2.0, step 4) and Gen Rinzin's wipe test
+// The desktop app's libraries (2.0, step 4) and kr37's wipe test
 // (step 5), through the stand-in shell (fake-shell.js):
 //  - the first start asks where the libraries should live (Music/37 Player
 //    Libraries only suggested; Choose another place… puts them elsewhere);

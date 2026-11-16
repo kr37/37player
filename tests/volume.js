@@ -1,4 +1,4 @@
-// The Playing volume slider (2.2.038, Gen Rinzin): kept per device, so a
+// The Playing volume slider (2.2.038, kr37): kept per device, so a
 // reload (a page update) no longer puts it back to full; and squared, not
 // cubed, so its bottom half doesn't go silent so soon.
 //   node volume.js

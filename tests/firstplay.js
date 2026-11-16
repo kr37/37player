@@ -1,4 +1,4 @@
-// The first Play after a start, in the desktop app (2.5.004; Gen Rinzin's
+// The first Play after a start, in the desktop app (2.5.004; kr37's
 // T470, 14 Nov 2026: the button stayed a triangle through a click or two).
 // Play waited until every track's record had been read once, to know which
 // are used in place. Now, until that's known, the track starts inside the

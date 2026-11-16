@@ -29,7 +29,7 @@ const tree = p=> p.evaluate(()=>{ const out = []; (function w(ns, d){ ns.forEach
     const T = (id, name, artist, album, n)=> ({id, name, artist, album, trackNo: n, duration: 60, filename: id + '.mp3', fileSize: 2000000, audioRev: 1});
     r.library = [T('pm', 'Prayers for Meditation', 'Tharpa', 'Daily prayers', 1), T('cl', 'Meditation: clarity of mind', 'Tharpa', 'Daily prayers', 2), T('dp', 'Dedication prayers', 'Tharpa', 'Daily prayers', 3),
       T('t8', 'Track08', 'Tharpa', 'Daily prayers', 8), T('gf', 'Guru Founder', 'Tharpa', 'Heart Jewel', 1), T('lp', 'The Liberating Prayer', 'Tharpa', 'Heart Jewel', 2),
-      T('lone', 'A talk on its own', 'Gen Rinzin', 'Talks', 1), T('osg', 'Offering to the Spiritual Guide 1', 'Tharpa', 'OSG', 1)];
+      T('lone', 'A talk on its own', 'kr37', 'Talks', 1), T('osg', 'Offering to the Spiritual Guide 1', 'Tharpa', 'OSG', 1)];
     r.tree = [{id: 'fD', kind: 'folder', name: 'Daily', children: [{id: 'plM', kind: 'playlist', name: 'Morning', items: [{id: 'e1', kind: 'track', refId: 'pm'}, {id: 'e2', kind: 'silence', seconds: 300, name: 'Silence 5 min'}, {id: 'e3', kind: 'track', refId: 'dp'}]},
         {id: 'plW', kind: 'playlist', name: 'Weekend', items: [{id: 'w1', kind: 'track', refId: 'pm'}]},
         {id: 'plL', kind: 'playlist', name: 'An Offering of Faith Retreat with a very long name indeed, for the Name Mantra', items: [{id: 'l1', kind: 'track', refId: 'pm'}]}]},
@@ -102,7 +102,7 @@ const tree = p=> p.evaluate(()=>{ const out = []; (function w(ns, d){ ns.forEach
   a = await colA(p);
   console.log('tracks by playlist:', JSON.stringify(a));
   ok(a.some(x=> /^Evening$/.test(x)) && a.some(x=> /^Receiving Blessings Tharpa · Daily prayers$/.test(x)), 'Tracks by playlist: Evening, with Receiving Blessings in it');
-  ok(a.some(x=> /^Not in a playlist$/.test(x)) && a.some(x=> /^A talk on its own deleted Gen Rinzin · Talks$/.test(x)), 'Not in a playlist: the deleted talk');
+  ok(a.some(x=> /^Not in a playlist$/.test(x)) && a.some(x=> /^A talk on its own deleted kr37 · Talks$/.test(x)), 'Not in a playlist: the deleted talk');
   await p.evaluate(()=> document.getElementById('bbQ').value = 'Track'); await p.evaluate(()=> document.getElementById('bbQ').dispatchEvent(new Event('input'))); await sleep(300);
   a = await colA(p);
   ok(a.some(x=> /^Receiving Blessings/.test(x)), 'searching "Track" finds Receiving Blessings by its old name');
@@ -114,7 +114,7 @@ const tree = p=> p.evaluate(()=>{ const out = []; (function w(ns, d){ ns.forEach
   await p.screenshot({path: path.join(SHOTS, 'bringback-4.png'), clip: {x: 0, y: 140, width: 1500, height: 330}});
   a = await colA(p);
   console.log('tracks by album:', JSON.stringify(a));
-  ok(a.some(x=> /^Tharpa Daily prayers$/.test(x)) && a.some(x=> /^Gen Rinzin Talks$/.test(x)), 'By album: the artist small above the album');
+  ok(a.some(x=> /^Tharpa Daily prayers$/.test(x)) && a.some(x=> /^kr37 Talks$/.test(x)), 'By album: the artist small above the album');
   const talks = ()=> p.evaluate(()=> [...document.querySelectorAll('#bbA [data-id]')].some(e=> /^A talk on its own/.test(e.innerText)));
   const before = await talks();
   await p.evaluate(()=> [...document.querySelectorAll('#bbA [data-grp]')].find(e=> /Talks/.test(e.innerText)).click()); await sleep(300);

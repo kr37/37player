@@ -13,7 +13,7 @@ replaced revision (re-tagged, converted, Replace audio file) or a deleted
 track's: nothing plays it, but History could bring it back from an older
 version, so only versions older than you'll ever restore should be let go.
 
-  scripts/shared_unused.py "/path/to/37 Player – Rinzin"            summary
+  scripts/shared_unused.py "/path/to/37 Player – kr37"            summary
   scripts/shared_unused.py FOLDER --list                            and each file
   scripts/shared_unused.py FOLDER --keep-days 7                     versions from the last 7 days count as kept (default 30)
   scripts/shared_unused.py FOLDER --move-to ~/37p-unused            move them out (not delete)

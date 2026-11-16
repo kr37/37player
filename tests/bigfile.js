@@ -1,4 +1,4 @@
-// Big files never held whole in the page (2.2.010; Gen Rinzin's 8 GB Mac
+// Big files never held whole in the page (2.2.010; kr37's 8 GB Mac
 // mini, 11 Nov 2026: sending a 2.7 GB WAV to a Google Drive library took
 // 5.48 GB of memory and the whole Mac swapped). The page runs as the desktop
 // app with the stand-in shell (fake-shell.js), files over 1 MB read where
