@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.5.023">
+<meta name="app-version" content="2.5.024">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -780,7 +780,7 @@
   .bb-a{ border-right:1px solid var(--line); padding:8px 0 0; min-width:0; display:flex; flex-direction:column; position:sticky; top:var(--bb-top, 60px); max-height:var(--bb-room, none); }
   .bb-a > .bb-h, .bb-a > .bb-ctabs, .bb-a > .bb-q{ flex-shrink:0; }
   #bbA{ flex:1 1 auto; min-height:0; overflow-y:auto; overscroll-behavior:contain; padding-bottom:8px; } /* its own scrollbar, beside it (2.5.023) */
-  .bb-up{ position:absolute; left:10px; bottom:10px; z-index:2; width:38px; height:38px; display:inline-flex; align-items:center; justify-content:center; border-radius:50%; border:1px solid var(--line); background:var(--bg-panel-raised); color:var(--text); cursor:pointer; box-shadow:0 2px 8px rgba(0,0,0,0.25); }
+  .bb-up{ position:absolute; left:5px; bottom:5px; z-index:2; width:34px; height:34px; display:inline-flex; align-items:center; justify-content:center; border-radius:50%; border:1px solid var(--line); background:var(--bg-panel-raised); color:var(--text); cursor:pointer; box-shadow:0 2px 8px rgba(0,0,0,0.25); }
   .bb-up:hover{ border-color:var(--amber); }
   .bb-up[hidden]{ display:none; }
   .bb-c{ border-left:1px solid var(--line); padding:8px 0; min-width:0; position:sticky; top:var(--bb-top, 60px); }
@@ -837,8 +837,8 @@
   .hist-tabs .tab-short{ display:none; }
   .hist-soon{ max-width:620px; color:var(--text-dim); }
   .hist-point-undone .hist-point-time, .hist-point-undone .hist-point-by, .hist-point-undone .hist-point-what{ text-decoration:line-through; color:var(--text-dim); }
-  .hist-undone-line{ display:flex; align-items:center; gap:8px; margin:6px 16px 4px; color:var(--rust-bright); font-size:12px; }
-  .hist-undone-line::before, .hist-undone-line::after{ content:""; flex:1; height:1px; background:var(--rust-bright); }
+  .hist-undone-line{ display:flex; align-items:center; gap:8px; margin:6px 16px 4px; color:var(--rust-bright); font-size:12px; text-align:center; line-height:1.3; }
+  .hist-undone-line::before, .hist-undone-line::after{ content:""; flex:1; min-width:14px; height:1px; background:var(--rust-bright); } /* a longer wording (2.5.024) wraps between its lines */
   .rb-tools{ display:flex; align-items:center; flex-wrap:wrap; gap:4px 18px; margin:0 0 8px; max-width:1100px; }
   .rb-modes{ margin:0 0 0 auto; }
   .rb-grid{ position:relative; max-width:1100px; }
@@ -5188,7 +5188,7 @@ const STRINGS = {
     "histRbNoAlbum": "(no album)",
     "histRbShowGrey": "Show unchanged in grey",
     "histRbShowChanged": "Only what changed",
-    "histRbUndoneAbove": "undone above this line",
+    "histRbUndoneAbove": "above this line would be undone",
     "histRbPickEarlier": "This is the library as it is now. Choose an earlier version on the left to see what rolling back to it would do.",
     "histRbTopLevel": "the top level",
     "histRbOrderNote": "The order also changed in: {names}",
@@ -7285,7 +7285,7 @@ const STRINGS = {
     "histRbNoAlbum": "(sin álbum)",
     "histRbShowGrey": "Mostrar en gris lo que no cambió",
     "histRbShowChanged": "Solo lo que cambió",
-    "histRbUndoneAbove": "deshecho por encima de esta línea",
+    "histRbUndoneAbove": "lo que está por encima de esta línea se desharía",
     "histRbPickEarlier": "Esta es la biblioteca tal como está ahora. Elige un guardado anterior a la izquierda para ver qué haría revertir a ese punto.",
     "histRbTopLevel": "el primer nivel",
     "histRbOrderNote": "El orden también cambió en: {names}",
@@ -9381,7 +9381,7 @@ const STRINGS = {
     "histRbNoAlbum": "(sans album)",
     "histRbShowGrey": "Afficher en gris ce qui n'a pas changé",
     "histRbShowChanged": "Seulement ce qui a changé",
-    "histRbUndoneAbove": "annulé au-dessus de cette ligne",
+    "histRbUndoneAbove": "ce qui est au-dessus de cette ligne serait annulé",
     "histRbPickEarlier": "Voici la bibliothèque telle qu'elle est maintenant. Choisissez un enregistrement antérieur à gauche pour voir ce que ferait un retour à ce point.",
     "histRbTopLevel": "le premier niveau",
     "histRbOrderNote": "L'ordre a aussi changé dans : {names}",
@@ -11477,7 +11477,7 @@ const STRINGS = {
     "histRbNoAlbum": "(sem álbum)",
     "histRbShowGrey": "Mostrar em cinza o que não mudou",
     "histRbShowChanged": "Só o que mudou",
-    "histRbUndoneAbove": "desfeito acima desta linha",
+    "histRbUndoneAbove": "o que está acima desta linha seria desfeito",
     "histRbPickEarlier": "Esta é a biblioteca como está agora. Escolha um salvamento anterior à esquerda para ver o que reverter para ele faria.",
     "histRbTopLevel": "o primeiro nível",
     "histRbOrderNote": "A ordem também mudou em: {names}",
@@ -13573,7 +13573,7 @@ const STRINGS = {
     "histRbNoAlbum": "(kein Album)",
     "histRbShowGrey": "Unverändertes grau anzeigen",
     "histRbShowChanged": "Nur was sich geändert hat",
-    "histRbUndoneAbove": "oberhalb dieser Linie rückgängig gemacht",
+    "histRbUndoneAbove": "alles oberhalb dieser Linie würde rückgängig gemacht",
     "histRbPickEarlier": "Das ist die Bibliothek, wie sie jetzt ist. Wähle links einen früheren Stand, um zu sehen, was ein Zurücksetzen darauf bewirken würde.",
     "histRbTopLevel": "die oberste Ebene",
     "histRbOrderNote": "Die Reihenfolge hat sich auch geändert in: {names}",
@@ -15669,7 +15669,7 @@ const STRINGS = {
     "histRbNoAlbum": "（无专辑）",
     "histRbShowGrey": "未更改的显示为灰色",
     "histRbShowChanged": "只显示更改的内容",
-    "histRbUndoneAbove": "此线以上已撤销",
+    "histRbUndoneAbove": "此线以上的将被撤销",
     "histRbPickEarlier": "这是资料库现在的样子。在左侧选择较早的一次保存，查看回滚到那里会怎样。",
     "histRbTopLevel": "顶层",
     "histRbOrderNote": "以下位置的顺序也变了：{names}",
@@ -17765,7 +17765,7 @@ const STRINGS = {
     "histRbNoAlbum": "(không có album)",
     "histRbShowGrey": "Hiện phần không đổi bằng màu xám",
     "histRbShowChanged": "Chỉ những gì đã thay đổi",
-    "histRbUndoneAbove": "đã hoàn tác phía trên dòng này",
+    "histRbUndoneAbove": "phần phía trên dòng này sẽ được hoàn tác",
     "histRbPickEarlier": "Đây là thư viện như hiện tại. Hãy chọn một lần lưu trước đó ở bên trái để xem quay lui về đó sẽ làm gì.",
     "histRbTopLevel": "cấp trên cùng",
     "histRbOrderNote": "Thứ tự cũng đã thay đổi trong: {names}",
@@ -19861,7 +19861,7 @@ const STRINGS = {
     "histRbNoAlbum": "(χωρίς άλμπουμ)",
     "histRbShowGrey": "Εμφάνιση των αμετάβλητων με γκρι",
     "histRbShowChanged": "Μόνο ό,τι άλλαξε",
-    "histRbUndoneAbove": "αναιρέθηκαν πάνω από αυτή τη γραμμή",
+    "histRbUndoneAbove": "ό,τι είναι πάνω από αυτή τη γραμμή θα αναιρεθεί",
     "histRbPickEarlier": "Αυτή είναι η βιβλιοθήκη όπως είναι τώρα. Επιλέξτε μια προηγούμενη αποθήκευση αριστερά για να δείτε τι θα έκανε η επαναφορά σε αυτήν.",
     "histRbTopLevel": "το ανώτατο επίπεδο",
     "histRbOrderNote": "Η σειρά άλλαξε επίσης σε: {names}",
@@ -21957,7 +21957,7 @@ const STRINGS = {
     "histRbNoAlbum": "(nessun album)",
     "histRbShowGrey": "Mostra in grigio ciò che non è cambiato",
     "histRbShowChanged": "Solo ciò che è cambiato",
-    "histRbUndoneAbove": "annullato sopra questa linea",
+    "histRbUndoneAbove": "quanto sta sopra questa linea verrebbe annullato",
     "histRbPickEarlier": "Questa è la libreria com'è adesso. Scegli un salvataggio precedente a sinistra per vedere cosa farebbe tornare a quel punto.",
     "histRbTopLevel": "il primo livello",
     "histRbOrderNote": "L'ordine è cambiato anche in: {names}",
