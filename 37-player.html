@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.5.019">
+<meta name="app-version" content="2.5.020">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -763,7 +763,7 @@
   .hist-nothing + .rb-tools{ margin-top:14px; }
   /* History: Bring back (2.5.018) */
   .hist-body.hist-bring > .hist-side{ display:none; }
-  .bb-top{ display:flex; align-items:center; flex-wrap:wrap; gap:8px 16px; margin:0 0 10px; }
+  .bb-top{ display:flex; align-items:center; flex-wrap:wrap; gap:8px 16px; margin:-16px -22px 10px; padding:10px 22px; position:sticky; top:-16px; z-index:3; background:var(--bg-deep); border-bottom:1px solid var(--line); }
   .bb-title{ margin:0; font-size:17px; }
   .bb-tabs{ flex-wrap:wrap; }
   .bb-radios{ display:flex; align-items:center; flex-wrap:wrap; gap:4px 14px; margin:0; padding:0; border:0; }
@@ -778,7 +778,7 @@
   .bb-missing{ display:flex; align-items:center; flex-wrap:wrap; gap:8px 12px; margin:0 0 12px; color:var(--text-dim); font-size:13px; }
   .bb-grid{ display:grid; grid-template-columns:minmax(200px, 1fr) minmax(0, 2.1fr) minmax(130px, 0.75fr); gap:0; align-items:start; border:1px solid var(--line); border-radius:12px; }
   .bb-a{ border-right:1px solid var(--line); padding:8px 0; min-width:0; }
-  .bb-c{ border-left:1px solid var(--line); padding:8px 0; min-width:0; position:sticky; top:0; }
+  .bb-c{ border-left:1px solid var(--line); padding:8px 0; min-width:0; position:sticky; top:var(--bb-top, 60px); }
   .bb-h{ display:block; font-size:12px; color:var(--text-dim); padding:0 12px 6px; }
   .bb-q{ display:block; width:calc(100% - 24px); margin:0 12px 8px; }
   .bb-it{ position:relative; display:flex; flex-wrap:wrap; align-items:center; gap:0 5px; padding:4px 10px 4px calc(10px + var(--d, 0) * 18px); cursor:pointer; min-width:0; }
@@ -786,14 +786,20 @@
   .bb-it.sel{ background:var(--bg-panel-raised); box-shadow:inset 3px 0 0 var(--amber); }
   .bb-it:focus-visible{ outline:2px solid var(--amber); outline-offset:-2px; }
   .bb-it .rv-chev, .bb-chev-space{ width:20px; height:20px; flex-shrink:0; }
-  .bb-name{ display:inline-flex; align-items:center; gap:5px; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .bb-wrap .bb-name{ white-space:normal; overflow-wrap:anywhere; }
+  .bb-name{ flex:1 1 0; display:inline-flex; align-items:center; gap:5px; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .bb-name.bb-ch{ font-weight:700; }
+  .bb-name.bb-dim{ font-weight:400; }
+  .bb-wrap .bb-name{ white-space:normal; overflow-wrap:anywhere; align-items:flex-start; }
+  .bb-wrap .bb-name .bb-icon{ margin-top:2px; }
+  .bb-wrap .bb-it{ align-items:flex-start; } /* a name over several lines: the chevron beside its first line */
+  .bb-wrap .bb-it .rv-chev, .bb-wrap .bb-chev-space{ margin-top:0; }
   .bb-tr{ font-size:15px; }
   .bb-grpname{ font-weight:700; }
   .bb-icon{ display:inline-flex; flex-shrink:0; color:var(--text-dim); }
   .bb-sub{ flex-basis:100%; padding-left:25px; font-size:12px; color:var(--text-dim); }
   .bb-ver{ padding-left:14px; }
   .bb-ver .bb-sub{ padding-left:0; }
+  .bb-it[data-k="n"] .bb-sub{ padding-left:45px; } /* under the name, past the playlist icon */
   .bb-small{ flex-basis:100%; padding-left:25px; font-size:11.5px; color:var(--text-dim); order:-1; }
   .bb-grp .bb-small{ padding-left:25px; }
   .bb-dim{ color:var(--text-dim); }
@@ -803,7 +809,7 @@
   .bb-sec{ margin:12px 10px 6px; padding:4px 8px; border-radius:8px; text-align:center; font-weight:700; background:#374550; color:var(--text); }
   body.theme-light .bb-sec{ background:#E7EEF2; }
   .bb-empty{ margin:6px 12px; color:var(--text-dim); font-size:13px; }
-  .bb-cmp{ position:relative; display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); align-content:start; padding:8px 10px 12px; position:sticky; top:0; }
+  .bb-cmp{ position:relative; display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); align-content:start; padding:8px 10px 12px; position:sticky; top:var(--bb-top, 60px); }
   .bb-cmp > .bb-empty{ grid-column:1 / -1; }
   .bb-box{ position:absolute; top:6px; bottom:6px; right:6px; width:calc(50% - 10px); background:var(--bg-panel-raised); border:1px solid var(--line); border-radius:12px; }
   .bb-cell{ position:relative; padding:3px 12px; min-width:0; min-height:24px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
@@ -45601,6 +45607,29 @@ function syncEq(a, b){ return syncStable(a) === syncStable(b); }
 // folder's or playlist's kind and folder (nx: {id: [kind, parent]}), a
 // track's artist, album and the playlists it was in (tx: {id: [artist,
 // album, [playlist ids]]}).
+// Only what a person changes counts (2.5.020; Gen Rinzin found hundreds of
+// tracks "changed" on 13 Nov when his Mac mini filled in loudness, lengths
+// and which device each recording came from): a track without the details
+// 37 Player works out by itself, a folder or playlist without its place
+// among its siblings and its "needs attention" mark, its entries in order
+// without their order numbers. The same in sync.php (meaning_track,
+// meaning_node). Records made this way carry f: 2; older ones are treated
+// as not recorded, so Build list from history redoes them.
+const SYNC_MEANING_TRACK_SKIP = ["audioFrom", "loudness", "duration", "fileTags", "needsConvert", "fileModified", "sampleRate", "channels", "filename", "fileSize", "addedAt", "changedAt"];
+const SYNC_CHANGES_FORMAT = 2;
+function syncMeaningTrack(t){
+  if(!t) return t;
+  const c = {};
+  Object.keys(t).forEach(k=>{ if(k !== "id" && !SYNC_MEANING_TRACK_SKIP.includes(k)) c[k] = t[k]; });
+  return c;
+}
+function syncMeaningNode(r){
+  if(!r) return r;
+  const c = {};
+  Object.keys(r).forEach(k=>{ if(k !== "id" && k !== "order" && k !== "needsAttention" && k !== "children") c[k] = r[k]; });
+  if(Array.isArray(r.items)) c.items = r.items.slice().sort((x, y)=> (x.order || 0) - (y.order || 0)).map(it=>{ const o = Object.assign({}, it); delete o.order; return o; });
+  return c;
+}
 function syncChangedIds(a, b){
   const t = [], n = [], tn = {}, nn = {}, tAdd = [], nAdd = [], nx = {}, tx = {};
   const names = (x, y)=>{ const out = []; [y, x].forEach(r=>{ if(r && typeof r.name === "string" && !out.includes(r.name)) out.push(r.name); }); return out; };
@@ -45612,18 +45641,18 @@ function syncChangedIds(a, b){
     return usedIn.get(id) || [];
   };
   new Set([...ta.keys(), ...tb.keys()]).forEach(id=>{
-    if(ta.has(id) && tb.has(id) && syncEq(ta.get(id), tb.get(id))) return;
+    if(ta.has(id) && tb.has(id) && syncEq(syncMeaningTrack(ta.get(id)), syncMeaningTrack(tb.get(id)))) return;
     t.push(id); tn[id] = names(ta.get(id), tb.get(id));
     if(!ta.has(id)) tAdd.push(id);
     else if(!tb.has(id)){ const r = ta.get(id); tx[id] = [r.artist || "", r.album || "", playlistsOf(id)]; }
   });
   new Set([...na.keys(), ...nb.keys()]).forEach(id=>{
-    if(na.has(id) && nb.has(id) && syncEq(na.get(id), nb.get(id))) return;
+    if(na.has(id) && nb.has(id) && syncEq(syncMeaningNode(na.get(id)), syncMeaningNode(nb.get(id)))) return;
     n.push(id); nn[id] = names(na.get(id), nb.get(id));
     if(!na.has(id)) nAdd.push(id);
     else if(!nb.has(id)){ const r = na.get(id); nx[id] = [r.kind || "", r.parent == null ? null : r.parent]; }
   });
-  return {t, n, tn, nn, ta: tAdd, na: nAdd, tx, nx};
+  return {f: SYNC_CHANGES_FORMAT, t, n, tn, nn, ta: tAdd, na: nAdd, tx, nx};
 }
 function syncClone(v){ return v === undefined ? undefined : JSON.parse(JSON.stringify(v)); }
 function syncEmptyDoc(){ return {format: SYNC_DOC_FORMAT, tracks: [], tree: []}; }
@@ -47183,6 +47212,7 @@ async function histChangeIndex(cfg, opts){
   const key = histChangeKey(cfg);
   const saved = await idbGet("state", key).catch(()=> null);
   const idx = saved && saved.versions ? saved : {key, versions: {}};
+  if(idx.f !== SYNC_CHANGES_FORMAT){ idx.versions = {}; idx.f = SYNC_CHANGES_FORMAT; } // made by an older rule: start again
   const known = Object.keys(idx.versions).map(Number);
   const since = known.length ? Math.max(...known) : 0;
   const res = await sharedFetch(cfg, {op: "changes", since: String(since)});
@@ -47190,8 +47220,9 @@ async function histChangeIndex(cfg, opts){
   if(!res.ok) throw new Error("changes " + res.status);
   const j = await res.json();
   const kept = new Set(j.kept || []);
-  Object.entries(j.versions || {}).forEach(([v, c])=>{ idx.versions[v] = {t: c.t || [], n: c.n || [], tn: c.tn || {}, nn: c.nn || {}, ta: c.ta || [], na: c.na || [], tx: c.tx || {}, nx: c.nx || {}}; });
-  Object.keys(idx.versions).forEach(v=>{ if(!kept.has(+v)) delete idx.versions[v]; });
+  Object.entries(j.versions || {}).forEach(([v, c])=>{ if((c.f || 1) >= SYNC_CHANGES_FORMAT) idx.versions[v] = {f: c.f, t: c.t || [], n: c.n || [], tn: c.tn || {}, nn: c.nn || {}, ta: c.ta || [], na: c.na || [], tx: c.tx || {}, nx: c.nx || {}}; });
+  // Versions no longer kept go; so do records made by an older rule.
+  Object.keys(idx.versions).forEach(v=>{ if(!kept.has(+v) || (idx.versions[v].f || 1) < SYNC_CHANGES_FORMAT) delete idx.versions[v]; });
   const missing = [...kept].filter(v=> !idx.versions[v] && v > 1).sort((a, b)=> a - b);
   if(opts.build && missing.length){
     const docs = new Map();
@@ -49591,7 +49622,7 @@ function bbItem(st, m, k, id, lvl, label, sub){
   const bb = st.bb, g = k === "t" ? !m.T.has(id) : !m.N.has(id), ch = bbChanged(m, k, id);
   const on = bb.sel && bb.sel.k === k && bb.sel.id === id;
   const info = k === "t" ? bbTrackInfo(m, id) : null;
-  return `<div class="bb-it${on ? " sel" : ""}" data-k="${k}" data-id="${escapeHtmlText(id)}" role="button" tabindex="0" style="--d:${lvl}">${bbLines(lvl)}<span class="bb-chev-space"></span><span class="bb-name${g ? " bb-gone" : ch ? "" : " bb-dim"}${k === "t" ? " bb-tr" : ""}">${k === "n" ? `<span class="bb-icon">${ICON_PLAYLIST}</span>` : ""}${escapeHtmlText(label)}</span>${sub ? `<span class="bb-sub">${escapeHtmlText(sub)}</span>` : ""}${g ? `<span class="bb-sub">${escapeHtmlText(t("bbDeletedSub"))}</span>` : ""}${info ? `<span class="bb-sub">${escapeHtmlText([info.artist, info.album].filter(Boolean).join(" · "))}</span>` : ""}</div>`;
+  return `<div class="bb-it${on ? " sel" : ""}" data-k="${k}" data-id="${escapeHtmlText(id)}" role="button" tabindex="0" style="--d:${lvl}">${bbLines(lvl)}<span class="bb-chev-space"></span><span class="bb-name${g ? " bb-gone" : ch ? " bb-ch" : " bb-dim"}${k === "t" ? " bb-tr" : ""}">${k === "n" ? `<span class="bb-icon">${ICON_PLAYLIST}</span>` : ""}${escapeHtmlText(label)}</span>${sub ? `<span class="bb-sub">${escapeHtmlText(sub)}</span>` : ""}${g ? `<span class="bb-sub">${escapeHtmlText(t("bbDeletedSub"))}</span>` : ""}${info ? `<span class="bb-sub">${escapeHtmlText([info.artist, info.album].filter(Boolean).join(" · "))}</span>` : ""}</div>`;
 }
 function bbGroup(st, key, lvl, title, icon, inner, hasChange, small){
   const bb = st.bb;
@@ -49727,10 +49758,16 @@ function bbCompareHtml(st){
     const info = r=> r ? [r.artist, r.album].filter(Boolean).join(" · ") : "";
     h += cell("rb-un", escapeHtmlText(info(now))) + cell("rb-un", escapeHtmlText(info(then)));
     if(now){
-      const fn = syncTrackFields(now), fb = syncTrackFields(then), words = [];
-      if(!syncEq(fn["#audio"], fb["#audio"])) words.push(t("histOtherAudio"));
-      if(!syncEq(fn["#art"], fb["#art"])) words.push(t("histOtherArt"));
+      // Only what a person changes (syncMeaningTrack): a replaced recording
+      // is a new audioRev; artwork; any other detail, such as volume.
+      const mn = syncMeaningTrack(now), mb = syncMeaningTrack(then), words = [];
+      if(mn.audioRev !== mb.audioRev) words.push(t("histOtherAudio"));
+      if(mn.artRev !== mb.artRev || !!mn.hasArtwork !== !!mb.hasArtwork) words.push(t("histOtherArt"));
+      const skip = new Set(["name", "artist", "album", "audioRev", "artRev", "hasArtwork"]);
+      if(Object.keys(Object.assign({}, mn, mb)).some(f=> !skip.has(f) && !syncEq(mn[f], mb[f]))) words.push(t("histOtherDetails"));
+      const shown = (now.name || "") !== (then.name || "") || (now.artist || "") !== (then.artist || "") || (now.album || "") !== (then.album || "");
       if(words.length) h += cell("", "") + cell("rb-chg", escapeHtmlText(words.join(" · ")));
+      else if(!shown) h += cell("", "") + cell("rb-un", "");
     }
   }
   if(then){
@@ -49752,7 +49789,7 @@ async function bbChoose(st, k, id){
   const vs = (m.earlier[k].get(id) || []).slice().sort((a, b)=> b - a);
   const out = [], seen = new Set();
   const cur = k === "t" ? m.T.get(id) : m.N.get(id);
-  const sig = r=> syncStable(k === "t" ? syncTrackFields(r) : syncNodeSansOrder(r));
+  const sig = r=> syncStable(k === "t" ? syncMeaningTrack(r) : Object.assign(syncMeaningNode(r), {parent: undefined}));
   if(cur) seen.add(sig(cur));
   for(const v of vs){
     let doc;
@@ -49802,6 +49839,8 @@ function histBringWire(body){
   const st = histState, bb = bbState(st);
   if(!bb.idx){ bbLoad(st); return; }
   const main = body.querySelector(".hist-main");
+  const top = main.querySelector(".bb-top");
+  if(top) main.style.setProperty("--bb-top", (top.offsetHeight - 6) + "px");
   const bar = main.querySelector("#bbBar");
   if(bar) fillCtxBar(bar, [{icon: "wrap", label: t("ctxWrap"), tip: t("wrapNamesLabel"), on: ()=> !!bb.wrap, act: ()=>{ bb.wrap = !bb.wrap; const g = main.querySelector(".bb-grid"); if(g) g.classList.toggle("bb-wrap", bb.wrap); }}]);
   const reset = ()=>{ bb.sel = null; bb.states = null; bb.flip.clear(); renderSharedHistory(); };

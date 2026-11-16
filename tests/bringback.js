@@ -31,7 +31,8 @@ const tree = p=> p.evaluate(()=>{ const out = []; (function w(ns, d){ ns.forEach
       T('t8', 'Track08', 'Tharpa', 'Daily prayers', 8), T('gf', 'Guru Founder', 'Tharpa', 'Heart Jewel', 1), T('lp', 'The Liberating Prayer', 'Tharpa', 'Heart Jewel', 2),
       T('lone', 'A talk on its own', 'Gen Rinzin', 'Talks', 1), T('osg', 'Offering to the Spiritual Guide 1', 'Tharpa', 'OSG', 1)];
     r.tree = [{id: 'fD', kind: 'folder', name: 'Daily', children: [{id: 'plM', kind: 'playlist', name: 'Morning', items: [{id: 'e1', kind: 'track', refId: 'pm'}, {id: 'e2', kind: 'silence', seconds: 300, name: 'Silence 5 min'}, {id: 'e3', kind: 'track', refId: 'dp'}]},
-        {id: 'plW', kind: 'playlist', name: 'Weekend', items: [{id: 'w1', kind: 'track', refId: 'pm'}]}]},
+        {id: 'plW', kind: 'playlist', name: 'Weekend', items: [{id: 'w1', kind: 'track', refId: 'pm'}]},
+        {id: 'plL', kind: 'playlist', name: 'An Offering of Faith Retreat with a very long name indeed, for the Name Mantra', items: [{id: 'l1', kind: 'track', refId: 'pm'}]}]},
       {id: 'fP', kind: 'folder', name: 'Pujas', children: [{id: 'plH', kind: 'playlist', name: 'Heart Jewel', items: [{id: 'h1', kind: 'track', refId: 'gf'}, {id: 'h2', kind: 'track', refId: 'lp'}]}]},
       {id: 'plE', kind: 'playlist', name: 'Evening', items: [{id: 'v1', kind: 'track', refId: 't8'}, {id: 'v2', kind: 'track', refId: 'lp'}]}];
     await window.__dbg.saveState();
@@ -43,6 +44,7 @@ const tree = p=> p.evaluate(()=>{ const out = []; (function w(ns, d){ ns.forEach
   await edit(p, "r.library.find(t=> t.id==='t8').name = 'Receiving Blessings';"); await sync(p);
   await edit(p, "r.tree.find(n=> n.id==='fP').children = []; r.library = r.library.filter(t=> t.id !== 'gf');"); await sync(p);
   await edit(p, "r.library = r.library.filter(t=> t.id !== 'lone');"); await sync(p);
+  await edit(p, "r.library.forEach(t=>{ t.loudness = {i: -17, p: -1}; t.audioFrom = 'Mac mini'; }); r.tree[0].children.find(n=> n.id==='plW').needsAttention = false;"); await sync(p);
   await openBring(p);
   ok(await p.evaluate(()=> document.querySelector('.hist-body').classList.contains('hist-bring') && getComputedStyle(document.querySelector('.hist-side')).display === 'none'), 'Bring back: no list of versions on the left');
   ok(await p.evaluate(()=> /^Bring back since /.test(document.querySelector('.bb-title').textContent)), 'the title says how far back: ' + await p.evaluate(()=> document.querySelector('.bb-title').textContent));
@@ -53,7 +55,15 @@ const tree = p=> p.evaluate(()=>{ const out = []; (function w(ns, d){ ns.forEach
   a = await colA(p);
   ok(a.some(x=> /^Weekend$/.test(x)) || a.some(x=> /^Daily$/.test(x)), 'Everything adds the unchanged ones');
   ok(a.some(x=> /^Evening$/.test(x)), 'including Evening at the top level');
+  // A long name stays on its own line, at its own indent; changed items are bold, unchanged plain
+  const lay = await p.evaluate(()=>{ const it = [...document.querySelectorAll('#bbA [data-id]')].find(e=> /An Offering of Faith/.test(e.innerText)); const ch = [...document.querySelectorAll('#bbA [data-id]')].find(e=> /^Morning prayers/.test(e.innerText)); if(!it) return 'missing'; const n = it.querySelector('.bb-name').getBoundingClientRect(), sp = it.querySelector('.bb-chev-space').getBoundingClientRect(); return {sameLine: Math.abs(n.top - sp.top) < 6, after: n.left >= sp.right - 1, dimW: getComputedStyle(it.querySelector('.bb-name')).fontWeight, chW: getComputedStyle(ch.querySelector('.bb-name')).fontWeight}; });
+  await p.screenshot({path: path.join(SHOTS, 'bringback-5.png'), clip: {x: 0, y: 60, width: 1500, height: 520}});
+  ok(lay.sameLine && lay.after, 'a long name stays beside its icon, at its indent (' + JSON.stringify(lay) + ')');
+  ok(lay.chW === '700' && lay.dimW === '400', 'Everything: changed items bold, unchanged plain');
+  ok(await p.evaluate(()=> getComputedStyle(document.querySelector('.bb-top')).position === 'sticky'), 'the Bring back since… line stays put');
   await p.evaluate(()=> document.querySelector('input[name="bbShow"][value="chg"]').click()); await sleep(300);
+  a = await colA(p);
+  ok(!a.some(x=> /Weekend|An Offering/.test(x)), 'Changes: what 37 Player did by itself (loudness, where recordings came from, "needs attention") is not listed');
   // Morning prayers: its earlier state
   await pick(p, '^Morning prayers$');
   let c = await colC(p), rows = await cmp(p);

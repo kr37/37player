@@ -1,7 +1,7 @@
 <?php
 /*
  * 37 Player — shared library sync server.
- * Version 2.5.018 (the 37 Player version this file was last changed for;
+ * Version 2.5.020 (the 37 Player version this file was last changed for;
  * keep it the same as SYNC_VERSION below).
  *
  * One file, plain PHP (7.4+), no database. It keeps each shared library in
@@ -91,7 +91,7 @@ const KINDS = ['audio', 'artwork', 'peaks'];
 // The 37 Player version this file was last changed for (it doesn't change
 // with every release of the app, only when this file does). Shown in the
 // app's Settings → Shared library, and by `php sync.php version`.
-const SYNC_VERSION = '2.5.018';
+const SYNC_VERSION = '2.5.020';
 
 if (PHP_SAPI === 'cli') { exit(cli($argv)); }
 
@@ -470,12 +470,31 @@ function canon($v) {
 function flat_tree($tree, $parent, &$out) {
     foreach (($tree ?: []) as $n) {
         if (!is_array($n) || !isset($n['id'])) continue;
-        $rec = $n; unset($rec['children'], $rec['id']); $rec['parent'] = $parent;
+        $rec = meaning_node($n); $rec['parent'] = $parent;
         $out[$n['id']] = json_encode(canon($rec), JSON_UNESCAPED_UNICODE);
         $GLOBALS['flat_names'][$n['id']] = $n['name'] ?? null;
         $GLOBALS['flat_recs'][$n['id']] = ['kind' => $n['kind'] ?? '', 'parent' => $parent, 'items' => $n['items'] ?? []];
         if (($n['kind'] ?? '') === 'folder') flat_tree($n['children'] ?? [], $n['id'], $out);
     }
+}
+// Only what a person changes counts (2.5.020, as syncMeaningTrack and
+// syncMeaningNode in 37 Player): a track without the details 37 Player works
+// out by itself; a folder or playlist without its place among its siblings
+// and its "needs attention" mark, its entries in order without their order
+// numbers. Records made so carry "f": 2.
+function meaning_track($t) {
+    foreach (['id', 'audioFrom', 'loudness', 'duration', 'fileTags', 'needsConvert', 'fileModified', 'sampleRate', 'channels', 'filename', 'fileSize', 'addedAt', 'changedAt'] as $k) unset($t[$k]);
+    return $t;
+}
+function meaning_node($n) {
+    unset($n['id'], $n['order'], $n['needsAttention'], $n['children']);
+    if (isset($n['items']) && is_array($n['items'])) {
+        $items = $n['items'];
+        usort($items, function ($x, $y) { return ($x['order'] ?? 0) <=> ($y['order'] ?? 0); });
+        foreach ($items as $i => $it) { if (is_array($it)) unset($items[$i]['order']); }
+        $n['items'] = array_values($items);
+    }
+    return $n;
 }
 // With the names (2.5.016): for each id, its name after, and before when
 // that differs (a deleted one has only its name before).
@@ -488,8 +507,8 @@ function both_names($before, $after) {
 // and folder (nx) or its artist, album and playlists (tx).
 function changed_ids($a, $b) {
     $ta = []; $tb = []; $tna = []; $tnb = []; $trec = [];
-    foreach (($a['tracks'] ?? []) as $x) if (isset($x['id'])) { $ta[$x['id']] = json_encode(canon($x), JSON_UNESCAPED_UNICODE); $tna[$x['id']] = $x['name'] ?? null; $trec[$x['id']] = $x; }
-    foreach (($b['tracks'] ?? []) as $x) if (isset($x['id'])) { $tb[$x['id']] = json_encode(canon($x), JSON_UNESCAPED_UNICODE); $tnb[$x['id']] = $x['name'] ?? null; }
+    foreach (($a['tracks'] ?? []) as $x) if (isset($x['id'])) { $ta[$x['id']] = json_encode(canon(meaning_track($x)), JSON_UNESCAPED_UNICODE); $tna[$x['id']] = $x['name'] ?? null; $trec[$x['id']] = $x; }
+    foreach (($b['tracks'] ?? []) as $x) if (isset($x['id'])) { $tb[$x['id']] = json_encode(canon(meaning_track($x)), JSON_UNESCAPED_UNICODE); $tnb[$x['id']] = $x['name'] ?? null; }
     $na = []; $nb = [];
     $GLOBALS['flat_names'] = []; $GLOBALS['flat_recs'] = []; flat_tree($a['tree'] ?? [], null, $na); $nna = $GLOBALS['flat_names']; $nra = $GLOBALS['flat_recs'];
     $GLOBALS['flat_names'] = []; flat_tree($b['tree'] ?? [], null, $nb); $nnb = $GLOBALS['flat_names'];
@@ -511,7 +530,7 @@ function changed_ids($a, $b) {
         if (!isset($na[$id])) $nAdd[] = (string)$id;
         elseif (!isset($nb[$id])) $nx[(string)$id] = [$nra[$id]['kind'], $nra[$id]['parent'] === null ? null : (string)$nra[$id]['parent']];
     }
-    return ['t' => $t, 'n' => $n, 'tn' => (object)$tn, 'nn' => (object)$nn, 'ta' => $tAdd, 'na' => $nAdd, 'tx' => (object)$tx, 'nx' => (object)$nx];
+    return ['f' => 2, 't' => $t, 'n' => $n, 'tn' => (object)$tn, 'nn' => (object)$nn, 'ta' => $tAdd, 'na' => $nAdd, 'tx' => (object)$tx, 'nx' => (object)$nx];
 }
 function files_used($dir, $v) {
     $used = ['audio' => [], 'artwork' => [], 'peaks' => []];

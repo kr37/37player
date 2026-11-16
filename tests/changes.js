@@ -35,19 +35,22 @@ const get = q=> JSON.parse(execSync(`curl -s -H "X-Library: ${encodeURIComponent
   await edit(p, "r.tree[0].children[0].items.push({id:'e2', kind:'track', refId:'tr7'});"); await sync(p); // plM
   await edit(p, "r.tree[1].name = 'Evening puja';"); await sync(p);                         // plE
   await edit(p, "r.library = r.library.filter(t=> t.id!=='tr9');"); await sync(p);           // tr9
+  // What 37 Player does by itself counts for nothing (2.5.020)
+  await edit(p, "r.library.forEach(t=>{ t.loudness = {i: -17, p: -1}; t.duration = 61; t.audioFrom = 'Mac mini'; }); r.tree[1].needsAttention = false;"); await sync(p);
   const hist = get('op=history');
   ok(hist.every(h=> h.c === undefined), 'History\'s list stays small: no changed ids in it');
   const ch = get('op=changes&since=0');
   console.log('changes:', JSON.stringify(ch));
   const vs = Object.keys(ch.versions).map(Number).sort((a, b)=> a - b), last = vs[vs.length - 1];
-  const at = k=> ch.versions[String(last - k)];
+  ok(JSON.stringify({t: ch.versions[String(last)].t, n: ch.versions[String(last)].n}) === JSON.stringify({t: [], n: []}) && ch.versions[String(last)].f === 2, 'loudness, lengths, where a recording came from and "needs attention" record no change (' + JSON.stringify(ch.versions[String(last)]).slice(0, 120) + ')');
+  const at = k=> ch.versions[String(last - 1 - k)];
   ok(ch.kept.length === vs.length && vs.length >= 6, 'every kept version has its changes recorded (' + vs.length + ')');
   const ids = c=> JSON.stringify({t: c.t, n: c.n});
   ok(ids(at(4)) === JSON.stringify({t: [], n: ['plM']}) && JSON.stringify(at(4).nn) === JSON.stringify({plM: ['Morning prayers', 'Morning']}), 'a playlist renamed: just that playlist, with its name after and before');
   ok(ids(at(3)) === JSON.stringify({t: ['tr5'], n: []}) && JSON.stringify(at(3).tn) === JSON.stringify({tr5: ['Track five', 'Track 5']}), 'a track renamed: just that track, both names');
   ok(ids(at(2)) === JSON.stringify({t: [], n: ['plM']}) && JSON.stringify(at(2).nn) === JSON.stringify({plM: ['Morning prayers']}), 'an entry added to a playlist: that playlist, its one name');
   ok(ids(at(0)) === JSON.stringify({t: ['tr9'], n: []}) && JSON.stringify(at(0).tn) === JSON.stringify({tr9: ['Track 9']}), 'a track deleted: that track, with the name it had');
-  ok(JSON.stringify(get('op=changes&since=' + (last - 1)).versions) === JSON.stringify({[last]: at(0)}), 'since=N: only the versions after N');
+  ok(Object.keys(get('op=changes&since=' + (last - 1)).versions).join() === String(last), 'since=N: only the versions after N');
   // The device's index agrees with the server's (same rules on both sides)
   const agree = await p.evaluate(async (last)=>{
     const idx = (await window.__hist.index({})).index;
@@ -59,20 +62,20 @@ const get = q=> JSON.parse(execSync(`curl -s -H "X-Library: ${encodeURIComponent
     if(diff.length) console.log('DIFF ' + diff.join(' // '));
     return {diff, same: mine.every((m, i)=> JSON.stringify(m) === JSON.stringify(idx.versions[last - 4 + i])), of: window.__hist.versionsOf(idx, 'n', 'plM'), t5: window.__hist.versionsOf(idx, 'n', 'plE'),
       names: names.filter(x=> /Morning|Track 5|Track five|Track 9|Evening/.test(x.name)).map(x=> x.name + (x.now ? '' : ' (was)'))};
-  }, last);
+  }, last - 1);
   ok(agree.same, 'the device works out the same ids and names as the server, for the same two versions' + (agree.diff.length ? ': ' + agree.diff.join(' // ') : ''));
   ok(agree.names.join('|') === 'Evening (was)|Evening puja|Morning (was)|Morning prayers|Track 5 (was)|Track 9 (was)|Track five', 'every name there is a record of, old ones marked: ' + agree.names.join(' | '));
-  ok(agree.of.join() === [last - 2, last - 4].concat(agree.of.slice(2)).join() && agree.of[0] === last - 2, 'the versions in which Morning changed, newest first: ' + agree.of.join(', '));
+  ok(agree.of[0] === last - 3 && agree.of[1] === last - 5, 'the versions in which Morning changed, newest first: ' + agree.of.join(', '));
   // Versions saved before this existed: their info lacks the ids
-  for(const v of [last - 3, last - 2]){ const f = path.join(DATA, 'state', String(v).padStart(6, '0') + '.json'); const j = JSON.parse(fs.readFileSync(f)); delete j.c; fs.writeFileSync(f, JSON.stringify(j)); }
+  for(const v of [last - 4, last - 3]){ const f = path.join(DATA, 'state', String(v).padStart(6, '0') + '.json'); const j = JSON.parse(fs.readFileSync(f)); delete j.c; fs.writeFileSync(f, JSON.stringify(j)); }
   const lacking = await p.evaluate(async()=>{ const key = Object.keys(window.__hist).length; const r = await window.__hist.index({}); return r.missing; });
   console.log('missing before building:', JSON.stringify(lacking));
   // (the index had them already, from before; start it afresh to see the gap)
   await p.evaluate(async()=>{ await window.__undo.delRec('state', (await window.__hist.index({})).index.key); });
   const gap = await p.evaluate(async()=> (await window.__hist.index({})).missing);
-  ok(gap.join() === [last - 3, last - 2].join(), 'versions without a record are named as missing: ' + gap.join(', '));
+  ok(gap.join() === [last - 4, last - 3].join(), 'versions without a record are named as missing: ' + gap.join(', '));
   const built = await p.evaluate(async()=>{ const steps = []; const r = await window.__hist.index({build: true, onStep: (i, n)=> steps.push(i + '/' + n)}); return {missing: r.missing, steps, of: window.__hist.versionsOf(r.index, 'n', 'plM'), tr5: window.__hist.versionsOf(r.index, 't', 'tr5')}; });
-  ok(built.missing.length === 0 && built.steps.length === 2 && built.of[0] === last - 2 && built.tr5[0] === last - 3, 'Build list from history fills them in by opening the versions (' + JSON.stringify(built) + ')');
+  ok(built.missing.length === 0 && built.steps.length === 2 && built.of[0] === last - 3 && built.tr5[0] === last - 4, 'Build list from history fills them in by opening the versions (' + JSON.stringify(built) + ')');
   // ---- Timings: 2000 tracks, 120 playlists
   await p.evaluate(async()=>{
     const r = window.__dbg.getRoot();
