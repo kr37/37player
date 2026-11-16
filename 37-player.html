@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.5.034">
+<meta name="app-version" content="2.5.035">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -3863,7 +3863,7 @@ function desktopChangedRoots(cmd, args, options){
   if(cmd === "fs_write") return [decodeURIComponent(h["p37-root"] || "")];
   if(cmd === "fs_remove" || cmd === "fs_mkdir") return [a.root];
   if(cmd === "fs_rename") return [a.root, a.toRoot || a.root];
-  if(cmd === "fs_copy") return [a.toRoot || a.root]; // where the copy lands; the source is only read
+  if(cmd === "fs_copy" || cmd === "fs_append_range") return [a.toRoot || a.root]; // where the bytes land; the source is only read
   if(cmd === "fs_remove_if_empty") return a.dry ? [] : [a.id];
   return null; // not a command that changes files
 }
@@ -3985,8 +3985,39 @@ class JoinedBlob {
     this.size = this.parts.reduce((n, p)=> n + p.size, 0); this.type = type || "";
   }
   async arrayBuffer(){ return new Blob(await Promise.all(this.parts.map(p=> isDiskBlob(p) ? p.arrayBuffer() : p))).arrayBuffer(); }
+  // (For the tag readers and writers, which read a file's parts by slicing.)
+  slice(a, b, type){
+    const n = this.size;
+    let s = a == null ? 0 : a < 0 ? Math.max(n + a, 0) : Math.min(a, n);
+    let e = b == null ? n : b < 0 ? Math.max(n + b, 0) : Math.min(b, n);
+    if(e < s) e = s;
+    const out = []; let at = 0;
+    for(const p of this.parts){
+      const ps = at, pe = at + p.size; at = pe;
+      if(pe <= s || ps >= e || p.size === 0) continue;
+      out.push(p.slice(Math.max(s, ps) - ps, Math.min(e, pe) - ps));
+    }
+    return new JoinedBlob(out, type == null ? "" : type);
+  }
   toString(){ throw new TypeError("Joined bytes (JoinedBlob) used where a real Blob is needed"); }
   [Symbol.toPrimitive](){ return this.toString(); }
+}
+// A file made of pieces by the tag writers: a Blob, or a JoinedBlob when a
+// piece is a stretch of a file read where it lies (2.5.035). Written into
+// the desktop app's library, that stretch is copied by the app on disk
+// (fs_append_range), never through the page.
+function joinedFile(parts, type){
+  if(!parts.some(p=> isDiskBlob(p) || p instanceof JoinedBlob)) return new Blob(parts, {type});
+  // Stretches of the same file one after the other (an M4A's atoms) as one.
+  const out = [];
+  for(const p of blobParts(parts)){
+    const last = out[out.length - 1];
+    if(isDiskBlob(p) && isDiskBlob(last) && last.p37root === p.p37root && last.p37path === p.p37path && last.start + last.size === p.start){
+      const d = new DiskBlob(last.p37root, last.p37path, last.size + p.size, last.type, last.name, last.lastModified, last.start);
+      out[out.length - 1] = d;
+    } else out.push(p);
+  }
+  return new JoinedBlob(out, type);
 }
 // The converter's input is a real File, handed to its worker: a file read
 // where it lies is read whole for it (its memory, as before 2.0).
@@ -4045,14 +4076,24 @@ function blobParts(list){ const out = []; for(const p of list){ if(p instanceof 
 async function realBlob(b, type){
   if(!isDiskBlob(b)) return b;
   if(b.size <= DISK_READ_PIECE) return new Blob([await b.arrayBuffer()], {type: type || b.type});
-  const parts = [];
+  const parts = [], t0 = Date.now();
   for(let at = 0; at < b.size; at += DISK_READ_PIECE){
     const n = Math.min(DISK_READ_PIECE, b.size - at);
     const piece = await b.slice(at, at + n).arrayBuffer();
     if(piece.byteLength !== n) throw new Error("the file changed while it was read");
     parts.push(new Blob([piece]));
   }
+  bigMoveLog("read", b.size, b.p37path, t0);
   return new Blob(parts, {type: type || b.type});
+}
+// A big file passed whole between the page and the desktop app (2.5.035):
+// every piece goes through the app's main thread on a Mac, so a playback log
+// line says when, how big, how long (for the spinning wheel on Gen Palden's
+// MacBook, report 2026-11-16-073224). 16 MB and over.
+const BIG_MOVE_LOG = 16 * 1048576;
+function bigMoveLog(how, bytes, path, t0){
+  if(!(bytes >= BIG_MOVE_LOG)) return;
+  try{ playLog((how === "read" ? "read whole into the page: " : "written through the app: ") + Math.round(bytes / 1048576) + " MB, " + ((Date.now() - t0) / 1000).toFixed(1) + " s (" + String(path || "?").split("/").pop() + ")"); }catch(err){}
 }
 const DISK_TYPES = {mp3: "audio/mpeg", m4a: "audio/mp4", mp4: "audio/mp4", aac: "audio/aac", wav: "audio/wav", flac: "audio/flac", ogg: "audio/ogg", oga: "audio/ogg", opus: "audio/ogg", webm: "audio/webm", aif: "audio/aiff", aiff: "audio/aiff", wma: "audio/x-ms-wma", jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png", gif: "image/gif", webp: "image/webp"};
 // A playable address for a track's audio: a DiskBlob's own (the shell
@@ -4132,9 +4173,20 @@ class DesktopFileHandle {
           return;
         }
         const aside = fh.path + ".p37part";
-        let first = true;
+        let first = true, onDisk = 0;
+        const t0 = Date.now();
+        // A stretch of a file on the disk is copied there by the app (shell
+        // 2.5.3, fs_append_range: a recording with new details, see
+        // joinedFile); with an older app, through the page piece by piece.
+        const ranges = !!(desktopShell && desktopShell.append_range);
         try{
           for(const p of parts){
+            if(ranges && isDiskBlob(p)){
+              if(first){ await put(aside, new Uint8Array(0)); first = false; }
+              if(p.size) await desktopInvoke("fs_append_range", {root: p.p37root, from: p.p37path, start: p.start, end: p.start + p.size, toRoot: fh.root, to: aside});
+              onDisk += p.size;
+              continue;
+            }
             for(let at = 0; at < p.size; at += DISK_READ_PIECE){
               await put(aside, new Uint8Array(await p.slice(at, Math.min(p.size, at + DISK_READ_PIECE)).arrayBuffer()), !first);
               first = false;
@@ -4142,6 +4194,7 @@ class DesktopFileHandle {
           }
           if(first) await put(aside, new Uint8Array(0));
           await desktopInvoke("fs_rename", {root: fh.root, from: aside, to: fh.path, replace: true});
+          bigMoveLog("write", total - onDisk, fh.path, t0);
         }catch(err){ try{ await desktopInvoke("fs_remove", {root: fh.root, path: aside}); }catch(e){} throw err; }
       },
       async abort(){ collected.length = 0; },
@@ -27263,7 +27316,7 @@ async function rewriteId3Tags(blob, meta){
   }
   const parts = [newTag, blob.slice(audioStart, end)];
   if(v1) parts.push(v1);
-  return new Blob(parts, {type: blob.type || "audio/mpeg"});
+  return joinedFile(parts, blob.type || "audio/mpeg");
 }
 
 /* ---------- MP4 / M4A (reading; the writer is rewriteMp4Tags) ---------- */
@@ -28260,7 +28313,7 @@ async function rewriteMp4Tags(blob, meta, carry){
   }
   const lastEnd = top.length ? top[top.length-1].start + top[top.length-1].size : 0;
   if(lastEnd < blob.size) out.push(blob.slice(lastEnd));
-  return new Blob(out, {type: blob.type || "audio/mp4"});
+  return joinedFile(out, blob.type || "audio/mp4");
 }
 
 // The single entry point every editing path calls. Figures out the format,
@@ -28430,8 +28483,17 @@ async function blobWithCurrentTags(track, blob, opts){
   const fmt = await sniffAudioFormat(blob, track.filename);
   if(!TAG_WRITABLE_KINDS.has(fmt.kind)) return {blob, fmt, written: false};
   if(isDiskBlob(blob) && blob.size > BIG_FILE_BYTES) return {blob, fmt, written: false, tooBig: true};
-  blob = await realBlob(blob); // (the desktop app's big files: read whole to write the details in)
-  let typed = blob.type ? blob : new Blob([blob], {type: fmt.mime});
+  // opts.onDisk (2.5.035): the result goes back into the desktop app's
+  // library, so an MP3 or M4A read where it lies stays there. Their writers
+  // read only the details' bytes and give the new file as those followed by
+  // a stretch of the old one, which the app copies on disk (joinedFile).
+  // Before, a 60 MB recording renamed in a shared library was read whole
+  // into the page, written back through it and read again (putRewrittenAudio)
+  // on Gen Palden's MacBook, every piece through the window's main thread
+  // (report 2026-11-16-073224). Anything else, and exports: read whole.
+  const inPlace = opts.onDisk && isDiskBlob(blob) && (fmt.kind === "mp3" || fmt.kind === "mp4");
+  if(!inPlace) blob = await realBlob(blob); // (the desktop app's big files: read whole to write the details in)
+  let typed = blob.type ? blob : isDiskBlob(blob) ? blob.slice(0, blob.size, fmt.mime) : new Blob([blob], {type: fmt.mime});
   // A file damaged by the pre-1.1.089 writer is repaired first — rewriting
   // its tags would erase the sign that identifies the damage (see repairDamagedMp4).
   if(fmt.kind==="mp4") typed = (await repairDamagedMp4(typed).catch(()=> null)) || typed;
@@ -28566,6 +28628,18 @@ async function repairDamagedAudio(id){
 // stored is read back and checked; if it's wrong, the old file goes back.
 const IS_WEBKIT = window.__p37WebKit != null ? !!window.__p37WebKit : /AppleWebKit/.test(navigator.userAgent) && !/(Chrome|Chromium|Edg)\//.test(navigator.userAgent);
 async function putRewrittenAudio(id, newBlob, oldBlob){
+  // The desktop app's library folder (2.5.035): the app writes the file
+  // aside and swaps it in, so it's either all there or as it was, and the
+  // check below is of WebKit's browser storage, which the app's folders
+  // aren't. Reading the new file whole to store it, and again to check it,
+  // was two of the three times a renamed recording passed through the page
+  // on Gen Palden's MacBook. Its size as stored, from the disk, is enough.
+  if(STORAGE_KIND === "desktop" && !(libStore instanceof IdbLibraryStore)){
+    await idbPut("audio", {id, blob: newBlob, rev: uid()});
+    const back = await idbGet("audio", id);
+    if(!back || !back.blob || back.blob.size !== newBlob.size) throw new Error("the rewritten file is " + (back && back.blob ? back.blob.size : "not there") + " bytes on the disk instead of " + newBlob.size);
+    return back.blob;
+  }
   if(!IS_WEBKIT){ await idbPut("audio", {id, blob: newBlob, rev: uid()}); return newBlob; }
   const bytes = await newBlob.arrayBuffer();
   if(bytes.byteLength !== newBlob.size) throw new Error("the rewritten file came out " + bytes.byteLength + " bytes instead of " + newBlob.size);
@@ -28609,7 +28683,7 @@ async function rewriteFileTagsIfPossible(libraryId){
     // or it'd be lost for good on a track that's never had its tooltip
     // hovered yet (the only other place this gets backfilled).
     if(!track.filename && blob.name) track.filename = blob.name;
-    const {blob: newBlob, written, snapshot} = await blobWithCurrentTags(track, blob);
+    const {blob: newBlob, written, snapshot} = await blobWithCurrentTags(track, blob, {onDisk: isDiskBlob(blob)});
     if(!written) return false; // a format with no tag writer (raw AAC, FLAC-in-Ogg…)
     await putRewrittenAudio(libraryId, newBlob, blob); // a new rev: see audioChangedSinceBackup
     track.fileTags = snapshot;
@@ -28718,7 +28792,7 @@ async function repairDamagedMp4(blob){
   }
   const lastEnd = top.length ? top[top.length-1].start + top[top.length-1].size : 0;
   if(lastEnd < blob.size) out.push(blob.slice(lastEnd));
-  return new Blob(out, {type: blob.type || "audio/mp4"});
+  return joinedFile(out, blob.type || "audio/mp4");
 }
 // Runs once per library, in the background, shortly after start-up. Each
 // repaired file also gets its tags rewritten properly (the old ones were
@@ -46242,6 +46316,9 @@ function playLog(msg){
   document.addEventListener("freeze", ()=> playLog("page frozen by the browser"));
   document.addEventListener("resume", ()=> playLog("page unfrozen"));
   playLog("— 37 Player opened (" + (document.querySelector('meta[name="app-version"]') || {}).content + ") —");
+  // A reload of the window (Update now, switching libraries, or the page's
+  // process having stopped) or a fresh start (2.5.035).
+  try{ const nav = performance.getEntriesByType("navigation")[0]; if(nav && nav.type === "reload") playLog("this start was a reload of the window"); }catch(err){}
   // While playing off screen, a line every minute: shows whether the
   // player's clock kept moving and whether anything changed meanwhile.
   setInterval(()=>{ if(document.hidden && !a.paused) playLog("still playing" + at()); }, 60000);
@@ -46276,7 +46353,9 @@ const LOG_KINDS = {
       "app left the screen / app back on screen: the screen locked or another app came in front, and back.",
       "still playing: written every minute while playing off screen; a gap means the page was stopped.",
       "page frozen / unfrozen: the browser suspended the page to save power.",
-      "— 37 Player opened (version) —: the start of a session."]},
+      "— 37 Player opened (version) —: the start of a session; \"a reload of the window\" when it was one.",
+      "the app's window didn't respond for N s / didn't close normally last time: the desktop app's own watch (shell 2.5.3).",
+      "read whole into the page / written through the app: a big file passed between the page and the desktop app."]},
   sync: {title: "sync log", file: "sync-log", lines: ()=> sharedLogLines,
     glossary: [
       "checked: nothing new / received changes / saved version N: one sync round with the shared library.",
@@ -52006,7 +52085,7 @@ if(IN_DESKTOP_APP){
   window.addEventListener("resize", fitHeight);
 }
 const DESKTOP_BRIDGE_NEEDED = +((document.querySelector('meta[name="desktop-bridge"]') || {}).content || 1);
-let desktopShell = null; // {version, bridge, pages, device, updates, zoom, trash (2.5.2), files_http}
+let desktopShell = null; // {version, bridge, pages, device, updates, zoom, trash (2.5.2), watch (2.5.3), append_range (2.5.3), files_http}
 async function desktopShellCheck(){
   if(!IN_DESKTOP_APP || !window.__TAURI__ || !window.__TAURI__.core) return;
   try{ desktopShell = await window.__TAURI__.core.invoke("p37_shell_info"); }catch(err){ desktopShell = {version: "?", bridge: 0}; }
@@ -52014,10 +52093,26 @@ async function desktopShellCheck(){
   try{ if(desktopShell.zoom) localStorage.setItem(SHELL_ZOOM_KEY, "1"); else localStorage.removeItem(SHELL_ZOOM_KEY); }catch(err){}
   try{ applyDisplaySettings(); }catch(err){}
   try{ desktopPlayerDiagnostics(); }catch(err){}
+  if(desktopShell.watch) desktopWatchPoll();
   // Which tracks are used in place, read ahead of the first Play (placeAwarePlay).
   setTimeout(()=>{ try{ if(STORAGE_KIND === "desktop" && libStore && libStore.placeRefs) libStore.placeRefs().catch(()=>{}); }catch(err){} }, 2500);
   if((desktopShell.bridge || 0) < DESKTOP_BRIDGE_NEEDED)
     askChoice(t("desktopShellOldTitle"), `<p>${escapeHtmlText(t("desktopShellOldBody", {shell: desktopShell.version}))}</p>`, [{label: t("ok"), value: null, kind: "primary"}]);
+}
+/* What the app saw that the page can't (shell 2.5.3, watch.rs; 2.5.035): its
+   window not answering for over 2 s (the spinning wheel on a Mac), and how
+   the session before ended. Asked at the start and every 20 s; each comes
+   once, into the playback log, so a feedback report carries it. */
+const DESKTOP_WATCH_MS = 20000;
+async function desktopWatchPoll(){
+  try{
+    const r = await window.__TAURI_INTERNALS__.invoke("p37_watch");
+    const hm = ms=> new Date(ms).toLocaleTimeString();
+    const last = r && r.last_session;
+    if(last) playLog("37 Player didn't close normally last time (app " + last.version + ", last seen running at " + new Date(last.alive).toLocaleString() + ")" + (last.panic ? "; it stopped on an error: " + last.panic : ""));
+    for(const s of (r && r.stalls) || []) playLog("the app's window didn't respond for " + Math.round(s.ms / 1000) + " s, from " + hm(s.at) + (s.focused ? "" : " (in the background)"));
+  }catch(err){ console.warn("p37_watch:", err); }
+  setTimeout(desktopWatchPoll, DESKTOP_WATCH_MS);
 }
 function closingWouldStop(){
   const out = [];

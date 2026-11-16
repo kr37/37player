@@ -43,7 +43,7 @@
     window.__fakeShellPaths.push(cmd + ' ' + ((args && (args.path || args.from)) || '')); // which file, for tests that count reads of one file
     args = args || {};
     switch(cmd){
-      case 'p37_shell_info': return {version: '2.0.000', bridge: 2, pages: false, device: true, updates: !!window.__fakeShellUpdates, zoom: !!window.__fakeShellZoom, trash: window.__fakeShellTrash !== false, files_http: window.__fakeFilesHttp || null};
+      case 'p37_shell_info': return {version: '2.0.000', bridge: 2, pages: false, device: true, updates: !!window.__fakeShellUpdates, zoom: !!window.__fakeShellZoom, trash: window.__fakeShellTrash !== false, watch: true, append_range: !window.__fakeNoAppendRange, files_http: window.__fakeFilesHttp || null};
       // The Size setting, by the shell (2.4.000): what it was asked for is kept for the test.
       case 'p37_zoom': if(!window.__fakeShellZoom) throw new Error('unknown command'); (window.__fakeZooms = window.__fakeZooms || []).push(args.scale); return null;
       // The shell updating itself (shellupd.js): window.__fakeShellUpdates = {version, current} or null (none).
@@ -102,6 +102,8 @@
       }
       // A library's folder to the Trash (shell 2.5.2): here it's removed, and
       // its path noted in __fakeTrash.
+      // The shell's watch (2.5.3): what a test put in __fakeWatch, once.
+      case 'p37_watch': { const r = window.__fakeWatch || {stalls: [], last_session: null}; window.__fakeWatch = null; return r; }
       case 'fs_root_trash': {
         if(!String(args.id).startsWith('lib-')) throw new Error("only a library's own folder");
         const r = await readRoots(); if(!(args.id in r)) throw new Error('no folder called ' + args.id + ' on the list');
@@ -156,8 +158,17 @@
       case 'fs_stat': return statOf(args.root, args.path);
       case 'fs_mkdir': await dirOf(args.root, args.path, true); return null;
       case 'fs_list': { const d = await dirOf(args.root, args.path, false), out = []; for await (const [n] of d.entries()){ const st = await statOf(args.root, args.path ? args.path + '/' + n : n); if(st) out.push(st); } return out.sort((a, b)=> a.name < b.name ? -1 : 1); }
-      case 'fs_read': { const f = await fileOf(args.root, args.path); const s = args.start || 0, e = args.end == null ? f.size : Math.min(args.end, f.size); return f.slice(s, e).arrayBuffer(); }
+      case 'fs_read': { const f = await fileOf(args.root, args.path); const s = args.start || 0, e = args.end == null ? f.size : Math.min(args.end, f.size); window.__fakeShellReadBytes = (window.__fakeShellReadBytes || 0) + Math.max(0, e - s); return f.slice(s, e).arrayBuffer(); }
       case 'fs_remove': { if(!(await statOf(args.root, args.path))) return false; const {dir, name} = split(args.path); await (await dirOf(args.root, dir, false)).removeEntry(name, {recursive: !!args.recursive}); return true; }
+      // A stretch of one file on the end of another (shell 2.5.3), counted in __fakeRangeCopies.
+      case 'fs_append_range': {
+        const toRoot = args.toRoot || args.to_root || args.root; checkRel(args.to);
+        if(toRoot === args.root && args.to === args.from) throw new Error("a file can't be added to itself");
+        const f = await fileOf(args.root, args.from);
+        if(args.end < args.start || args.end > f.size) throw new Error('bytes ' + args.start + '..' + args.end + ' of a file of ' + f.size + ': the file changed');
+        await writeFile(toRoot, args.to, f.slice(args.start, args.end), true);
+        window.__fakeRangeCopies = (window.__fakeRangeCopies || 0) + 1; return null;
+      }
       case 'fs_rename': case 'fs_copy': {
         const toRoot = args.toRoot || args.to_root || args.root;
         if(cmd === 'fs_copy' && !args.replace && await statOf(toRoot, args.to)) throw new Error('already there: ' + args.to);
