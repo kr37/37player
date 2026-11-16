@@ -82,7 +82,7 @@ const tracks = p=> p.evaluate(()=> Object.fromEntries(window.__dbg.getRoot().lib
   await B.evaluate(async(id)=>{ const t = window.__dbg.getRoot().library.find(x=> x.id === id); t.audioRev = 'mw0000000ghost'; t.audioFrom = 'Mac mini'; window.__dbg3.pending().audio[id] = 'mw0000000ghost'; await window.__dbg3.put('state', {key: 'sharedPending', value: window.__dbg3.pending()}); await window.__dbg.saveState(); await window.__dbg3.downloadPass(); }, id1);
   await sleep(2500); await waitIdle(B); await syncNow(B); await sleep(1500); await syncNow(B);
   const L2 = await log(B), r1 = await B.evaluate((id)=> ({rev: window.__dbg.getRoot().library.find(x=> x.id === id).audioRev, pend: window.__dbg3.pending().audio[id]}), id1);
-  ok(/was waiting for this device to send a copy it no longer has; its own copy is used and sent instead/.test(L2), 'waiting for itself: it uses its own copy, and says so');
+  ok(/was waiting for this device to send a copy that never came; this device's own copy is used and sent instead/.test(L2), 'waiting for itself: it uses its own copy, and says so');
   ok(r1.rev !== 'mw0000000ghost' && r1.pend === undefined && fs.existsSync(path.join(DATA, 'audio', id1 + '.' + r1.rev)), '   as a new revision, sent to the server (' + r1.rev + ')');
   console.log(fails ? fails + ' FAILED' : 'ALL OK'); await b.close();
 })();

@@ -89,7 +89,7 @@ const importOne = async (p)=>{
   ok(quiet.n >= 1 && quiet.imports === 4 && !/urgent/.test(quiet.cls) && !/Heads up|Done trying/.test(await modal(p)), 'four imports: no questions, the backup button not red (' + JSON.stringify(quiet) + ')');
   await importOne(p);
   m = await waitModal(p, /Done trying it out/);
-  ok(/Done trying it out/.test(m) && /Get the desktop app/.test(m) && /Download for Mac/.test(m) && /Control-click/.test(m) && /Open Anyway/.test(m), 'the fifth import: "Done trying it out?", the Mac desktop app and its warning (' + short(m) + ')');
+  ok(/Done trying it out/.test(m) && /Get the desktop app/.test(m) && /Download for Mac/.test(m) && /signed and checked by Apple/.test(m) && !/Control-click/.test(m), 'the fifth import: "Done trying it out?", the Mac desktop app and how to open it, signed (2.3.002: no Control-click) (' + short(m) + ')');
   ok(/Bring this library along/.test(m) && /Save a backup file/.test(m) && /in the desktop app choose Import \/ Export/.test(m), 'and how to bring the library along');
   await clickText(p, '.modal button', '^Close$');
   for(let k=0; k<40; k++){ await sleep(250); if(await p.$('#folderImportGo')) break; }

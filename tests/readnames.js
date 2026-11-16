@@ -66,6 +66,12 @@ let fails = 0; const ok=(c,m)=>{ console.log((c?'ok   ':'FAIL ')+m); if(!c) fail
     paths.a = 'Tharpa/Prayers/01 Liberating Prayer (2026)';
     await st.renameRecordings();
     out.t2c = await tree('rntest');
+    // 2b. 2.5.018: nothing to move, nothing read (the Mac mini read all 707 records after every save)
+    { let reads = 0; const orig = st.readRaw.bind(st); st.readRaw = (s, k)=>{ if(s === 'audio') reads++; return orig(s, k); };
+      out.moved2d = await st.renameRecordings(); await st.recordingPaths(); out.reads2d = reads;
+      st.forgetRecordings(); reads = 0; await st.renameRecordings(); out.reads2e = reads; // another window wrote: read again, once
+      reads = 0; await st.recordingPaths(); out.reads2f = reads;
+      st.readRaw = orig; }
     // 3. held by a player: copied, the old waits, a File read before still reads
     const before = (await st.get('audio', 'b')).blob;
     held = 'b'; paths.b = 'Tharpa/Prayers/02 Dedication';
@@ -121,6 +127,7 @@ let fails = 0; const ok=(c,m)=>{ console.log((c?'ok   ':'FAIL ')+m); if(!c) fail
   ok(r.read1[0] === 'aaa' && r.read1[1] === 'bbb', M + 'and they read back');
   ok(r.moved2 === 1 && r.t2.includes('Tharpa/Prayers/01 Liberating Prayer (2026).mp3') && !r.t2.includes('Tharpa/Prayers/01 Liberating Prayer.mp3') && r.read2 === 'aaa', M + 'a change of details moves the recording');
   ok(r.t2b.includes('Tharpa/Heart Jewel/02 Prayer.mp3') && r.t2c.includes('Tharpa/Prayers/01 Liberating Prayer (2026).mp3') && !r.t2c.some(x=> x.startsWith('Tharpa/Heart Jewel/')), M + 'to another album and back (Undo), the emptied album folder gone');
+  ok(r.moved2d === 0 && r.reads2d === 0 && r.reads2e === 2 && r.reads2f === 0, M + 'after a save with nothing to move, no record is read; after another window\'s change, each once (' + [r.reads2d, r.reads2e, r.reads2f] + ')');
   ok(r.t3.includes('Tharpa/Prayers/02 Dedication.mp3') && r.t3.includes('Tharpa/Prayers/01 Liberating Prayer (2).mp3') && r.read3[0] === 'bbb' && r.read3[1] === 'bbb', M + 'one a player holds is copied, and the player\'s file still reads');
   ok(r.ledger3.includes('/Tharpa/Prayers/01 Liberating Prayer (2).mp3'), M + 'the old copy waits its day');
   ok(r.t4.includes('Tharpa/Prayers/02 Dedication.mp3') && !r.t4.includes('Tharpa/Prayers/02 Dedication (2).mp3') && r.read4 === 'bbb, re-tagged', M + 're-tagging keeps the name');

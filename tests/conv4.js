@@ -45,7 +45,7 @@ const clickText = (p, sel, src) => p.evaluate((sel, src)=>{ const re=new RegExp(
   ok(btns.join(',') === 'Stop,Settings,Help', 'the converting line has Stop, Settings and Help (' + btns.join(', ') + ')');
   await B.evaluate(()=> [...document.querySelectorAll('#globalOperationBar .op-part button')].find(b=> b.textContent.trim() === 'Settings').click()); await sleep(500);
   const sec = await B.evaluate(()=> ({open: !!document.getElementById('settingsPage'), active: document.querySelector('#settingsNav .active')?.textContent || ''}));
-  ok(sec.open && /File format/.test(sec.active), 'Settings opens on File format (' + JSON.stringify(sec) + ')');
+  ok(sec.open && /File conversion/.test(sec.active), 'Settings opens on File conversion (' + JSON.stringify(sec) + ')');
   await B.evaluate(()=> [...document.querySelectorAll('#globalOperationBar .op-part button')].find(b=> b.textContent.trim() === 'Help').click()); await sleep(500);
   const help = await B.evaluate(()=> ({settings: !!document.getElementById('settingsPage'), help: !!document.getElementById('helpPage'), topic: document.querySelector('#helpPage .playlist-row.active')?.textContent || ''}));
   ok(!help.settings && help.help && /iTunes/.test(help.topic), 'Help opens on the topic about converting, in place of Settings (' + JSON.stringify(help) + ')');

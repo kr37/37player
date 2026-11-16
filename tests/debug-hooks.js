@@ -72,8 +72,26 @@ window.__share = {offer: (meta)=> offerNativeImport(meta, {}, {}, null, {backupR
   noteKept: ()=>{ root.backupKeepers = Object.assign({}, root.backupKeepers, {[sharedConfig().deviceName]: Date.now()}); return saveState(); },
   label: ()=> document.getElementById("btnBackup").textContent, setup: ()=> backupInfo.setupDone};
 window.__share.manualBackup = downloadManualBackup; window.__share.judge = judgeBackupFiles; window.__share.manualPlan = manualBackupPlan;
-window.__hist = {open: openSharedHistory};
-window.__undo = {undo: doUndo, redo: doRedo, del: deleteLibraryTracks, stacks: ()=> ({undo: undoStack.length, redo: redoStack.length, labels: undoStack.map(undoLabel)}), rebase: undoRebase};
+window.__hist = {open: openSharedHistory,
+  // History drawn from two documents handed in, with no shared library (rollback.js).
+  fake: (now, then, list, sel, cfg)=>{
+    closeSharedHistory();
+    const page = document.createElement("div"); page.id = "historyPage"; page.className = "settings-page rv-page hist-page";
+    placeOverlayPage(page, closeSharedHistory);
+    page.innerHTML = `<div class="hist-top"><h2 class="hist-h">${escapeHtmlText(t("histTitle"))}</h2><span class="hist-sub"></span><button class="btn" type="button" id="histClose">${escapeHtmlText(t("closeBtn"))}</button></div><div class="hist-body"></div>`;
+    document.body.appendChild(page);
+    histState = {cfg: cfg || {kind: "server"}, docs: new Map([[list[0].version, now]]), choices: new Set(), open: new Set(), mode: "restore", notice: "", tab: "roll", rbOpen: new Set(), rbMode: "all", rbWrap: true, rbInit: null, rbSeen: {nodes: new Set(), tracks: new Set()},
+      list, sel, nowVersion: list[0].version, nowDoc: now, thenDoc: then, beforeDoc: null, libName: "Test"};
+    histComputeRows(); renderSharedHistory();
+  },
+  keepInView: histKeepInView, index: opts=> histChangeIndex(sharedConfig(), opts), putIndex: idx=> idbPut('state', idx), versionsOf: (idx, kind, id)=> histVersionsOf(idx, kind, id), allNames: (idx, doc)=> histAllNames(idx, doc), changed: (a, b)=> syncChangedIds(a, b), // changes.js, drive.js
+  point: async (then, sel)=>{ histState.sel = sel; histState.thenDoc = then; histComputeRows(); renderSharedHistory(); },
+  state: ()=> histState};
+window.__desk = {invoke: desktopInvoke};
+window.__undo = {undo: doUndo, redo: doRedo, del: deleteLibraryTracks, stacks: ()=> ({undo: undoStack.length, redo: redoStack.length, labels: undoStack.map(undoLabel)}), rebase: undoRebase,
+  age: ms=>{ undoStack.forEach(x=>{ x.at -= ms; }); },
+  keepFile: (id, kind)=> undoKeepFile(findLibraryTrack(id), kind), put: (store, rec)=> idbPut(store, rec), get: (store, id)=> idbGet(store, id), delRec: (store, id)=> idbDelete(store, id), trash: ()=> undoTrashKeys(),
+  flags: ()=> undoStack.map(x=> !!x.synced)}; // undohist.js, hist.js
 window.__split = performTrackSplit; window.__queueSplit = queueTrackSplit; window.__audioUrl = getAudioUrl; window.__retag = rewriteFileTagsIfPossible;
 window.__share.missingNote = ()=> sharedMissingNote({waiting: false, from: "Laptop"});
 window.openImportExportForTest = openImportExportDialog;
