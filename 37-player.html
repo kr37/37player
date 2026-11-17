@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.5.030">
+<meta name="app-version" content="2.5.035">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -1339,6 +1339,7 @@
   .review-cmp-art{ font-size:12px; color:var(--text-faint); }
   .review-cmp-art img{ width:56px; height:56px; border-radius:5px; object-fit:cover; display:block; }
   .delete-used{ color:var(--rust-bright); margin:10px 0; }
+  .trash-risk{ margin:10px 0; padding:9px 12px; border-radius:8px; border-left:4px solid var(--rust-bright); background:rgba(176,74,48,0.10); color:var(--rust-bright); font-weight:600; }
   .delete-used ul{ margin:4px 0 0 0; padding-left:20px; }
   .lib-row .lloud{ color:var(--text-dim); font-size:13px; flex-shrink:0; min-width:6.2em; text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }
   .lib-row .lloud .ladj{ color:var(--amber); margin-left:4px; }
@@ -3862,7 +3863,7 @@ function desktopChangedRoots(cmd, args, options){
   if(cmd === "fs_write") return [decodeURIComponent(h["p37-root"] || "")];
   if(cmd === "fs_remove" || cmd === "fs_mkdir") return [a.root];
   if(cmd === "fs_rename") return [a.root, a.toRoot || a.root];
-  if(cmd === "fs_copy") return [a.toRoot || a.root]; // where the copy lands; the source is only read
+  if(cmd === "fs_copy" || cmd === "fs_append_range") return [a.toRoot || a.root]; // where the bytes land; the source is only read
   if(cmd === "fs_remove_if_empty") return a.dry ? [] : [a.id];
   return null; // not a command that changes files
 }
@@ -3984,8 +3985,39 @@ class JoinedBlob {
     this.size = this.parts.reduce((n, p)=> n + p.size, 0); this.type = type || "";
   }
   async arrayBuffer(){ return new Blob(await Promise.all(this.parts.map(p=> isDiskBlob(p) ? p.arrayBuffer() : p))).arrayBuffer(); }
+  // (For the tag readers and writers, which read a file's parts by slicing.)
+  slice(a, b, type){
+    const n = this.size;
+    let s = a == null ? 0 : a < 0 ? Math.max(n + a, 0) : Math.min(a, n);
+    let e = b == null ? n : b < 0 ? Math.max(n + b, 0) : Math.min(b, n);
+    if(e < s) e = s;
+    const out = []; let at = 0;
+    for(const p of this.parts){
+      const ps = at, pe = at + p.size; at = pe;
+      if(pe <= s || ps >= e || p.size === 0) continue;
+      out.push(p.slice(Math.max(s, ps) - ps, Math.min(e, pe) - ps));
+    }
+    return new JoinedBlob(out, type == null ? "" : type);
+  }
   toString(){ throw new TypeError("Joined bytes (JoinedBlob) used where a real Blob is needed"); }
   [Symbol.toPrimitive](){ return this.toString(); }
+}
+// A file made of pieces by the tag writers: a Blob, or a JoinedBlob when a
+// piece is a stretch of a file read where it lies (2.5.035). Written into
+// the desktop app's library, that stretch is copied by the app on disk
+// (fs_append_range), never through the page.
+function joinedFile(parts, type){
+  if(!parts.some(p=> isDiskBlob(p) || p instanceof JoinedBlob)) return new Blob(parts, {type});
+  // Stretches of the same file one after the other (an M4A's atoms) as one.
+  const out = [];
+  for(const p of blobParts(parts)){
+    const last = out[out.length - 1];
+    if(isDiskBlob(p) && isDiskBlob(last) && last.p37root === p.p37root && last.p37path === p.p37path && last.start + last.size === p.start){
+      const d = new DiskBlob(last.p37root, last.p37path, last.size + p.size, last.type, last.name, last.lastModified, last.start);
+      out[out.length - 1] = d;
+    } else out.push(p);
+  }
+  return new JoinedBlob(out, type);
 }
 // The converter's input is a real File, handed to its worker: a file read
 // where it lies is read whole for it (its memory, as before 2.0).
@@ -4044,14 +4076,24 @@ function blobParts(list){ const out = []; for(const p of list){ if(p instanceof 
 async function realBlob(b, type){
   if(!isDiskBlob(b)) return b;
   if(b.size <= DISK_READ_PIECE) return new Blob([await b.arrayBuffer()], {type: type || b.type});
-  const parts = [];
+  const parts = [], t0 = Date.now();
   for(let at = 0; at < b.size; at += DISK_READ_PIECE){
     const n = Math.min(DISK_READ_PIECE, b.size - at);
     const piece = await b.slice(at, at + n).arrayBuffer();
     if(piece.byteLength !== n) throw new Error("the file changed while it was read");
     parts.push(new Blob([piece]));
   }
+  bigMoveLog("read", b.size, b.p37path, t0);
   return new Blob(parts, {type: type || b.type});
+}
+// A big file passed whole between the page and the desktop app (2.5.035):
+// every piece goes through the app's main thread on a Mac, so a playback log
+// line says when, how big, how long (for the spinning wheel on Gen Palden's
+// MacBook, report 2026-11-16-073224). 16 MB and over.
+const BIG_MOVE_LOG = 16 * 1048576;
+function bigMoveLog(how, bytes, path, t0){
+  if(!(bytes >= BIG_MOVE_LOG)) return;
+  try{ playLog((how === "read" ? "read whole into the page: " : "written through the app: ") + Math.round(bytes / 1048576) + " MB, " + ((Date.now() - t0) / 1000).toFixed(1) + " s (" + String(path || "?").split("/").pop() + ")"); }catch(err){}
 }
 const DISK_TYPES = {mp3: "audio/mpeg", m4a: "audio/mp4", mp4: "audio/mp4", aac: "audio/aac", wav: "audio/wav", flac: "audio/flac", ogg: "audio/ogg", oga: "audio/ogg", opus: "audio/ogg", webm: "audio/webm", aif: "audio/aiff", aiff: "audio/aiff", wma: "audio/x-ms-wma", jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png", gif: "image/gif", webp: "image/webp"};
 // A playable address for a track's audio: a DiskBlob's own (the shell
@@ -4131,9 +4173,20 @@ class DesktopFileHandle {
           return;
         }
         const aside = fh.path + ".p37part";
-        let first = true;
+        let first = true, onDisk = 0;
+        const t0 = Date.now();
+        // A stretch of a file on the disk is copied there by the app (shell
+        // 2.5.3, fs_append_range: a recording with new details, see
+        // joinedFile); with an older app, through the page piece by piece.
+        const ranges = !!(desktopShell && desktopShell.append_range);
         try{
           for(const p of parts){
+            if(ranges && isDiskBlob(p)){
+              if(first){ await put(aside, new Uint8Array(0)); first = false; }
+              if(p.size) await desktopInvoke("fs_append_range", {root: p.p37root, from: p.p37path, start: p.start, end: p.start + p.size, toRoot: fh.root, to: aside});
+              onDisk += p.size;
+              continue;
+            }
             for(let at = 0; at < p.size; at += DISK_READ_PIECE){
               await put(aside, new Uint8Array(await p.slice(at, Math.min(p.size, at + DISK_READ_PIECE)).arrayBuffer()), !first);
               first = false;
@@ -4141,6 +4194,7 @@ class DesktopFileHandle {
           }
           if(first) await put(aside, new Uint8Array(0));
           await desktopInvoke("fs_rename", {root: fh.root, from: aside, to: fh.path, replace: true});
+          bigMoveLog("write", total - onDisk, fh.path, t0);
         }catch(err){ try{ await desktopInvoke("fs_remove", {root: fh.root, path: aside}); }catch(e){} throw err; }
       },
       async abort(){ collected.length = 0; },
@@ -4406,6 +4460,14 @@ const STRINGS = {
     "closeStopsPlaying": "what's playing",
     "closeStopsSending": "sending audio to the shared library (the other devices would wait for it)",
     "closeStopsCopy": "copying into another library",
+    "bgSaving": "Saving…",
+    "bgDeleting": "Deleting…",
+    "bgReplacing": "Replacing the recording…",
+    "bgFailedTitle": "Not finished",
+    "bgSaveFailed": "Saving your change didn't finish: {error}",
+    "bgDeleteFailed": "Deleting didn't finish: {error}",
+    "bgReplaceFailed": "Replacing the recording didn't finish: {error}",
+    "closeStopsSaving": "saving your last change",
     "closeAppKeep": "Keep it open",
     "closeAppQuit": "Close anyway",
     "interruptedTitle": "A restore didn't finish",
@@ -4746,6 +4808,7 @@ const STRINGS = {
     "importFolderBtn": "Import a folder…",
     "nothingPlayingYetTitle": "Nothing playing yet",
     "choosePlaylistToBegin": "Choose a playlist from the list to begin.",
+    "noPlaylistsYetToBegin": "First, make a playlist on “{tab}”.",
     "choosePlaylistPlain": "Choose a playlist.",
     "choosePlaylistToEditDot": "Choose a playlist to edit.",
     "editHereBar": "Edit playlist here",
@@ -5291,6 +5354,29 @@ const STRINGS = {
     "libForgetTitle": "Remove “{name}” from the list?",
     "libForgetBody": "37 Player forgets this library. Its folder and everything in it, recordings included, stay on this computer; the shared library, if it’s joined to one, isn’t touched. Find a library folder… brings it back.",
     "libForgetConfirmBtn": "Remove from the list",
+    "libTrashBtn": "Remove and move its folder to the Trash…",
+    "libTrashBtnWin": "Remove and move its folder to the Recycle Bin…",
+    "libTrashLooking": "Looking at what's in it…",
+    "libTrashTitle": "Move “{name}” to the Trash?",
+    "libTrashTitleWin": "Move “{name}” to the Recycle Bin?",
+    "libTrashWhat": "Its folder goes, with everything in it: {playlists}, {tracks}, {size} on this computer.",
+    "libTrashPlOne": "1 playlist",
+    "libTrashPl": "{n} playlists",
+    "libTrashTrOne": "1 track",
+    "libTrashTr": "{n} tracks",
+    "libTrashPlace": "Your own files used in place ({n} tracks) stay where they are.",
+    "libTrashShared": "Everything in it is also in the shared library “{shared}”: joining that library again brings it back to this computer.",
+    "libTrashSharedNotAll": "When this library was last open, not all of it had reached the shared library “{shared}” yet. Whatever hadn't would be lost.",
+    "libTrashBackup": "Its last backup, {date}, has all of it.",
+    "libTrashOldBackup": "This library isn't shared, and its last backup, {date}, doesn't have its latest changes. Whatever is newer would be lost.",
+    "libTrashOnlyCopy": "This is the only copy of this library: it isn't shared, and it has no backup.",
+    "libTrashUndo": "Until the Trash is emptied, the folder can be taken back out of it, and Find a library folder… brings the library back.",
+    "libTrashUndoWin": "Until the Recycle Bin is emptied, the folder can be restored from it, and Find a library folder… brings the library back.",
+    "libTrashGo": "Move to the Trash",
+    "libTrashGoWin": "Move to the Recycle Bin",
+    "libTrashFailed": "“{name}” is off the list, but its folder couldn't be moved to the Trash: {error}. It's still on this computer; Find a library folder… brings it back.",
+    "libTrashDone": "“{name}” was moved to the Trash.",
+    "libTrashDoneWin": "“{name}” was moved to the Recycle Bin.",
     "sdLaterBtn": "Decide later (it won’t sync until then)",
     "sdHeldIndicator": "Not syncing",
     "sharedJoinBtn": "Join",
@@ -6463,6 +6549,14 @@ const STRINGS = {
     "closeStopsPlaying": "lo que está sonando",
     "closeStopsSending": "el envío de audio a la biblioteca compartida (los otros dispositivos lo esperarían)",
     "closeStopsCopy": "la copia a otra biblioteca",
+    "bgSaving": "Guardando…",
+    "bgDeleting": "Eliminando…",
+    "bgReplacing": "Reemplazando la grabación…",
+    "bgFailedTitle": "Sin terminar",
+    "bgSaveFailed": "No se terminó de guardar tu cambio: {error}",
+    "bgDeleteFailed": "No se terminó de eliminar: {error}",
+    "bgReplaceFailed": "No se terminó de reemplazar la grabación: {error}",
+    "closeStopsSaving": "el guardado de tu último cambio",
     "closeAppKeep": "Mantenerlo abierto",
     "closeAppQuit": "Cerrar de todos modos",
     "interruptedTitle": "Una restauración no terminó",
@@ -6794,6 +6888,7 @@ const STRINGS = {
     "importFolderBtn": "Importar una carpeta…",
     "nothingPlayingYetTitle": "Nada reproduciéndose todavía",
     "choosePlaylistToBegin": "Elige una lista de reproducción para empezar.",
+    "noPlaylistsYetToBegin": "Primero, crea una lista en «{tab}».",
     "choosePlaylistPlain": "Elige una lista de reproducción.",
     "choosePlaylistToEditDot": "Elige una lista de reproducción para editar.",
     "editHereBar": "Edita la lista aquí",
@@ -7339,6 +7434,29 @@ const STRINGS = {
     "libForgetTitle": "¿Quitar «{name}» de la lista?",
     "libForgetBody": "37 Player olvida esta biblioteca. Su carpeta y todo lo que contiene, incluidas las grabaciones, se quedan en este ordenador; la biblioteca compartida, si está unida a una, no se toca. Buscar la carpeta de una biblioteca… la recupera.",
     "libForgetConfirmBtn": "Quitar de la lista",
+    "libTrashBtn": "Quitar y mover su carpeta a la Papelera…",
+    "libTrashBtnWin": "Quitar y mover su carpeta a la Papelera de reciclaje…",
+    "libTrashLooking": "Mirando qué contiene…",
+    "libTrashTitle": "¿Mover «{name}» a la Papelera?",
+    "libTrashTitleWin": "¿Mover «{name}» a la Papelera de reciclaje?",
+    "libTrashWhat": "Su carpeta se va, con todo lo que contiene: {playlists}, {tracks}, {size} en este ordenador.",
+    "libTrashPlOne": "1 lista",
+    "libTrashPl": "{n} listas",
+    "libTrashTrOne": "1 pista",
+    "libTrashTr": "{n} pistas",
+    "libTrashPlace": "Tus propios archivos usados en su sitio ({n} pistas) se quedan donde están.",
+    "libTrashShared": "Todo lo que contiene está también en la biblioteca compartida «{shared}»: unirse de nuevo a esa biblioteca lo trae de vuelta a este ordenador.",
+    "libTrashSharedNotAll": "La última vez que se abrió esta biblioteca, no todo había llegado aún a la biblioteca compartida «{shared}». Lo que no hubiera llegado se perdería.",
+    "libTrashBackup": "Su última copia de seguridad, {date}, lo tiene todo.",
+    "libTrashOldBackup": "Esta biblioteca no está compartida, y su última copia de seguridad, {date}, no tiene sus últimos cambios. Lo más reciente se perdería.",
+    "libTrashOnlyCopy": "Esta es la única copia de esta biblioteca: no está compartida y no tiene copia de seguridad.",
+    "libTrashUndo": "Hasta que se vacíe la Papelera, la carpeta puede sacarse de ella, y Buscar la carpeta de una biblioteca… recupera la biblioteca.",
+    "libTrashUndoWin": "Hasta que se vacíe la Papelera de reciclaje, la carpeta puede restaurarse, y Buscar la carpeta de una biblioteca… recupera la biblioteca.",
+    "libTrashGo": "Mover a la Papelera",
+    "libTrashGoWin": "Mover a la Papelera de reciclaje",
+    "libTrashFailed": "«{name}» ya no está en la lista, pero su carpeta no se pudo mover a la Papelera: {error}. Sigue en este ordenador; Buscar la carpeta de una biblioteca… la recupera.",
+    "libTrashDone": "«{name}» se movió a la Papelera.",
+    "libTrashDoneWin": "«{name}» se movió a la Papelera de reciclaje.",
     "sdLaterBtn": "Decidir más tarde (no se sincroniza hasta entonces)",
     "sdHeldIndicator": "Sin sincronizar",
     "sharedJoinBtn": "Unirse",
@@ -8510,6 +8628,14 @@ const STRINGS = {
     "closeStopsPlaying": "ce qui est en lecture",
     "closeStopsSending": "l'envoi d'audio vers la bibliothèque partagée (les autres appareils l'attendraient)",
     "closeStopsCopy": "la copie vers une autre bibliothèque",
+    "bgSaving": "Enregistrement…",
+    "bgDeleting": "Suppression…",
+    "bgReplacing": "Remplacement de l'enregistrement…",
+    "bgFailedTitle": "Pas terminé",
+    "bgSaveFailed": "L'enregistrement de votre modification n'a pas abouti : {error}",
+    "bgDeleteFailed": "La suppression n'a pas abouti : {error}",
+    "bgReplaceFailed": "Le remplacement de l'enregistrement n'a pas abouti : {error}",
+    "closeStopsSaving": "l'enregistrement de votre dernière modification",
     "closeAppKeep": "Le garder ouvert",
     "closeAppQuit": "Fermer quand même",
     "interruptedTitle": "Une restauration n'a pas abouti",
@@ -8841,6 +8967,7 @@ const STRINGS = {
     "importFolderBtn": "Importer un dossier…",
     "nothingPlayingYetTitle": "Rien ne joue pour l'instant",
     "choosePlaylistToBegin": "Choisissez une playlist dans la liste pour commencer.",
+    "noPlaylistsYetToBegin": "D’abord, créez une playlist dans « {tab} ».",
     "choosePlaylistPlain": "Choisissez une playlist.",
     "choosePlaylistToEditDot": "Choisissez une playlist à modifier.",
     "editHereBar": "Modifiez la playlist ici",
@@ -9386,6 +9513,29 @@ const STRINGS = {
     "libForgetTitle": "Retirer « {name} » de la liste ?",
     "libForgetBody": "37 Player oublie cette bibliothèque. Son dossier et tout ce qu’il contient, enregistrements compris, restent sur cet ordinateur ; la bibliothèque partagée, si elle y est reliée, n’est pas touchée. Retrouver le dossier d’une bibliothèque… la fait revenir.",
     "libForgetConfirmBtn": "Retirer de la liste",
+    "libTrashBtn": "Retirer et mettre son dossier à la Corbeille…",
+    "libTrashBtnWin": "Retirer et mettre son dossier à la Corbeille…",
+    "libTrashLooking": "Examen de son contenu…",
+    "libTrashTitle": "Mettre « {name} » à la Corbeille ?",
+    "libTrashTitleWin": "Mettre « {name} » à la Corbeille ?",
+    "libTrashWhat": "Son dossier s'en va, avec tout ce qu'il contient : {playlists}, {tracks}, {size} sur cet ordinateur.",
+    "libTrashPlOne": "1 playlist",
+    "libTrashPl": "{n} playlists",
+    "libTrashTrOne": "1 piste",
+    "libTrashTr": "{n} pistes",
+    "libTrashPlace": "Vos propres fichiers utilisés sur place ({n} pistes) restent où ils sont.",
+    "libTrashShared": "Tout ce qu'il contient est aussi dans la bibliothèque partagée « {shared} » : la rejoindre à nouveau le ramène sur cet ordinateur.",
+    "libTrashSharedNotAll": "À la dernière ouverture de cette bibliothèque, tout n'avait pas encore atteint la bibliothèque partagée « {shared} ». Ce qui ne l'avait pas atteinte serait perdu.",
+    "libTrashBackup": "Sa dernière sauvegarde, {date}, contient tout.",
+    "libTrashOldBackup": "Cette bibliothèque n'est pas partagée, et sa dernière sauvegarde, {date}, n'a pas ses derniers changements. Ce qui est plus récent serait perdu.",
+    "libTrashOnlyCopy": "C'est la seule copie de cette bibliothèque : elle n'est pas partagée et n'a pas de sauvegarde.",
+    "libTrashUndo": "Tant que la Corbeille n'est pas vidée, le dossier peut en être ressorti, et Retrouver le dossier d’une bibliothèque… ramène la bibliothèque.",
+    "libTrashUndoWin": "Tant que la Corbeille n'est pas vidée, le dossier peut y être restauré, et Retrouver le dossier d’une bibliothèque… ramène la bibliothèque.",
+    "libTrashGo": "Mettre à la Corbeille",
+    "libTrashGoWin": "Mettre à la Corbeille",
+    "libTrashFailed": "« {name} » n'est plus dans la liste, mais son dossier n'a pas pu être mis à la Corbeille : {error}. Il est toujours sur cet ordinateur ; Retrouver le dossier d’une bibliothèque… le ramène.",
+    "libTrashDone": "« {name} » a été mis à la Corbeille.",
+    "libTrashDoneWin": "« {name} » a été mis à la Corbeille.",
     "sdLaterBtn": "Décider plus tard (pas de synchronisation d’ici là)",
     "sdHeldIndicator": "Pas de synchronisation",
     "sharedJoinBtn": "Rejoindre",
@@ -10557,6 +10707,14 @@ const STRINGS = {
     "closeStopsPlaying": "o que está tocando",
     "closeStopsSending": "o envio de áudio para a biblioteca compartilhada (os outros dispositivos ficariam esperando)",
     "closeStopsCopy": "a cópia para outra biblioteca",
+    "bgSaving": "Salvando…",
+    "bgDeleting": "Excluindo…",
+    "bgReplacing": "Substituindo a gravação…",
+    "bgFailedTitle": "Não terminou",
+    "bgSaveFailed": "Não terminou de salvar sua alteração: {error}",
+    "bgDeleteFailed": "Não terminou de excluir: {error}",
+    "bgReplaceFailed": "Não terminou de substituir a gravação: {error}",
+    "closeStopsSaving": "o salvamento da sua última alteração",
     "closeAppKeep": "Manter aberto",
     "closeAppQuit": "Fechar mesmo assim",
     "interruptedTitle": "Uma restauração não terminou",
@@ -10888,6 +11046,7 @@ const STRINGS = {
     "importFolderBtn": "Importar uma pasta…",
     "nothingPlayingYetTitle": "Nada tocando ainda",
     "choosePlaylistToBegin": "Escolha uma playlist na lista para começar.",
+    "noPlaylistsYetToBegin": "Primeiro, crie uma playlist em “{tab}”.",
     "choosePlaylistPlain": "Escolha uma playlist.",
     "choosePlaylistToEditDot": "Escolha uma playlist para editar.",
     "editHereBar": "Edite a lista aqui",
@@ -11433,6 +11592,29 @@ const STRINGS = {
     "libForgetTitle": "Retirar «{name}» da lista?",
     "libForgetBody": "O 37 Player esquece esta biblioteca. A pasta e tudo o que contém, incluindo as gravações, ficam neste computador; a biblioteca partilhada, se estiver ligada a uma, não é tocada. Procurar a pasta de uma biblioteca… trá-la de volta.",
     "libForgetConfirmBtn": "Retirar da lista",
+    "libTrashBtn": "Remover e mover a pasta para o Lixo…",
+    "libTrashBtnWin": "Remover e mover a pasta para a Lixeira…",
+    "libTrashLooking": "Vendo o que há nela…",
+    "libTrashTitle": "Mover “{name}” para o Lixo?",
+    "libTrashTitleWin": "Mover “{name}” para a Lixeira?",
+    "libTrashWhat": "A pasta vai embora, com tudo o que tem: {playlists}, {tracks}, {size} neste computador.",
+    "libTrashPlOne": "1 playlist",
+    "libTrashPl": "{n} playlists",
+    "libTrashTrOne": "1 faixa",
+    "libTrashTr": "{n} faixas",
+    "libTrashPlace": "Seus próprios arquivos usados no lugar ({n} faixas) ficam onde estão.",
+    "libTrashShared": "Tudo nela também está na biblioteca partilhada “{shared}”: entrar nela de novo traz tudo de volta a este computador.",
+    "libTrashSharedNotAll": "Quando esta biblioteca foi aberta pela última vez, nem tudo tinha chegado à biblioteca partilhada “{shared}”. O que não tivesse chegado se perderia.",
+    "libTrashBackup": "O último backup, {date}, tem tudo.",
+    "libTrashOldBackup": "Esta biblioteca não é partilhada, e o último backup, {date}, não tem as alterações mais recentes. O que for mais novo se perderia.",
+    "libTrashOnlyCopy": "Esta é a única cópia desta biblioteca: não é partilhada e não tem backup.",
+    "libTrashUndo": "Até o Lixo ser esvaziado, a pasta pode ser tirada dele, e Procurar a pasta de uma biblioteca… traz a biblioteca de volta.",
+    "libTrashUndoWin": "Até a Lixeira ser esvaziada, a pasta pode ser restaurada, e Procurar a pasta de uma biblioteca… traz a biblioteca de volta.",
+    "libTrashGo": "Mover para o Lixo",
+    "libTrashGoWin": "Mover para a Lixeira",
+    "libTrashFailed": "“{name}” saiu da lista, mas a pasta não pôde ser movida para o Lixo: {error}. Ela continua neste computador; Procurar a pasta de uma biblioteca… a traz de volta.",
+    "libTrashDone": "“{name}” foi movida para o Lixo.",
+    "libTrashDoneWin": "“{name}” foi movida para a Lixeira.",
     "sdLaterBtn": "Decidir mais tarde (não sincroniza até lá)",
     "sdHeldIndicator": "Sem sincronizar",
     "sharedJoinBtn": "Aderir",
@@ -12604,6 +12786,14 @@ const STRINGS = {
     "closeStopsPlaying": "was gerade spielt",
     "closeStopsSending": "das Senden von Audio an die gemeinsame Bibliothek (die anderen Geräte würden darauf warten)",
     "closeStopsCopy": "das Kopieren in eine andere Bibliothek",
+    "bgSaving": "Wird gespeichert…",
+    "bgDeleting": "Wird gelöscht…",
+    "bgReplacing": "Aufnahme wird ersetzt…",
+    "bgFailedTitle": "Nicht fertig",
+    "bgSaveFailed": "Das Speichern deiner Änderung wurde nicht fertig: {error}",
+    "bgDeleteFailed": "Das Löschen wurde nicht fertig: {error}",
+    "bgReplaceFailed": "Das Ersetzen der Aufnahme wurde nicht fertig: {error}",
+    "closeStopsSaving": "das Speichern deiner letzten Änderung",
     "closeAppKeep": "Geöffnet lassen",
     "closeAppQuit": "Trotzdem schließen",
     "interruptedTitle": "Eine Wiederherstellung wurde nicht fertig",
@@ -12935,6 +13125,7 @@ const STRINGS = {
     "importFolderBtn": "Ordner importieren…",
     "nothingPlayingYetTitle": "Noch nichts spielt",
     "choosePlaylistToBegin": "Wählen Sie eine Playlist aus der Liste, um zu beginnen.",
+    "noPlaylistsYetToBegin": "Lege zuerst unter „{tab}“ eine Playlist an.",
     "choosePlaylistPlain": "Wählen Sie eine Playlist.",
     "choosePlaylistToEditDot": "Wählen Sie eine zu bearbeitende Playlist.",
     "editHereBar": "Playlist hier bearbeiten",
@@ -13480,6 +13671,29 @@ const STRINGS = {
     "libForgetTitle": "„{name}“ aus der Liste nehmen?",
     "libForgetBody": "37 Player vergisst diese Bibliothek. Ihr Ordner und alles darin, auch die Aufnahmen, bleiben auf diesem Computer; die gemeinsame Bibliothek, falls sie einer beigetreten ist, wird nicht berührt. „Ordner einer Bibliothek suchen…“ holt sie zurück.",
     "libForgetConfirmBtn": "Aus der Liste nehmen",
+    "libTrashBtn": "Entfernen und den Ordner in den Papierkorb legen…",
+    "libTrashBtnWin": "Entfernen und den Ordner in den Papierkorb legen…",
+    "libTrashLooking": "Inhalt wird angesehen…",
+    "libTrashTitle": "„{name}“ in den Papierkorb legen?",
+    "libTrashTitleWin": "„{name}“ in den Papierkorb legen?",
+    "libTrashWhat": "Der Ordner geht mit allem, was darin ist: {playlists}, {tracks}, {size} auf diesem Computer.",
+    "libTrashPlOne": "1 Playlist",
+    "libTrashPl": "{n} Playlists",
+    "libTrashTrOne": "1 Titel",
+    "libTrashTr": "{n} Titel",
+    "libTrashPlace": "Deine eigenen, an Ort und Stelle genutzten Dateien ({n} Titel) bleiben, wo sie sind.",
+    "libTrashShared": "Alles darin ist auch in der gemeinsamen Bibliothek „{shared}“: Wenn du ihr wieder beitrittst, kommt es auf diesen Computer zurück.",
+    "libTrashSharedNotAll": "Als diese Bibliothek zuletzt offen war, war noch nicht alles in der gemeinsamen Bibliothek „{shared}“ angekommen. Was noch fehlte, ginge verloren.",
+    "libTrashBackup": "Ihre letzte Sicherung, {date}, enthält alles.",
+    "libTrashOldBackup": "Diese Bibliothek ist nicht geteilt, und ihrer letzten Sicherung, {date}, fehlen die neuesten Änderungen. Was neuer ist, ginge verloren.",
+    "libTrashOnlyCopy": "Das ist die einzige Kopie dieser Bibliothek: Sie ist nicht geteilt und hat keine Sicherung.",
+    "libTrashUndo": "Bis der Papierkorb geleert wird, kann der Ordner wieder herausgeholt werden, und „Ordner einer Bibliothek suchen…“ holt die Bibliothek zurück.",
+    "libTrashUndoWin": "Bis der Papierkorb geleert wird, kann der Ordner wiederhergestellt werden, und „Ordner einer Bibliothek suchen…“ holt die Bibliothek zurück.",
+    "libTrashGo": "In den Papierkorb",
+    "libTrashGoWin": "In den Papierkorb",
+    "libTrashFailed": "„{name}“ ist nicht mehr in der Liste, aber der Ordner konnte nicht in den Papierkorb gelegt werden: {error}. Er ist noch auf diesem Computer; „Ordner einer Bibliothek suchen…“ holt ihn zurück.",
+    "libTrashDone": "„{name}“ liegt jetzt im Papierkorb.",
+    "libTrashDoneWin": "„{name}“ liegt jetzt im Papierkorb.",
     "sdLaterBtn": "Später entscheiden (bis dahin keine Synchronisierung)",
     "sdHeldIndicator": "Keine Synchronisierung",
     "sharedJoinBtn": "Beitreten",
@@ -14651,6 +14865,14 @@ const STRINGS = {
     "closeStopsPlaying": "正在播放的内容",
     "closeStopsSending": "向共享曲库发送音频（其他设备会一直等待）",
     "closeStopsCopy": "复制到另一个曲库",
+    "bgSaving": "正在保存…",
+    "bgDeleting": "正在删除…",
+    "bgReplacing": "正在替换录音…",
+    "bgFailedTitle": "未完成",
+    "bgSaveFailed": "你的更改未能保存完成：{error}",
+    "bgDeleteFailed": "删除未能完成：{error}",
+    "bgReplaceFailed": "替换录音未能完成：{error}",
+    "closeStopsSaving": "保存你最后的更改",
     "closeAppKeep": "保持打开",
     "closeAppQuit": "仍然关闭",
     "interruptedTitle": "恢复没有完成",
@@ -14982,6 +15204,7 @@ const STRINGS = {
     "importFolderBtn": "导入文件夹…",
     "nothingPlayingYetTitle": "尚未播放任何内容",
     "choosePlaylistToBegin": "从列表中选择一个播放列表以开始。",
+    "noPlaylistsYetToBegin": "请先在“{tab}”中创建一个播放列表。",
     "choosePlaylistPlain": "选择一个播放列表。",
     "choosePlaylistToEditDot": "选择一个要编辑的播放列表。",
     "editHereBar": "在这里编辑播放列表",
@@ -15527,6 +15750,29 @@ const STRINGS = {
     "libForgetTitle": "把“{name}”从列表中移除？",
     "libForgetBody": "37 Player 会忘记这个曲库。它的文件夹和其中的一切（包括录音）都留在这台电脑上；如果它加入了共享曲库，共享曲库不受影响。用“查找曲库文件夹…”可以把它找回来。",
     "libForgetConfirmBtn": "从列表中移除",
+    "libTrashBtn": "移除并将其文件夹移到废纸篓…",
+    "libTrashBtnWin": "移除并将其文件夹移到回收站…",
+    "libTrashLooking": "正在查看其中内容…",
+    "libTrashTitle": "将“{name}”移到废纸篓？",
+    "libTrashTitleWin": "将“{name}”移到回收站？",
+    "libTrashWhat": "其文件夹及其中所有内容将被移走：{playlists}、{tracks}，在这台电脑上占 {size}。",
+    "libTrashPlOne": "1 个播放列表",
+    "libTrashPl": "{n} 个播放列表",
+    "libTrashTrOne": "1 首曲目",
+    "libTrashTr": "{n} 首曲目",
+    "libTrashPlace": "你自己的就地使用的文件（{n} 首曲目）保留在原处。",
+    "libTrashShared": "其中所有内容也都在共享曲库“{shared}”中：再次加入该曲库即可将其带回这台电脑。",
+    "libTrashSharedNotAll": "这个曲库上次打开时，并非所有内容都已到达共享曲库“{shared}”。尚未到达的内容将会丢失。",
+    "libTrashBackup": "它的最近一次备份（{date}）包含全部内容。",
+    "libTrashOldBackup": "这个曲库没有共享，而它最近一次备份（{date}）不含最新的更改。较新的内容将会丢失。",
+    "libTrashOnlyCopy": "这是这个曲库唯一的副本：它没有共享，也没有备份。",
+    "libTrashUndo": "在清空废纸篓之前，可以把文件夹从中取回，“查找曲库文件夹…”会带回该曲库。",
+    "libTrashUndoWin": "在清空回收站之前，可以把文件夹还原，“查找曲库文件夹…”会带回该曲库。",
+    "libTrashGo": "移到废纸篓",
+    "libTrashGoWin": "移到回收站",
+    "libTrashFailed": "“{name}”已从列表中移除，但其文件夹无法移到废纸篓：{error}。它仍在这台电脑上；“查找曲库文件夹…”可将其带回。",
+    "libTrashDone": "“{name}”已移到废纸篓。",
+    "libTrashDoneWin": "“{name}”已移到回收站。",
     "sdLaterBtn": "稍后决定（在此之前不同步）",
     "sdHeldIndicator": "未同步",
     "sharedJoinBtn": "加入",
@@ -16698,6 +16944,14 @@ const STRINGS = {
     "closeStopsPlaying": "những gì đang phát",
     "closeStopsSending": "việc gửi âm thanh lên thư viện dùng chung (các thiết bị khác sẽ phải chờ)",
     "closeStopsCopy": "việc sao chép sang thư viện khác",
+    "bgSaving": "Đang lưu…",
+    "bgDeleting": "Đang xóa…",
+    "bgReplacing": "Đang thay bản ghi…",
+    "bgFailedTitle": "Chưa xong",
+    "bgSaveFailed": "Chưa lưu xong thay đổi của bạn: {error}",
+    "bgDeleteFailed": "Chưa xóa xong: {error}",
+    "bgReplaceFailed": "Chưa thay xong bản ghi: {error}",
+    "closeStopsSaving": "việc lưu thay đổi gần nhất của bạn",
     "closeAppKeep": "Giữ mở",
     "closeAppQuit": "Vẫn đóng",
     "interruptedTitle": "Việc khôi phục chưa xong",
@@ -17029,6 +17283,7 @@ const STRINGS = {
     "importFolderBtn": "Nhập một thư mục…",
     "nothingPlayingYetTitle": "Chưa phát gì cả",
     "choosePlaylistToBegin": "Chọn một danh sách phát từ danh sách để bắt đầu.",
+    "noPlaylistsYetToBegin": "Trước tiên, hãy tạo một danh sách phát ở “{tab}”.",
     "choosePlaylistPlain": "Chọn một danh sách phát.",
     "choosePlaylistToEditDot": "Chọn một danh sách phát để chỉnh sửa.",
     "editHereBar": "Sửa danh sách phát ở đây",
@@ -17574,6 +17829,29 @@ const STRINGS = {
     "libForgetTitle": "Bỏ “{name}” khỏi danh sách?",
     "libForgetBody": "37 Player quên thư viện này. Thư mục của nó và mọi thứ bên trong, kể cả các bản ghi, vẫn ở trên máy tính này; thư viện chung, nếu nó đã tham gia, không bị đụng đến. Tìm thư mục của một thư viện… sẽ đưa nó trở lại.",
     "libForgetConfirmBtn": "Bỏ khỏi danh sách",
+    "libTrashBtn": "Gỡ và chuyển thư mục vào Thùng rác…",
+    "libTrashBtnWin": "Gỡ và chuyển thư mục vào Thùng rác (Recycle Bin)…",
+    "libTrashLooking": "Đang xem bên trong có gì…",
+    "libTrashTitle": "Chuyển “{name}” vào Thùng rác?",
+    "libTrashTitleWin": "Chuyển “{name}” vào Thùng rác (Recycle Bin)?",
+    "libTrashWhat": "Thư mục sẽ đi, cùng mọi thứ trong đó: {playlists}, {tracks}, {size} trên máy này.",
+    "libTrashPlOne": "1 danh sách phát",
+    "libTrashPl": "{n} danh sách phát",
+    "libTrashTrOne": "1 bản nhạc",
+    "libTrashTr": "{n} bản nhạc",
+    "libTrashPlace": "Các tệp của riêng bạn được dùng tại chỗ ({n} bản nhạc) vẫn ở nguyên chỗ cũ.",
+    "libTrashShared": "Mọi thứ trong đó cũng có trong thư viện chung “{shared}”: tham gia lại thư viện đó sẽ đưa chúng về máy này.",
+    "libTrashSharedNotAll": "Lần cuối thư viện này được mở, chưa phải mọi thứ đã đến thư viện chung “{shared}”. Phần chưa đến sẽ bị mất.",
+    "libTrashBackup": "Bản sao lưu gần nhất, {date}, có tất cả.",
+    "libTrashOldBackup": "Thư viện này không được chia sẻ, và bản sao lưu gần nhất, {date}, không có các thay đổi mới nhất. Phần mới hơn sẽ bị mất.",
+    "libTrashOnlyCopy": "Đây là bản duy nhất của thư viện này: nó không được chia sẻ và không có bản sao lưu.",
+    "libTrashUndo": "Cho đến khi Thùng rác được dọn, có thể lấy thư mục ra lại, và Tìm thư mục của một thư viện… sẽ đưa thư viện trở lại.",
+    "libTrashUndoWin": "Cho đến khi Thùng rác được dọn, có thể khôi phục thư mục, và Tìm thư mục của một thư viện… sẽ đưa thư viện trở lại.",
+    "libTrashGo": "Chuyển vào Thùng rác",
+    "libTrashGoWin": "Chuyển vào Thùng rác",
+    "libTrashFailed": "“{name}” đã khỏi danh sách, nhưng không chuyển được thư mục vào Thùng rác: {error}. Nó vẫn ở trên máy này; Tìm thư mục của một thư viện… sẽ đưa nó trở lại.",
+    "libTrashDone": "Đã chuyển “{name}” vào Thùng rác.",
+    "libTrashDoneWin": "Đã chuyển “{name}” vào Thùng rác.",
     "sdLaterBtn": "Quyết định sau (chưa đồng bộ cho đến lúc đó)",
     "sdHeldIndicator": "Chưa đồng bộ",
     "sharedJoinBtn": "Tham gia",
@@ -18745,6 +19023,14 @@ const STRINGS = {
     "closeStopsPlaying": "ό,τι παίζει",
     "closeStopsSending": "η αποστολή ήχου στην κοινόχρηστη βιβλιοθήκη (οι άλλες συσκευές θα περίμεναν)",
     "closeStopsCopy": "η αντιγραφή σε άλλη βιβλιοθήκη",
+    "bgSaving": "Αποθήκευση…",
+    "bgDeleting": "Διαγραφή…",
+    "bgReplacing": "Αντικατάσταση της ηχογράφησης…",
+    "bgFailedTitle": "Δεν ολοκληρώθηκε",
+    "bgSaveFailed": "Η αποθήκευση της αλλαγής σας δεν ολοκληρώθηκε: {error}",
+    "bgDeleteFailed": "Η διαγραφή δεν ολοκληρώθηκε: {error}",
+    "bgReplaceFailed": "Η αντικατάσταση της ηχογράφησης δεν ολοκληρώθηκε: {error}",
+    "closeStopsSaving": "την αποθήκευση της τελευταίας σας αλλαγής",
     "closeAppKeep": "Να μείνει ανοιχτό",
     "closeAppQuit": "Κλείσιμο έτσι κι αλλιώς",
     "interruptedTitle": "Μια επαναφορά δεν ολοκληρώθηκε",
@@ -19076,6 +19362,7 @@ const STRINGS = {
     "importFolderBtn": "Εισαγωγή φακέλου…",
     "nothingPlayingYetTitle": "Δεν παίζει τίποτα ακόμη",
     "choosePlaylistToBegin": "Επιλέξτε μια λίστα αναπαραγωγής από τη λίστα για να ξεκινήσετε.",
+    "noPlaylistsYetToBegin": "Πρώτα, φτιάξτε μια λίστα στο «{tab}».",
     "choosePlaylistPlain": "Επιλέξτε μια λίστα αναπαραγωγής.",
     "choosePlaylistToEditDot": "Επιλέξτε μια λίστα αναπαραγωγής προς επεξεργασία.",
     "editHereBar": "Επεξεργασία λίστας εδώ",
@@ -19621,6 +19908,29 @@ const STRINGS = {
     "libForgetTitle": "Αφαίρεση της «{name}» από τη λίστα;",
     "libForgetBody": "Το 37 Player ξεχνά αυτή τη βιβλιοθήκη. Ο φάκελός της και ό,τι περιέχει, μαζί με τις ηχογραφήσεις, μένουν σε αυτόν τον υπολογιστή· η κοινόχρηστη βιβλιοθήκη, αν έχει ενταχθεί σε κάποια, δεν αγγίζεται. Η Εύρεση φακέλου βιβλιοθήκης… τη φέρνει πίσω.",
     "libForgetConfirmBtn": "Αφαίρεση από τη λίστα",
+    "libTrashBtn": "Αφαίρεση και μεταφορά του φακέλου στον Κάδο…",
+    "libTrashBtnWin": "Αφαίρεση και μεταφορά του φακέλου στον Κάδο Ανακύκλωσης…",
+    "libTrashLooking": "Εξετάζεται τι περιέχει…",
+    "libTrashTitle": "Μεταφορά της «{name}» στον Κάδο;",
+    "libTrashTitleWin": "Μεταφορά της «{name}» στον Κάδο Ανακύκλωσης;",
+    "libTrashWhat": "Ο φάκελός της φεύγει, με ό,τι περιέχει: {playlists}, {tracks}, {size} σε αυτόν τον υπολογιστή.",
+    "libTrashPlOne": "1 λίστα",
+    "libTrashPl": "{n} λίστες",
+    "libTrashTrOne": "1 κομμάτι",
+    "libTrashTr": "{n} κομμάτια",
+    "libTrashPlace": "Τα δικά σας αρχεία που χρησιμοποιούνται επιτόπου ({n} κομμάτια) μένουν εκεί που είναι.",
+    "libTrashShared": "Όλα όσα περιέχει υπάρχουν και στην κοινόχρηστη βιβλιοθήκη «{shared}»: αν συμμετάσχετε ξανά, επιστρέφουν σε αυτόν τον υπολογιστή.",
+    "libTrashSharedNotAll": "Την τελευταία φορά που ήταν ανοιχτή αυτή η βιβλιοθήκη, δεν είχαν φτάσει όλα στην κοινόχρηστη βιβλιοθήκη «{shared}». Ό,τι δεν είχε φτάσει θα χανόταν.",
+    "libTrashBackup": "Το τελευταίο αντίγραφο ασφαλείας, {date}, τα έχει όλα.",
+    "libTrashOldBackup": "Αυτή η βιβλιοθήκη δεν είναι κοινόχρηστη, και το τελευταίο αντίγραφο ασφαλείας, {date}, δεν έχει τις πιο πρόσφατες αλλαγές. Ό,τι είναι νεότερο θα χανόταν.",
+    "libTrashOnlyCopy": "Αυτό είναι το μόνο αντίγραφο αυτής της βιβλιοθήκης: δεν είναι κοινόχρηστη και δεν έχει αντίγραφο ασφαλείας.",
+    "libTrashUndo": "Μέχρι να αδειάσει ο Κάδος, ο φάκελος μπορεί να βγει πάλι από εκεί, και η Εύρεση φακέλου βιβλιοθήκης… φέρνει πίσω τη βιβλιοθήκη.",
+    "libTrashUndoWin": "Μέχρι να αδειάσει ο Κάδος Ανακύκλωσης, ο φάκελος μπορεί να επαναφερθεί, και η Εύρεση φακέλου βιβλιοθήκης… φέρνει πίσω τη βιβλιοθήκη.",
+    "libTrashGo": "Μεταφορά στον Κάδο",
+    "libTrashGoWin": "Μεταφορά στον Κάδο Ανακύκλωσης",
+    "libTrashFailed": "Η «{name}» βγήκε από τη λίστα, αλλά ο φάκελός της δεν μπόρεσε να μεταφερθεί στον Κάδο: {error}. Είναι ακόμη σε αυτόν τον υπολογιστή· η Εύρεση φακέλου βιβλιοθήκης… τη φέρνει πίσω.",
+    "libTrashDone": "Η «{name}» μεταφέρθηκε στον Κάδο.",
+    "libTrashDoneWin": "Η «{name}» μεταφέρθηκε στον Κάδο Ανακύκλωσης.",
     "sdLaterBtn": "Απόφαση αργότερα (δεν συγχρονίζεται ως τότε)",
     "sdHeldIndicator": "Χωρίς συγχρονισμό",
     "sharedJoinBtn": "Συμμετοχή",
@@ -20792,6 +21102,14 @@ const STRINGS = {
     "closeStopsPlaying": "ciò che sta suonando",
     "closeStopsSending": "l'invio di audio alla libreria condivisa (gli altri dispositivi resterebbero in attesa)",
     "closeStopsCopy": "la copia in un'altra libreria",
+    "bgSaving": "Salvataggio…",
+    "bgDeleting": "Eliminazione…",
+    "bgReplacing": "Sostituzione della registrazione…",
+    "bgFailedTitle": "Non terminato",
+    "bgSaveFailed": "Il salvataggio della modifica non è terminato: {error}",
+    "bgDeleteFailed": "L'eliminazione non è terminata: {error}",
+    "bgReplaceFailed": "La sostituzione della registrazione non è terminata: {error}",
+    "closeStopsSaving": "il salvataggio della tua ultima modifica",
     "closeAppKeep": "Tienilo aperto",
     "closeAppQuit": "Chiudi comunque",
     "interruptedTitle": "Un ripristino non è terminato",
@@ -21123,6 +21441,7 @@ const STRINGS = {
     "importFolderBtn": "Importa una cartella…",
     "nothingPlayingYetTitle": "Ancora nulla in riproduzione",
     "choosePlaylistToBegin": "Scegli una playlist dall'elenco per iniziare.",
+    "noPlaylistsYetToBegin": "Prima, crea una playlist in “{tab}”.",
     "choosePlaylistPlain": "Scegli una playlist.",
     "choosePlaylistToEditDot": "Scegli una playlist da modificare.",
     "editHereBar": "Modifica la playlist qui",
@@ -21668,6 +21987,29 @@ const STRINGS = {
     "libForgetTitle": "Togliere «{name}» dall’elenco?",
     "libForgetBody": "37 Player dimentica questa libreria. La sua cartella e tutto ciò che contiene, registrazioni comprese, restano su questo computer; la libreria condivisa, se è unita a una, non viene toccata. Trova la cartella di una libreria… la riporta.",
     "libForgetConfirmBtn": "Togli dall’elenco",
+    "libTrashBtn": "Rimuovi e sposta la sua cartella nel Cestino…",
+    "libTrashBtnWin": "Rimuovi e sposta la sua cartella nel Cestino…",
+    "libTrashLooking": "Controllo del contenuto…",
+    "libTrashTitle": "Spostare “{name}” nel Cestino?",
+    "libTrashTitleWin": "Spostare “{name}” nel Cestino?",
+    "libTrashWhat": "La sua cartella se ne va, con tutto ciò che contiene: {playlists}, {tracks}, {size} su questo computer.",
+    "libTrashPlOne": "1 playlist",
+    "libTrashPl": "{n} playlist",
+    "libTrashTrOne": "1 brano",
+    "libTrashTr": "{n} brani",
+    "libTrashPlace": "I tuoi file usati sul posto ({n} brani) restano dove sono.",
+    "libTrashShared": "Tutto ciò che contiene è anche nella libreria condivisa “{shared}”: unirti di nuovo a quella libreria lo riporta su questo computer.",
+    "libTrashSharedNotAll": "L'ultima volta che questa libreria è stata aperta, non tutto era ancora arrivato nella libreria condivisa “{shared}”. Ciò che non era arrivato andrebbe perso.",
+    "libTrashBackup": "Il suo ultimo backup, {date}, contiene tutto.",
+    "libTrashOldBackup": "Questa libreria non è condivisa, e il suo ultimo backup, {date}, non ha le modifiche più recenti. Ciò che è più recente andrebbe perso.",
+    "libTrashOnlyCopy": "Questa è l'unica copia di questa libreria: non è condivisa e non ha backup.",
+    "libTrashUndo": "Finché il Cestino non viene svuotato, la cartella può esserne ripresa, e Trova la cartella di una libreria… riporta la libreria.",
+    "libTrashUndoWin": "Finché il Cestino non viene svuotato, la cartella può essere ripristinata, e Trova la cartella di una libreria… riporta la libreria.",
+    "libTrashGo": "Sposta nel Cestino",
+    "libTrashGoWin": "Sposta nel Cestino",
+    "libTrashFailed": "“{name}” non è più nella lista, ma la sua cartella non si è potuta spostare nel Cestino: {error}. È ancora su questo computer; Trova la cartella di una libreria… la riporta.",
+    "libTrashDone": "“{name}” è stata spostata nel Cestino.",
+    "libTrashDoneWin": "“{name}” è stata spostata nel Cestino.",
     "sdLaterBtn": "Decidi più tardi (fino ad allora non si sincronizza)",
     "sdHeldIndicator": "Nessuna sincronizzazione",
     "sharedJoinBtn": "Unisciti",
@@ -23150,6 +23492,60 @@ function saveState(){
   saveChain = p.catch(err=> console.error("Save failed:", err));
   return p;
 }
+/* ---- A dialog closes first, then does its work (2.5.031; kr37, 16 Nov 2026) ----
+   "When someone presses Save, can the dialog disappear before any of the
+   background work starts? Then it would feel snappy." Edit details used to
+   wait for its picture and the library's save before closing, and a save
+   waits its turn behind sync and other saves: on the SKBC Mac mini that was
+   a minute with the dialog still up (report 2026-11-15-213154). Delete closed
+   at once but changed nothing on screen until every track's audio had been
+   put aside for Undo (report 2026-11-16-073224, "laggy when deleting").
+   Now such a dialog (1) closes, (2) shows the change on screen at once (the
+   library in memory has already changed), (3) hands the rest to afterDialog,
+   which (4) puts a line in the status bar ("Saving…") only when it takes
+   longer than half a second, so a quick save doesn't flash. The jobs run
+   one at a time, in the order they were given, so a picture put aside for
+   Undo is never overtaken by the next edit of the same track.
+   Nothing is lost by not waiting: a save that fails already turns the top
+   bar red and is tried again every 30 s, the change being kept in this
+   window (noteSaveFailed). Anything else that fails (a picture's write, a
+   track's audio put aside) says so in a dialog, once the screen is free.
+   While a job waits, closing the window asks first (beforeunload, and
+   closingWouldStop in the desktop app), and Undo, Update now and switching
+   libraries wait for it: its writes go to the library that's open. */
+let afterDialogChain = Promise.resolve(), afterDialogPending = 0, afterDialogText = "", afterDialogShowTimer = null, afterDialogShown = false;
+const AFTER_DIALOG_SHOW_MS = 500;
+function afterDialog(textKey, failKey, work){
+  afterDialogPending++;
+  if(!afterDialogShowTimer && !afterDialogShown) afterDialogShowTimer = setTimeout(()=>{
+    afterDialogShowTimer = null;
+    if(afterDialogPending){ afterDialogShown = true; setActiveOperationProgress(afterDialogText || t(textKey), null, "afterDialog"); }
+  }, AFTER_DIALOG_SHOW_MS);
+  const run = async ()=>{
+    afterDialogText = t(textKey);
+    if(afterDialogShown) setActiveOperationProgress(afterDialogText, null, "afterDialog");
+    try{ await work(); }
+    catch(err){ afterDialogFailed(failKey, err); }
+    finally{
+      if(--afterDialogPending === 0){
+        clearTimeout(afterDialogShowTimer); afterDialogShowTimer = null;
+        if(afterDialogShown){ afterDialogShown = false; clearActiveOperation("afterDialog"); }
+      }
+    }
+  };
+  const p = afterDialogChain.then(run);
+  afterDialogChain = p;
+  return p;
+}
+// Resolves once every job given so far has finished.
+function afterDialogIdle(){ return afterDialogChain; }
+function afterDialogFailed(failKey, err){
+  console.error("After a dialog:", err);
+  try{ playLog(t(failKey, {error: errText(err)})); }catch(e){}
+  if(saveFailing) return; // the top bar's "Not saving" already says so, and saving is tried again
+  showWhenFree(t("bgFailedTitle"), ()=> askChoice(t("bgFailedTitle"), `<p>${escapeHtmlText(t(failKey, {error: errText(err)}))}</p>`, [{label: t("ok"), value: null, kind: "primary"}]));
+}
+window.addEventListener("beforeunload", (e)=>{ if(afterDialogPending && !leavingOnPurpose){ e.preventDefault(); e.returnValue = ""; } });
 /* ---- When saving fails ----
    A full device makes every write fail (as an aborted transaction), and
    until 1.4.060 that went only to the console: a renamed playlist looked
@@ -23527,6 +23923,7 @@ function undoMergeTrack(tr, fields){
 const UNDO_OLD_MS = 2 * 3600 * 1000;
 let undoOldOk = false;
 async function doUndo(){
+  if(afterDialogPending) await afterDialogIdle(); // the step a closed dialog is still saving (afterDialog)
   if(!undoStack.length || undoBusy || overlayPageOpen()) return;
   const top = undoStack[undoStack.length - 1];
   if(!undoOldOk && Date.now() - top.at > UNDO_OLD_MS){
@@ -23547,6 +23944,7 @@ async function doUndo(){
   } finally { undoBusy = false; }
 }
 async function doRedo(){
+  if(afterDialogPending) await afterDialogIdle();
   if(!redoStack.length || undoBusy || overlayPageOpen()) return;
   undoBusy = true;
   try{
@@ -26053,7 +26451,9 @@ function renderPlayer(){
   playerEl.dataset.browsedPlaylistId = browsedPl ? browsedPl.id : "";
 
   if(!playingCtx && !browsedPl){
-    playerEl.insertAdjacentHTML("beforeend", `<div class="empty-state"><div class="glyph">♪</div><h2>${t("nothingPlayingYetTitle")}</h2><p>${t("choosePlaylistToBegin")}</p></div>`);
+    // No playlists at all: say where to make one (kr37, 16 Nov 2026).
+    const none = !countPlaylistsIn(root.tree || []);
+    playerEl.insertAdjacentHTML("beforeend", `<div class="empty-state"><div class="glyph">♪</div><h2>${t("nothingPlayingYetTitle")}</h2><p>${none ? escapeHtmlText(t("noPlaylistsYetToBegin", {tab: t("tabEditPlaylists")})) : t("choosePlaylistToBegin")}</p></div>`);
     return;
   }
 
@@ -26916,7 +27316,7 @@ async function rewriteId3Tags(blob, meta){
   }
   const parts = [newTag, blob.slice(audioStart, end)];
   if(v1) parts.push(v1);
-  return new Blob(parts, {type: blob.type || "audio/mpeg"});
+  return joinedFile(parts, blob.type || "audio/mpeg");
 }
 
 /* ---------- MP4 / M4A (reading; the writer is rewriteMp4Tags) ---------- */
@@ -27913,7 +28313,7 @@ async function rewriteMp4Tags(blob, meta, carry){
   }
   const lastEnd = top.length ? top[top.length-1].start + top[top.length-1].size : 0;
   if(lastEnd < blob.size) out.push(blob.slice(lastEnd));
-  return new Blob(out, {type: blob.type || "audio/mp4"});
+  return joinedFile(out, blob.type || "audio/mp4");
 }
 
 // The single entry point every editing path calls. Figures out the format,
@@ -28083,8 +28483,17 @@ async function blobWithCurrentTags(track, blob, opts){
   const fmt = await sniffAudioFormat(blob, track.filename);
   if(!TAG_WRITABLE_KINDS.has(fmt.kind)) return {blob, fmt, written: false};
   if(isDiskBlob(blob) && blob.size > BIG_FILE_BYTES) return {blob, fmt, written: false, tooBig: true};
-  blob = await realBlob(blob); // (the desktop app's big files: read whole to write the details in)
-  let typed = blob.type ? blob : new Blob([blob], {type: fmt.mime});
+  // opts.onDisk (2.5.035): the result goes back into the desktop app's
+  // library, so an MP3 or M4A read where it lies stays there. Their writers
+  // read only the details' bytes and give the new file as those followed by
+  // a stretch of the old one, which the app copies on disk (joinedFile).
+  // Before, a 60 MB recording renamed in a shared library was read whole
+  // into the page, written back through it and read again (putRewrittenAudio)
+  // on Gen Palden's MacBook, every piece through the window's main thread
+  // (report 2026-11-16-073224). Anything else, and exports: read whole.
+  const inPlace = opts.onDisk && isDiskBlob(blob) && (fmt.kind === "mp3" || fmt.kind === "mp4");
+  if(!inPlace) blob = await realBlob(blob); // (the desktop app's big files: read whole to write the details in)
+  let typed = blob.type ? blob : isDiskBlob(blob) ? blob.slice(0, blob.size, fmt.mime) : new Blob([blob], {type: fmt.mime});
   // A file damaged by the pre-1.1.089 writer is repaired first — rewriting
   // its tags would erase the sign that identifies the damage (see repairDamagedMp4).
   if(fmt.kind==="mp4") typed = (await repairDamagedMp4(typed).catch(()=> null)) || typed;
@@ -28218,7 +28627,21 @@ async function repairDamagedAudio(id){
 // a re-tagged file is first read into memory as one piece, and what was
 // stored is read back and checked; if it's wrong, the old file goes back.
 const IS_WEBKIT = window.__p37WebKit != null ? !!window.__p37WebKit : /AppleWebKit/.test(navigator.userAgent) && !/(Chrome|Chromium|Edg)\//.test(navigator.userAgent);
+// The library is one of the desktop app's folders (not its browser storage).
+function desktopFolderStore(){ try{ return STORAGE_KIND === "desktop" && libStore instanceof FolderLibraryStore; }catch(err){ return false; } }
 async function putRewrittenAudio(id, newBlob, oldBlob){
+  // The desktop app's library folder (2.5.035): the app writes the file
+  // aside and swaps it in, so it's either all there or as it was, and the
+  // check below is of WebKit's browser storage, which the app's folders
+  // aren't. Reading the new file whole to store it, and again to check it,
+  // was two of the three times a renamed recording passed through the page
+  // on Gen Palden's MacBook. Its size as stored, from the disk, is enough.
+  if(desktopFolderStore()){
+    await idbPut("audio", {id, blob: newBlob, rev: uid()});
+    const back = await idbGet("audio", id);
+    if(!back || !back.blob || back.blob.size !== newBlob.size) throw new Error("the rewritten file is " + (back && back.blob ? back.blob.size : "not there") + " bytes on the disk instead of " + newBlob.size);
+    return back.blob;
+  }
   if(!IS_WEBKIT){ await idbPut("audio", {id, blob: newBlob, rev: uid()}); return newBlob; }
   const bytes = await newBlob.arrayBuffer();
   if(bytes.byteLength !== newBlob.size) throw new Error("the rewritten file came out " + bytes.byteLength + " bytes instead of " + newBlob.size);
@@ -28262,7 +28685,7 @@ async function rewriteFileTagsIfPossible(libraryId){
     // or it'd be lost for good on a track that's never had its tooltip
     // hovered yet (the only other place this gets backfilled).
     if(!track.filename && blob.name) track.filename = blob.name;
-    const {blob: newBlob, written, snapshot} = await blobWithCurrentTags(track, blob);
+    const {blob: newBlob, written, snapshot} = await blobWithCurrentTags(track, blob, {onDisk: isDiskBlob(blob)});
     if(!written) return false; // a format with no tag writer (raw AAC, FLAC-in-Ogg…)
     await putRewrittenAudio(libraryId, newBlob, blob); // a new rev: see audioChangedSinceBackup
     track.fileTags = snapshot;
@@ -28371,7 +28794,7 @@ async function repairDamagedMp4(blob){
   }
   const lastEnd = top.length ? top[top.length-1].start + top[top.length-1].size : 0;
   if(lastEnd < blob.size) out.push(blob.slice(lastEnd));
-  return new Blob(out, {type: blob.type || "audio/mp4"});
+  return joinedFile(out, blob.type || "audio/mp4");
 }
 // Runs once per library, in the background, shortly after start-up. Each
 // repaired file also gets its tags rewritten properly (the old ones were
@@ -33221,8 +33644,13 @@ async function analyzeM4aInPieces(blob){
   const Ctx = window.OfflineAudioContext || window.webkitOfflineAudioContext;
   const ctx = new Ctx(1, 1, 44100);
   let an = null, skipStart = 0, left = Infinity;
-  for(let s = 0; s < f.count; s += per){
-    const from = Math.max(0, s - 1), to = Math.min(f.count, s + per);
+  for(let s = 0, to; s < f.count; s = to){
+    const from = Math.max(0, s - 1);
+    to = Math.min(f.count, s + per);
+    // No last piece of a few frames: so short a stretch sometimes doesn't
+    // decode at all ("Unable to decode audio data", 2.5.035, desktopmem.js:
+    // a 6-minute M4A, about 1 time in 4); it goes with the piece before.
+    if(f.count - to < Math.max(64, per >> 3)) to = f.count;
     let total = 0;
     for(let i = from; i < to; i++) total += f.sizes[i] + 7;
     const out = new Uint8Array(total);
@@ -33278,6 +33706,17 @@ async function tooLongForWholeDecode(blob, durationHint){
   if(COARSE_POINTER && ["mp3", "wav"].includes((await sniffAudioFormat(blob)).kind)) return true; // not .m4a: it may be Apple Lossless, which only decodes whole
   return (await estimatedDecodedBytes(blob, durationHint)) > wholeDecodeBudgetBytes();
 }
+// The desktop app works a piece at a time whenever it can, whatever the
+// length (2.5.035): a recording decoded whole is all of its sound in memory
+// at once, up to the 1 GB allowance above (WebKit doesn't say how much
+// memory a Mac has), the biggest single spike of memory 37 Player made
+// there, and while importing or receiving, when crashes are noticed
+// (kr37, 16 Nov 2026). Phones already do this for MP3 and WAV. If the
+// pieces fail, a file that may be decoded whole still is.
+async function desktopPiecesFirst(blob){
+  if(STORAGE_KIND !== "desktop") return false;
+  try{ return PIECEWISE_KINDS.includes((await sniffAudioFormat(blob)).kind); }catch(err){ return false; }
+}
 // Anything else too long to decode whole, or that plays but won't decode
 // here (Apple Lossless in Safari, FLAC in Ogg, MP2, AC3, CAF, AMR…), 1.4.116:
 // the converter (ffmpeg, on the device already for converting) decodes two
@@ -33318,14 +33757,16 @@ async function analyzeWithConverter(blob){
 async function analyzeAudio(fileOrBlob){
   const began = performance.now();
   try{
-    if(await tooLongForWholeDecode(fileOrBlob)){
+    const tooLong = await tooLongForWholeDecode(fileOrBlob);
+    if(tooLong || await desktopPiecesFirst(fileOrBlob)){
       const fmt = await sniffAudioFormat(fileOrBlob);
       let native = null;
       try{ native = await readNativeAudioParams(fileOrBlob); }catch(err){}
-      if(PIECEWISE_KINDS.includes(fmt.kind)){
+      if(PIECEWISE_KINDS.includes(fmt.kind)) pieces: {
         let r = null;
         try{ r = await analyzeInPieces(fileOrBlob, fmt.kind); }
         catch(err){
+          if(!tooLong){ console.warn("Couldn't read it a piece at a time; whole, then:", err); break pieces; } // (the desktop app's choice, not a need)
           // Still too long to decode whole: the converter, else a stand-in,
           // marked as such (an .m4a that isn't AAC, say).
           console.warn("Couldn't read it a piece at a time:", err);
@@ -33336,14 +33777,16 @@ async function analyzeAudio(fileOrBlob){
         }
         const elDur = await getDurationViaAudioElement(fileOrBlob);
         const secs = (performance.now() - began) / 1000;
-        if(typeof sharedLog === "function") sharedLog("waveform and loudness of a " + fmtTime(r.duration) + " recording, a piece at a time, took " + secs.toFixed(0) + " s");
+        if(tooLong && typeof sharedLog === "function") sharedLog("waveform and loudness of a " + fmtTime(r.duration) + " recording, a piece at a time, took " + secs.toFixed(0) + " s");
         return {duration: elDur || r.duration, sampleRate: (native && native.sampleRate) || null, channels: (native && native.channels) || r.channels, peaks: r.peaks, loudness: r.loudness, likelyUnplayable: false};
       }
-      const viaConv = await analyzeWithConverter(fileOrBlob);
-      if(viaConv) return viaConv;
-      const duration = await getDurationViaAudioElement(fileOrBlob);
-      console.warn("Too long to analyze whole on this device; stand-in waveform");
-      return {duration, sampleRate: (native && native.sampleRate) || null, channels: (native && native.channels) || null, peaks: new Array(PEAK_BUCKETS).fill(0.15), loudness: {i: null, failed: 1, tooLong: Math.round(wholeDecodeBudgetBytes() / 1e6)}, likelyUnplayable: duration===0};
+      if(tooLong){
+        const viaConv = await analyzeWithConverter(fileOrBlob);
+        if(viaConv) return viaConv;
+        const duration = await getDurationViaAudioElement(fileOrBlob);
+        console.warn("Too long to analyze whole on this device; stand-in waveform");
+        return {duration, sampleRate: (native && native.sampleRate) || null, channels: (native && native.channels) || null, peaks: new Array(PEAK_BUCKETS).fill(0.15), loudness: {i: null, failed: 1, tooLong: Math.round(wholeDecodeBudgetBytes() / 1e6)}, likelyUnplayable: duration===0};
+      }
     }
     const arrBuf = await fileOrBlob.arrayBuffer();
     const tmpCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -33865,7 +34308,12 @@ async function openEditLibraryTrack(track, ctx){
     </div>
   `, "wide");
 
-  async function commitEditFields(){
+  // The fields go in at once, so the screen can show them as the dialog
+  // closes; the picture and the save follow in afterDialog (2.5.031). A new
+  // picture shows at once through the thumbnail cache; hasArtwork changes
+  // only with the write, since that's what gives it its revision (artRev),
+  // which sync goes by.
+  function commitEditFields(){
     track.name = document.getElementById("editName").value.trim() || track.name;
     track.artist = document.getElementById("editArtist").value.trim();
     track.album = document.getElementById("editAlbum").value.trim();
@@ -33873,19 +34321,22 @@ async function openEditLibraryTrack(track, ctx){
     track.trackNo = trackNoRaw==="" ? null : parseInt(trackNoRaw,10);
     const volDb = Math.round((parseFloat(document.getElementById("editVolumeDb").value) || 0) * 10) / 10;
     if(volDb) track.volumeDb = Math.max(-30, Math.min(30, volDb)); else delete track.volumeDb;
-    if(stagedArtwork !== undefined) await undoKeepFile(track, "art");
-    if(stagedArtwork === null){
-      await idbDelete("artwork", track.id);
-      track.hasArtwork = false;
-    } else if(stagedArtwork){
-      await idbPut("artwork", {id: track.id, blob: stagedArtwork});
-      track.hasArtwork = true;
-    }
-    if(stagedArtwork !== undefined){
+    const art = stagedArtwork;
+    if(art !== undefined){
       if(artworkUrlCache[track.id]) URL.revokeObjectURL(artworkUrlCache[track.id]);
-      delete artworkUrlCache[track.id]; // force a fresh fetch next time this track's thumbnail renders
+      if(art) artworkUrlCache[track.id] = URL.createObjectURL(art); else delete artworkUrlCache[track.id];
     }
-    await saveState();
+    return async ()=>{
+      if(art !== undefined){
+        await undoKeepFile(track, "art");
+        if(art === null){ await idbDelete("artwork", track.id); track.hasArtwork = false; }
+        else { await idbPut("artwork", {id: track.id, blob: art}); track.hasArtwork = true; }
+        if(artworkUrlCache[track.id]) URL.revokeObjectURL(artworkUrlCache[track.id]);
+        delete artworkUrlCache[track.id]; // read again from what was stored
+      }
+      await saveState();
+      if(art !== undefined) refreshCurrentView(); // a track that had no picture shows one only now
+    };
   }
 
   // Measured loudness, and whether the chosen volume can be reached
@@ -33992,10 +34443,13 @@ async function openEditLibraryTrack(track, ctx){
   modalCloseCallbacks.push(()=> document.removeEventListener("paste", handleClipboardPaste));
   updateArtworkActionButtons(!!initialArtworkUrl);
 
-  document.getElementById("editSaveGo").addEventListener("click", async ()=>{
-    await commitEditFields();
+  document.getElementById("editSaveGo").addEventListener("click", ()=>{
+    const rest = commitEditFields();
     closeModal(); refreshCurrentView();
-    rewriteFileTagsIfPossible(track.id); // background — the library metadata is already saved either way
+    afterDialog("bgSaving", "bgSaveFailed", async ()=>{
+      await rest();
+      rewriteFileTagsIfPossible(track.id); // background — the library metadata is already saved either way
+    });
   });
   // A format this browser can't play: say so here, with Convert (1.4.070).
   const cantE = trackCantPlay(track.id);
@@ -34003,19 +34457,21 @@ async function openEditLibraryTrack(track, ctx){
     const holder = document.getElementById("editReplaceFile").parentElement;
     const note = document.createElement("div"); note.className = "settings-note"; note.id = "editCantPlayNote"; note.style.margin = "0 0 8px 0"; note.textContent = cantE.note;
     const cb = document.createElement("button"); cb.className = "btn primary"; cb.id = "editConvertNow"; cb.style.marginRight = "8px"; cb.textContent = t("convertItNowBtn");
-    cb.addEventListener("click", async ()=>{ await commitEditFields(); closeModal(); refreshCurrentView(); convertTracks([track.id]); });
+    cb.addEventListener("click", ()=>{ const rest = commitEditFields(); closeModal(); refreshCurrentView(); afterDialog("bgSaving", "bgSaveFailed", async ()=>{ await rest(); convertTracks([track.id]); }); });
     holder.insertBefore(cb, holder.firstChild); holder.insertBefore(note, cb);
   }
-  document.getElementById("editReplaceFile").addEventListener("click", async ()=>{
-    await commitEditFields(); // don't lose in-progress name/artist/album edits when this dialog gets replaced
+  document.getElementById("editReplaceFile").addEventListener("click", ()=>{
+    const rest = commitEditFields(); // don't lose in-progress name/artist/album edits when this dialog gets replaced
     closeModal(); refreshCurrentView();
-    replaceLibraryTrackFile(track);
+    afterDialog("bgSaving", "bgSaveFailed", rest);
+    replaceLibraryTrackFile(track); // at once: the file picker needs the click (its replacing waits its turn after the save)
   });
   const splitBtn = document.getElementById("editSplit");
   if(!(track.duration > SPLIT_MIN_PIECE * 2) || cantE) splitBtn.style.display = "none";
-  splitBtn.addEventListener("click", async ()=>{
-    await commitEditFields(); // kept, as for Replace audio file
+  splitBtn.addEventListener("click", ()=>{
+    const rest = commitEditFields(); // kept, as for Replace audio file
     closeModal(); refreshCurrentView();
+    afterDialog("bgSaving", "bgSaveFailed", rest);
     openSplitter(track, {replace: ctx || null});
   });
   ["editName","editArtist","editAlbum","editTrackNo"].forEach(id=>{
@@ -34117,8 +34573,11 @@ async function replaceLibraryTrackFile(track){
     const newImg = document.createElement("img"); newImg.src = newArtUrl; btns[1].prepend(newImg);
   }
 
-  document.getElementById("replaceConfirmGo").addEventListener("click", async ()=>{
+  document.getElementById("replaceConfirmGo").addEventListener("click", ()=>{
     closeModal();
+    afterDialog("bgReplacing", "bgReplaceFailed", ()=> replaceTrackFileNow());
+  });
+  async function replaceTrackFileNow(){
     await undoKeepFile(track, "audio");
     if(newArtwork && artworkChoice==="new") await undoKeepFile(track, "art");
     await idbPut("audio", {id: track.id, blob: file});
@@ -34143,7 +34602,7 @@ async function replaceLibraryTrackFile(track){
     await saveState();
     refreshCurrentView();
     rewriteFileTagsIfPossible(track.id);
-  });
+  }
 }
 
 /* ===================== Standardize library (background) =====================
@@ -34680,9 +35139,11 @@ let loudnessBusy = false, loudnessUnsaved = 0;
 async function measureTrackLoudness(track){
   const rec = await idbGet("audio", track.id);
   if(!rec || !rec.blob){ track.loudness = {i: null, failed: 1}; return; }
-  if(await tooLongForWholeDecode(rec.blob, track.duration)){
+  const tooLong = await tooLongForWholeDecode(rec.blob, track.duration);
+  if(tooLong || await desktopPiecesFirst(rec.blob)) measured: {
     // Measured a piece at a time (MP3), which also gives a real waveform if
-    // the track only had a stand-in.
+    // the track only had a stand-in. (The desktop app's choice for any
+    // length, desktopPiecesFirst: if the pieces fail, whole as before.)
     try{
       const kind = (await sniffAudioFormat(rec.blob)).kind;
       if(!PIECEWISE_KINDS.includes(kind)){
@@ -34693,7 +35154,7 @@ async function measureTrackLoudness(track){
       const r = await analyzeInPieces(rec.blob, kind);
       track.loudness = r.loudness || {i: null, failed: 1};
       if(isStandInPeaks(track.peaks)) track.peaks = r.peaks;
-    }catch(err){ track.loudness = {i: null, failed: 1}; }
+    }catch(err){ if(!tooLong) break measured; track.loudness = {i: null, failed: 1}; }
     return;
   }
   let ctx = null;
@@ -35106,7 +35567,7 @@ function renderStandardizeListInto(listEl, handlers){
     }
     row.querySelector(".sq-replace").addEventListener("click", ()=> handlers.onReplace(track));
     row.querySelector(".sq-remove").addEventListener("click", ()=>{
-      confirmDeleteTracksFromLibrary([track.id], async ()=>{ await deleteLibraryTracks([track.id]); handlers.onRemoved(); }, row);
+      confirmDeleteTracksFromLibrary([track.id], ()=>{ const done = deleteLibraryTracks([track.id]); handlers.onRemoved(); return done; }, row);
     });
     listEl.appendChild(row);
   });
@@ -35449,8 +35910,6 @@ async function deleteLibraryTracks(trackIds, opts){
   if(tidied.length && pcfg && pcfg.partial && (pcfg.deleteEverywhere || []).some(id=> idSet.has(id)))
     pcfg.deleteEverywhere = [...new Set([...pcfg.deleteEverywhere, ...tidied])];
   root.library = root.library.filter(t=>!idSet.has(t.id));
-  // Their audio is kept a day, so Undo can bring it back (undoTrashPut).
-  for(const id of trackIds) await undoTrashPut(id);
   reconcilePlaybackAfterTreeChange();
   // Deleted tracks obviously can't stay selected, but the artist/album you were
   // browsing should — deleting a track shouldn't dump you back to the whole
@@ -35458,8 +35917,17 @@ async function deleteLibraryTracks(trackIds, opts){
   libSelectedTracks.clear();
   if(opts.clearArtists) libSelectedArtists.clear();
   if(opts.clearAlbums) libSelectedAlbums.clear();
-  await saveState();
+  // The screen shows them gone at once; putting their audio aside (kept a
+  // day, so Undo can bring it back: undoTrashPut) and the save follow, one
+  // track at a time, in afterDialog (2.5.031: until then the dialog closed
+  // and the tracks stayed on screen until all of it had finished). Everything
+  // above runs before this function's first await, so a caller that doesn't
+  // wait for it can redraw its own list straight away.
   refreshCurrentView();
+  return afterDialog("bgDeleting", "bgDeleteFailed", async ()=>{
+    for(const id of trackIds) await undoTrashPut(id);
+    await saveState();
+  });
 }
 async function duplicateLibraryTrack(t){
   const rec = await idbGet("audio", t.id);
@@ -35905,26 +36373,33 @@ function openBulkEditLibraryTracks(trackIds){
     const renumber = renumberOn && !isNaN(start) && start >= 0;
     closeModal();
     if(!artistVal && !albumVal && bulkStagedArtwork===undefined && !renumber) return; // nothing entered or picked — nothing to change
+    // The details at once, the pictures shown at once (the thumbnail cache);
+    // writing the pictures and the save follow in afterDialog (2.5.031: the
+    // list used to wait for every track's picture to be written).
+    const art = bulkStagedArtwork;
+    const artUrl = art ? URL.createObjectURL(art) : null;
     for(const [i, tr] of tracks.entries()){
       if(artistVal) tr.artist = artistVal;
       if(albumVal) tr.album = albumVal;
       if(renumber) tr.trackNo = start + i;
-      if(bulkStagedArtwork !== undefined) await undoKeepFile(tr, "art");
-      if(bulkStagedArtwork === null){
-        await idbDelete("artwork", tr.id);
-        tr.hasArtwork = false;
-      } else if(bulkStagedArtwork){
-        await idbPut("artwork", {id: tr.id, blob: bulkStagedArtwork});
-        tr.hasArtwork = true;
-      }
-      if(bulkStagedArtwork !== undefined){
-        if(artworkUrlCache[tr.id]) URL.revokeObjectURL(artworkUrlCache[tr.id]);
-        delete artworkUrlCache[tr.id];
+      if(art !== undefined){
+        if(artworkUrlCache[tr.id] && artworkUrlCache[tr.id] !== artUrl) URL.revokeObjectURL(artworkUrlCache[tr.id]);
+        if(art) artworkUrlCache[tr.id] = artUrl; else delete artworkUrlCache[tr.id];
       }
     }
-    saveState();
     refreshCurrentView();
-    tracks.forEach(tr=> rewriteFileTagsIfPossible(tr.id));
+    afterDialog("bgSaving", "bgSaveFailed", async ()=>{
+      if(art !== undefined) for(const tr of tracks){
+        await undoKeepFile(tr, "art");
+        if(art === null){ await idbDelete("artwork", tr.id); tr.hasArtwork = false; }
+        else { await idbPut("artwork", {id: tr.id, blob: art}); tr.hasArtwork = true; }
+        delete artworkUrlCache[tr.id]; // read again from what was stored (the shared URL is let go below)
+      }
+      if(artUrl) URL.revokeObjectURL(artUrl);
+      await saveState();
+      refreshCurrentView();
+      tracks.forEach(tr=> rewriteFileTagsIfPossible(tr.id));
+    });
   };
   document.getElementById("bulkEditGo").addEventListener("click", goHandler);
   ["bulkEditArtist","bulkEditAlbum"].forEach(id=>{
@@ -36613,10 +37088,19 @@ function showAudioMissing(libraryId, why){
     openModal(`<h3>${t("sharedAudioArrivingTitle")}</h3><p id="audioMissingBody"></p>
       <div class="modal-actions"><button class="btn primary" data-close>${t("ok")}</button></div>`);
     const name = tr ? tr.name : "?";
+    // Which device has to send it only when the shared library doesn't have
+    // it: a 404 just now ("absent"), or not there at the last check, as the
+    // lists say (sharedMissingNote). 2.5.033, kr37's new Mac, still
+    // downloading: going on to the next track named the phone that had once
+    // sent it, though the file was already in the shared library and arrived
+    // a moment later (the dialog went by who sent it, whatever the server had).
+    const m = sharedTrackMissing(libraryId) || {waiting: why === "absent", from: (tr && tr.audioFrom) || ""};
+    const notThere = why === "absent" || m.waiting, cfg = sharedConfig();
     document.getElementById("audioMissingBody").textContent =
-      why === "fetching" ? t("sharedAudioFetchingBody", {name, size: tr && tr.fileSize ? (tr.fileSize / 1e6).toFixed(1) + " MB" : "…"})
-      : why === "failed" ? t("sharedAudioFetchFailBody", {name})
-      : tr && tr.audioFrom ? t("sharedAudioWaitingFromBody", {name, device: tr.audioFrom})
+      why === "failed" ? t("sharedAudioFetchFailBody", {name})
+      : why === "fetching" || !notThere ? t("sharedAudioFetchingBody", {name, size: tr && tr.fileSize ? (tr.fileSize / 1e6).toFixed(1) + " MB" : "…"})
+      : m.from && cfg && cfg.deviceName && m.from === cfg.deviceName ? t("notHereLostHere", {btn: t("replaceFileBtn")})
+      : m.from ? t("sharedAudioWaitingFromBody", {name, device: m.from})
       : t("sharedAudioArrivingBody", {name});
     return;
   }
@@ -37846,6 +38330,7 @@ if(navigator.serviceWorker) navigator.serviceWorker.addEventListener("message", 
 // Update now: asks the worker for the newest page (saved before the reload,
 // so the reload opens it), then reloads. Without a worker, a plain reload.
 async function updateSiteNow(){
+  if(afterDialogPending) await afterDialogIdle(); // let a closed dialog's save finish first (afterDialog)
   // The desktop app: the shell switches to the newest page, then this reloads into it.
   // It reloads only when the shell really switched (2.5.017): on 15 Nov
   // 2026 the Mac mini's shell refused an incomplete download every time,
@@ -38518,7 +39003,13 @@ function pulseRowById(container, id){
 let modalCloseCallbacks = [];
 function openModal(html, extraClass){
   modalBody.className = "modal" + (extraClass ? " "+extraClass : "");
+  const fresh = !backdrop.classList.contains("show");
   modalBody.innerHTML = html;
+  // A new dialog starts at its top (2.5.034, kr37's Mac, 16 Nov 2026: after
+  // Send feedback, scrolled down to its button, "Sent" showed as an empty
+  // box until a click: WebKit kept the old dialog's scroll on the shorter
+  // new one). A dialog drawn again while open keeps its place.
+  if(fresh) modalBody.scrollTop = 0;
   backdrop.classList.add("show");
   modalBody.querySelectorAll("[data-close]").forEach(b=> b.addEventListener("click", closeModal));
 }
@@ -38542,6 +39033,7 @@ if(window.visualViewport) visualViewport.addEventListener("resize", ()=>{
 function closeModal(){
   backdrop.classList.remove("show");
   modalBody.innerHTML="";
+  modalBody.scrollTop = 0;
   modalCloseCallbacks.forEach(fn=>{ try{ fn(); }catch(err){ console.error(err); } });
   modalCloseCallbacks = [];
   if(pendingSync.library || pendingSync.settings) setTimeout(applyPendingSync, 0);
@@ -39068,7 +39560,7 @@ function cleanupTrackRow(tr, usage, offerReplace){
       used.appendChild(a);
     });
   }
-  row.querySelector('[data-act="remove"]').addEventListener("click", ()=> confirmDeleteTracksFromLibrary([tr.id], async ()=>{ await deleteLibraryTracks([tr.id]); renderSettingsSection(); }, row));
+  row.querySelector('[data-act="remove"]').addEventListener("click", ()=> confirmDeleteTracksFromLibrary([tr.id], ()=>{ const done = deleteLibraryTracks([tr.id]); renderSettingsSection(); return done; }, row));
   const rb = row.querySelector('[data-act="replace"]');
   if(rb) rb.addEventListener("click", async ()=>{ await replaceLibraryTrackFile(tr); });
   return row;
@@ -39468,7 +39960,7 @@ async function renderSettingsSection(fromTimer){
       const all = document.createElement("button");
       all.className = "btn danger"; all.style.margin = "4px 0 12px 0";
       all.textContent = t("removeAllZeroBtn", {n: zero.length});
-      all.addEventListener("click", ()=> confirmDeleteTracksFromLibrary(zero.map(x=>x.id), async ()=>{ await deleteLibraryTracks(zero.map(x=>x.id)); renderSettingsSection(); }));
+      all.addEventListener("click", ()=> confirmDeleteTracksFromLibrary(zero.map(x=>x.id), ()=>{ const done = deleteLibraryTracks(zero.map(x=>x.id)); renderSettingsSection(); return done; }));
       list.appendChild(all);
       const usage = playlistsUsingTracks();
       zero.forEach(tr=>{
@@ -40713,9 +41205,11 @@ function autoBackupActive(){
 // track's details, the whole playlist tree, and storageRev (bumped by every
 // audio/artwork write — see idbPut). Deliberately leaves out playback
 // position and display settings, which never need backing up.
-function libraryFingerprint(){
-  const lib = root.library.map(t=> [t.id, t.name, t.artist, t.album, t.trackNo, t.filename, t.fileSize, t.hasArtwork, t.duration]);
-  return hashString(JSON.stringify([lib, root.tree, root.storageRev||0]));
+// (r: another library's records, for the Trash question: libraryTrashFacts.)
+function libraryFingerprint(r){
+  r = r || root;
+  const lib = r.library.map(t=> [t.id, t.name, t.artist, t.album, t.trackNo, t.filename, t.fileSize, t.hasArtwork, t.duration]);
+  return hashString(JSON.stringify([lib, r.tree, r.storageRev||0]));
 }
 // An empty library never counts as needing a backup — which also means a
 // freshly wiped browser can never overwrite a good backup with nothing.
@@ -45846,6 +46340,9 @@ function playLog(msg){
   document.addEventListener("freeze", ()=> playLog("page frozen by the browser"));
   document.addEventListener("resume", ()=> playLog("page unfrozen"));
   playLog("— 37 Player opened (" + (document.querySelector('meta[name="app-version"]') || {}).content + ") —");
+  // A reload of the window (Update now, switching libraries, or the page's
+  // process having stopped) or a fresh start (2.5.035).
+  try{ const nav = performance.getEntriesByType("navigation")[0]; if(nav && nav.type === "reload") playLog("this start was a reload of the window"); }catch(err){}
   // While playing off screen, a line every minute: shows whether the
   // player's clock kept moving and whether anything changed meanwhile.
   setInterval(()=>{ if(document.hidden && !a.paused) playLog("still playing" + at()); }, 60000);
@@ -45880,7 +46377,9 @@ const LOG_KINDS = {
       "app left the screen / app back on screen: the screen locked or another app came in front, and back.",
       "still playing: written every minute while playing off screen; a gap means the page was stopped.",
       "page frozen / unfrozen: the browser suspended the page to save power.",
-      "— 37 Player opened (version) —: the start of a session."]},
+      "— 37 Player opened (version) —: the start of a session; \"a reload of the window\" when it was one.",
+      "the app's window didn't respond for N s / didn't close normally last time: the desktop app's own watch (shell 2.5.3).",
+      "read whole into the page / written through the app: a big file passed between the page and the desktop app."]},
   sync: {title: "sync log", file: "sync-log", lines: ()=> sharedLogLines,
     glossary: [
       "checked: nothing new / received changes / saved version N: one sync round with the shared library.",
@@ -47469,7 +47968,10 @@ async function sharedUploadFiles(cfg, doc){
       body = rec.blob;
       // Never send a damaged file to everyone (Safari is where they've come
       // from, so it's checked there; reading it through costs little memory).
-      if(j.kind === "audio" && (await audioLooksWrong(body) || (IS_WEBKIT && (await blobReadableBytes(body)) !== body.size))){
+      // Not the desktop app's folders (2.5.035): the fault read through for
+      // is Safari's browser storage, and reading the whole recording just
+      // to check it was one more pass through the page per file sent.
+      if(j.kind === "audio" && (await audioLooksWrong(body) || (IS_WEBKIT && !desktopFolderStore() && (await blobReadableBytes(body)) !== body.size))){
         damagedAudioNote(j.id);
         const dt = findLibraryTrack(j.id);
         sharedLog("not sending “" + ((dt && dt.name) || j.id) + "”: its stored data is damaged (Settings → Library cleanup → Damaged files)");
@@ -47798,6 +48300,8 @@ function sharedNoteDownloadCrash(){
 const SHARED_PIECE_BYTES = 16 * 1024 * 1024;
 function sharedPieceBytes(){ return window.__pieceBytes || SHARED_PIECE_BYTES; }
 async function sharedReceive(cfg, store, name, onTotal){
+  const at = store === "audio" ? await sharedReceivePlace(name, true).catch(()=> null) : null;
+  if(at) return sharedReceiveOnDisk(cfg, store, name, onTotal, at);
   const PIECE = sharedPieceBytes(), keyOf = n=> "dlpart:" + name + ":" + n;
   const keys = [];
   let total = null, type = "", offset = 0;
@@ -47834,6 +48338,69 @@ async function sharedReceive(cfg, store, name, onTotal){
   }
   return {pieceKeys: keys, total: total != null ? total : offset, type};
 }
+/* In the desktop app (2.5.035), a recording's pieces go straight onto the
+   end of one file, "receiving/<name>.part" in the library's own files'
+   folder, which the app then copies into place on the disk. Before, each
+   piece was stored as a file of its own, read back into the page, and the
+   whole recording put together in memory and written out again: three
+   passes through the page, every piece of them through the window's main
+   thread on a Mac, and all of it in memory at the end (kr37's new Mac froze
+   for good receiving a 51 MB recording, report 2026-11-17-021332). Now
+   each piece passes once, and only one piece is ever in memory. A download
+   cut off carries on from what the file holds (its size and type kept in
+   the state record "dlpart:<name>:disk", so sharedDropStalePieces clears
+   both when the file is no longer waiting). */
+async function sharedReceivePlace(name, create){
+  if(STORAGE_KIND !== "desktop" || !(libStore instanceof FolderLibraryStore)) return null;
+  await libStore.open();
+  if(!(libStore.own instanceof DesktopDirHandle)) return null;
+  let dir;
+  try{ dir = await libStore.own.getDirectoryHandle("receiving", {create: !!create}); }catch(err){ if(create) throw err; return null; }
+  return {root: dir.root, path: dir.child(String(name).replace(/[^\w.-]/g, "_") + ".part")};
+}
+async function sharedReceiveOnDisk(cfg, store, name, onTotal, at){
+  const PIECE = sharedPieceBytes(), metaKey = "dlpart:" + name + ":disk";
+  // Pieces of it kept the old way (before 2.5.035): it starts again here.
+  try{ const old = (await libStore.keys("state", "dlpart:" + name + ":")).filter(k=> k !== metaKey); if(old.length) await idbDeleteMany("state", old); }catch(err){}
+  const meta = await idbGet("state", metaKey).catch(()=> null);
+  let total = meta && meta.total != null ? meta.total : null, type = meta && meta.type || "", offset = 0;
+  if(meta){
+    const st = await desktopInvoke("fs_stat", {root: at.root, path: at.path}).catch(()=> null);
+    offset = st && st.kind === "file" ? st.size : 0;
+    if(total != null) onTotal(total);
+  } else await desktopInvoke("fs_remove", {root: at.root, path: at.path, recursive: false}).catch(()=>{}); // a file without its note: afresh
+  if(total != null && offset > total){ await desktopInvoke("fs_remove", {root: at.root, path: at.path, recursive: false}).catch(()=>{}); offset = 0; }
+  let noted = !!meta;
+  for(let n = 0; total == null || offset < total; n++){
+    if(n > 0 || offset > 0) await sharedWaitForTransfers(); // between pieces too: not while anything plays
+    const res = await sharedFetch(cfg, {op: "file", kind: store, name}, {headers: {Range: "bytes=" + offset + "-" + (offset + PIECE - 1)}});
+    if(res.status === 416 && offset > 0) break; // asked past the end: the last piece was exactly full
+    if(!res.ok) throw new Error("download " + res.status);
+    if(res.status !== 206){
+      // The whole file, not a piece: read as before.
+      if(offset > 0) throw new Error("the server stopped sending pieces");
+      const len = +(res.headers.get("Content-Length") || 0) || 0;
+      if(len) onTotal(len);
+      return {blob: await res.blob()};
+    }
+    const m = /\/(\d+)\s*$/.exec(res.headers.get("Content-Range") || "");
+    if(m && total == null){ total = +m[1]; onTotal(total); }
+    type = type || res.headers.get("Content-Type") || "";
+    if(offset === 0 && total != null && total <= PIECE) return {blob: await res.blob()}; // all of it in one
+    const bytes = new Uint8Array(await res.arrayBuffer());
+    if(offset === 0 && total == null && bytes.length < PIECE) return {blob: new Blob([bytes], {type})};
+    if(!noted){ await idbPut("state", {key: metaKey, total, type}); noted = true; }
+    for(let i = 0; i < bytes.length; i += DISK_READ_PIECE)
+      await desktopInvoke("fs_write", bytes.slice(i, i + DISK_READ_PIECE), {headers: {"p37-root": encodeURIComponent(at.root), "p37-path": encodeURIComponent(at.path), "p37-append": "1"}});
+    offset += bytes.length;
+    if(bytes.length < PIECE) break;
+  }
+  return {diskFile: at, total: total != null ? total : offset, type, metaKey};
+}
+async function sharedDropDiskDownload(got){
+  try{ await desktopInvoke("fs_remove", {root: got.diskFile.root, path: got.diskFile.path, recursive: false}); }catch(err){}
+  try{ await idbDeleteMany("state", [got.metaKey]); }catch(err){}
+}
 async function sharedReadPieces(keys){
   const out = [];
   for(const k of keys){
@@ -47848,8 +48415,14 @@ async function sharedDropStalePieces(pending){
   try{
     const keys = await libStore.keys("state", "dlpart:");
     const live = new Set([...Object.entries(pending.audio).map(([id, rev])=> id + "." + rev), ...Object.entries(pending.art).map(([id, rev])=> id + "." + rev)]);
-    const stale = keys.filter(k=> !live.has(String(k).slice(7).replace(/:\d+$/, "")));
+    const stale = keys.filter(k=> !live.has(String(k).slice(7).replace(/:(\d+|disk)$/, "")));
     if(stale.length) await idbDeleteMany("state", stale);
+    // And the desktop app's files being received for them (2.5.035).
+    for(const k of stale){
+      if(!/:disk$/.test(k)) continue;
+      const at = await sharedReceivePlace(String(k).slice(7).replace(/:disk$/, ""), false).catch(()=> null);
+      if(at) await desktopInvoke("fs_remove", {root: at.root, path: at.path, recursive: false}).catch(()=>{});
+    }
   }catch(err){}
 }
 async function sharedFetchFileOnce(cfg, kind, id){
@@ -47873,13 +48446,26 @@ async function sharedFetchFileOnce(cfg, kind, id){
     // Put together from the pieces as stored, so they're read from storage
     // rather than all held in memory at once.
     const pieces = got.pieceKeys ? await sharedReadPieces(got.pieceKeys) : null;
-    blob = got.blob || new Blob(pieces, {type: got.type || ""});
+    if(got.diskFile){
+      // The desktop app's: all of it in one file already, which the app
+      // copies into place (sharedReceiveOnDisk). Every byte must be there.
+      const st = await desktopInvoke("fs_stat", {root: got.diskFile.root, path: got.diskFile.path}).catch(()=> null);
+      if(!st || st.size !== got.total){
+        await sharedDropDiskDownload(got); // the next try starts afresh
+        const e = new Error("received, it came out as " + (st ? st.size : "no") + " bytes instead of " + got.total); e.assembled = true; throw e;
+      }
+      const plain = new DiskBlob(got.diskFile.root, got.diskFile.path, got.total, "", "", Date.now());
+      const f = await sniffAudioFormat(plain, trackFileName(id)).catch(()=> null);
+      blob = new DiskBlob(got.diskFile.root, got.diskFile.path, got.total, f && f.mime && f.mime !== "application/octet-stream" ? f.mime : "", "", Date.now());
+      blob.whole = true;
+    }
+    else blob = got.blob || new Blob(pieces, {type: got.type || ""});
     // A file that already starts with Safari's pattern as it comes from the
     // shared library (an MP3 with two tags in a row, which still plays) is
     // taken as it is: refusing it changed nothing and left it missing on
     // this device for good (1.4.082, four files on kr37's iPad).
     const doubledAlready = pieces && pieces.length ? await looksDoubled(pieces[0]) : false;
-    const before = got.pieceKeys ? await idbGet(store, id).catch(()=> null) : null;
+    const before = got.pieceKeys || got.diskFile ? await idbGet(store, id).catch(()=> null) : null;
     syncWritingFiles = true;
     // Downloaded but not stored (a full device): marked, so the pass stops
     // instead of downloading it again every 30 seconds.
@@ -47903,6 +48489,7 @@ async function sharedFetchFileOnce(cfg, kind, id){
       }
       idbDeleteMany("state", got.pieceKeys).catch(()=>{});
     }
+    if(got.diskFile) await sharedDropDiskDownload(got); // copied into place: the received file goes
   } finally {
     try{ localStorage.removeItem(DOWNLOADING_KEY); }catch(err){}
   }
@@ -47946,7 +48533,8 @@ async function sharedEnsureAudioWithin(id, ms){
   const pending = await sharedLoadPending();
   if(pending.audio[id] === undefined) return "here";
   const p = sharedFetchFile(cfg, "audio", id).then(
-    ()=> pending.audio[id] === undefined ? "here" : "absent",
+    // Fetched, yet still not here: "absent" only if the shared library didn't have it (2.5.033).
+    ()=> pending.audio[id] === undefined ? "here" : sharedNotOnServer.has(id) ? "absent" : "fetching",
     err=> /\b404\b/.test(err && err.message || "") || sharedNotOnServer.has(id) ? "absent" : "failed");
   return Promise.race([p, new Promise(r=> setTimeout(()=> r("fetching"), ms))]);
 }
@@ -50903,6 +51491,7 @@ function restorePlace(){
 }
 async function switchLibrary(id){
   if(id === LIBRARY_ID) return;
+  if(afterDialogPending) await afterDialogIdle(); // its writes go to this library (afterDialog)
   const target = libraryEntry(id);
   if(!target) return;
   // Any of 37 Player's players (Edit Playlists' too: kr37 on the HP,
@@ -51092,7 +51681,75 @@ async function deleteLibraryBackupFolder(dir, copyId){
 // Removes a library from this device. Never the open one (switch first).
 // The first library's database is emptied rather than deleted, because it
 // also holds this device's converter.
-async function deleteLibrary(id){
+/* ---- Removing a library can move its folder to the Trash (2.5.032, shell
+   2.5.2; kr37, 16 Nov 2026: "Remove local library files from disk (20
+   playlists, 300 tracks, 4.5 GB)", with a second, stern question). Only in
+   the desktop app (a web page can't use the Trash, only delete outright),
+   only with a shell that says it can (desktopShell.trash), and to the Trash
+   or Recycle Bin, never deleted outright, so a mistaken yes can be undone.
+   Only the library's own folder goes: files used in place (the person's own,
+   where they lie) are outside it and stay, and the question says how many.
+   How stern the second question is follows what would be lost, worked out
+   from the library's own records with no connection needed: everything also
+   in its shared library (its "sharedCovered" fingerprint matches the library
+   as it is: sharedNoteCovered) is a calm note; joined but not all of it sent
+   when it was last open, stern; not shared and no backup with all of it
+   (the backup record's lastFingerprint), sternest ("the only copy"). */
+async function libraryTrashFacts(id){
+  const out = {playlists: 0, tracks: 0, place: 0, bytes: null, shared: null, covered: false, backupAt: null, backupAll: false};
+  const d = storageOpen(id);
+  try{
+    const rec = await d.get("state", "root").catch(()=> null);
+    const view = await d.get("state", "view").catch(()=> null);
+    const r = rec && rec.value;
+    if(r && Array.isArray(r.library)){
+      out.tracks = r.library.length;
+      (function walk(nodes){ (nodes || []).forEach(n=>{ if(n.kind === "playlist") out.playlists++; else walk(n.children); }); })(r.tree);
+      const fp = libraryFingerprint({library: r.library, tree: r.tree || [], storageRev: r.storageRev});
+      const settings = (view && view.value && view.value.settings) || r.settings || {};
+      const cfg = settings.sharedLibrary;
+      if(cfg){
+        out.shared = cfg.libraryName || cfg.name || t("libDefaultName");
+        const cov = await d.get("state", "sharedCovered").catch(()=> null);
+        out.covered = !!(cov && cov.fingerprint === fp);
+      }
+      const bk = await d.get("state", "backup").catch(()=> null);
+      if(bk && bk.lastBackupAt){ out.backupAt = bk.lastBackupAt; out.backupAll = bk.lastFingerprint === fp; }
+    }
+    try{ if(d.placeRefs) out.place = (await d.placeRefs()).size; }catch(err){}
+  } finally { try{ d.close(); }catch(err){} }
+  try{ const info = await desktopInvoke("fs_root_trash", {id: desktopRootOf(id), dry: true}); if(info && info.present) out.bytes = info.bytes; }catch(err){ out.error = errText(err); }
+  return out;
+}
+function canTrashLibraries(){ return STORAGE_KIND === "desktop" && !!(desktopShell && desktopShell.trash); }
+function trashWord(key, vars){ return t(deviceOs() === "windows" ? key + "Win" : key, vars); } // Trash or Recycle Bin
+// The second question (libraryTrashFacts), then the folder to the Trash.
+async function trashLibraryAsked(l){
+  const name = libraryDisplayName(l);
+  showToast(t("libTrashLooking"));
+  const f = await libraryTrashFacts(l.id);
+  const esc = escapeHtmlText;
+  const what = t("libTrashWhat", {playlists: f.playlists === 1 ? t("libTrashPlOne") : t("libTrashPl", {n: f.playlists}), tracks: f.tracks === 1 ? t("libTrashTrOne") : t("libTrashTr", {n: f.tracks}), size: fmtBytes(f.bytes)});
+  // How much would be lost: calm, stern or sternest (the strip in red).
+  let risk, stern;
+  if(f.shared){ stern = !f.covered; risk = t(f.covered ? "libTrashShared" : "libTrashSharedNotAll", {shared: f.shared}); }
+  else if(f.backupAt && f.backupAll){ stern = false; risk = t("libTrashBackup", {date: fmtDate(f.backupAt)}); }
+  else if(f.backupAt){ stern = true; risk = t("libTrashOldBackup", {date: fmtDate(f.backupAt)}); }
+  else { stern = true; risk = t("libTrashOnlyCopy"); }
+  const body = `<p>${esc(what)}</p>`
+    + (stern ? `<p class="trash-risk">${esc(risk)}</p>` : `<p>${esc(risk)}</p>`)
+    + (f.place ? `<p>${esc(t("libTrashPlace", {n: f.place}))}</p>` : "")
+    + `<p class="settings-note">${esc(trashWord("libTrashUndo"))}</p>`;
+  const go = await askChoice(trashWord("libTrashTitle", {name}), body,
+    [{label: t("cancel"), value: null, kind: "primary"}, {label: trashWord("libTrashGo"), value: "trash", kind: "danger"}]);
+  if(go !== "trash") return;
+  const res = await deleteLibrary(l.id, {trash: true});
+  updateLibrarySwitch();
+  renderSettingsSection();
+  if(res && res.trashError) await askChoice(trashWord("libTrashTitle", {name}), `<p>${esc(t("libTrashFailed", {name, error: res.trashError}))}</p>`, [{label: t("ok"), value: null, kind: "primary"}]);
+  else showToast(trashWord("libTrashDone", {name}));
+}
+async function deleteLibrary(id, opts){
   if(id === LIBRARY_ID) return;
   const reg = readLibraryList();
   if(!reg.list.some(l=> l.id === id)) return;
@@ -51112,7 +51769,13 @@ async function deleteLibrary(id){
   // records and recordings stay (2.4.003: the first library went through
   // the clearing below, which emptied its folder's records; found while
   // answering kr37's "would that delete any audio?", 13 Nov 2026).
-  if(libraryInDesktopFolder(id)){ await storageRemove(id); return; }
+  if(libraryInDesktopFolder(id)){
+    // To the Trash, if asked (libraryTrashFacts), once other windows have let go of it.
+    let trashError = null;
+    if(opts && opts.trash){ try{ await desktopInvoke("fs_root_trash", {id: desktopRootOf(id), dry: false}); desktopRootsCache = null; }catch(err){ trashError = errText(err); } }
+    await storageRemove(id);
+    return {trashError};
+  }
   if(id === MAIN_LIBRARY_ID){
     // Everything but the converter (backup and libraryInfo go too).
     const d = storageOpen(MAIN_LIBRARY_ID);
@@ -51206,14 +51869,16 @@ function renderLibrariesSection(body){
         // forgotten: its folder and recordings stay, and the wording says so
         // (2.4.003, kr37, 13 Nov 2026: "would that delete any audio?").
         const kept = !!l.folder || libraryInDesktopFolder(l.id);
+        const trashable = kept && canTrashLibraries();
         const asked = askChoice(t(kept ? "libForgetTitle" : "libDeleteTitle", {name: libraryDisplayName(l)}), `<p>${escapeHtmlText(t(kept ? "libForgetBody" : "libDeleteBody"))}</p>`
           + (folder ? `<label class="join-partial" style="font-weight:normal;"><input type="checkbox" id="libDelBackup"> ${escapeHtmlText(t("libDeleteBackupCheck", {folder: folder.name}))}</label>` : "")
           + (hadFiles ? `<p class="settings-note">${escapeHtmlText(t("libDeleteBackupFiles", {name: fileSlug(libraryDisplayName(l)) || "…"}))}</p>` : "")
           + (l.folder ? `<p class="settings-note">${escapeHtmlText(t("folderLibDeleteNote", {name: l.folder}))}</p>` : ""),
-          [{label: t(kept ? "libForgetConfirmBtn" : "libDeleteConfirmBtn"), value: "delete", kind: "danger"}, {label: t("cancel"), value: null}]);
+          [{label: t(kept ? "libForgetConfirmBtn" : "libDeleteConfirmBtn"), value: "delete", kind: "danger"}].concat(trashable ? [{label: trashWord("libTrashBtn"), value: "trash", kind: "danger"}] : []).concat([{label: t("cancel"), value: null}]));
         const box = document.getElementById("libDelBackup");
         if(box) box.addEventListener("change", ()=>{ wantBackup = box.checked; });
         const ok = await asked;
+        if(ok === "trash"){ await trashLibraryAsked(l); return; }
         if(ok !== "delete") return;
         // Asked for straight away, while the click still counts as the person's.
         let allowed = false;
@@ -51532,7 +52197,7 @@ if(IN_DESKTOP_APP){
   window.addEventListener("resize", fitHeight);
 }
 const DESKTOP_BRIDGE_NEEDED = +((document.querySelector('meta[name="desktop-bridge"]') || {}).content || 1);
-let desktopShell = null; // {version, bridge, pages, device, updates, zoom, files_http}
+let desktopShell = null; // {version, bridge, pages, device, updates, zoom, trash (2.5.2), watch (2.5.3), append_range (2.5.3), files_http}
 async function desktopShellCheck(){
   if(!IN_DESKTOP_APP || !window.__TAURI__ || !window.__TAURI__.core) return;
   try{ desktopShell = await window.__TAURI__.core.invoke("p37_shell_info"); }catch(err){ desktopShell = {version: "?", bridge: 0}; }
@@ -51540,16 +52205,33 @@ async function desktopShellCheck(){
   try{ if(desktopShell.zoom) localStorage.setItem(SHELL_ZOOM_KEY, "1"); else localStorage.removeItem(SHELL_ZOOM_KEY); }catch(err){}
   try{ applyDisplaySettings(); }catch(err){}
   try{ desktopPlayerDiagnostics(); }catch(err){}
+  if(desktopShell.watch) desktopWatchPoll();
   // Which tracks are used in place, read ahead of the first Play (placeAwarePlay).
   setTimeout(()=>{ try{ if(STORAGE_KIND === "desktop" && libStore && libStore.placeRefs) libStore.placeRefs().catch(()=>{}); }catch(err){} }, 2500);
   if((desktopShell.bridge || 0) < DESKTOP_BRIDGE_NEEDED)
     askChoice(t("desktopShellOldTitle"), `<p>${escapeHtmlText(t("desktopShellOldBody", {shell: desktopShell.version}))}</p>`, [{label: t("ok"), value: null, kind: "primary"}]);
+}
+/* What the app saw that the page can't (shell 2.5.3, watch.rs; 2.5.035): its
+   window not answering for over 2 s (the spinning wheel on a Mac), and how
+   the session before ended. Asked at the start and every 20 s; each comes
+   once, into the playback log, so a feedback report carries it. */
+const DESKTOP_WATCH_MS = 20000;
+async function desktopWatchPoll(){
+  try{
+    const r = await window.__TAURI_INTERNALS__.invoke("p37_watch");
+    const hm = ms=> new Date(ms).toLocaleTimeString();
+    const last = r && r.last_session;
+    if(last) playLog("37 Player didn't close normally last time (app " + last.version + ", last seen running at " + new Date(last.alive).toLocaleString() + ")" + (last.panic ? "; it stopped on an error: " + last.panic : ""));
+    for(const s of (r && r.stalls) || []) playLog("the app's window didn't respond for " + Math.round(s.ms / 1000) + " s, from " + hm(s.at) + (s.focused ? "" : " (in the background)"));
+  }catch(err){ console.warn("p37_watch:", err); }
+  setTimeout(desktopWatchPoll, DESKTOP_WATCH_MS);
 }
 function closingWouldStop(){
   const out = [];
   if(playingHere()) out.push(t("closeStopsPlaying"));
   if(sharedUploading && sharedStatus.transfer && sharedStatus.transfer.kind === "up") out.push(t("closeStopsSending"));
   if(copyRunning) out.push(t("closeStopsCopy"));
+  if(afterDialogPending) out.push(t("closeStopsSaving"));
   return out;
 }
 /* The page updates itself (1.4.182; desktop/PAGE-UPDATES.md). A shell
