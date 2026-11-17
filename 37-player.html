@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.5.039">
+<meta name="app-version" content="2.5.040">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -1797,6 +1797,23 @@
   .playing-toolbar-toggle svg{ width:17px; height:17px; fill:none; stroke:currentColor; stroke-width:2.6; stroke-linecap:round; stroke-linejoin:round; }
   .playing-toolbar-toggle:hover{ background:var(--ctl-hover-bg, var(--bg-panel)); border-color:var(--ctl-hover-border, var(--line)); }
   .playing-toolbar-toggle:focus-visible{ outline:2px solid var(--active-bg, var(--text)); outline-offset:2px; }
+  /* Scrollbars always shown (2.5.040; kr37, 17 Nov 2026: scrollbars that
+     appear only while scrolling, the Mac's default, hide from less
+     practised people that a list goes on). Drawn by 37 Player, thin and
+     in the theme's colours, in every scrolling list, dialog and page;
+     only with a mouse or trackpad (phones and tablets keep their own). The
+     system setting and other apps are untouched. WebKit and Chrome draw
+     ::-webkit-scrollbar and keep it shown; Firefox takes the standard
+     properties (set only there: in Chrome they'd replace these). */
+  @media (hover:hover) and (pointer:fine){
+    ::-webkit-scrollbar{ width:11px; height:11px; }
+    ::-webkit-scrollbar-track{ background:transparent; }
+    ::-webkit-scrollbar-thumb{ background-color:var(--scroll-thumb, #5E6578); border:2px solid transparent; background-clip:padding-box; border-radius:7px; min-height:36px; }
+    ::-webkit-scrollbar-thumb:hover{ background-color:var(--scroll-thumb-hover, #7A8194); }
+    ::-webkit-scrollbar-corner{ background:transparent; }
+    @supports (-moz-appearance:none){ *{ scrollbar-width:thin; scrollbar-color:var(--scroll-thumb, #5E6578) transparent; } }
+  }
+  body.theme-light{ --scroll-thumb:#BDB291; --scroll-thumb-hover:#9A8F70; }
 </style>
 </head>
 <body>
@@ -5309,6 +5326,7 @@ const STRINGS = {
     "histSumOrder": "order changed",
     "histShowLegend": "What to show",
     "histOtherAudio": "different audio",
+    "histOtherSize": "file size changed",
     "histOtherArt": "different artwork",
     "histOtherDetails": "different details",
     "histItemSilence": "Silence · {time}",
@@ -7389,6 +7407,7 @@ const STRINGS = {
     "histSumOrder": "orden cambiado",
     "histShowLegend": "Qué mostrar",
     "histOtherAudio": "otro audio",
+    "histOtherSize": "tamaño del archivo cambiado",
     "histOtherArt": "otra imagen",
     "histOtherDetails": "otros datos",
     "histItemSilence": "Silencio · {time}",
@@ -9468,6 +9487,7 @@ const STRINGS = {
     "histSumOrder": "ordre modifié",
     "histShowLegend": "Ce qu'il faut afficher",
     "histOtherAudio": "autre audio",
+    "histOtherSize": "taille du fichier modifiée",
     "histOtherArt": "autre illustration",
     "histOtherDetails": "autres détails",
     "histItemSilence": "Silence · {time}",
@@ -11547,6 +11567,7 @@ const STRINGS = {
     "histSumOrder": "ordem alterada",
     "histShowLegend": "O que mostrar",
     "histOtherAudio": "outro áudio",
+    "histOtherSize": "tamanho do ficheiro alterado",
     "histOtherArt": "outra arte",
     "histOtherDetails": "outros detalhes",
     "histItemSilence": "Silêncio · {time}",
@@ -13626,6 +13647,7 @@ const STRINGS = {
     "histSumOrder": "Reihenfolge geändert",
     "histShowLegend": "Was angezeigt wird",
     "histOtherAudio": "anderes Audio",
+    "histOtherSize": "Dateigröße geändert",
     "histOtherArt": "anderes Cover",
     "histOtherDetails": "andere Angaben",
     "histItemSilence": "Stille · {time}",
@@ -15705,6 +15727,7 @@ const STRINGS = {
     "histSumOrder": "顺序已更改",
     "histShowLegend": "显示内容",
     "histOtherAudio": "不同的音频",
+    "histOtherSize": "文件大小已更改",
     "histOtherArt": "不同的封面",
     "histOtherDetails": "不同的详细信息",
     "histItemSilence": "静音 · {time}",
@@ -17784,6 +17807,7 @@ const STRINGS = {
     "histSumOrder": "đổi thứ tự",
     "histShowLegend": "Hiển thị gì",
     "histOtherAudio": "âm thanh khác",
+    "histOtherSize": "kích thước tệp đã thay đổi",
     "histOtherArt": "ảnh bìa khác",
     "histOtherDetails": "thông tin khác",
     "histItemSilence": "Im lặng · {time}",
@@ -19863,6 +19887,7 @@ const STRINGS = {
     "histSumOrder": "άλλαξε η σειρά",
     "histShowLegend": "Τι να εμφανίζεται",
     "histOtherAudio": "άλλος ήχος",
+    "histOtherSize": "άλλαξε το μέγεθος του αρχείου",
     "histOtherArt": "άλλο εξώφυλλο",
     "histOtherDetails": "άλλα στοιχεία",
     "histItemSilence": "Σιωπή · {time}",
@@ -21942,6 +21967,7 @@ const STRINGS = {
     "histSumOrder": "ordine modificato",
     "histShowLegend": "Cosa mostrare",
     "histOtherAudio": "audio diverso",
+    "histOtherSize": "dimensione del file cambiata",
     "histOtherArt": "copertina diversa",
     "histOtherDetails": "dettagli diversi",
     "histItemSilence": "Silenzio · {time}",
@@ -44992,11 +45018,20 @@ document.addEventListener("keydown",(e)=>{
       selectedB.forEach(id=> pulseRowById(document.getElementById("editorColB"), id));
       const arr = getPaneItemsArray("B");
       if(arr){
+        // The item that takes the deleted ones' place is selected next, or
+        // the one above when they were last (2.5.040, kr37: deleting stops
+        // one after another, nothing stayed selected).
+        const order = paneOrderedIds("B"), first = order.findIndex(id=> selectedB.has(id));
+        const rest = order.filter(id=> !selectedB.has(id));
+        const next = rest.length ? rest[Math.min(Math.max(first, 0), rest.length - 1)] : null;
         const kept = arr.filter(it=>!selectedB.has(it.id));
         arr.length = 0; arr.push(...kept);
         selectedB.clear();
+        if(next != null){ selectedB.add(next); lastAnchorB = next; selectionCursor.set(selectedB, next); }
         saveState(); renderEditorScreen();
         e.preventDefault();
+        const rowEl = next != null && document.getElementById("editorColB")?.querySelector(`[data-id="${CSS.escape(String(next))}"]`);
+        if(rowEl) rowEl.scrollIntoView({block: "nearest"});
       }
     }
   } else if(e.key==="Enter"){
@@ -49323,17 +49358,21 @@ function histComputeRows(){
   const now = st.rbNow = st.sel < 0 ? st.localNow : st.nowDoc;
   st.rows = st.thenDoc && now ? syncReviewRows(now, now, st.thenDoc).rows : [];
 }
-// A new recording file that's only the old one with new details written
-// into it (2.5.039; kr37, 17 Nov 2026: renaming "07 The Tsog Offering"
-// showed "different audio", and days of adding missing artwork showed
-// many). Renaming a track or changing its artwork writes the details into
-// the file, so the file, and its revision, is new. When the name, artist,
-// album or artwork changed too and the length is the same (within half a
-// second), "different audio" isn't said: the change shown explains it.
-function histJustRetagged(a, b, otherArt){
-  if(!a || !b) return false;
-  const shown = otherArt || (a.name || "") !== (b.name || "") || (a.artist || "") !== (b.artist || "") || (a.album || "") !== (b.album || "");
-  return shown && a.duration > 0 && b.duration > 0 && Math.abs(a.duration - b.duration) < 0.5;
+// What History says of a track whose recording file is new (a new audio
+// revision): kr37, 17 Nov 2026, renaming "07 The Tsog Offering" showed
+// "different audio", which says the sound changed; a rename or new artwork
+// writes the details into the file, so the file is new but the sound
+// isn't. "Different audio" only when the length differs (by half a second
+// or more), or nothing else is known; when the name, artist, album or
+// artwork changed too, that's what's shown; otherwise "file size changed"
+// if it did. Returns the string's key, or null to say nothing.
+function histAudioWord(a, b, otherArt){
+  if(!a || !b) return "histOtherAudio";
+  const known = a.duration > 0 && b.duration > 0;
+  if(known && Math.abs(a.duration - b.duration) >= 0.5) return "histOtherAudio";
+  if(otherArt || (a.name || "") !== (b.name || "") || (a.artist || "") !== (b.artist || "") || (a.album || "") !== (b.album || "")) return null;
+  if(a.fileSize > 0 && b.fileSize > 0 && a.fileSize !== b.fileSize) return "histOtherSize";
+  return known ? null : "histOtherAudio";
 }
 // A save's summary in words (what each version says it changed).
 function histSummaryText(w){
@@ -49554,7 +49593,8 @@ function histRollTracks(st){
   const status = x=>{
     if(!x.D) return "del"; if(!x.B) return "add";
     const fb = syncTrackFields(x.B), fd = syncTrackFields(x.D), words = [];
-    if(!syncEq(fb["#audio"], fd["#audio"]) && !histJustRetagged(x.B, x.D, !syncEq(fb["#art"], fd["#art"]))) words.push(t("histOtherAudio"));
+    const aw = !syncEq(fb["#audio"], fd["#audio"]) ? histAudioWord(x.B, x.D, !syncEq(fb["#art"], fd["#art"])) : null;
+    if(aw) words.push(t(aw));
     if(!syncEq(fb["#art"], fd["#art"])) words.push(t("histOtherArt"));
     if(Object.keys(Object.assign({}, fb, fd)).some(k=> k[0] !== "#" && !skip.has(k) && !syncEq(fb[k], fd[k]))) words.push(t("histOtherDetails"));
     const sf = st.stepFiles && st.stepFiles.get(x.id);
@@ -49950,7 +49990,8 @@ function bbCompareHtml(st){
       // is a new audioRev; artwork; any other detail, such as volume.
       const mn = syncMeaningTrack(now), mb = syncMeaningTrack(then), words = [];
       const otherArt = mn.artRev !== mb.artRev || !!mn.hasArtwork !== !!mb.hasArtwork;
-      if(mn.audioRev !== mb.audioRev && !histJustRetagged(now, then, otherArt)) words.push(t("histOtherAudio"));
+      const aw = mn.audioRev !== mb.audioRev ? histAudioWord(now, then, otherArt) : null;
+      if(aw) words.push(t(aw));
       if(otherArt) words.push(t("histOtherArt"));
       const skip = new Set(["name", "artist", "album", "audioRev", "artRev", "hasArtwork"]);
       if(Object.keys(Object.assign({}, mn, mb)).some(f=> !skip.has(f) && !syncEq(mn[f], mb[f]))) words.push(t("histOtherDetails"));
