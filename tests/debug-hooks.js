@@ -33,6 +33,7 @@ window.openSetupGuideForTest = ()=>{ openSetupGuide(); };
 window.__dropAudio = (id)=> libStore.del("audio", [id]);
 // playback
 window.__play = (id)=>playItem(id);
+window.__nextReady = ()=> nextReadyId; // nextready.js
 window.__pause = ()=> togglePlay();
 window.__aud = ()=>({src: audioEl.src, paused: audioEl.paused, t: audioEl.currentTime, rs: audioEl.readyState, ns: audioEl.networkState, err: audioEl.error ? audioEl.error.code + " " + (audioEl.error.message || "") : null});
 window.__st = ()=>({src: audioEl.src, paused: audioEl.paused, t: audioEl.currentTime, d: audioEl.duration, rs: audioEl.readyState, ns: audioEl.networkState, err: audioEl.error ? audioEl.error.code + " " + (audioEl.error.message || "") : null,

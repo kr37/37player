@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.5.035">
+<meta name="app-version" content="2.5.036">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -37155,10 +37155,57 @@ let retiredAudioUrls = [];
 // the item being worked on (never more than the total). Lines in the past
 // tense ("Imported 2 of 3") keep counting finished ones.
 function workingOn(done, total){ return Math.max(1, Math.min((done || 0) + 1, total || 0)); }
+/* The next track ready before it's needed (2.5.036; kr37, 16 Nov 2026,
+   from the plan for steady playing: "a very easy-to-understand concept").
+   A few seconds after an item starts, the next track in the playlist
+   (past silences, not past a stop) is read and its address made, as
+   playing it would, so the move on at the end of a track needs nothing
+   from the storage or the disk at that moment, whatever else the window
+   is busy with. Only a track already on this device: never a download
+   during playback. Its address is kept through releaseUnusedAudioUrls
+   until it's played or another is made ready; the start line says
+   ", ready ahead" when it was used. One track at a time, so at most one
+   more recording in memory (and none for the desktop app's big files or
+   its Linux local address, which aren't read into the page). */
+const NEXT_READY_AFTER_MS = window.__nextReadyMs != null ? window.__nextReadyMs : 5000;
+let nextReadyTimer = null, nextReadyId = null, nextReadyUrl = null;
+function prepareNextTrackSoon(itemId){
+  clearTimeout(nextReadyTimer);
+  nextReadyTimer = setTimeout(()=>{ nextReadyTimer = null; prepareNextTrack(itemId).catch(err=> console.warn("Next track not made ready:", err)); }, NEXT_READY_AFTER_MS);
+}
+function nextTrackAfter(itemId){
+  const ctx = findPlayingContext(); if(!ctx || ctx.orphan) return null;
+  const items = sortedItems(ctx.playlist), idx = items.findIndex(x=> x.id === itemId);
+  if(idx < 0) return null;
+  for(let i = idx + 1; i < items.length; i++){
+    if(items[i].kind === "stop") return null;
+    if(items[i].kind === "track") return items[i];
+  }
+  return null;
+}
+async function prepareNextTrack(itemId){
+  if(itemId !== currentItemId) return; // moved on meanwhile
+  const next = nextTrackAfter(itemId);
+  if(!next || !next.refId || next.refId === (findItemContext(itemId) || {}).item?.refId) return;
+  const id = next.refId;
+  if(nextReadyId === id && objectUrlCache[id]) return;
+  if(trackCantPlay(id)) return;
+  const cfg = sharedConfig();
+  if(cfg){ const pending = await sharedLoadPending(); if(pending.audio[id] !== undefined) return; } // not here yet: no download now
+  if(placeOfTrack(id)){ const r = await placeFileThere(id).catch(()=> null); if(!r || !r.there) return; } // a drive not plugged in: said when it's played
+  if(itemId !== currentItemId) return;
+  // The one made ready before, if it isn't this one or the playing one, goes.
+  const playingId = (findItemContext(currentItemId) || {}).item?.refId;
+  if(nextReadyId && nextReadyId !== id && nextReadyId !== playingId && objectUrlCache[nextReadyId]){ URL.revokeObjectURL(objectUrlCache[nextReadyId]); delete objectUrlCache[nextReadyId]; }
+  const url = await getPlayableAudioUrl(id);
+  // (Kept only where it's kept in memory: the Linux app's local address isn't, so there's nothing to make ready.)
+  const kept = !!url && objectUrlCache[id] === url;
+  nextReadyId = kept ? id : null; nextReadyUrl = kept ? url : null;
+}
 function releaseUnusedAudioUrls(keepId){
   retiredAudioUrls = retiredAudioUrls.filter(u=>{ if(audioEl.src === u) return true; URL.revokeObjectURL(u); return false; });
   for(const id of Object.keys(objectUrlCache)){
-    if(id !== keepId){
+    if(id !== keepId && id !== nextReadyId){
       URL.revokeObjectURL(objectUrlCache[id]);
       delete objectUrlCache[id];
     }
@@ -37279,7 +37326,8 @@ async function activateItem(itemId, autoplay){
   }
   // (How the recording reaches the player, for the Linux app's troubles: never the address itself, which holds a secret.)
   const reach = !url ? "" : isDesktopHttpUrl(url) ? ", from the app's local address" : /^blob:/.test(url) ? ", from memory" : /^p37lib:/.test(url) ? ", from the app's file address" : "";
-  if(autoplay) playLog("start " + (item.kind === "track" ? "“" + ((findLibraryTrack(item.refId) || {}).name || "?") + "”" + (IN_DESKTOP_APP ? reach : "") : item.kind) + (document.hidden ? " (app not on screen)" : ""));
+  const ready = item.kind === "track" && nextReadyId === item.refId && nextReadyUrl === url ? ", ready ahead" : "";
+  if(autoplay) playLog("start " + (item.kind === "track" ? "“" + ((findLibraryTrack(item.refId) || {}).name || "?") + "”" + (IN_DESKTOP_APP ? reach : "") + ready : item.kind) + (document.hidden ? " (app not on screen)" : ""));
   stopPlayback();
   currentItemId = itemId;
   // Only clear the highlight if the highlighted track is the one actually
@@ -37323,6 +37371,7 @@ async function activateItem(itemId, autoplay){
     releaseUnusedAudioUrls(item.refId);
     updateMediaSessionMetadata();
   }
+  prepareNextTrackSoon(itemId);
   if(appMode==="playing") renderRail(); // the ▶ beside the playlist that's now playing
   renderPlayer();
   // Confirms exactly which row just actually started — a track playing, a
