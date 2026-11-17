@@ -48,7 +48,13 @@ pub async fn p37_shell_update_check(app: tauri::AppHandle) -> Result<Option<Shel
 #[tauri::command]
 pub async fn p37_shell_update_install(app: tauri::AppHandle) -> Result<(), String> {
     let update = app.state::<Pending>().0.lock().unwrap().take().ok_or("no update was found to install (check first)")?;
-    update.download_and_install(|_, _| {}, || {}).await.map_err(|e| e.to_string())?;
+    // The installer closes the app on Windows, and the new one starts: not an
+    // unexpected end (watch.rs). Running again if the install fails.
+    if let Some(w) = crate::watch::get() { w.closing(); }
+    if let Err(e) = update.download_and_install(|_, _| {}, || {}).await {
+        if let Some(w) = crate::watch::get() { w.running_again(); }
+        return Err(e.to_string());
+    }
     // On Windows the installer has already closed the app and will start the
     // new one; on a Mac the new .app is in place: start it.
     app.restart();

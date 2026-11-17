@@ -18,12 +18,15 @@
 //    signed pages from GitHub, used from the next start or at Update now.
 //  - The device's own settings (device.rs): device.json, so a wiped webview
 //    (CCleaner) loses nothing a person would miss.
+//  - What the page can't see for itself (watch.rs): the window not
+//    answering for over 2 s, and how the session before ended.
 mod device;
 mod files;
 mod oauth;
 mod pages;
 mod updates;
 mod fileserver;
+mod watch;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use tauri::{Emitter, Manager, RunEvent, WindowEvent};
@@ -45,7 +48,7 @@ struct Quitting(AtomicBool);
 const BRIDGE: u32 = 2;
 
 #[derive(serde::Serialize)]
-struct ShellInfo { version: String, bridge: u32, pages: bool, device: bool, updates: bool, zoom: bool, trash: bool, files_http: Option<String> }
+struct ShellInfo { version: String, bridge: u32, pages: bool, device: bool, updates: bool, zoom: bool, trash: bool, watch: bool, append_range: bool, files_http: Option<String> }
 
 // The shell's version is the page's version as of the shell's own last
 // change (tauri.conf.json "version"), like sync.php's.
@@ -56,6 +59,10 @@ fn p37_shell_info(app: tauri::AppHandle) -> ShellInfo {
     ShellInfo { version: app.package_info().version.to_string(), bridge: BRIDGE, pages: app.state::<Arc<pages::Pages>>().enabled(), device: true, updates: true, zoom: true,
         // trash: a library's folder can go to the Trash (fs_root_trash, shell 2.5.2).
         trash: true,
+        // watch: p37_watch, the window not answering and the last session's end (watch.rs, shell 2.5.3).
+        watch: true,
+        // append_range: fs_append_range, a stretch of one file put on the end of another on disk (shell 2.5.3).
+        append_range: true,
         // files_http: where recordings are also served, on Linux (fileserver.rs, shell 2.5.0).
         files_http: app.try_state::<fileserver::FileServer>().map(|f| f.base.clone()) }
 }
@@ -137,6 +144,7 @@ fn check_pages_daily(app: &tauri::AppHandle, pages: Arc<pages::Pages>) {
 #[tauri::command]
 fn p37_quit(app: tauri::AppHandle) {
     app.state::<Quitting>().0.store(true, Ordering::SeqCst);
+    if let Some(w) = watch::get() { w.closing(); }
     app.exit(0);
 }
 
@@ -265,6 +273,7 @@ pub fn run() {
         .setup(move |app| {
             let roots_file = app.path().app_data_dir().map(|d| d.join("roots.json")).unwrap_or_else(|_| std::path::PathBuf::from("roots.json"));
             app.manage(files::Roots::load(roots_file));
+            watch::start(app.handle());
             // Linux's webview can't play recordings any other way (fileserver.rs).
             #[cfg(target_os = "linux")]
             if let Some(fs) = fileserver::start(app.handle()) { app.manage(fs); }
@@ -280,9 +289,10 @@ pub fn run() {
             files::fs_roots, files::fs_root_default, files::fs_root_choose, files::fs_root_forget,
             files::fs_place, files::fs_place_default, files::fs_root_info, files::fs_root_rename, files::fs_root_show, files::fs_root_trash, files::fs_places_restore, files::fs_remove_if_empty,
             oauth::p37_google_signin, oauth::p37_open_url, files::fs_find_libraries, files::fs_root_choose_library, files::fs_root_use_found,
-            files::fs_list, files::fs_stat, files::fs_read, files::fs_write, files::fs_copy, files::fs_rename, files::fs_remove, files::fs_mkdir,
-            updates::p37_shell_update_check, updates::p37_shell_update_install])
+            files::fs_list, files::fs_stat, files::fs_read, files::fs_write, files::fs_copy, files::fs_append_range, files::fs_rename, files::fs_remove, files::fs_mkdir,
+            updates::p37_shell_update_check, updates::p37_shell_update_install, watch::p37_watch])
         .on_window_event(|window, event| {
+            if let WindowEvent::Focused(f) = event { if let Some(w) = watch::get() { w.focused.store(*f, Ordering::SeqCst); } }
             if let WindowEvent::CloseRequested { api, .. } = event {
                 if !window.app_handle().state::<Quitting>().0.load(Ordering::SeqCst) {
                     api.prevent_close();
@@ -293,6 +303,8 @@ pub fn run() {
         .build(context)
         .expect("error while building the app")
         .run(|app, event| {
+            // A normal end: the next start won't say it didn't close normally.
+            if let RunEvent::Exit = event { if let Some(w) = watch::get() { w.closing(); } }
             // Cmd-Q, or the system asking the app to quit: the page decides too.
             if let RunEvent::ExitRequested { api, code, .. } = event {
                 if code.is_none() && !app.state::<Quitting>().0.load(Ordering::SeqCst) {
