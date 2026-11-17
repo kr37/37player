@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.5.037">
+<meta name="app-version" content="2.5.038">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -27584,7 +27584,7 @@ async function rewriteFlacTags(blob, meta){
     parts.push(new Uint8Array([(k === out.length - 1 ? 0x80 : 0) | b.type, (len >> 16) & 255, (len >> 8) & 255, len & 255]), b.data || b.slice);
   });
   parts.push(blob.slice(L.audioStart));
-  return new Blob(parts, {type: blob.type || "audio/flac"});
+  return joinedFile(parts, blob.type || "audio/flac");
 }
 
 /* ---------- Ogg (Opus and Vorbis) ---------- */
@@ -27820,7 +27820,7 @@ async function rewriteChunkTags(blob, meta, kind){
   head.set(latin1Bytes(L.be ? "FORM" : "RIFF"), 0);
   new DataView(head.buffer).setUint32(4, size, !L.be);
   head.set(latin1Bytes(L.form), 8);
-  return new Blob([head, ...body], {type: blob.type || (L.be ? "audio/aiff" : "audio/wav")});
+  return joinedFile([head, ...body], blob.type || (L.be ? "audio/aiff" : "audio/wav"));
 }
 
 /* ---------- WebM / Matroska ---------- */
@@ -28491,7 +28491,9 @@ async function blobWithCurrentTags(track, blob, opts){
   // into the page, written back through it and read again (putRewrittenAudio)
   // on Gen Palden's MacBook, every piece through the window's main thread
   // (report 2026-11-16-073224). Anything else, and exports: read whole.
-  const inPlace = opts.onDisk && isDiskBlob(blob) && (fmt.kind === "mp3" || fmt.kind === "mp4");
+  // FLAC, WAV and AIFF too (2.5.038): their details are blocks or chunks
+  // of their own, and the sound one stretch, copied as it lies.
+  const inPlace = opts.onDisk && isDiskBlob(blob) && ["mp3", "mp4", "flac", "wav", "aiff"].includes(fmt.kind);
   if(!inPlace) blob = await realBlob(blob); // (the desktop app's big files: read whole to write the details in)
   let typed = blob.type ? blob : isDiskBlob(blob) ? blob.slice(0, blob.size, fmt.mime) : new Blob([blob], {type: fmt.mime});
   // A file damaged by the pre-1.1.089 writer is repaired first — rewriting
@@ -32064,7 +32066,7 @@ async function analyzeFolderImport(audioFiles, m3u8Files, imageFiles, xmlFiles){
     for(const candidate of sizeMatches){
       const rec = await idbGet("audio", candidate.id);
       if(!rec || !rec.blob) continue;
-      if(await sameBytes(file, rec.blob)){ dedupeMatch = candidate; break; }
+      if(await sameFileBytes(file, rec.blob)){ dedupeMatch = candidate; break; }
     }
     if(dedupeMatch){
       // The very same file is already here. If that track has no artwork,
@@ -44238,7 +44240,7 @@ function resolveM3u8EntryPath(m3u8RelativePath, entryPath){
 // difference: it used to read both whole to hash them (SHA-256), each
 // time, for each candidate, which in the desktop app meant whole
 // recordings through the page while importing.
-async function sameBytes(a, b){
+async function sameFileBytes(a, b){
   if(!a || !b || a.size !== b.size) return false;
   const PIECE = 4 * 1048576;
   for(let at = 0; at < a.size; at += PIECE){
@@ -51521,7 +51523,6 @@ window.addEventListener("storage", (e)=>{
     if(root.settings.language !== before){ applyStaticTranslations(); refreshCurrentView(); }
   } else if(e.key === LIBRARY_LIST_KEY) updateLibrarySwitch();
 });
-function libraryEntry(id){ return readLibraryList().list.find(l=> l.id === id) || null; }
 function libraryDisplayName(entry){ return (entry && entry.name && entry.name.trim()) || t("libDefaultName"); }
 function currentLibraryName(){ return libraryDisplayName(libraryEntry(LIBRARY_ID)); }
 function newLibraryId(){ return Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
