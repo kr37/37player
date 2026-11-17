@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.5.038">
+<meta name="app-version" content="2.5.039">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -2588,6 +2588,41 @@ class FolderLibraryStore {
     catch(err){ if(err && err.name === "NotFoundError") return undefined; throw err; }
     return JSON.parse(await (await fh.getFile()).text());
   }
+  // A stored record's file: its size, without reading it (2.5.039), and
+  // with probe, whether its first byte reads. get() would read every file
+  // of 32 MB or less whole in the desktop app (DesktopFileHandle.getFile),
+  // so the checks that look at every track (reconcileFileSizes at each
+  // start, the missing-audio check in Library cleanup) put the whole
+  // library through the page: on kr37's new Mac, about 25 minutes after a
+  // start, ending in a version of 1036 tracks "changed" (sizes only).
+  // undefined: no record; null: its file isn't there or can't be read.
+  async blobSize(store, key, probe){
+    return this.run(async()=>{
+      const v = await this.readRaw(store, key);
+      if(v === undefined) return undefined;
+      const ph = v && v.blob;
+      if(!ph || typeof ph !== "object") return null;
+      let root, path, fh = null;
+      if(typeof ph.$place === "string"){ root = ph.$place; path = ph.$at; }
+      else {
+        try{
+          if(typeof ph.$path === "string"){ const at = await this.pathDir(ph.$path, false); if(!at) return null; fh = await at.dir.getFileHandle(at.name); }
+          else if(typeof ph.$blob === "string") fh = await (await this.sub(store)).getFileHandle(ph.$blob);
+          else return null;
+        }catch(err){ return null; }
+        if(!(fh instanceof DesktopFileHandle)){ // a browser's handle doesn't read the file for this
+          const f = await fh.getFile();
+          if(probe && f.size) await f.slice(0, 1).arrayBuffer();
+          return f.size;
+        }
+        root = fh.root; path = fh.path;
+      }
+      const st = await desktopInvoke("fs_stat", {root, path}).catch(()=> null);
+      if(!st || st.kind !== "file") return null;
+      if(probe && st.size){ try{ await desktopInvoke("fs_read", {root, path, start: 0, end: 1}); }catch(err){ return null; } }
+      return st.size;
+    });
+  }
   static blobNames(v, out){
     if(Array.isArray(v)) v.forEach(x=> FolderLibraryStore.blobNames(x, out));
     else if(v && typeof v === "object"){ if(typeof v.$place === "string") return out; if(typeof v.$blob === "string") out.push(v.$blob); else if(typeof v.$path === "string") out.push("/" + v.$path); else Object.values(v).forEach(x=> FolderLibraryStore.blobNames(x, out)); }
@@ -4083,7 +4118,10 @@ async function realBlob(b, type){
     if(piece.byteLength !== n) throw new Error("the file changed while it was read");
     parts.push(new Blob([piece]));
   }
-  bigMoveLog("read", b.size, b.p37path, t0);
+  // (A whole file only: a piece of one, such as the 16 MB pieces a
+  // recording is sent in, isn't a whole file read into the page. 2.5.039,
+  // after kr37's log listed every piece of a 177 MB recording sent.)
+  if(b.whole) bigMoveLog("read", b.size, b.p37path, t0);
   return new Blob(parts, {type: type || b.type});
 }
 // A big file passed whole between the page and the desktop app (2.5.035):
@@ -4194,7 +4232,9 @@ class DesktopFileHandle {
           }
           if(first) await put(aside, new Uint8Array(0));
           await desktopInvoke("fs_rename", {root: fh.root, from: aside, to: fh.path, replace: true});
-          bigMoveLog("write", total - onDisk, fh.path, t0);
+          // (Not the library's own files, such as its 22 MB list of tracks
+          // with their waveforms, written at every save: recordings only.)
+          if(!/\.json$/.test(fh.path)) bigMoveLog("write", total - onDisk, fh.path, t0);
         }catch(err){ try{ await desktopInvoke("fs_remove", {root: fh.root, path: aside}); }catch(e){} throw err; }
       },
       async abort(){ collected.length = 0; },
@@ -28510,14 +28550,24 @@ async function blobWithCurrentTags(track, blob, opts){
 // so once per start it's checked against the stored files (their sizes are
 // known without reading them) and corrected where it differs.
 let fileSizeCheckDone = false;
+// A stored recording's size, and with probe whether its first byte reads,
+// without reading it where the store can (FolderLibraryStore.blobSize);
+// null when it isn't there or can't be read.
+async function storedAudioSize(id, probe){
+  if(libStore instanceof FolderLibraryStore){ const n = await libStore.blobSize("audio", id, probe); return n == null ? null : n; }
+  const rec = await idbGet("audio", id);
+  if(!rec || !rec.blob) return null;
+  if(probe && rec.blob.size) await rec.blob.slice(0, 1).arrayBuffer();
+  return rec.blob.size;
+}
 async function reconcileFileSizes(){
   if(fileSizeCheckDone || libraryUnreadable || !root.library.length) return;
   fileSizeCheckDone = true;
   let changed = 0;
   for(const tr of root.library.slice()){
     try{
-      const rec = await idbGet("audio", tr.id);
-      if(rec && rec.blob && rec.blob.size && tr.fileSize !== rec.blob.size){ tr.fileSize = rec.blob.size; changed++; }
+      const size = await storedAudioSize(tr.id);
+      if(size && tr.fileSize !== size){ tr.fileSize = size; changed++; }
     }catch(err){}
   }
   if(changed){ console.log("Track sizes corrected:", changed); await saveState(); }
@@ -37139,10 +37189,7 @@ async function tracksWithMissingAudio(){
     const place = placeOfTrack(tr.id);
     if(place && placeOffline.has(place.root)) continue;
     let ok = false;
-    try{
-      const rec = await idbGet("audio", tr.id);
-      if(rec && rec.blob && rec.blob.size){ await rec.blob.slice(0, 1).arrayBuffer(); ok = true; }
-    }catch(err){}
+    try{ ok = !!(await storedAudioSize(tr.id, true)); }catch(err){} // (its first byte read: not the whole file, 2.5.039)
     if(!ok && !(place && placeOffline.has(place.root))) out.push(tr);
   }
   return out;
@@ -49276,6 +49323,18 @@ function histComputeRows(){
   const now = st.rbNow = st.sel < 0 ? st.localNow : st.nowDoc;
   st.rows = st.thenDoc && now ? syncReviewRows(now, now, st.thenDoc).rows : [];
 }
+// A new recording file that's only the old one with new details written
+// into it (2.5.039; kr37, 17 Nov 2026: renaming "07 The Tsog Offering"
+// showed "different audio", and days of adding missing artwork showed
+// many). Renaming a track or changing its artwork writes the details into
+// the file, so the file, and its revision, is new. When the name, artist,
+// album or artwork changed too and the length is the same (within half a
+// second), "different audio" isn't said: the change shown explains it.
+function histJustRetagged(a, b, otherArt){
+  if(!a || !b) return false;
+  const shown = otherArt || (a.name || "") !== (b.name || "") || (a.artist || "") !== (b.artist || "") || (a.album || "") !== (b.album || "");
+  return shown && a.duration > 0 && b.duration > 0 && Math.abs(a.duration - b.duration) < 0.5;
+}
 // A save's summary in words (what each version says it changed).
 function histSummaryText(w){
   if(!w) return t("histNoSummary");
@@ -49495,7 +49554,7 @@ function histRollTracks(st){
   const status = x=>{
     if(!x.D) return "del"; if(!x.B) return "add";
     const fb = syncTrackFields(x.B), fd = syncTrackFields(x.D), words = [];
-    if(!syncEq(fb["#audio"], fd["#audio"])) words.push(t("histOtherAudio"));
+    if(!syncEq(fb["#audio"], fd["#audio"]) && !histJustRetagged(x.B, x.D, !syncEq(fb["#art"], fd["#art"]))) words.push(t("histOtherAudio"));
     if(!syncEq(fb["#art"], fd["#art"])) words.push(t("histOtherArt"));
     if(Object.keys(Object.assign({}, fb, fd)).some(k=> k[0] !== "#" && !skip.has(k) && !syncEq(fb[k], fd[k]))) words.push(t("histOtherDetails"));
     const sf = st.stepFiles && st.stepFiles.get(x.id);
@@ -49890,8 +49949,9 @@ function bbCompareHtml(st){
       // Only what a person changes (syncMeaningTrack): a replaced recording
       // is a new audioRev; artwork; any other detail, such as volume.
       const mn = syncMeaningTrack(now), mb = syncMeaningTrack(then), words = [];
-      if(mn.audioRev !== mb.audioRev) words.push(t("histOtherAudio"));
-      if(mn.artRev !== mb.artRev || !!mn.hasArtwork !== !!mb.hasArtwork) words.push(t("histOtherArt"));
+      const otherArt = mn.artRev !== mb.artRev || !!mn.hasArtwork !== !!mb.hasArtwork;
+      if(mn.audioRev !== mb.audioRev && !histJustRetagged(now, then, otherArt)) words.push(t("histOtherAudio"));
+      if(otherArt) words.push(t("histOtherArt"));
       const skip = new Set(["name", "artist", "album", "audioRev", "artRev", "hasArtwork"]);
       if(Object.keys(Object.assign({}, mn, mb)).some(f=> !skip.has(f) && !syncEq(mn[f], mb[f]))) words.push(t("histOtherDetails"));
       const shown = (now.name || "") !== (then.name || "") || (now.artist || "") !== (then.artist || "") || (now.album || "") !== (then.album || "");
