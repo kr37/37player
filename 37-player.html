@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.5.033">
+<meta name="app-version" content="2.5.034">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -38905,7 +38905,13 @@ function pulseRowById(container, id){
 let modalCloseCallbacks = [];
 function openModal(html, extraClass){
   modalBody.className = "modal" + (extraClass ? " "+extraClass : "");
+  const fresh = !backdrop.classList.contains("show");
   modalBody.innerHTML = html;
+  // A new dialog starts at its top (2.5.034, kr37's Mac, 16 Nov 2026: after
+  // Send feedback, scrolled down to its button, "Sent" showed as an empty
+  // box until a click: WebKit kept the old dialog's scroll on the shorter
+  // new one). A dialog drawn again while open keeps its place.
+  if(fresh) modalBody.scrollTop = 0;
   backdrop.classList.add("show");
   modalBody.querySelectorAll("[data-close]").forEach(b=> b.addEventListener("click", closeModal));
 }
@@ -38929,6 +38935,7 @@ if(window.visualViewport) visualViewport.addEventListener("resize", ()=>{
 function closeModal(){
   backdrop.classList.remove("show");
   modalBody.innerHTML="";
+  modalBody.scrollTop = 0;
   modalCloseCallbacks.forEach(fn=>{ try{ fn(); }catch(err){ console.error(err); } });
   modalCloseCallbacks = [];
   if(pendingSync.library || pendingSync.settings) setTimeout(applyPendingSync, 0);
