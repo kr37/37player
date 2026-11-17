@@ -1,4 +1,4 @@
-// New details written into a recording of the desktop app's (2.5.035,
+// New details written into a recording of the desktop app's (2.5.035; FLAC, WAV 2.5.038;
 // shell 2.5.3): an MP3 or M4A read where it lies isn't read whole into the
 // page. Its writer reads the details' bytes only; the new file is new first
 // bytes followed by the rest of the old one, which the app copies on disk
@@ -21,6 +21,8 @@ const ff = (...a)=> execFileSync('ffmpeg', ['-loglevel', 'error', '-y', ...a]);
 // About 3 MB each (bigger than the 1 MB this test reads files where they lie from).
 ff('-f', 'lavfi', '-i', 'sine=f=300:d=95', '-ac', '2', '-c:a', 'libmp3lame', '-b:a', '256k', '-metadata', 'title=Old MP3', '-metadata', 'artist=Someone', path.join(tmp, 'long.mp3'));
 ff('-f', 'lavfi', '-i', 'sine=f=300:d=95', '-ac', '2', '-c:a', 'aac', '-b:a', '256k', '-movflags', '+faststart', '-metadata', 'title=Old M4A', path.join(tmp, 'long.m4a'));
+ff('-f', 'lavfi', '-i', 'anoisesrc=d=30:a=0.3', '-ac', '2', '-c:a', 'flac', '-metadata', 'title=Old FLAC', path.join(tmp, 'long.flac'));
+ff('-f', 'lavfi', '-i', 'sine=f=300:d=30', '-ac', '2', '-c:a', 'pcm_s16le', '-metadata', 'title=Old WAV', path.join(tmp, 'long.wav'));
 const probe = f=> JSON.parse(execFileSync('ffprobe', ['-v', 'error', '-show_entries', 'format=duration:format_tags=title,artist', '-of', 'json', f])).format;
 const decodes = f=>{ try{ return execFileSync('ffmpeg', ['-v', 'error', '-i', f, '-f', 'null', '-'], {encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe']}).trim() === ''; }catch(e){ return false; } };
 const id3End = b=> b.slice(0, 3).toString('latin1') === 'ID3' ? 10 + ((b[6] << 21) | (b[7] << 14) | (b[8] << 7) | b[9]) + ((b[5] & 0x10) ? 10 : 0) : 0;
@@ -45,7 +47,7 @@ const id3End = b=> b.slice(0, 3).toString('latin1') === 'ID3' ? 10 + ((b[6] << 2
     return p.evaluate(async(b64, file, type, id, newName, noRanges)=>{
       const D = window.__disk, R = window.__dbg.getRoot();
       const bytes = Uint8Array.from(atob(b64), c=> c.charCodeAt(0));
-      R.library.push({id, name: 'Old', artist: 'Someone', filename: file, fileSize: bytes.length, addedAt: Date.now()});
+      R.library.push({id, name: 'Old', artist: 'Someone', filename: file, fileSize: bytes.length, addedAt: Date.now(), fileTags: {name: 'Old', artist: 'Someone', album: null, trackNo: null, art: null}}); // as written at import: the name is then edited
       await D.idbPut('audio', {id, blob: new File([bytes], file, {type})});
       await window.__dbg.saveState();
       const before = await D.idbGet('audio', id);
@@ -84,6 +86,13 @@ const id3End = b=> b.slice(0, 3).toString('latin1') === 'ID3' ? 10 + ((b[6] << 2
   r = await run('long.m4a', 'audio/mp4', 'm4aa', 'New M4A');
   check('M4A', 'long.m4a', r, 'New M4A');
   ok(r.ranges >= 1 && r.ranges <= 2 && r.read < 262144 && r.biggestWrite < 262144, 'M4A: the audio was copied on disk, not read into the page (' + r.read + ' bytes read, biggest write ' + r.biggestWrite + ', ' + r.ranges + ' stretches copied)');
+
+  // FLAC and WAV (2.5.037): their details are blocks or chunks of their own; the sound is copied as it lies.
+  for(const [file, type, name] of [['long.flac', 'audio/flac', 'New FLAC'], ['long.wav', 'audio/wav', 'New WAV']]){
+    r = await run(file, type, file.replace('.', ''), name);
+    check(file.split('.')[1].toUpperCase(), file, r, name);
+    ok(r.ranges >= 1 && r.read < 262144 && r.biggestWrite < 262144, file.split('.')[1].toUpperCase() + ': the sound was copied on disk, not read into the page (' + r.read + ' bytes read, biggest write ' + r.biggestWrite + ', ' + r.ranges + ' stretches copied)');
+  }
 
   // An app from before 2.5.3: the same file, through the page piece by piece.
   r = await run('long.mp3', 'audio/mpeg', 'mp3b', 'Older app', true);
