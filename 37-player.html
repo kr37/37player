@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.5.036">
+<meta name="app-version" content="2.5.037">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -32064,8 +32064,7 @@ async function analyzeFolderImport(audioFiles, m3u8Files, imageFiles, xmlFiles){
     for(const candidate of sizeMatches){
       const rec = await idbGet("audio", candidate.id);
       if(!rec || !rec.blob) continue;
-      const [h1, h2] = await Promise.all([hashFileSHA256(file), hashFileSHA256(rec.blob)]);
-      if(h1===h2){ dedupeMatch = candidate; break; }
+      if(await sameBytes(file, rec.blob)){ dedupeMatch = candidate; break; }
     }
     if(dedupeMatch){
       // The very same file is already here. If that track has no artwork,
@@ -44233,14 +44232,22 @@ function resolveM3u8EntryPath(m3u8RelativePath, entryPath){
   }
   return resolved.join("/");
 }
-// SHA-256 of a File/Blob's actual bytes, as a lowercase hex string. Only
-// called when two files already share a size — that's the fast, free
-// pre-filter — so this expensive step runs rarely, on genuine candidates,
-// not on every file in a folder import.
-async function hashFileSHA256(fileOrBlob){
-  const buf = await fileOrBlob.arrayBuffer();
-  const digest = await crypto.subtle.digest("SHA-256", buf);
-  return Array.from(new Uint8Array(digest)).map(b=> b.toString(16).padStart(2,"0")).join("");
+// Whether two files hold the same bytes (2.5.037). Only called when two
+// files already share a size, the fast, free pre-filter, so it runs
+// rarely, on genuine candidates. A piece at a time, stopping at the first
+// difference: it used to read both whole to hash them (SHA-256), each
+// time, for each candidate, which in the desktop app meant whole
+// recordings through the page while importing.
+async function sameBytes(a, b){
+  if(!a || !b || a.size !== b.size) return false;
+  const PIECE = 4 * 1048576;
+  for(let at = 0; at < a.size; at += PIECE){
+    const [x, y] = await Promise.all([a.slice(at, at + PIECE).arrayBuffer(), b.slice(at, at + PIECE).arrayBuffer()]);
+    const u = new Uint8Array(x), v = new Uint8Array(y);
+    if(u.length !== v.length) return false;
+    for(let i = 0; i < u.length; i++) if(u[i] !== v[i]) return false;
+  }
+  return true;
 }
 function gatherPlaylistsForZip(scope){
   const results = [];
