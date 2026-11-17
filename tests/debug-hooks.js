@@ -9,7 +9,8 @@ window.__dbg3 = {put: (s,v)=>idbPut(s,v),
   join: async (u,c,n,o)=>{ const pr = joinSharedLibrary(u,c,n,o); const iv = setInterval(()=>{ const b=[...document.querySelectorAll('.modal button')].find(b=>(b.textContent.trim()==='Do it now' || b.textContent.trim()==='Join') && !/Combine them/.test(b.closest('.modal').innerText)); if(b){ window.__joinDialog = b.closest('.modal').innerText; b.click(); } }, 150); try{ return await pr; } finally { clearInterval(iv); } },
   fetchNow: sharedFetchTracksNow, missing: sharedTrackMissing, review: openSharedReview, rvState: ()=>sharedReviewState,
   sync: (o)=>runSharedSync(Object.assign({force:true},o||{})), status: ()=>sharedStatus, pending: ()=>sharedPending,
-  leave: leaveSharedLibrary, render: renderSharedSection, awake: sharedAwakeStart, awakeOn: ()=>!!sharedAwake};
+  leave: leaveSharedLibrary, render: renderSharedSection, awake: sharedAwakeStart, awakeOn: ()=>!!sharedAwake,
+  cfg: ()=> sharedConfig(), delTracks: ids=> confirmDeleteTracksFromLibrary(ids, ()=> deleteLibraryTracks(ids))}; // missdel.js
 window.__dbg4 = {settings: openSettingsPage, help: openHelpPage, section: goToSettingsSection};
 window.__rv = {rows: syncReviewRows, classify: (r,m)=>syncClassifyPartial(r,m,new Set()), def: syncDefaultChoice, set: (st)=>{ const page=document.createElement("div"); page.id="reviewPage"; page.className="settings-page rv-page"; placeOverlayPage(page, closeSharedReview); page.innerHTML='<div class="rv-scroll" id="rvScroll"></div><div class="rv-foot" id="rvFoot"></div>'; document.body.appendChild(page); sharedReviewState=st; renderSharedReview(); }};
 window.__aa = {analyze: analyzeAudio};
@@ -33,6 +34,7 @@ window.openSetupGuideForTest = ()=>{ openSetupGuide(); };
 window.__dropAudio = (id)=> libStore.del("audio", [id]);
 // playback
 window.__play = (id)=>playItem(id);
+window.__nextReady = ()=> nextReadyId; // nextready.js
 window.__pause = ()=> togglePlay();
 window.__aud = ()=>({src: audioEl.src, paused: audioEl.paused, t: audioEl.currentTime, rs: audioEl.readyState, ns: audioEl.networkState, err: audioEl.error ? audioEl.error.code + " " + (audioEl.error.message || "") : null});
 window.__st = ()=>({src: audioEl.src, paused: audioEl.paused, t: audioEl.currentTime, d: audioEl.duration, rs: audioEl.readyState, ns: audioEl.networkState, err: audioEl.error ? audioEl.error.code + " " + (audioEl.error.message || "") : null,
