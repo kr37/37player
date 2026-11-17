@@ -28627,6 +28627,8 @@ async function repairDamagedAudio(id){
 // a re-tagged file is first read into memory as one piece, and what was
 // stored is read back and checked; if it's wrong, the old file goes back.
 const IS_WEBKIT = window.__p37WebKit != null ? !!window.__p37WebKit : /AppleWebKit/.test(navigator.userAgent) && !/(Chrome|Chromium|Edg)\//.test(navigator.userAgent);
+// The library is one of the desktop app's folders (not its browser storage).
+function desktopFolderStore(){ try{ return STORAGE_KIND === "desktop" && libStore instanceof FolderLibraryStore; }catch(err){ return false; } }
 async function putRewrittenAudio(id, newBlob, oldBlob){
   // The desktop app's library folder (2.5.035): the app writes the file
   // aside and swaps it in, so it's either all there or as it was, and the
@@ -28634,7 +28636,7 @@ async function putRewrittenAudio(id, newBlob, oldBlob){
   // aren't. Reading the new file whole to store it, and again to check it,
   // was two of the three times a renamed recording passed through the page
   // on Gen Palden's MacBook. Its size as stored, from the disk, is enough.
-  if(STORAGE_KIND === "desktop" && !(libStore instanceof IdbLibraryStore)){
+  if(desktopFolderStore()){
     await idbPut("audio", {id, blob: newBlob, rev: uid()});
     const back = await idbGet("audio", id);
     if(!back || !back.blob || back.blob.size !== newBlob.size) throw new Error("the rewritten file is " + (back && back.blob ? back.blob.size : "not there") + " bytes on the disk instead of " + newBlob.size);
@@ -33642,8 +33644,13 @@ async function analyzeM4aInPieces(blob){
   const Ctx = window.OfflineAudioContext || window.webkitOfflineAudioContext;
   const ctx = new Ctx(1, 1, 44100);
   let an = null, skipStart = 0, left = Infinity;
-  for(let s = 0; s < f.count; s += per){
-    const from = Math.max(0, s - 1), to = Math.min(f.count, s + per);
+  for(let s = 0, to; s < f.count; s = to){
+    const from = Math.max(0, s - 1);
+    to = Math.min(f.count, s + per);
+    // No last piece of a few frames: so short a stretch sometimes doesn't
+    // decode at all ("Unable to decode audio data", 2.5.035, desktopmem.js:
+    // a 6-minute M4A, about 1 time in 4); it goes with the piece before.
+    if(f.count - to < Math.max(64, per >> 3)) to = f.count;
     let total = 0;
     for(let i = from; i < to; i++) total += f.sizes[i] + 7;
     const out = new Uint8Array(total);
@@ -33699,6 +33706,17 @@ async function tooLongForWholeDecode(blob, durationHint){
   if(COARSE_POINTER && ["mp3", "wav"].includes((await sniffAudioFormat(blob)).kind)) return true; // not .m4a: it may be Apple Lossless, which only decodes whole
   return (await estimatedDecodedBytes(blob, durationHint)) > wholeDecodeBudgetBytes();
 }
+// The desktop app works a piece at a time whenever it can, whatever the
+// length (2.5.035): a recording decoded whole is all of its sound in memory
+// at once, up to the 1 GB allowance above (WebKit doesn't say how much
+// memory a Mac has), the biggest single spike of memory 37 Player made
+// there, and while importing or receiving, when crashes are noticed
+// (kr37, 16 Nov 2026). Phones already do this for MP3 and WAV. If the
+// pieces fail, a file that may be decoded whole still is.
+async function desktopPiecesFirst(blob){
+  if(STORAGE_KIND !== "desktop") return false;
+  try{ return PIECEWISE_KINDS.includes((await sniffAudioFormat(blob)).kind); }catch(err){ return false; }
+}
 // Anything else too long to decode whole, or that plays but won't decode
 // here (Apple Lossless in Safari, FLAC in Ogg, MP2, AC3, CAF, AMR…), 1.4.116:
 // the converter (ffmpeg, on the device already for converting) decodes two
@@ -33739,14 +33757,16 @@ async function analyzeWithConverter(blob){
 async function analyzeAudio(fileOrBlob){
   const began = performance.now();
   try{
-    if(await tooLongForWholeDecode(fileOrBlob)){
+    const tooLong = await tooLongForWholeDecode(fileOrBlob);
+    if(tooLong || await desktopPiecesFirst(fileOrBlob)){
       const fmt = await sniffAudioFormat(fileOrBlob);
       let native = null;
       try{ native = await readNativeAudioParams(fileOrBlob); }catch(err){}
-      if(PIECEWISE_KINDS.includes(fmt.kind)){
+      if(PIECEWISE_KINDS.includes(fmt.kind)) pieces: {
         let r = null;
         try{ r = await analyzeInPieces(fileOrBlob, fmt.kind); }
         catch(err){
+          if(!tooLong){ console.warn("Couldn't read it a piece at a time; whole, then:", err); break pieces; } // (the desktop app's choice, not a need)
           // Still too long to decode whole: the converter, else a stand-in,
           // marked as such (an .m4a that isn't AAC, say).
           console.warn("Couldn't read it a piece at a time:", err);
@@ -33757,14 +33777,16 @@ async function analyzeAudio(fileOrBlob){
         }
         const elDur = await getDurationViaAudioElement(fileOrBlob);
         const secs = (performance.now() - began) / 1000;
-        if(typeof sharedLog === "function") sharedLog("waveform and loudness of a " + fmtTime(r.duration) + " recording, a piece at a time, took " + secs.toFixed(0) + " s");
+        if(tooLong && typeof sharedLog === "function") sharedLog("waveform and loudness of a " + fmtTime(r.duration) + " recording, a piece at a time, took " + secs.toFixed(0) + " s");
         return {duration: elDur || r.duration, sampleRate: (native && native.sampleRate) || null, channels: (native && native.channels) || r.channels, peaks: r.peaks, loudness: r.loudness, likelyUnplayable: false};
       }
-      const viaConv = await analyzeWithConverter(fileOrBlob);
-      if(viaConv) return viaConv;
-      const duration = await getDurationViaAudioElement(fileOrBlob);
-      console.warn("Too long to analyze whole on this device; stand-in waveform");
-      return {duration, sampleRate: (native && native.sampleRate) || null, channels: (native && native.channels) || null, peaks: new Array(PEAK_BUCKETS).fill(0.15), loudness: {i: null, failed: 1, tooLong: Math.round(wholeDecodeBudgetBytes() / 1e6)}, likelyUnplayable: duration===0};
+      if(tooLong){
+        const viaConv = await analyzeWithConverter(fileOrBlob);
+        if(viaConv) return viaConv;
+        const duration = await getDurationViaAudioElement(fileOrBlob);
+        console.warn("Too long to analyze whole on this device; stand-in waveform");
+        return {duration, sampleRate: (native && native.sampleRate) || null, channels: (native && native.channels) || null, peaks: new Array(PEAK_BUCKETS).fill(0.15), loudness: {i: null, failed: 1, tooLong: Math.round(wholeDecodeBudgetBytes() / 1e6)}, likelyUnplayable: duration===0};
+      }
     }
     const arrBuf = await fileOrBlob.arrayBuffer();
     const tmpCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -35117,9 +35139,11 @@ let loudnessBusy = false, loudnessUnsaved = 0;
 async function measureTrackLoudness(track){
   const rec = await idbGet("audio", track.id);
   if(!rec || !rec.blob){ track.loudness = {i: null, failed: 1}; return; }
-  if(await tooLongForWholeDecode(rec.blob, track.duration)){
+  const tooLong = await tooLongForWholeDecode(rec.blob, track.duration);
+  if(tooLong || await desktopPiecesFirst(rec.blob)) measured: {
     // Measured a piece at a time (MP3), which also gives a real waveform if
-    // the track only had a stand-in.
+    // the track only had a stand-in. (The desktop app's choice for any
+    // length, desktopPiecesFirst: if the pieces fail, whole as before.)
     try{
       const kind = (await sniffAudioFormat(rec.blob)).kind;
       if(!PIECEWISE_KINDS.includes(kind)){
@@ -35130,7 +35154,7 @@ async function measureTrackLoudness(track){
       const r = await analyzeInPieces(rec.blob, kind);
       track.loudness = r.loudness || {i: null, failed: 1};
       if(isStandInPeaks(track.peaks)) track.peaks = r.peaks;
-    }catch(err){ track.loudness = {i: null, failed: 1}; }
+    }catch(err){ if(!tooLong) break measured; track.loudness = {i: null, failed: 1}; }
     return;
   }
   let ctx = null;
@@ -47944,7 +47968,10 @@ async function sharedUploadFiles(cfg, doc){
       body = rec.blob;
       // Never send a damaged file to everyone (Safari is where they've come
       // from, so it's checked there; reading it through costs little memory).
-      if(j.kind === "audio" && (await audioLooksWrong(body) || (IS_WEBKIT && (await blobReadableBytes(body)) !== body.size))){
+      // Not the desktop app's folders (2.5.035): the fault read through for
+      // is Safari's browser storage, and reading the whole recording just
+      // to check it was one more pass through the page per file sent.
+      if(j.kind === "audio" && (await audioLooksWrong(body) || (IS_WEBKIT && !desktopFolderStore() && (await blobReadableBytes(body)) !== body.size))){
         damagedAudioNote(j.id);
         const dt = findLibraryTrack(j.id);
         sharedLog("not sending “" + ((dt && dt.name) || j.id) + "”: its stored data is damaged (Settings → Library cleanup → Damaged files)");
