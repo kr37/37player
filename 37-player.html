@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.5.040">
+<meta name="app-version" content="2.5.041">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -5327,6 +5327,14 @@ const STRINGS = {
     "histShowLegend": "What to show",
     "histOtherAudio": "different audio",
     "histOtherSize": "file size changed",
+    "missingDelSomeDevice": "some devices",
+    "missingDelNoteOne": "The audio for this track hasn't reached the shared library yet: {device} still has to send it.",
+    "missingDelNoteMany": "The audio for {n} of these tracks hasn't reached the shared library yet: {device} still has to send it.",
+    "missingDelHere": "Only on this device",
+    "missingDelHereNote": "this device then holds only what you choose, not everything in the shared library. If {device} sends the audio later, you can choose to have the track here again ({where}).",
+    "missingDelAll": "Delete everywhere",
+    "missingDelAllNote": "from every device in the shared library, and {device} won't send it.",
+    "missingDelLog": "deleted on this device only ({n}): this device now chooses what it holds",
     "histOtherArt": "different artwork",
     "histOtherDetails": "different details",
     "histItemSilence": "Silence · {time}",
@@ -7408,6 +7416,14 @@ const STRINGS = {
     "histShowLegend": "Qué mostrar",
     "histOtherAudio": "otro audio",
     "histOtherSize": "tamaño del archivo cambiado",
+    "missingDelSomeDevice": "algunos dispositivos",
+    "missingDelNoteOne": "El audio de esta pista aún no ha llegado a la biblioteca compartida: {device} todavía tiene que enviarlo.",
+    "missingDelNoteMany": "El audio de {n} de estas pistas aún no ha llegado a la biblioteca compartida: {device} todavía tiene que enviarlo.",
+    "missingDelHere": "Solo en este dispositivo",
+    "missingDelHereNote": "este dispositivo tendrá entonces solo lo que elijas, no todo lo de la biblioteca compartida. Si {device} envía el audio más tarde, podrás elegir tener la pista aquí de nuevo ({where}).",
+    "missingDelAll": "Eliminar en todas partes",
+    "missingDelAllNote": "de todos los dispositivos de la biblioteca compartida, y {device} no lo enviará.",
+    "missingDelLog": "eliminadas solo en este dispositivo ({n}): ahora este dispositivo elige qué tiene",
     "histOtherArt": "otra imagen",
     "histOtherDetails": "otros datos",
     "histItemSilence": "Silencio · {time}",
@@ -9488,6 +9504,14 @@ const STRINGS = {
     "histShowLegend": "Ce qu'il faut afficher",
     "histOtherAudio": "autre audio",
     "histOtherSize": "taille du fichier modifiée",
+    "missingDelSomeDevice": "certains appareils",
+    "missingDelNoteOne": "L'audio de cette piste n'est pas encore arrivé dans la bibliothèque partagée : {device} doit encore l'envoyer.",
+    "missingDelNoteMany": "L'audio de {n} de ces pistes n'est pas encore arrivé dans la bibliothèque partagée : {device} doit encore l'envoyer.",
+    "missingDelHere": "Seulement sur cet appareil",
+    "missingDelHereNote": "cet appareil ne contiendra alors que ce que vous choisissez, pas tout ce qui est dans la bibliothèque partagée. Si {device} envoie l'audio plus tard, vous pourrez choisir de retrouver la piste ici ({where}).",
+    "missingDelAll": "Supprimer partout",
+    "missingDelAllNote": "de tous les appareils de la bibliothèque partagée, et {device} ne l'enverra pas.",
+    "missingDelLog": "supprimées sur cet appareil seulement ({n}) : cet appareil choisit désormais ce qu'il contient",
     "histOtherArt": "autre illustration",
     "histOtherDetails": "autres détails",
     "histItemSilence": "Silence · {time}",
@@ -11568,6 +11592,14 @@ const STRINGS = {
     "histShowLegend": "O que mostrar",
     "histOtherAudio": "outro áudio",
     "histOtherSize": "tamanho do ficheiro alterado",
+    "missingDelSomeDevice": "alguns dispositivos",
+    "missingDelNoteOne": "O áudio desta faixa ainda não chegou à biblioteca partilhada: {device} ainda tem de o enviar.",
+    "missingDelNoteMany": "O áudio de {n} destas faixas ainda não chegou à biblioteca partilhada: {device} ainda tem de o enviar.",
+    "missingDelHere": "Só neste dispositivo",
+    "missingDelHereNote": "este dispositivo passa a ter só o que escolher, não tudo o que está na biblioteca partilhada. Se {device} enviar o áudio mais tarde, pode escolher voltar a ter a faixa aqui ({where}).",
+    "missingDelAll": "Eliminar em todo o lado",
+    "missingDelAllNote": "de todos os dispositivos da biblioteca partilhada, e {device} não o vai enviar.",
+    "missingDelLog": "eliminadas só neste dispositivo ({n}): este dispositivo escolhe agora o que tem",
     "histOtherArt": "outra arte",
     "histOtherDetails": "outros detalhes",
     "histItemSilence": "Silêncio · {time}",
@@ -13648,6 +13680,14 @@ const STRINGS = {
     "histShowLegend": "Was angezeigt wird",
     "histOtherAudio": "anderes Audio",
     "histOtherSize": "Dateigröße geändert",
+    "missingDelSomeDevice": "einige Geräte",
+    "missingDelNoteOne": "Das Audio dieses Titels ist noch nicht in der geteilten Bibliothek angekommen: {device} muss es noch senden.",
+    "missingDelNoteMany": "Das Audio von {n} dieser Titel ist noch nicht in der geteilten Bibliothek angekommen: {device} muss es noch senden.",
+    "missingDelHere": "Nur auf diesem Gerät",
+    "missingDelHereNote": "dieses Gerät hat dann nur, was Sie auswählen, nicht alles aus der geteilten Bibliothek. Sendet {device} das Audio später, können Sie den Titel hier wieder auswählen ({where}).",
+    "missingDelAll": "Überall löschen",
+    "missingDelAllNote": "von allen Geräten der geteilten Bibliothek, und {device} sendet es nicht.",
+    "missingDelLog": "nur auf diesem Gerät gelöscht ({n}): dieses Gerät wählt jetzt aus, was es hat",
     "histOtherArt": "anderes Cover",
     "histOtherDetails": "andere Angaben",
     "histItemSilence": "Stille · {time}",
@@ -15728,6 +15768,14 @@ const STRINGS = {
     "histShowLegend": "显示内容",
     "histOtherAudio": "不同的音频",
     "histOtherSize": "文件大小已更改",
+    "missingDelSomeDevice": "某些设备",
+    "missingDelNoteOne": "这首曲目的音频尚未到达共享曲库：{device} 仍需发送。",
+    "missingDelNoteMany": "其中 {n} 首曲目的音频尚未到达共享曲库：{device} 仍需发送。",
+    "missingDelHere": "仅在此设备上",
+    "missingDelHereNote": "此设备之后只保留你选择的内容，而不是共享曲库中的全部。如果 {device} 以后发送了音频，你可以选择让这首曲目重新回到这里（{where}）。",
+    "missingDelAll": "在所有设备上删除",
+    "missingDelAllNote": "从共享曲库的所有设备上删除，{device} 也不会再发送它。",
+    "missingDelLog": "仅在此设备上删除（{n}）：此设备现在自行选择保留的内容",
     "histOtherArt": "不同的封面",
     "histOtherDetails": "不同的详细信息",
     "histItemSilence": "静音 · {time}",
@@ -17808,6 +17856,14 @@ const STRINGS = {
     "histShowLegend": "Hiển thị gì",
     "histOtherAudio": "âm thanh khác",
     "histOtherSize": "kích thước tệp đã thay đổi",
+    "missingDelSomeDevice": "một số thiết bị",
+    "missingDelNoteOne": "Âm thanh của bài này chưa đến thư viện dùng chung: {device} vẫn phải gửi.",
+    "missingDelNoteMany": "Âm thanh của {n} bài trong số này chưa đến thư viện dùng chung: {device} vẫn phải gửi.",
+    "missingDelHere": "Chỉ trên thiết bị này",
+    "missingDelHereNote": "thiết bị này khi đó chỉ giữ những gì bạn chọn, không phải mọi thứ trong thư viện dùng chung. Nếu sau này {device} gửi âm thanh, bạn có thể chọn để bài này lại có ở đây ({where}).",
+    "missingDelAll": "Xóa ở mọi nơi",
+    "missingDelAllNote": "khỏi mọi thiết bị trong thư viện dùng chung, và {device} sẽ không gửi nữa.",
+    "missingDelLog": "chỉ xóa trên thiết bị này ({n}): thiết bị này giờ tự chọn những gì nó giữ",
     "histOtherArt": "ảnh bìa khác",
     "histOtherDetails": "thông tin khác",
     "histItemSilence": "Im lặng · {time}",
@@ -19888,6 +19944,14 @@ const STRINGS = {
     "histShowLegend": "Τι να εμφανίζεται",
     "histOtherAudio": "άλλος ήχος",
     "histOtherSize": "άλλαξε το μέγεθος του αρχείου",
+    "missingDelSomeDevice": "ορισμένες συσκευές",
+    "missingDelNoteOne": "Ο ήχος αυτού του κομματιού δεν έχει φτάσει ακόμη στην κοινόχρηστη βιβλιοθήκη: η συσκευή {device} πρέπει ακόμη να τον στείλει.",
+    "missingDelNoteMany": "Ο ήχος {n} από αυτά τα κομμάτια δεν έχει φτάσει ακόμη στην κοινόχρηστη βιβλιοθήκη: η συσκευή {device} πρέπει ακόμη να τον στείλει.",
+    "missingDelHere": "Μόνο σε αυτή τη συσκευή",
+    "missingDelHereNote": "αυτή η συσκευή θα έχει τότε μόνο ό,τι επιλέξετε, όχι όλη την κοινόχρηστη βιβλιοθήκη. Αν η συσκευή {device} στείλει αργότερα τον ήχο, μπορείτε να επιλέξετε να έχετε ξανά το κομμάτι εδώ ({where}).",
+    "missingDelAll": "Διαγραφή παντού",
+    "missingDelAllNote": "από όλες τις συσκευές της κοινόχρηστης βιβλιοθήκης, και η συσκευή {device} δεν θα τον στείλει.",
+    "missingDelLog": "διαγράφηκαν μόνο σε αυτή τη συσκευή ({n}): αυτή η συσκευή επιλέγει πλέον τι έχει",
     "histOtherArt": "άλλο εξώφυλλο",
     "histOtherDetails": "άλλα στοιχεία",
     "histItemSilence": "Σιωπή · {time}",
@@ -21968,6 +22032,14 @@ const STRINGS = {
     "histShowLegend": "Cosa mostrare",
     "histOtherAudio": "audio diverso",
     "histOtherSize": "dimensione del file cambiata",
+    "missingDelSomeDevice": "alcuni dispositivi",
+    "missingDelNoteOne": "L'audio di questa traccia non è ancora arrivato nella libreria condivisa: {device} deve ancora inviarlo.",
+    "missingDelNoteMany": "L'audio di {n} di queste tracce non è ancora arrivato nella libreria condivisa: {device} deve ancora inviarlo.",
+    "missingDelHere": "Solo su questo dispositivo",
+    "missingDelHereNote": "questo dispositivo terrà allora solo ciò che scegli, non tutto ciò che è nella libreria condivisa. Se {device} invierà l'audio più tardi, potrai scegliere di riavere qui la traccia ({where}).",
+    "missingDelAll": "Elimina ovunque",
+    "missingDelAllNote": "da tutti i dispositivi della libreria condivisa, e {device} non lo invierà.",
+    "missingDelLog": "eliminate solo su questo dispositivo ({n}): ora questo dispositivo sceglie cosa tiene",
     "histOtherArt": "copertina diversa",
     "histOtherDetails": "dettagli diversi",
     "histItemSilence": "Silenzio · {time}",
@@ -39284,6 +39356,16 @@ async function sharedPlaylistsElsewhereUsing(cfg, trackIds){
 // be brought back from Review changes), or deleted everywhere.
 function confirmDelete(title, body, onOk, sync){
   const cfg = sync && typeof sharedConfig === "function" ? sharedConfig() : null;
+  // A device with everything, deleting tracks whose audio hasn't reached
+  // the shared library (2.5.041; kr37, 17 Nov 2026: "most of these are not
+  // syncing delays, but the library is disconnected or deleted from the
+  // sending device"). Three choices: only here (which makes this a device
+  // that chooses what it holds), everywhere (the sending device then won't
+  // send it), or Cancel.
+  if(cfg && !cfg.partial && !cfg.receiveOnly && sync && (sync.tracks || []).length && !sync.missingAsked){
+    const waiting = sync.tracks.filter(id=>{ const m = sharedTrackMissing(id); return m && m.waiting; });
+    if(waiting.length){ confirmDeleteNotArrived(title, body, onOk, sync, waiting); return; }
+  }
   if(cfg && cfg.partial){
     const nodeIds = [], refs = new Set();
     if(sync.node) (function walk(n){ nodeIds.push(n.id); (n.items || []).forEach(it=>{ if(it.kind === "track") refs.add(it.refId); }); (n.children || []).forEach(walk); })(sync.node);
@@ -39367,6 +39449,36 @@ function confirmDelete(title, body, onOk, sync){
     </div>
   `);
   document.getElementById("delGo").addEventListener("click", ()=>{ closeModal(); onOk(); });
+}
+
+function confirmDeleteNotArrived(title, body, onOk, sync, waiting){
+  const cfg = sharedConfig(), esc = escapeHtmlText;
+  const froms = [...new Set(waiting.map(id=> (sharedTrackMissing(id) || {}).from).filter(Boolean))];
+  const device = froms.length === 1 ? froms[0] : t("missingDelSomeDevice");
+  const n = waiting.length;
+  openModal(`
+    <h3>${title}</h3><p>${body}</p>
+    <p><strong>${esc(n === 1 && sync.tracks.length === 1 ? t("missingDelNoteOne", {device}) : t("missingDelNoteMany", {n, device}))}</strong></p>
+    <p class="settings-note"><strong>${esc(t("missingDelHere"))}:</strong> ${esc(t("missingDelHereNote", {device, where: [t("settingsTitle"), t("settingsSecShared"), t("chooseBtn").replace(/…$/, "")].join(" → ")}))}</p>
+    <p class="settings-note"><strong>${esc(t("missingDelAll"))}:</strong> ${esc(t("missingDelAllNote", {device}))}</p>
+    <div class="modal-actions">
+      <button class="btn ghost" data-close>${t("dlgCancel")}</button>
+      <button class="btn" id="delMissHere">${esc(t("missingDelHere"))}</button>
+      <button class="btn danger" id="delMissAll">${esc(t("missingDelAll"))}</button>
+    </div>`);
+  document.getElementById("delMissAll").addEventListener("click", ()=>{ closeModal(); onOk(); });
+  document.getElementById("delMissHere").addEventListener("click", async ()=>{
+    closeModal();
+    // This device chooses what it holds from now on, then the delete goes
+    // as on such a device: its own question if playlists here use them.
+    cfg.partial = true;
+    await saveState();
+    sharedLog(t("missingDelLog", {n: sync.tracks.length}));
+    const usage = playlistsUsingTracks();
+    if(sync.tracks.some(id=> (usage.get(id) || []).length)) confirmDelete(title, body, onOk, Object.assign({}, sync, {missingAsked: true}));
+    else await onOk();
+    renderSettingsIfShared();
+  });
 }
 
 /* ===================== Settings ===================== */
