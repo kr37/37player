@@ -169,7 +169,7 @@ window.__lvl = ()=> ({ctx: levelCtx, routed: levelGains.has(audioEl)}); // level
 window.__share.note = (m)=> sharedMissingNote(m); // miss.js
 window.__dbg3.trashKeys = ()=> undoTrashKeys(); // reconcile.js
 window.__dbg3.downloadPass = ()=> sharedDownloadPending(sharedConfig()); // reconcile.js
-window.__disk = {kind: ()=> STORAGE_KIND, idbPut, idbGet, DiskBlob, JoinedBlob, audioObjectUrl, writeFileTo, storageOpen, readLibraryList, writeLibraryList, libraryDbName, renameLibrary, id: ()=> LIBRARY_ID, openImportChoice, desktopImportFolder, placeFolders, placeIntoLibrary, placeLookForNew, placePathFrom, libStore: ()=> libStore, rewriteFileTagsIfPossible, tracksWithMissingAudio, showAudioMissing, confirmDeleteTracksFromLibrary, syncPlaylistFiles, placeOffline, switchLibrary, togglePlay}; // diskblob.js, desktoplibs.js, inplace.js, switchplaying.js
+window.__disk = {kind: ()=> STORAGE_KIND, idbPut, idbGet, DiskBlob, JoinedBlob, audioObjectUrl, writeFileTo, storageOpen, readLibraryList, writeLibraryList, libraryDbName, renameLibrary, id: ()=> LIBRARY_ID, openImportChoice, desktopImportFolder, placeFolders, placeIntoLibrary, placeLookForNew, placePathFrom, libStore: ()=> libStore, rewriteFileTagsIfPossible, tracksWithMissingAudio, showAudioMissing, confirmDeleteTracksFromLibrary, syncPlaylistFiles, placeOffline, switchLibrary, togglePlay, shell: ()=> desktopShell, idbDeleteMany, stateKeys: prefix=> libStore.keys("state", prefix), analyzeAudio}; // diskblob.js, desktoplibs.js, inplace.js, switchplaying.js
 window.__sil = {mp3: buildSilentMp3Bytes, entries: buildPlaceholderEntries, recognize: recognizePlaceholder, tags: parseAudioTags}; // silencemp3.js
 window.__big = {realBlob, sharedFetch, blobWithCurrentTags, convertTracks, trackIsBigFile, scheduleConvertResume, bigBytes: ()=> BIG_FILE_BYTES, fromDisk: ()=> bigFilesConvertFromDisk(), queue: ()=> convertQueue.slice()}; // bigfile.js
 window.__rejoin = {idbDelete, storedAudioIds, absent: ()=> [...sharedAudioAbsent], revs: ()=> root.library.map(t=> [t.id.slice(0,6), t.audioRev, t.fileSize])}; // rejoin.js
@@ -179,3 +179,11 @@ window.__vol = {set: (v)=> setMainVolume(v), get: ()=> mainVolume, gain: ()=> ma
 window.__lazy = {start: ()=> converterStart(), convert: (b, n, f, t)=> converterConvert(b, n, f, t), input: (b, n)=> converterInput(b, n), off: ()=> converterLazyOff, setOff: (v)=>{ converterLazyOff = v; }, stop: ()=> converterStop(), log: ()=> (typeof playLogLines !== "undefined" ? playLogLines : null)};
 // Settings → About → Check for updates (shellupd.js)
 window.__updates = {check: ()=> checkForUpdatesNow()};
+// A dialog closes first, then does its work (2.5.031; dlgfast.js). slowSaves
+// holds the save queue back for a while, as sync or another save would.
+window.__ad = {pending: ()=> afterDialogPending, idle: ()=> afterDialogIdle(), bar: ()=> [...activeOps.values()].map(o=> o.text).join(' | '),
+  closing: ()=> closingWouldStop(), slowSaves: (ms)=>{ const hold = new Promise(r=> setTimeout(r, ms)); saveChain = saveChain.then(()=> hold); },
+  edit: (id)=> openEditLibraryTrack(findLibraryTrack(id)), bulk: (ids)=> openBulkEditLibraryTracks(ids), run: (k, f, fn)=> afterDialog(k, f, fn), undo: ()=> doUndo(),
+  art: (id)=> artworkUrlCache[id], copyPic: (blob)=>{ copiedArtworkBlob = blob; }};
+// Removing a library can move its folder to the Trash (2.5.032; libtrash.js).
+window.__trash = {fp: (r)=> libraryFingerprint(r), facts: (id)=> libraryTrashFacts(id), shell: ()=> desktopShell, noTrash: ()=>{ desktopShell = Object.assign({}, desktopShell, {trash: false}); }};

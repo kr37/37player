@@ -18,6 +18,26 @@ Read the sections that bear on your task before changing code.
   variables (NOTES.md, "Colours and controls"); don't invent a new button
   style for a new screen.
 
+## Feedback reports
+
+People's Send feedback reports land in the private repository
+`kr37/37player-reports`, and `INDEX.md` there lists every report and names
+the newest one a session has read.
+
+- **At the start of every conversation**, before the task: add that
+  repository to the session (push access), clone it (`--depth 1`) and compare
+  `reports/` with `INDEX.md`. Tell kr37 about each new report in a line or
+  two: who and which device, the version, what it says, and anything the logs
+  show at a glance. Then add its line to `INDEX.md`, move the "newest read"
+  line on, and push. Don't start fixing it unless he asks.
+- **In a long conversation, check again** at the start of a reply once about
+  a day has passed since the last check.
+- When something comes of a report (a fix, a decision), its line in
+  `INDEX.md` gets the version or the outcome.
+- Reports hold personal details (reply addresses, names, device and library
+  names). Keep those out of this public repository; NOTES.md can name a report
+  by its ID.
+
 ## The droplet is off limits
 
 The droplet (37player.com, kr37.net) is the production server: it serves

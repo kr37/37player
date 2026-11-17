@@ -28,9 +28,13 @@ const clickText = (p, sel, src) => p.evaluate((sel, src)=>{ const re=new RegExp(
     ok(/the author of 37 Player/.test(form) && !/kr37/.test(form) && /playback log \(\d+ lines\)/.test(form), 'the form says who it goes to and lists the playback log: ' + form.split('\n').slice(0, 3).join(' / '));
     await p.evaluate(()=> document.getElementById('fbSend').click()); await sleep(200);
     ok(/Write something first/.test(await p.evaluate(()=> document.getElementById('fbMsg').textContent)), 'an empty message isn\'t sent');
+    // Scrolled down to the button, as on a short window (2.5.034: WebKit kept that scroll on the shorter "Thank you", an empty box).
+    await p.evaluate(()=>{ const m = document.querySelector('.modal'); m.style.maxHeight = '200px'; m.scrollTop = m.scrollHeight; });
     await p.evaluate(()=>{ document.getElementById('fbMessage').value = 'The iPad stopped at a stop\nand then nothing'; document.getElementById('fbReply').value = 'someone@example.org'; document.getElementById('fbSend').click(); });
     for(let i = 0; i < 40 && !/Thank you/.test(await p.evaluate(()=> document.querySelector('.modal')?.innerText || '')); i++) await sleep(200);
     ok(/Thank you/.test(await p.evaluate(()=> document.querySelector('.modal')?.innerText || '')), 'sent: "Thank you"');
+    ok(await p.evaluate(()=> document.querySelector('.modal').scrollTop) === 0, '"Thank you" starts at the top of its dialog');
+    await p.evaluate(()=>{ document.querySelector('.modal').style.maxHeight = ''; });
     const dirs = fs.readdirSync(path.join(data, 'feedback')).filter(d=> d !== 'rate');
     ok(dirs.length === 1, 'one message kept on the server: ' + dirs.join(','));
     const kept = dirs.length ? fs.readdirSync(path.join(data, 'feedback', dirs[0])) : [];
