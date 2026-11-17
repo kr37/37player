@@ -48273,6 +48273,8 @@ function sharedNoteDownloadCrash(){
 const SHARED_PIECE_BYTES = 16 * 1024 * 1024;
 function sharedPieceBytes(){ return window.__pieceBytes || SHARED_PIECE_BYTES; }
 async function sharedReceive(cfg, store, name, onTotal){
+  const at = store === "audio" ? await sharedReceivePlace(name, true).catch(()=> null) : null;
+  if(at) return sharedReceiveOnDisk(cfg, store, name, onTotal, at);
   const PIECE = sharedPieceBytes(), keyOf = n=> "dlpart:" + name + ":" + n;
   const keys = [];
   let total = null, type = "", offset = 0;
@@ -48309,6 +48311,69 @@ async function sharedReceive(cfg, store, name, onTotal){
   }
   return {pieceKeys: keys, total: total != null ? total : offset, type};
 }
+/* In the desktop app (2.5.035), a recording's pieces go straight onto the
+   end of one file, "receiving/<name>.part" in the library's own files'
+   folder, which the app then copies into place on the disk. Before, each
+   piece was stored as a file of its own, read back into the page, and the
+   whole recording put together in memory and written out again: three
+   passes through the page, every piece of them through the window's main
+   thread on a Mac, and all of it in memory at the end (kr37's new Mac froze
+   for good receiving a 51 MB recording, report 2026-11-17-021332). Now
+   each piece passes once, and only one piece is ever in memory. A download
+   cut off carries on from what the file holds (its size and type kept in
+   the state record "dlpart:<name>:disk", so sharedDropStalePieces clears
+   both when the file is no longer waiting). */
+async function sharedReceivePlace(name, create){
+  if(STORAGE_KIND !== "desktop" || !(libStore instanceof FolderLibraryStore)) return null;
+  await libStore.open();
+  if(!(libStore.own instanceof DesktopDirHandle)) return null;
+  let dir;
+  try{ dir = await libStore.own.getDirectoryHandle("receiving", {create: !!create}); }catch(err){ if(create) throw err; return null; }
+  return {root: dir.root, path: dir.child(String(name).replace(/[^\w.-]/g, "_") + ".part")};
+}
+async function sharedReceiveOnDisk(cfg, store, name, onTotal, at){
+  const PIECE = sharedPieceBytes(), metaKey = "dlpart:" + name + ":disk";
+  // Pieces of it kept the old way (before 2.5.035): it starts again here.
+  try{ const old = (await libStore.keys("state", "dlpart:" + name + ":")).filter(k=> k !== metaKey); if(old.length) await idbDeleteMany("state", old); }catch(err){}
+  const meta = await idbGet("state", metaKey).catch(()=> null);
+  let total = meta && meta.total != null ? meta.total : null, type = meta && meta.type || "", offset = 0;
+  if(meta){
+    const st = await desktopInvoke("fs_stat", {root: at.root, path: at.path}).catch(()=> null);
+    offset = st && st.kind === "file" ? st.size : 0;
+    if(total != null) onTotal(total);
+  } else await desktopInvoke("fs_remove", {root: at.root, path: at.path, recursive: false}).catch(()=>{}); // a file without its note: afresh
+  if(total != null && offset > total){ await desktopInvoke("fs_remove", {root: at.root, path: at.path, recursive: false}).catch(()=>{}); offset = 0; }
+  let noted = !!meta;
+  for(let n = 0; total == null || offset < total; n++){
+    if(n > 0 || offset > 0) await sharedWaitForTransfers(); // between pieces too: not while anything plays
+    const res = await sharedFetch(cfg, {op: "file", kind: store, name}, {headers: {Range: "bytes=" + offset + "-" + (offset + PIECE - 1)}});
+    if(res.status === 416 && offset > 0) break; // asked past the end: the last piece was exactly full
+    if(!res.ok) throw new Error("download " + res.status);
+    if(res.status !== 206){
+      // The whole file, not a piece: read as before.
+      if(offset > 0) throw new Error("the server stopped sending pieces");
+      const len = +(res.headers.get("Content-Length") || 0) || 0;
+      if(len) onTotal(len);
+      return {blob: await res.blob()};
+    }
+    const m = /\/(\d+)\s*$/.exec(res.headers.get("Content-Range") || "");
+    if(m && total == null){ total = +m[1]; onTotal(total); }
+    type = type || res.headers.get("Content-Type") || "";
+    if(offset === 0 && total != null && total <= PIECE) return {blob: await res.blob()}; // all of it in one
+    const bytes = new Uint8Array(await res.arrayBuffer());
+    if(offset === 0 && total == null && bytes.length < PIECE) return {blob: new Blob([bytes], {type})};
+    if(!noted){ await idbPut("state", {key: metaKey, total, type}); noted = true; }
+    for(let i = 0; i < bytes.length; i += DISK_READ_PIECE)
+      await desktopInvoke("fs_write", bytes.slice(i, i + DISK_READ_PIECE), {headers: {"p37-root": encodeURIComponent(at.root), "p37-path": encodeURIComponent(at.path), "p37-append": "1"}});
+    offset += bytes.length;
+    if(bytes.length < PIECE) break;
+  }
+  return {diskFile: at, total: total != null ? total : offset, type, metaKey};
+}
+async function sharedDropDiskDownload(got){
+  try{ await desktopInvoke("fs_remove", {root: got.diskFile.root, path: got.diskFile.path, recursive: false}); }catch(err){}
+  try{ await idbDeleteMany("state", [got.metaKey]); }catch(err){}
+}
 async function sharedReadPieces(keys){
   const out = [];
   for(const k of keys){
@@ -48323,8 +48388,14 @@ async function sharedDropStalePieces(pending){
   try{
     const keys = await libStore.keys("state", "dlpart:");
     const live = new Set([...Object.entries(pending.audio).map(([id, rev])=> id + "." + rev), ...Object.entries(pending.art).map(([id, rev])=> id + "." + rev)]);
-    const stale = keys.filter(k=> !live.has(String(k).slice(7).replace(/:\d+$/, "")));
+    const stale = keys.filter(k=> !live.has(String(k).slice(7).replace(/:(\d+|disk)$/, "")));
     if(stale.length) await idbDeleteMany("state", stale);
+    // And the desktop app's files being received for them (2.5.035).
+    for(const k of stale){
+      if(!/:disk$/.test(k)) continue;
+      const at = await sharedReceivePlace(String(k).slice(7).replace(/:disk$/, ""), false).catch(()=> null);
+      if(at) await desktopInvoke("fs_remove", {root: at.root, path: at.path, recursive: false}).catch(()=>{});
+    }
   }catch(err){}
 }
 async function sharedFetchFileOnce(cfg, kind, id){
@@ -48348,13 +48419,26 @@ async function sharedFetchFileOnce(cfg, kind, id){
     // Put together from the pieces as stored, so they're read from storage
     // rather than all held in memory at once.
     const pieces = got.pieceKeys ? await sharedReadPieces(got.pieceKeys) : null;
-    blob = got.blob || new Blob(pieces, {type: got.type || ""});
+    if(got.diskFile){
+      // The desktop app's: all of it in one file already, which the app
+      // copies into place (sharedReceiveOnDisk). Every byte must be there.
+      const st = await desktopInvoke("fs_stat", {root: got.diskFile.root, path: got.diskFile.path}).catch(()=> null);
+      if(!st || st.size !== got.total){
+        await sharedDropDiskDownload(got); // the next try starts afresh
+        const e = new Error("received, it came out as " + (st ? st.size : "no") + " bytes instead of " + got.total); e.assembled = true; throw e;
+      }
+      const plain = new DiskBlob(got.diskFile.root, got.diskFile.path, got.total, "", "", Date.now());
+      const f = await sniffAudioFormat(plain, trackFileName(id)).catch(()=> null);
+      blob = new DiskBlob(got.diskFile.root, got.diskFile.path, got.total, f && f.mime && f.mime !== "application/octet-stream" ? f.mime : "", "", Date.now());
+      blob.whole = true;
+    }
+    else blob = got.blob || new Blob(pieces, {type: got.type || ""});
     // A file that already starts with Safari's pattern as it comes from the
     // shared library (an MP3 with two tags in a row, which still plays) is
     // taken as it is: refusing it changed nothing and left it missing on
     // this device for good (1.4.082, four files on kr37's iPad).
     const doubledAlready = pieces && pieces.length ? await looksDoubled(pieces[0]) : false;
-    const before = got.pieceKeys ? await idbGet(store, id).catch(()=> null) : null;
+    const before = got.pieceKeys || got.diskFile ? await idbGet(store, id).catch(()=> null) : null;
     syncWritingFiles = true;
     // Downloaded but not stored (a full device): marked, so the pass stops
     // instead of downloading it again every 30 seconds.
@@ -48378,6 +48462,7 @@ async function sharedFetchFileOnce(cfg, kind, id){
       }
       idbDeleteMany("state", got.pieceKeys).catch(()=>{});
     }
+    if(got.diskFile) await sharedDropDiskDownload(got); // copied into place: the received file goes
   } finally {
     try{ localStorage.removeItem(DOWNLOADING_KEY); }catch(err){}
   }
