@@ -2234,28 +2234,43 @@ const ROOT_REV_KEY = "rootRev"; // the library record's revision on its own (Idb
 // list's size, are kept in a record of their own, "waveforms" (track ID →
 // peaks), beside "root". The library record is read at every start and
 // written at every save; a save now writes the waveforms only when one
-// changed. A library written before this has its peaks inside "root": they
-// are read from there until its first save moves them. Stores hide the record
-// from keys() and merge it back in on get("state", "root").
+// changed. Stores hide the record from keys() and merge it back in on
+// get("state", "root"), so the rest of the app sees tracks with peaks.
+// In "root", a track whose waveform is in the waveforms record has the
+// placeholder [0] (WAVE_STUB) instead. That's for older versions, which can
+// still open the library (the version on main, or main put back): a track
+// with no peaks is one they'd analyse again, all 2,800 of them, saving the
+// whole list after each; with [0] they show a flat line and leave it. A
+// stand-in (isStandInPeaks) stays in "root" as it is. Real peaks in "root"
+// were written there by an older version (or before 2.5.044), so they're the
+// newest and win; the next save moves them out.
 const WAVES_KEY = "waveforms";
+const WAVE_STUB = [0];
+function isWaveStub(p){ return Array.isArray(p) && p.length === 1 && p[0] === 0; }
 // A store's memory of the waveforms it holds: {tag, arrays}, where tag names
 // the stored waveforms record's version and arrays maps track ID → the array
-// that is stored (or null when not known). Arrays are replaced, never changed
-// in place (see peaksPrint), so the same array is the same waveform: a save
-// compares by identity, and a read of the same version hands back the same arrays.
-// The library record's value without its tracks' peaks, and the waveforms
-// record (given a new tag) when they differ from `last`. cache: what's stored
-// once the write is really done (see settleWrite).
+// that is stored. Arrays are replaced, never changed in place (see
+// peaksPrint), so the same array is the same waveform: a save compares by
+// identity, and a read of the same version hands back the same arrays.
+// The library record's value as it's stored, and the waveforms record, with
+// a new tag, when they differ from `last`. A track with no waveform in the
+// value where one is stored keeps the stored one: nothing here takes a
+// waveform away, so a list without them can't lose them.
+// cache: what's stored once the write is really done (see settleWrite).
 function splitLibraryWaveforms(value, last){
   if(!value || !Array.isArray(value.library)) return {value, waves: null, cache: last};
   const arrays = new Map(), map = {};
   let changed = !last;
   const library = value.library.map(t=>{
-    if(!t || !t.peaks) return t;
-    map[t.id] = t.peaks; arrays.set(t.id, t.peaks);
-    if(last && last.arrays.get(t.id) !== t.peaks) changed = true;
-    const {peaks, ...rest} = t;
-    return rest;
+    if(!t) return t;
+    let p = t.peaks;
+    if((p === undefined || isWaveStub(p)) && last && last.arrays.has(t.id)) p = last.arrays.get(t.id);
+    if(p === undefined) return t;
+    if(isWaveStub(p)){ const {peaks, ...rest} = t; return rest; }
+    if(isStandInPeaks(p)) return p === t.peaks ? t : Object.assign({}, t, {peaks: p});
+    map[t.id] = p; arrays.set(t.id, p);
+    if(last && last.arrays.get(t.id) !== p) changed = true;
+    return Object.assign({}, t, {peaks: WAVE_STUB});
   });
   if(last && last.arrays.size !== arrays.size) changed = true;
   if(!changed) return {value: Object.assign({}, value, {library}), waves: null, cache: {tag: last.tag, arrays}};
@@ -2265,17 +2280,19 @@ function splitLibraryWaveforms(value, last){
 // The library record's value with its tracks' waveforms put back, from the
 // waveforms record `rec` ({value, tag}, or undefined). Where `last` is the
 // same version, its arrays are used, so the tracks keep the arrays a window
-// already holds. Returns the cache for the stored version.
+// already holds. A placeholder with nothing stored for it (a waveforms record
+// lost or damaged) leaves the track without a waveform, so one is made again.
+// Returns the cache for the stored version.
 function mergeLibraryWaveforms(value, rec, last){
   const tag = rec && rec.tag != null ? rec.tag : null, map = rec && rec.value;
   const reuse = !!(last && tag !== null && last.tag === tag);
   const cache = {tag, arrays: new Map()};
   if(!value || !Array.isArray(value.library)) return cache;
   value.library = value.library.map(t=>{
-    if(!t) return t;
+    if(!t || (t.peaks !== undefined && !isWaveStub(t.peaks))) return t; // a stand-in, or an older version's
     let pk = reuse ? last.arrays.get(t.id) : undefined;
     if(!Array.isArray(pk) && map) pk = map[t.id];
-    if(!Array.isArray(pk)) return t;
+    if(!Array.isArray(pk) || isWaveStub(pk) || isStandInPeaks(pk)){ if(t.peaks === undefined) return t; const {peaks, ...rest} = t; return rest; }
     cache.arrays.set(t.id, pk);
     return Object.assign({}, t, {peaks: pk});
   });
@@ -2891,7 +2908,10 @@ class FolderLibraryStore {
     if(!keys.length) return Promise.resolve();
     return this.locked(async()=>{
       let gone = [];
-      for(const k of keys) gone = gone.concat(await this.removeRecord(store, k));
+      for(const k of keys){
+        gone = gone.concat(await this.removeRecord(store, k));
+        if(store === "state" && k === "root"){ gone = gone.concat(await this.removeRecord("state", WAVES_KEY)); this.wavesCache = null; } // the waveforms go with it
+      }
       await this.addOrphans(gone);
     });
   }
@@ -2956,6 +2976,7 @@ class FolderLibraryStore {
   writeRootIfCurrent(value, expectedRev, force){
     return this.locked(async()=>{
       let rev = expectedRev + 1;
+      if(force) this.wavesCache = null; // what's stored isn't known: written again in full
       if(!force){
         const quick = await this.rootRevQuick();
         if(quick !== expectedRev){
@@ -6060,6 +6081,7 @@ const STRINGS = {
     "notSavingTooltip": "Changes made here aren't being saved. Tap for more.",
     "notSavingTitle": "Changes here aren't being saved",
     "notSavingFullBody": "This device is out of storage space, so 37 Player can't save anything right now. Changes made here since {time} will be lost if 37 Player is closed, and nothing new can be stored (imports, files from a shared library). Playing what's already here still works. Free up some space (on an iPad: Settings → General → iPad Storage). 37 Player keeps trying, and saves everything as soon as there's room.",
+    "notSavingFullOwnBody": "This device is out of storage space, so 37 Player can't save anything right now, and 37 Player is probably what filled it: {n} files from the shared library are still to come here. Changes made here since {time} will be lost if 37 Player is closed. Playing what's already here still works. To make room, free up some space (on an iPad: Settings → General → iPad Storage), or bring less here with What's on this device…: untick what this device doesn't need (the shared library keeps it). 37 Player keeps trying, and saves everything as soon as there's room.",
     "notSavingOtherBody": "37 Player can't save on this device right now ({error}). Changes made here since {time} will be lost if 37 Player is closed. Playing what's already here still works. A full device is the usual cause: freeing up some space (on an iPad: Settings → General → iPad Storage) usually fixes it. 37 Player keeps trying, and saves everything as soon as it can.",
     "notSavingDeniedBody": "37 Player isn't allowed to save in this library's folder ({error}). Changes made here since {time} will be lost if 37 Player is closed. Playing what's already here still works. The folder, or folders inside it, may be read-only, as happens with a copy from a backup drive or a download: give yourself permission to change them, or use another copy of the library (Settings → Library → Find a library folder…). 37 Player keeps trying, and saves everything as soon as it can.",
     "notSavingTryNow": "Try again now",
@@ -8151,6 +8173,7 @@ const STRINGS = {
     "notSavingTooltip": "Los cambios hechos aquí no se están guardando. Toca para saber más.",
     "notSavingTitle": "Los cambios de aquí no se están guardando",
     "notSavingFullBody": "Este dispositivo se ha quedado sin espacio de almacenamiento, así que 37 Player no puede guardar nada ahora mismo. Los cambios hechos aquí desde las {time} se perderán si se cierra 37 Player, y no se puede guardar nada nuevo (importaciones, archivos de una biblioteca compartida). Reproducir lo que ya está aquí sigue funcionando. Libera algo de espacio (en un iPad: Ajustes → General → Almacenamiento del iPad). 37 Player sigue intentándolo y lo guarda todo en cuanto haya sitio.",
+    "notSavingFullOwnBody": "Este dispositivo se ha quedado sin espacio de almacenamiento, así que 37 Player no puede guardar nada ahora mismo, y lo más probable es que lo haya llenado el propio 37 Player: aún faltan {n} archivos de la biblioteca compartida por llegar aquí. Los cambios hechos aquí desde las {time} se perderán si se cierra 37 Player. Reproducir lo que ya está aquí sigue funcionando. Para hacer sitio, libera algo de espacio (en un iPad: Ajustes → General → Almacenamiento del iPad) o trae menos aquí con «Qué hay en este dispositivo…»: desmarca lo que este dispositivo no necesita (la biblioteca compartida lo conserva). 37 Player sigue intentándolo y lo guarda todo en cuanto haya sitio.",
     "notSavingOtherBody": "37 Player no puede guardar en este dispositivo ahora mismo ({error}). Los cambios hechos aquí desde las {time} se perderán si se cierra 37 Player. Reproducir lo que ya está aquí sigue funcionando. La causa habitual es un dispositivo lleno: liberar algo de espacio (en un iPad: Ajustes → General → Almacenamiento del iPad) suele solucionarlo. 37 Player sigue intentándolo y lo guarda todo en cuanto pueda.",
     "notSavingDeniedBody": "37 Player no tiene permiso para guardar en la carpeta de esta biblioteca ({error}). Los cambios hechos aquí desde las {time} se perderán si se cierra 37 Player. Reproducir lo que ya está aquí sigue funcionando. La carpeta, o carpetas dentro de ella, pueden ser de solo lectura, como ocurre con una copia desde un disco de copias de seguridad o una descarga: dese permiso para modificarlas, o use otra copia de la biblioteca (Ajustes → Biblioteca → Buscar la carpeta de una biblioteca…). 37 Player sigue intentándolo y lo guarda todo en cuanto puede.",
     "notSavingTryNow": "Intentar de nuevo",
@@ -10241,6 +10264,7 @@ const STRINGS = {
     "notSavingTooltip": "Les modifications faites ici ne sont pas enregistrées. Touchez pour en savoir plus.",
     "notSavingTitle": "Les modifications faites ici ne sont pas enregistrées",
     "notSavingFullBody": "Cet appareil n'a plus d'espace de stockage, donc 37 Player ne peut rien enregistrer pour l'instant. Les modifications faites ici depuis {time} seront perdues si 37 Player est fermé, et rien de nouveau ne peut être stocké (importations, fichiers d'une bibliothèque partagée). La lecture de ce qui est déjà ici fonctionne toujours. Libérez un peu d'espace (sur un iPad : Réglages → Général → Stockage iPad). 37 Player continue d'essayer et enregistre tout dès qu'il y a de la place.",
+    "notSavingFullOwnBody": "Cet appareil n'a plus d'espace de stockage, donc 37 Player ne peut rien enregistrer pour l'instant, et c'est probablement 37 Player lui-même qui l'a rempli : {n} fichiers de la bibliothèque partagée doivent encore arriver ici. Les modifications faites ici depuis {time} seront perdues si 37 Player est fermé. La lecture de ce qui est déjà ici fonctionne toujours. Pour faire de la place, libérez un peu d'espace (sur un iPad : Réglages → Général → Stockage iPad) ou amenez-en moins ici avec « Ce qui est sur cet appareil… » : décochez ce dont cet appareil n'a pas besoin (la bibliothèque partagée le garde). 37 Player continue d'essayer et enregistre tout dès qu'il y a de la place.",
     "notSavingOtherBody": "37 Player ne peut pas enregistrer sur cet appareil pour l'instant ({error}). Les modifications faites ici depuis {time} seront perdues si 37 Player est fermé. La lecture de ce qui est déjà ici fonctionne toujours. La cause habituelle est un appareil plein : libérer un peu d'espace (sur un iPad : Réglages → Général → Stockage iPad) règle généralement le problème. 37 Player continue d'essayer et enregistre tout dès que possible.",
     "notSavingDeniedBody": "37 Player n'a pas le droit d'enregistrer dans le dossier de cette bibliothèque ({error}). Les modifications faites ici depuis {time} seront perdues si 37 Player est fermé. La lecture de ce qui est déjà ici fonctionne toujours. Le dossier, ou des dossiers qu'il contient, sont peut-être en lecture seule, comme une copie venue d'un disque de sauvegarde ou d'un téléchargement : donnez-vous le droit de les modifier, ou utilisez une autre copie de la bibliothèque (Réglages → Bibliothèque → Retrouver le dossier d'une bibliothèque…). 37 Player continue d'essayer et enregistre tout dès qu'il le peut.",
     "notSavingTryNow": "Réessayer maintenant",
@@ -11934,7 +11958,7 @@ const STRINGS = {
     "sharedBarUploading": "Biblioteca partilhada: a enviar {done} de {total}",
     "sharedOffline": "Não foi possível contactar a biblioteca partilhada — voltará a tentar.",
     "sharedFailFull": "Este dispositivo está cheio, então as alterações da biblioteca compartilhada não podem ser guardadas aqui. Libere algum espaço; haverá nova tentativa.",
-    "sharedFailFullOwn": "Este dispositivo está cheio, e provavelmente foi a sincronização da biblioteca compartilhada do 37 Player que o encheu: ainda faltam {n} arquivos da biblioteca compartilhada para chegar aqui. Libere espaço (downloads, apps) ou traga menos para cá com «O que está neste dispositivo».",
+    "sharedFailFullOwn": "Este dispositivo está cheio, e provavelmente foi a sincronização da biblioteca compartilhada do 37 Player que o encheu: ainda faltam {n} arquivos da biblioteca compartilhada para chegar aqui. Libere espaço (downloads, apps) ou traga menos para cá com «O que há neste dispositivo».",
     "sharedFailDriveFull": "O Google Drive de {account} está cheio, então as alterações e o áudio deste dispositivo não podem ser enviados. Libere espaço nesse Google Drive; o 37 Player tenta de novo sozinho.",
     "driveSpaceLine": "Google Drive: {used} de {limit} usados ({pct}%).",
     "driveSpaceUnlimited": "Google Drive: {used} usados.",
@@ -12331,6 +12355,7 @@ const STRINGS = {
     "notSavingTooltip": "As alterações feitas aqui não estão sendo salvas. Toque para saber mais.",
     "notSavingTitle": "As alterações feitas aqui não estão sendo salvas",
     "notSavingFullBody": "Este dispositivo ficou sem espaço de armazenamento, então o 37 Player não consegue salvar nada agora. As alterações feitas aqui desde {time} serão perdidas se o 37 Player for fechado, e nada novo pode ser guardado (importações, arquivos de uma biblioteca compartilhada). Tocar o que já está aqui continua funcionando. Libere algum espaço (no iPad: Ajustes → Geral → Armazenamento do iPad). O 37 Player continua tentando e salva tudo assim que houver espaço.",
+    "notSavingFullOwnBody": "Este dispositivo ficou sem espaço de armazenamento, então o 37 Player não consegue salvar nada agora, e provavelmente foi o próprio 37 Player que o encheu: ainda faltam {n} arquivos da biblioteca compartilhada para chegar aqui. As alterações feitas aqui desde {time} serão perdidas se o 37 Player for fechado. Tocar o que já está aqui continua funcionando. Para abrir espaço, libere armazenamento (no iPad: Ajustes → Geral → Armazenamento do iPad) ou traga menos para cá com «O que há neste dispositivo…»: desmarque o que este dispositivo não precisa (a biblioteca compartilhada continua com ele). O 37 Player continua tentando e salva tudo assim que houver espaço.",
     "notSavingOtherBody": "O 37 Player não consegue salvar neste dispositivo agora ({error}). As alterações feitas aqui desde {time} serão perdidas se o 37 Player for fechado. Tocar o que já está aqui continua funcionando. A causa mais comum é o dispositivo cheio: liberar algum espaço (no iPad: Ajustes → Geral → Armazenamento do iPad) costuma resolver. O 37 Player continua tentando e salva tudo assim que puder.",
     "notSavingDeniedBody": "O 37 Player não tem permissão para guardar na pasta desta biblioteca ({error}). As alterações feitas aqui desde as {time} perdem-se se o 37 Player for fechado. Reproduzir o que já está aqui continua a funcionar. A pasta, ou pastas dentro dela, podem ser só de leitura, como acontece com uma cópia de um disco de cópias de segurança ou de uma transferência: dê a si mesmo permissão para as alterar, ou use outra cópia da biblioteca (Configurações → Biblioteca → Procurar a pasta de uma biblioteca…). O 37 Player continua a tentar e guarda tudo assim que puder.",
     "notSavingTryNow": "Tentar de novo agora",
@@ -14421,6 +14446,7 @@ const STRINGS = {
     "notSavingTooltip": "Änderungen hier werden nicht gespeichert. Tippen für mehr.",
     "notSavingTitle": "Änderungen hier werden nicht gespeichert",
     "notSavingFullBody": "Auf diesem Gerät ist kein Speicherplatz mehr frei, daher kann 37 Player gerade nichts speichern. Änderungen, die hier seit {time} gemacht wurden, gehen verloren, wenn 37 Player geschlossen wird, und nichts Neues kann abgelegt werden (Importe, Dateien aus einer gemeinsamen Bibliothek). Abspielen, was schon hier ist, funktioniert weiterhin. Gib etwas Speicherplatz frei (auf einem iPad: Einstellungen → Allgemein → iPad-Speicher). 37 Player versucht es weiter und speichert alles, sobald Platz ist.",
+    "notSavingFullOwnBody": "Auf diesem Gerät ist kein Speicherplatz mehr frei, daher kann 37 Player gerade nichts speichern, und sehr wahrscheinlich hat 37 Player selbst es gefüllt: Es fehlen noch {n} Dateien aus der gemeinsamen Bibliothek. Änderungen, die hier seit {time} gemacht wurden, gehen verloren, wenn 37 Player geschlossen wird. Abspielen, was schon hier ist, funktioniert weiterhin. Um Platz zu schaffen, gib etwas Speicherplatz frei (auf einem iPad: Einstellungen → Allgemein → iPad-Speicher) oder hol weniger hierher, über „Was auf diesem Gerät ist…“: Entferne das Häkchen bei allem, was dieses Gerät nicht braucht (die gemeinsame Bibliothek behält es). 37 Player versucht es weiter und speichert alles, sobald Platz ist.",
     "notSavingOtherBody": "37 Player kann auf diesem Gerät gerade nicht speichern ({error}). Änderungen, die hier seit {time} gemacht wurden, gehen verloren, wenn 37 Player geschlossen wird. Abspielen, was schon hier ist, funktioniert weiterhin. Meist ist das Gerät voll: etwas Speicherplatz freigeben (auf einem iPad: Einstellungen → Allgemein → iPad-Speicher) behebt es in der Regel. 37 Player versucht es weiter und speichert alles, sobald es geht.",
     "notSavingDeniedBody": "37 Player darf im Ordner dieser Bibliothek nicht speichern ({error}). Änderungen, die hier seit {time} gemacht wurden, gehen verloren, wenn 37 Player geschlossen wird. Was schon hier ist, lässt sich weiter abspielen. Der Ordner oder Ordner darin sind vielleicht schreibgeschützt, wie bei einer Kopie von einem Sicherungslaufwerk oder aus einem Download: Geben Sie sich die Berechtigung, sie zu ändern, oder verwenden Sie eine andere Kopie der Bibliothek (Einstellungen → Bibliothek → Ordner einer Bibliothek suchen…). 37 Player versucht es weiter und speichert alles, sobald es geht.",
     "notSavingTryNow": "Jetzt erneut versuchen",
@@ -16114,7 +16140,7 @@ const STRINGS = {
     "sharedBarUploading": "共享曲库：正在发送 {done}/{total}",
     "sharedOffline": "暂时无法连接共享曲库——稍后会重试。",
     "sharedFailFull": "此设备已满，共享曲库的更改无法存到这里。请释放一些空间；稍后会再试。",
-    "sharedFailFullOwn": "此设备已满，很可能是 37 Player 的共享曲库同步占满了它：共享曲库还有 {n} 个文件要来这里。请释放一些空间（下载、应用），或用“此设备上有什么”减少这里接收的内容。",
+    "sharedFailFullOwn": "此设备已满，很可能是 37 Player 的共享曲库同步占满了它：共享曲库还有 {n} 个文件要来这里。请释放一些空间（下载、应用），或用“此设备上的内容”减少这里接收的内容。",
     "sharedFailDriveFull": "{account} 的 Google Drive 已满，本设备的更改和音频无法发送。请在该 Google Drive 中腾出空间；37 Player 会自动重试。",
     "driveSpaceLine": "Google Drive：已用 {used} / {limit}（{pct}%）。",
     "driveSpaceUnlimited": "Google Drive：已用 {used}。",
@@ -16511,6 +16537,7 @@ const STRINGS = {
     "notSavingTooltip": "在这里所做的更改没有被保存。点按了解更多。",
     "notSavingTitle": "这里的更改没有被保存",
     "notSavingFullBody": "此设备的存储空间已用完，所以 37 Player 现在无法保存任何内容。自 {time} 起在这里所做的更改，如果关闭 37 Player 就会丢失，而且无法存入任何新内容（导入、来自共享曲库的文件）。播放已有的内容仍然正常。请释放一些空间（iPad 上：设置 → 通用 → iPad 储存空间）。37 Player 会继续尝试，一有空间就保存全部内容。",
+    "notSavingFullOwnBody": "此设备的存储空间已用完，所以 37 Player 现在无法保存任何内容，而很可能正是 37 Player 自己占满了它：共享曲库还有 {n} 个文件要来这里。自 {time} 起在这里所做的更改，如果关闭 37 Player 就会丢失。播放已有的内容仍然正常。要腾出空间，请释放一些空间（iPad 上：设置 → 通用 → iPad 储存空间），或用“此设备上的内容…”减少这里的内容：取消勾选此设备不需要的（共享曲库会保留它们）。37 Player 会继续尝试，一有空间就保存全部内容。",
     "notSavingOtherBody": "37 Player 现在无法在此设备上保存（{error}）。自 {time} 起在这里所做的更改，如果关闭 37 Player 就会丢失。播放已有的内容仍然正常。常见原因是设备已满：释放一些空间（iPad 上：设置 → 通用 → iPad 储存空间）通常就能解决。37 Player 会继续尝试，一旦可以就保存全部内容。",
     "notSavingDeniedBody": "37 Player 没有权限在这个曲库的文件夹中保存（{error}）。自 {time} 起在这里所做的更改，关闭 37 Player 后会丢失。已有的内容仍然可以播放。这个文件夹或其中的文件夹可能是只读的（例如从备份硬盘或下载中复制来的）：请给自己修改它们的权限，或使用这个曲库的另一个副本（设置 → 曲库 → 查找曲库文件夹…）。37 Player 会继续尝试，一旦可以就保存所有内容。",
     "notSavingTryNow": "立即重试",
@@ -18204,7 +18231,7 @@ const STRINGS = {
     "sharedBarUploading": "Thư viện chung: đang gửi {done}/{total}",
     "sharedOffline": "Tạm thời không kết nối được thư viện chung — sẽ thử lại.",
     "sharedFailFull": "Thiết bị này đã đầy, nên các thay đổi từ thư viện dùng chung không lưu được ở đây. Hãy giải phóng bớt dung lượng; sẽ thử lại sau.",
-    "sharedFailFullOwn": "Thiết bị này đã đầy, và rất có thể đồng bộ thư viện dùng chung của 37 Player là thứ đã làm đầy nó: còn {n} tệp từ thư viện dùng chung sẽ chuyển đến đây. Hãy giải phóng dung lượng (tải xuống, ứng dụng) hoặc chuyển ít hơn về đây bằng “Nội dung trên thiết bị này”.",
+    "sharedFailFullOwn": "Thiết bị này đã đầy, và rất có thể đồng bộ thư viện dùng chung của 37 Player là thứ đã làm đầy nó: còn {n} tệp từ thư viện dùng chung sẽ chuyển đến đây. Hãy giải phóng dung lượng (tải xuống, ứng dụng) hoặc chuyển ít hơn về đây bằng “Trên thiết bị này có gì”.",
     "sharedFailDriveFull": "Google Drive của {account} đã đầy, nên không gửi được thay đổi và âm thanh từ thiết bị này. Hãy giải phóng dung lượng trong Google Drive đó; 37 Player sẽ tự thử lại.",
     "driveSpaceLine": "Google Drive: đã dùng {used} / {limit} ({pct}%).",
     "driveSpaceUnlimited": "Google Drive: đã dùng {used}.",
@@ -18601,6 +18628,7 @@ const STRINGS = {
     "notSavingTooltip": "Các thay đổi ở đây không được lưu. Chạm để biết thêm.",
     "notSavingTitle": "Các thay đổi ở đây không được lưu",
     "notSavingFullBody": "Thiết bị này đã hết dung lượng lưu trữ, nên 37 Player hiện không thể lưu gì. Các thay đổi làm ở đây từ {time} sẽ mất nếu đóng 37 Player, và không thể lưu thêm gì mới (nhập tệp, tệp từ thư viện dùng chung). Phát những gì đã có ở đây vẫn hoạt động. Hãy giải phóng bớt dung lượng (trên iPad: Cài đặt → Cài đặt chung → Dung lượng iPad). 37 Player sẽ tiếp tục thử và lưu tất cả ngay khi có chỗ.",
+    "notSavingFullOwnBody": "Thiết bị này đã hết dung lượng lưu trữ, nên 37 Player hiện không thể lưu gì, và rất có thể chính 37 Player đã làm đầy nó: còn {n} tệp từ thư viện dùng chung sẽ chuyển đến đây. Các thay đổi làm ở đây từ {time} sẽ mất nếu đóng 37 Player. Phát những gì đã có ở đây vẫn hoạt động. Để có chỗ, hãy giải phóng bớt dung lượng (trên iPad: Cài đặt → Cài đặt chung → Dung lượng iPad) hoặc chuyển ít hơn về đây bằng “Trên thiết bị này có gì…”: bỏ chọn những gì thiết bị này không cần (thư viện dùng chung vẫn giữ chúng). 37 Player sẽ tiếp tục thử và lưu tất cả ngay khi có chỗ.",
     "notSavingOtherBody": "37 Player hiện không thể lưu trên thiết bị này ({error}). Các thay đổi làm ở đây từ {time} sẽ mất nếu đóng 37 Player. Phát những gì đã có ở đây vẫn hoạt động. Nguyên nhân thường gặp là thiết bị đầy: giải phóng bớt dung lượng (trên iPad: Cài đặt → Cài đặt chung → Dung lượng iPad) thường sẽ khắc phục. 37 Player sẽ tiếp tục thử và lưu tất cả ngay khi có thể.",
     "notSavingDeniedBody": "37 Player không được phép lưu vào thư mục của thư viện này ({error}). Những thay đổi ở đây từ {time} sẽ mất nếu đóng 37 Player. Vẫn phát được những gì đã có ở đây. Thư mục, hoặc các thư mục bên trong, có thể ở chế độ chỉ đọc, như bản sao từ ổ sao lưu hay từ tệp tải về: hãy cấp cho mình quyền thay đổi chúng, hoặc dùng một bản sao khác của thư viện (Cài đặt → Thư viện → Tìm thư mục của một thư viện…). 37 Player tiếp tục thử và lưu mọi thứ ngay khi có thể.",
     "notSavingTryNow": "Thử lại ngay",
@@ -20691,6 +20719,7 @@ const STRINGS = {
     "notSavingTooltip": "Οι αλλαγές εδώ δεν αποθηκεύονται. Πατήστε για περισσότερα.",
     "notSavingTitle": "Οι αλλαγές εδώ δεν αποθηκεύονται",
     "notSavingFullBody": "Αυτή η συσκευή δεν έχει άλλο αποθηκευτικό χώρο, οπότε το 37 Player δεν μπορεί να αποθηκεύσει τίποτα αυτή τη στιγμή. Οι αλλαγές που έγιναν εδώ από τις {time} θα χαθούν αν κλείσει το 37 Player, και τίποτα νέο δεν μπορεί να αποθηκευτεί (εισαγωγές, αρχεία από κοινόχρηστη βιβλιοθήκη). Η αναπαραγωγή όσων υπάρχουν ήδη εδώ λειτουργεί κανονικά. Ελευθερώστε λίγο χώρο (σε iPad: Ρυθμίσεις → Γενικά → Αποθηκευτικός χώρος iPad). Το 37 Player συνεχίζει να προσπαθεί και αποθηκεύει τα πάντα μόλις υπάρξει χώρος.",
+    "notSavingFullOwnBody": "Αυτή η συσκευή δεν έχει άλλο αποθηκευτικό χώρο, οπότε το 37 Player δεν μπορεί να αποθηκεύσει τίποτα αυτή τη στιγμή, και πιθανότατα το ίδιο το 37 Player τη γέμισε: ακόμη {n} αρχεία της κοινόχρηστης βιβλιοθήκης πρόκειται να έρθουν εδώ. Οι αλλαγές που έγιναν εδώ από τις {time} θα χαθούν αν κλείσει το 37 Player. Η αναπαραγωγή όσων υπάρχουν ήδη εδώ λειτουργεί κανονικά. Για να γίνει χώρος, ελευθερώστε λίγο χώρο (σε iPad: Ρυθμίσεις → Γενικά → Αποθηκευτικός χώρος iPad) ή φέρτε λιγότερα εδώ με το «Τι υπάρχει σε αυτή τη συσκευή…»: αποεπιλέξτε ό,τι δεν χρειάζεται αυτή η συσκευή (η κοινόχρηστη βιβλιοθήκη το κρατά). Το 37 Player συνεχίζει να προσπαθεί και αποθηκεύει τα πάντα μόλις υπάρξει χώρος.",
     "notSavingOtherBody": "Το 37 Player δεν μπορεί να αποθηκεύσει σε αυτή τη συσκευή αυτή τη στιγμή ({error}). Οι αλλαγές που έγιναν εδώ από τις {time} θα χαθούν αν κλείσει το 37 Player. Η αναπαραγωγή όσων υπάρχουν ήδη εδώ λειτουργεί κανονικά. Η συνηθισμένη αιτία είναι μια γεμάτη συσκευή: αν ελευθερώσετε λίγο χώρο (σε iPad: Ρυθμίσεις → Γενικά → Αποθηκευτικός χώρος iPad) συνήθως διορθώνεται. Το 37 Player συνεχίζει να προσπαθεί και αποθηκεύει τα πάντα μόλις μπορέσει.",
     "notSavingDeniedBody": "Το 37 Player δεν έχει άδεια να αποθηκεύσει στον φάκελο αυτής της βιβλιοθήκης ({error}). Οι αλλαγές που έγιναν εδώ από τις {time} θα χαθούν αν κλείσει το 37 Player. Η αναπαραγωγή όσων υπάρχουν ήδη εδώ λειτουργεί κανονικά. Ο φάκελος, ή φάκελοι μέσα του, ίσως είναι μόνο για ανάγνωση, όπως ένα αντίγραφο από δίσκο αντιγράφων ασφαλείας ή από λήψη: δώστε στον εαυτό σας άδεια να τους αλλάξετε, ή χρησιμοποιήστε άλλο αντίγραφο της βιβλιοθήκης (Ρυθμίσεις → Βιβλιοθήκη → Εύρεση φακέλου βιβλιοθήκης…). Το 37 Player συνεχίζει να προσπαθεί και αποθηκεύει τα πάντα μόλις μπορέσει.",
     "notSavingTryNow": "Δοκιμή ξανά τώρα",
@@ -22781,6 +22810,7 @@ const STRINGS = {
     "notSavingTooltip": "Le modifiche fatte qui non vengono salvate. Tocca per saperne di più.",
     "notSavingTitle": "Le modifiche fatte qui non vengono salvate",
     "notSavingFullBody": "Questo dispositivo ha esaurito lo spazio di archiviazione, quindi 37 Player non può salvare niente al momento. Le modifiche fatte qui dalle {time} andranno perse se 37 Player viene chiuso, e non si può memorizzare nulla di nuovo (importazioni, file da una libreria condivisa). La riproduzione di ciò che è già qui funziona ancora. Libera un po' di spazio (su un iPad: Impostazioni → Generali → Spazio iPad). 37 Player continua a provare e salva tutto appena c'è posto.",
+    "notSavingFullOwnBody": "Questo dispositivo ha esaurito lo spazio di archiviazione, quindi 37 Player non può salvare niente al momento, e probabilmente l'ha riempito proprio 37 Player: restano {n} file della libreria condivisa da portare qui. Le modifiche fatte qui dalle {time} andranno perse se 37 Player viene chiuso. La riproduzione di ciò che è già qui funziona ancora. Per fare posto, libera un po' di spazio (su un iPad: Impostazioni → Generali → Spazio iPad) oppure porta qui meno con «Cosa c'è su questo dispositivo…»: togli la spunta a ciò che non serve a questo dispositivo (la libreria condivisa lo conserva). 37 Player continua a provare e salva tutto appena c'è posto.",
     "notSavingOtherBody": "37 Player non riesce a salvare su questo dispositivo al momento ({error}). Le modifiche fatte qui dalle {time} andranno perse se 37 Player viene chiuso. La riproduzione di ciò che è già qui funziona ancora. La causa più comune è un dispositivo pieno: liberare un po' di spazio (su un iPad: Impostazioni → Generali → Spazio iPad) di solito risolve. 37 Player continua a provare e salva tutto appena può.",
     "notSavingDeniedBody": "37 Player non ha il permesso di salvare nella cartella di questa libreria ({error}). Le modifiche fatte qui dalle {time} andranno perse se 37 Player viene chiuso. La riproduzione di ciò che è già qui continua a funzionare. La cartella, o cartelle al suo interno, potrebbero essere di sola lettura, come una copia da un disco di backup o da un download: datti il permesso di modificarle, oppure usa un'altra copia della libreria (Impostazioni → Libreria → Trova la cartella di una libreria…). 37 Player continua a provare e salva tutto appena può.",
     "notSavingTryNow": "Riprova ora",
@@ -23843,6 +23873,9 @@ function noteSaveFailed(err){
   saveFailing = {since: first ? Date.now() : saveFailing.since, full: isQuotaError(err), denied: isDeniedError(err), text: errText(err)};
   if(first){ try{ sharedLog("saving on this device failed: " + saveFailing.text); }catch(e){} }
   updateNotSavingIndicator();
+  // The dialog stays open now (noteSaveWorked): keep its line true.
+  const st = document.getElementById("notSavingStatus");
+  if(st && st.textContent) st.textContent = t("notSavingStill");
   clearTimeout(saveRetryTimer);
   saveRetryTimer = setTimeout(()=> saveState(), SAVE_RETRY_MS);
   let playing = true; try{ playing = anyWindowPlaying(); }catch(e){}
@@ -23886,12 +23919,18 @@ function updateNotSavingIndicator(){
 function openNotSavingDialog(){
   if(!saveFailing) return;
   const time = new Date(saveFailing.since).toLocaleTimeString([], {hour: "numeric", minute: "2-digit"});
-  const body = saveFailing.full ? t("notSavingFullBody", {time}) : t(saveFailing.denied ? "notSavingDeniedBody" : "notSavingOtherBody", {time, error: saveFailing.text});
+  // Full, with files from the shared library still to come here: 37 Player
+  // itself has probably filled the device, so say so and offer the way out,
+  // bringing less here (kr37, 18 Nov 2026: his 64 GB iPad on full sync).
+  const toCome = saveFailing.full ? sharedStillToComeHere() : 0;
+  const body = saveFailing.full ? (toCome ? t("notSavingFullOwnBody", {time, n: toCome}) : t("notSavingFullBody", {time})) : t(saveFailing.denied ? "notSavingDeniedBody" : "notSavingOtherBody", {time, error: saveFailing.text});
   openModal(`<h3>${escapeHtmlText(t("notSavingTitle"))}</h3>
     <p>${escapeHtmlText(body)}</p>${saveFailing.denied ? `<p><b id="notSavingFolder"></b></p>` : ""}
     <p class="settings-note" id="notSavingStatus"></p>
-    <div class="modal-actions"><button class="btn ghost" id="notSavingRetry" type="button">${escapeHtmlText(t("notSavingTryNow"))}</button><button class="btn primary" data-close>${escapeHtmlText(t("ok"))}</button></div>`);
+    <div class="modal-actions">${toCome ? `<button class="btn" id="notSavingChoose" type="button">${escapeHtmlText(t("chooseBtn"))}</button>` : ""}<button class="btn ghost" id="notSavingRetry" type="button">${escapeHtmlText(t("notSavingTryNow"))}</button><button class="btn primary" data-close>${escapeHtmlText(t("ok"))}</button></div>`);
   if(saveFailing.denied) libraryFolderShown().then(f=>{ const el = document.getElementById("notSavingFolder"); if(el) el.textContent = f; });
+  const choose = document.getElementById("notSavingChoose");
+  if(choose) choose.addEventListener("click", ()=>{ closeModal(); openSharedChoose(); });
   document.getElementById("notSavingRetry").addEventListener("click", async ()=>{
     const st = document.getElementById("notSavingStatus");
     if(st) st.textContent = "…";
@@ -33170,8 +33209,11 @@ async function loadArtworkThumb(slotEl, libraryId){
 }
 // The flat waveform used when a file couldn't be analyzed.
 // The stand-in is 0.15 all along (the only value ever used). Not just "all
-// one value": a silent track's real waveform is all 0 (1.4.110).
-function isStandInPeaks(p){ return !p || !p.length || p.every(v=> v === 0.15); }
+// one value": a silent track's real waveform is all 0 (1.4.110). Fewer than
+// two numbers is never a real one: that's the placeholder an older version
+// may have sent the shared library as a track's waveform (WAVE_STUB, 2.5.044),
+// made again here and never sent on.
+function isStandInPeaks(p){ return !p || p.length < 2 || p.every(v=> v === 0.15); }
 const PEAK_BUCKETS = 720; // waveform resolution — bump this and old tracks self-upgrade the next time they're played
 // A tiny, cached "top half only" waveform image per track, used as a plain
 // CSS background behind a row — drawn once, from peaks already computed at
@@ -46648,6 +46690,14 @@ const SHARED_AFTER_CHANGE_MS = 8000;
 let sharedSyncTimer = null, sharedSyncRunning = false, sharedSyncAgain = false;
 let sharedPending = null;          // {audio:{id:rev}, art:{id:rev}} — files still to download
 let sharedDownloading = false;
+// How many files from the shared library are still to come here: what fills
+// a device on full sync whose library is bigger than its free space (kr37's
+// 64 GB iPad, 18 Nov 2026), so the full-device messages say so.
+function sharedStillToComeHere(){
+  if(!sharedConfig()) return 0;
+  const n = sharedPending ? Object.keys(sharedPending.audio).length + Object.keys(sharedPending.art).length : 0;
+  return Math.max(n, sharedStatus.arriving || 0);
+}
 let sharedServerVersion = null; // sync.php's own version, from its replies ("old" before it said)
 const sharedStatus = {state: "idle", message: "", lastSyncAt: null, version: null, libraryName: "", conflicts: [], transfer: null};
 // Opened with ?nosync in the address: sharing stays off for this session, so
@@ -46926,9 +46976,9 @@ document.addEventListener("click", async (e)=>{
 function sharedFailText(err){
   if(err && err.rejected) return sharedRejectedText();
   if(err && err.driveFull){ const cfg = sharedConfig(); return t("sharedFailDriveFull", {account: (cfg && cfg.account) || "Google"}); }
-  // Files still to come here are what fills the device: say so, and offer
-  // the way out (the fullOwn flag puts the button in Settings; kr37, 18 Nov 2026).
-  if(isQuotaError(err)) return sharedStatus.arriving > 0 ? t("sharedFailFullOwn", {n: sharedStatus.arriving}) : t("sharedFailFull");
+  // With files still to come here, they're what fills the device: say so,
+  // and where to bring less (kr37, 18 Nov 2026; sharedStillToComeHere).
+  if(isQuotaError(err)){ const n = sharedStillToComeHere(); return n ? t("sharedFailFullOwn", {n}) : t("sharedFailFull"); }
   if(err && err.name === "TypeError") return t("sharedOffline"); // the request never got an answer
   const m = /\b([45]\d\d)\b/.exec(String(err && err.message || ""));
   if(m) return t("sharedFailServer", {code: m[1]});
@@ -47825,9 +47875,6 @@ function sharedFilesLock(name, fn){
   return navigator.locks.request(libScoped("37player-shared-" + name), {ifAvailable: true}, lock=> lock ? fn() : null);
 }
 function sharedSetStatus(patch){
-  // fullOwn (the device is full because of the files still to come here) is
-  // only as old as the state it was set with.
-  if("state" in patch && !("fullOwn" in patch)) sharedStatus.fullOwn = false;
   Object.assign(sharedStatus, patch);
   if("reviewCount" in patch) updateSharedReviewBadge();
   if(sharedAwake) sharedAwakeUpdate();
@@ -48086,7 +48133,7 @@ async function sharedSyncOnce(opts){
     }catch(err){
       console.warn("Shared library check:", err);
       sharedLog("check failed: " + errText(err) + (isQuotaError(err) ? " (this device is full)" : ""));
-      sharedSetStatus({state: "error", message: sharedFailText(err), fullOwn: isQuotaError(err) && sharedStatus.arriving > 0});
+      sharedSetStatus({state: "error", message: sharedFailText(err)});
     }
     return;
   }
@@ -48185,7 +48232,7 @@ async function sharedSyncOnce(opts){
     console.warn("Shared library sync:", err);
     if(err && err.driveFull) sharedDriveFullAt = Date.now();
     sharedLog("sync failed: " + errText(err) + (isQuotaError(err) ? " (this device is full)" : err && err.driveFull ? " (Google Drive is full)" : ""));
-    sharedSetStatus({state: "error", message: sharedFailText(err), fullOwn: isQuotaError(err) && sharedStatus.arriving > 0});
+    sharedSetStatus({state: "error", message: sharedFailText(err)});
   }
 }
 /* ---- Two copies of one recording (1.4.190, kr37's five cases)
@@ -48522,7 +48569,7 @@ async function sharedUploadInBackgroundHere(cfg){
     }
   }catch(err){
     console.warn("Shared library upload paused:", err);
-    if(err && err.driveFull){ sharedDriveFullAt = Date.now(); sharedDriveFullSaid = false; sharedSetStatus({state: "error", message: sharedFailText(err), fullOwn: isQuotaError(err) && sharedStatus.arriving > 0}); }
+    if(err && err.driveFull){ sharedDriveFullAt = Date.now(); sharedDriveFullSaid = false; sharedSetStatus({state: "error", message: sharedFailText(err)}); }
     sharedLog("sending stopped: " + (err && err.message || err));
   }
   finally{
@@ -48591,12 +48638,12 @@ async function sharedDownloadPendingHere(cfg){
   if(sharedDownloading) return;
   await sharedRefreshPending();
   sharedDownloading = true;
-  let waiting = 0;
+  let waiting = 0, full = false;
   try{
     const pending = await sharedLoadPending();
     await sharedDropStalePieces(pending);
     const wanted = [...Object.keys(pending.audio).map(id=> ["audio", id]), ...Object.keys(pending.art).map(id=> ["art", id])];
-    if(!wanted.length){ sharedSetStatus({arriving: 0}); return; }
+    if(!wanted.length){ sharedSetStatus({arriving: 0, storeFull: false}); return; }
     const res = await sharedFetch(cfg, {op: "list"});
     if(!res.ok) throw new Error("list " + res.status);
     const have = await res.json();
@@ -48652,6 +48699,7 @@ async function sharedDownloadPendingHere(cfg){
         if(err && err.storing){
           // Nothing more can be stored now: the rest wait too.
           waiting += list.length - done;
+          full = isQuotaError(err); // the device is full (Settings says why: storeFull)
           sharedStoreBackoff = Math.min(SHARED_STORE_BACKOFF_MAX, sharedStoreBackoff ? sharedStoreBackoff * 2 : SHARED_STORE_BACKOFF_FIRST);
           sharedLog("couldn't store " + what + ": " + errText(err.inner) + (isQuotaError(err) ? " (this device is full)" : "") + "; receiving tries again in " + Math.round(sharedStoreBackoff / 60000) + " min, or at Sync now");
           break;
@@ -48669,7 +48717,7 @@ async function sharedDownloadPendingHere(cfg){
   } finally {
     sharedDownloading = false;
     if(sharedDownloadAgain){ sharedDownloadAgain = false; setTimeout(()=>{ if(sharedConfig()) sharedDownloadPending(sharedConfig()); }, 0); }
-    sharedSetStatus({transfer: sharedStatus.transfer && sharedStatus.transfer.kind === "down" ? null : sharedStatus.transfer, arriving: waiting});
+    sharedSetStatus({transfer: sharedStatus.transfer && sharedStatus.transfer.kind === "down" ? null : sharedStatus.transfer, arriving: waiting, storeFull: full && waiting > 0});
     clearTimeout(sharedRetryTimer);
     if(waiting && sharedConfig()) sharedRetryTimer = setTimeout(()=> sharedDownloadPending(sharedConfig()), sharedStoreBackoff || 30000);
   }
@@ -51534,21 +51582,17 @@ function renderSharedStatusInto(){
   else if(sharedDeviceUnconfirmed()) s = t("sdHeldStatus");
   else if(sharedStatus.state === "error") s = sharedStatus.message;
   else if(sharedStatus.lastSyncAt) s = t("sharedLastChecked", {time: new Date(sharedStatus.lastSyncAt).toLocaleTimeString([], {hour: "numeric", minute: "2-digit"})}) + " "
-    + (busy ? t("sharedStateUpdating") : arriving ? t(arriving === 1 ? "sharedStateWaitingOne" : "sharedStateWaiting", {n: arriving}) : t("sharedStateUpToDate"));
+    // Receiving stopped because this device is full: why, and the way out
+    // (What's on this device… is just below; kr37, 18 Nov 2026).
+    + (sharedStatus.storeFull && arriving && !sharedStatus.transfer ? t("sharedFailFullOwn", {n: sharedStillToComeHere()})
+      : busy ? t("sharedStateUpdating") : arriving ? t(arriving === 1 ? "sharedStateWaitingOne" : "sharedStateWaiting", {n: arriving}) : t("sharedStateUpToDate"));
   else s = t("sharedNeverSynced");
   if(cfg.reviewMode && sharedStatus.reviewCount) s += " " + t(sharedStatus.reviewCount === 1 ? "rvWaitingOne" : "rvWaitingMany", {n: sharedStatus.reviewCount});
   if(sharedStatus.transfer) s += " " + t(sharedStatus.transfer.kind === "up" ? "sharedUploading" : "sharedDownloading", {done: workingOn(sharedStatus.transfer.done, sharedStatus.transfer.total), total: sharedStatus.transfer.total}) + (sharedStatus.transfer.kind === "up" && sharedStatus.transfer.part && sharedStatus.transfer.part.total ? " (" + fmtBytes(sharedStatus.transfer.part.have) + " / " + fmtBytes(sharedStatus.transfer.part.total) + ")" : "");
   if(sharedStatus.paused) s += " " + t(sharedStatus.paused === "review" ? "sharedPausedReview" : "sharedPausedPlaying");
   if(sharedTooBigNames.size) s += " " + t("sharedTooBigNote", {names: [...sharedTooBigNames].join(", ")});
-  if(arriving && busy) s += " " + t(arriving === 1 ? "sharedStillArrivingOne" : "sharedStillArriving", {n: arriving});
+  if(arriving && busy && !sharedStatus.storeFull) s += " " + t(arriving === 1 ? "sharedStillArrivingOne" : "sharedStillArriving", {n: arriving});
   status.textContent = s;
-  // The way out when the device is full because of what's still to come here
-  // (sharedFailFullOwn): choose less to keep here, or free space in the app.
-  let fullBtn = document.getElementById("shFullChoose");
-  if(sharedStatus.state === "error" && sharedStatus.fullOwn){
-    if(!fullBtn){ fullBtn = document.createElement("button"); fullBtn.id = "shFullChoose"; fullBtn.type = "button"; fullBtn.className = "btn ghost"; fullBtn.addEventListener("click", ()=> openSharedChoose()); status.after(fullBtn); }
-    fullBtn.textContent = t("chooseBtn"); fullBtn.style.display = "";
-  } else if(fullBtn) fullBtn.style.display = "none";
   // Who keeps backups of the shared library.
   let kp = document.getElementById("shKeepers");
   if(!kp){ kp = document.createElement("p"); kp.id = "shKeepers"; kp.className = "settings-note"; kp.style.whiteSpace = "pre-line"; (status.closest(".sh-status-row") || status).after(kp); }

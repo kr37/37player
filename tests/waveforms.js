@@ -29,14 +29,14 @@ let fails = 0; const ok=(c,m)=>{ console.log((c?'ok   ':'FAIL ')+m); if(!c) fail
     const keys = await st.keys('state');
     const back = await st.get('state', 'root');
     return {
-      rootHasPeaks: raw.root.value.library.some(t=> 'peaks' in t),
+      rootStubbed: raw.root.value.library.filter(t=> /^w/.test(t.id)).every(t=> Array.isArray(t.peaks) && t.peaks.length === 1 && t.peaks[0] === 0),
       wavesCount: raw.waves ? Object.keys(raw.waves.value).length : -1,
       keysHideWaves: !keys.includes('waveforms'),
       backHasPeaks: back.value.library.filter(t=> t.peaks && t.peaks.length === 720).length,
       tracks: back.value.library.length
     };
   });
-  ok(!idb.rootHasPeaks && idb.wavesCount >= 300 && idb.keysHideWaves && idb.backHasPeaks >= 300, 'browser library: the list is stored without waveforms, which go in their own record (' + JSON.stringify(idb) + ')');
+  ok(idb.rootStubbed && idb.wavesCount >= 300 && idb.keysHideWaves && idb.backHasPeaks >= 300, 'browser library: the list holds the placeholder [0], the waveforms are in their own record (' + JSON.stringify(idb) + ')');
 
   // A save that changes no waveform doesn't write them; an edit doesn't either.
   const quiet = await p.evaluate(async()=>{
@@ -79,19 +79,20 @@ let fails = 0; const ok=(c,m)=>{ console.log((c?'ok   ':'FAIL ')+m); if(!c) fail
   await p.evaluate(async()=>{ window.__dbg.getRoot().library.find(t=> t.id === 'w6').name = 'Edited after the old version'; await window.__dbg.saveState(); });
   const moved = await p.evaluate(async()=>{
     const dbName = window.__disk.libraryDbName ? window.__disk.libraryDbName(window.__disk.id()) : 'temple-sound-library';
-    return await new Promise(res=>{ const q = indexedDB.open(dbName); q.onsuccess = ()=>{ const tx = q.result.transaction('state', 'readonly'), os = tx.objectStore('state'); const a = os.get('root'), w = os.get('waveforms'); tx.oncomplete = ()=>{ q.result.close(); res({rootHasPeaks: a.result.value.library.some(t=> 'peaks' in t), waves: w.result ? Object.keys(w.result.value).length : -1}); }; }; });
+    return await new Promise(res=>{ const q = indexedDB.open(dbName); q.onsuccess = ()=>{ const tx = q.result.transaction('state', 'readonly'), os = tx.objectStore('state'); const a = os.get('root'), w = os.get('waveforms'); tx.oncomplete = ()=>{ q.result.close(); res({rootStubbed: a.result.value.library.filter(t=> /^w/.test(t.id)).every(t=> Array.isArray(t.peaks) && t.peaks.length === 1 && t.peaks[0] === 0), waves: w.result ? Object.keys(w.result.value).length : -1}); }; }; });
   });
-  ok(!moved.rootHasPeaks && moved.waves >= 300, 'its first save moves the waveforms out of "root" (' + JSON.stringify(moved) + ')');
+  ok(moved.rootStubbed && moved.waves >= 300, 'its first save moves the waveforms out of "root" (' + JSON.stringify(moved) + ')');
 
   // A folder library: root.json without waveforms, waveforms.json beside it.
   const folder = await p.evaluate(async()=>{
     const fs = window.__fs.make('waveforms-' + Date.now()), out = {};
-    const value = {library: [{id: 'x', name: 'One', peaks: [0.1, 0.2]}, {id: 'y', name: 'Two', peaks: [0.3]}], tree: []};
+    const value = {library: [{id: 'x', name: 'One', peaks: [0.1, 0.2]}, {id: 'y', name: 'Two', peaks: [0.3, 0.4]}, {id: 'z', name: 'Flat', peaks: new Array(720).fill(0.15)}], tree: []};
     out.w1 = (await fs.writeRootIfCurrent(value, 0)).rev;
     const dir = await fs.sub('state');
     const rootRaw = JSON.parse(await (await (await dir.getFileHandle('root.json')).getFile()).text());
     const wavesRaw = JSON.parse(await (await (await dir.getFileHandle('waveforms.json')).getFile()).text());
-    out.rootHasPeaks = rootRaw.value.library.some(t=> 'peaks' in t);
+    out.rootStubbed = rootRaw.value.library.filter(t=> t.id !== 'z').every(t=> Array.isArray(t.peaks) && t.peaks.length === 1 && t.peaks[0] === 0);
+    out.standInInline = rootRaw.value.library.find(t=> t.id === 'z').peaks.length === 720;
     out.wavesKeys = Object.keys(wavesRaw.value).sort().join(',');
     out.quick = await fs.rootRevQuick();
     const back = await fs.get('state', 'root');
@@ -102,17 +103,28 @@ let fails = 0; const ok=(c,m)=>{ console.log((c?'ok   ':'FAIL ')+m); if(!c) fail
     fs.writeRecordFile = (s, r, plain)=>{ if(r && r.key === 'waveforms') wrote++; return orig(s, r, plain); };
     out.w2 = (await fs.writeRootIfCurrent(back.value, out.w1)).rev;
     out.unchangedWrites = wrote;
+    // An older version wrote root.json: x's new waveform inline, y still the placeholder.
+    const rootNow = JSON.parse(await (await (await dir.getFileHandle('root.json')).getFile()).text());
+    rootNow.value.library.find(t=> t.id === 'x').peaks = [0.9, 0.8, 0.7];
+    { const w = await (await dir.getFileHandle('root.json')).createWritable(); await w.write(JSON.stringify(rootNow)); await w.close(); }
+    const older = await fs.get('state', 'root');
+    out.olderRead = older.value.library.map(t=> t.peaks.length).join(',');
+    await fs.writeRootIfCurrent(older.value, rootNow.rev);
+    const wavesAfter = JSON.parse(await (await (await dir.getFileHandle('waveforms.json')).getFile()).text());
+    const rootAfter = JSON.parse(await (await (await dir.getFileHandle('root.json')).getFile()).text());
+    out.olderMoved = wavesAfter.value.x.length === 3 && rootAfter.value.library.find(t=> t.id === 'x').peaks.length === 1;
     // A damaged waveforms record: the list still opens, its tracks have no waveforms.
     const h = await dir.getFileHandle('waveforms.json');
     const w = await h.createWritable(); await w.write('{"key":"wav'); await w.close();
     fs.close();
     const damaged = await fs.get('state', 'root').catch(e=> 'threw: ' + e);
-    out.damagedOk = !!damaged && typeof damaged === 'object' && damaged.value.library.length === 2 && damaged.value.library.every(t=> !t.peaks);
+    out.damagedOk = !!damaged && typeof damaged === 'object' && damaged.value.library.length === 3 && damaged.value.library.filter(t=> t.id !== 'z').every(t=> t.peaks === undefined) && damaged.value.library.find(t=> t.id === 'z').peaks.length === 720;
     return out;
   });
-  ok(folder.w1 === 1 && !folder.rootHasPeaks && folder.wavesKeys === 'x,y' && folder.quick === 1, 'folder library: root.json without waveforms, waveforms.json beside it (' + JSON.stringify(folder) + ')');
-  ok(folder.backPeaks === '2,1' && folder.keysHide, 'folder library: a read puts the waveforms back, and keys hide them');
+  ok(folder.w1 === 1 && folder.rootStubbed && folder.standInInline && folder.wavesKeys === 'x,y' && folder.quick === 1, 'folder library: root.json with placeholders (a stand-in stays as it is), waveforms.json beside it (' + JSON.stringify(folder) + ')');
+  ok(folder.backPeaks === '2,2,720' && folder.keysHide, 'folder library: a read puts the waveforms back, and keys hide them');
   ok(folder.unchangedWrites === 0 && folder.w2 === 2, 'folder library: an unchanged save writes no waveforms');
+  ok(folder.olderRead === '3,2,720' && folder.olderMoved, 'an older version\'s waveform in root.json wins, and the next save moves it out (' + folder.olderRead + ')');
   ok(folder.damagedOk, 'folder library: a damaged waveforms file leaves the list open, its tracks without waveforms');
 
   await b.close();

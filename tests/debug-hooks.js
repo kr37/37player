@@ -189,4 +189,6 @@ window.__ad = {pending: ()=> afterDialogPending, idle: ()=> afterDialogIdle(), b
   art: (id)=> artworkUrlCache[id], copyPic: (blob)=>{ copiedArtworkBlob = blob; }};
 // Removing a library can move its folder to the Trash (2.5.032; libtrash.js).
 window.__trash = {fp: (r)=> libraryFingerprint(r), facts: (id)=> libraryTrashFacts(id), shell: ()=> desktopShell, noTrash: ()=>{ desktopShell = Object.assign({}, desktopShell, {trash: false}); }};
-window.__shf = {text: (e)=> sharedFailText(e), set: (p)=> sharedSetStatus(p), st: ()=> sharedStatus}; // fullowned.js (2.5.044)
+// A full device with files still to come (fullowned.js, 2.5.044).
+window.__shf = {text: (e)=> sharedFailText(e), st: ()=> sharedStatus, toCome: ()=> sharedStillToComeHere(), pending: (p)=>{ sharedPending = p; },
+  dialog: (e)=>{ saveFailing = {since: Date.now(), full: isQuotaError(e), denied: false, text: errText(e)}; openNotSavingDialog(); }, unfail: ()=>{ saveFailing = null; }, render: ()=> renderSharedStatusInto()};
