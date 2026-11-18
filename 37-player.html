@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.5.043">
+<meta name="app-version" content="2.5.044">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -2230,11 +2230,62 @@ async function webkitOwnBytes(blob){
 }
 
 const ROOT_REV_KEY = "rootRev"; // the library record's revision on its own (IdbLibraryStore.keepRootRev)
+// The waveforms (2.5.044): each track's peaks, 720 numbers and most of the
+// list's size, are kept in a record of their own, "waveforms" (track ID →
+// peaks), beside "root". The library record is read at every start and
+// written at every save; a save now writes the waveforms only when one
+// changed. A library written before this has its peaks inside "root": they
+// are read from there until its first save moves them. Stores hide the record
+// from keys() and merge it back in on get("state", "root").
+const WAVES_KEY = "waveforms";
+// A store's memory of the waveforms it holds: {tag, arrays}, where tag names
+// the stored waveforms record's version and arrays maps track ID → the array
+// that is stored (or null when not known). Arrays are replaced, never changed
+// in place (see peaksPrint), so the same array is the same waveform: a save
+// compares by identity, and a read of the same version hands back the same arrays.
+// The library record's value without its tracks' peaks, and the waveforms
+// record (given a new tag) when they differ from `last`. cache: what's stored
+// once the write is really done (see settleWrite).
+function splitLibraryWaveforms(value, last){
+  if(!value || !Array.isArray(value.library)) return {value, waves: null, cache: last};
+  const arrays = new Map(), map = {};
+  let changed = !last;
+  const library = value.library.map(t=>{
+    if(!t || !t.peaks) return t;
+    map[t.id] = t.peaks; arrays.set(t.id, t.peaks);
+    if(last && last.arrays.get(t.id) !== t.peaks) changed = true;
+    const {peaks, ...rest} = t;
+    return rest;
+  });
+  if(last && last.arrays.size !== arrays.size) changed = true;
+  if(!changed) return {value: Object.assign({}, value, {library}), waves: null, cache: {tag: last.tag, arrays}};
+  const tag = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  return {value: Object.assign({}, value, {library}), waves: {key: WAVES_KEY, value: map, tag}, cache: {tag, arrays}};
+}
+// The library record's value with its tracks' waveforms put back, from the
+// waveforms record `rec` ({value, tag}, or undefined). Where `last` is the
+// same version, its arrays are used, so the tracks keep the arrays a window
+// already holds. Returns the cache for the stored version.
+function mergeLibraryWaveforms(value, rec, last){
+  const tag = rec && rec.tag != null ? rec.tag : null, map = rec && rec.value;
+  const reuse = !!(last && tag !== null && last.tag === tag);
+  const cache = {tag, arrays: new Map()};
+  if(!value || !Array.isArray(value.library)) return cache;
+  value.library = value.library.map(t=>{
+    if(!t) return t;
+    let pk = reuse ? last.arrays.get(t.id) : undefined;
+    if(!Array.isArray(pk) && map) pk = map[t.id];
+    if(!Array.isArray(pk)) return t;
+    cache.arrays.set(t.id, pk);
+    return Object.assign({}, t, {peaks: pk});
+  });
+  return cache;
+}
 class IdbLibraryStore {
   // opts.gone(): this library was deleted from another window, so its
   // database mustn't be opened again (that would make a new, empty one).
   // opts.onCreated(): the database didn't exist until now.
-  constructor(name, opts){ this.name = name; this.opts = opts || {}; this.d = null; }
+  constructor(name, opts){ this.name = name; this.opts = opts || {}; this.d = null; this.wavesCache = null; /* see splitLibraryWaveforms */ }
   open(){
     if(this.opts.gone && this.opts.gone()) return Promise.reject(new DOMException("This library was deleted", "InvalidStateError"));
     return new Promise((resolve, reject)=>{
@@ -2276,10 +2327,27 @@ class IdbLibraryStore {
   }
   close(){ try{ if(this.d) this.d.close(); }catch(err){} this.d = null; }
   get(store, key){
+    if(store === "state" && key === "root") return this.getRoot();
     return this.run(d=> new Promise((resolve, reject)=>{
       const r = d.transaction(store, "readonly").objectStore(store).get(key);
       r.onsuccess = ()=> resolve(r.result);
       r.onerror = ()=> reject(r.error);
+    }));
+  }
+  // The library record with its waveforms put back (see mergeLibraryWaveforms).
+  // Both are read in one transaction, so they agree. A damaged waveforms
+  // record leaves its tracks without waveforms; the list still opens.
+  getRoot(){
+    return this.run(d=> new Promise((resolve, reject)=>{
+      const tx = d.transaction("state", "readonly"), os = tx.objectStore("state");
+      const r = os.get("root"), w = os.get(WAVES_KEY);
+      w.onerror = (e)=>{ e.preventDefault(); console.warn("The library's waveforms can't be read"); };
+      settleTx(tx, resolve, reject, ()=>{
+        const rec = r.result;
+        if(!rec) return rec;
+        this.wavesCache = mergeLibraryWaveforms(rec.value, w.result, this.wavesCache);
+        return rec;
+      });
     }));
   }
   put(store, record){
@@ -2294,10 +2362,31 @@ class IdbLibraryStore {
   putNow(store, record){
     return this.run(d=> new Promise((resolve, reject)=>{
       const tx = d.transaction(store, "readwrite"), os = tx.objectStore(store);
-      const r = os.put(record);
-      IdbLibraryStore.keepRootRev(os, store, record, null);
-      settleTx(tx, resolve, reject, ()=> r.result);
+      const {req, split} = this.putIn(os, store, record);
+      this.settleWrite(tx, resolve, reject, ()=> split, ()=> req.result);
     }));
+  }
+  // Puts one record into an open transaction. The library record goes with
+  // its waveforms when they changed (splitLibraryWaveforms). Returns the
+  // request and the split, if the library record was written.
+  putIn(os, store, record){
+    if(store === "state" && record && record.key === "root"){
+      const split = splitLibraryWaveforms(record.value, this.wavesCache);
+      const req = os.put(Object.assign({}, record, {value: split.value}));
+      if(split.waves) os.put(split.waves);
+      IdbLibraryStore.keepRootRev(os, store, record, null);
+      return {req, split};
+    }
+    const req = os.put(record);
+    IdbLibraryStore.keepRootRev(os, store, record, null);
+    return {req, split: null};
+  }
+  // settleTx for a write that may have stored waveforms: what they are now
+  // is remembered only once the transaction is really done, and forgotten if
+  // it fails (the next save then writes them again). getSplit is a function:
+  // the split is often made in a callback, after this is called.
+  settleWrite(tx, resolve, reject, getSplit, value){
+    settleTx(tx, v=>{ const s = getSplit(); if(s) this.wavesCache = s.cache; resolve(v); }, e=>{ if(getSplit()) this.wavesCache = null; reject(e); }, value);
   }
   // "rootRev" holds only the library record's revision, written with it in
   // the same transaction, so writeRootIfCurrent can check the revision
@@ -2308,11 +2397,12 @@ class IdbLibraryStore {
   static keepRootRev(os, store, putRec, delKey){
     if(store !== "state") return;
     if(putRec && putRec.key === "root") os.put({key: ROOT_REV_KEY, rev: putRec.rev || 0});
-    if(delKey === "root") os.delete(ROOT_REV_KEY);
+    if(delKey === "root"){ os.delete(ROOT_REV_KEY); os.delete(WAVES_KEY); } // the waveforms go with the library record
   }
   del(store, keys){
     keys = Array.isArray(keys) ? keys : [keys];
     if(!keys.length) return Promise.resolve();
+    if(store === "state" && keys.includes("root")) this.wavesCache = null;
     return this.run(d=> new Promise((resolve, reject)=>{
       const tx = d.transaction(store, "readwrite"), os = tx.objectStore(store);
       keys.forEach(k=>{ os.delete(k); IdbLibraryStore.keepRootRev(os, store, null, k); });
@@ -2320,13 +2410,15 @@ class IdbLibraryStore {
     }));
   }
   // Keys only: a damaged record can't be read, but its key still counts.
+  // The waveforms record isn't a key of the state (see WAVES_KEY).
   keys(store, prefix){
+    const visible = ks=> store === "state" ? ks.filter(k=> k !== WAVES_KEY) : ks;
     return this.run(d=> new Promise((resolve, reject)=>{
       const os = d.transaction(store, "readonly").objectStore(store);
       const range = prefix ? IDBKeyRange.bound(prefix, prefix + "￿") : undefined;
-      if(os.getAllKeys){ const r = os.getAllKeys(range); r.onsuccess = ()=> resolve(r.result || []); r.onerror = ()=> reject(r.error); return; }
+      if(os.getAllKeys){ const r = os.getAllKeys(range); r.onsuccess = ()=> resolve(visible(r.result || [])); r.onerror = ()=> reject(r.error); return; }
       const out = [], cur = os.openKeyCursor(range);
-      cur.onsuccess = ()=>{ const c = cur.result; if(!c) return resolve(out); out.push(c.key); c.continue(); };
+      cur.onsuccess = ()=>{ const c = cur.result; if(!c) return resolve(visible(out)); out.push(c.key); c.continue(); };
       cur.onerror = ()=> reject(cur.error);
     }));
   }
@@ -2338,16 +2430,17 @@ class IdbLibraryStore {
     return this.run(d=> new Promise((resolve, reject)=>{
       const tx = d.transaction(store, "readwrite"), os = tx.objectStore(store);
       const recs = new Array(keys.length);
-      let left = keys.length, out;
+      let left = keys.length, out, split = null;
       const apply = ()=>{
         const r = fn(recs) || {};
-        (r.put || []).forEach(rec=>{ os.put(rec); IdbLibraryStore.keepRootRev(os, store, rec, null); });
+        if(store === "state" && (r.del || []).includes("root")) this.wavesCache = null;
+        (r.put || []).forEach(rec=>{ const x = this.putIn(os, store, rec); if(x.split) split = x.split; });
         (r.del || []).forEach(k=>{ os.delete(k); IdbLibraryStore.keepRootRev(os, store, null, k); });
         out = r.result;
       };
       keys.forEach((k, i)=>{ const g = os.get(k); g.onsuccess = ()=>{ recs[i] = g.result; if(--left === 0) apply(); }; });
       if(!keys.length) apply();
-      settleTx(tx, resolve, reject, ()=> out);
+      this.settleWrite(tx, resolve, reject, ()=> split, ()=> out);
     }));
   }
   // The state store, except what's kept (keys only, so a damaged record can
@@ -2358,11 +2451,12 @@ class IdbLibraryStore {
     req.onsuccess = ()=>{
       const cursor = req.result;
       if(!cursor) return;
-      if(cursor.key === ROOT_REV_KEY ? !keep.includes("root") : !keep.includes(cursor.key)) store.delete(cursor.key); // rootRev goes with root
+      if(cursor.key === ROOT_REV_KEY || cursor.key === WAVES_KEY ? !keep.includes("root") : !keep.includes(cursor.key)) store.delete(cursor.key); // rootRev and the waveforms go with root
       cursor.continue();
     };
   }
   clear(keep){
+    this.wavesCache = null;
     return this.run(d=> new Promise((resolve, reject)=>{
       const tx = d.transaction(["state", "audio", "artwork"], "readwrite");
       IdbLibraryStore.clearState(tx, keep || []);
@@ -2372,6 +2466,7 @@ class IdbLibraryStore {
     }));
   }
   pruneExcept(keepIds, keep){
+    this.wavesCache = null;
     return this.run(d=> new Promise((resolve, reject)=>{
       const tx = d.transaction(["state", "audio", "artwork"], "readwrite");
       IdbLibraryStore.clearState(tx, keep || []);
@@ -2395,8 +2490,9 @@ class IdbLibraryStore {
       const tx = d.transaction("state", "readwrite");
       const store = tx.objectStore("state");
       let result = {ok:false};
-      const write = rev=>{ store.put({key:"root", value, rev}); store.put({key: ROOT_REV_KEY, rev}); result = {ok:true, rev}; };
-      if(force){ store.delete("root"); write(expectedRev + 1); return settleTx(tx, resolve, reject, ()=> result); }
+      let split = null;
+      const write = rev=>{ split = this.putIn(store, "state", {key:"root", value, rev}).split; result = {ok:true, rev}; };
+      if(force){ store.delete("root"); store.delete(WAVES_KEY); this.wavesCache = null; write(expectedRev + 1); return this.settleWrite(tx, resolve, reject, ()=> split, ()=> result); }
       // The whole library record, read to see its revision: only when the
       // small revision record doesn't say what's expected (see keepRootRev).
       const readRoot = ()=>{
@@ -2421,7 +2517,7 @@ class IdbLibraryStore {
         if(q && q.rev === expectedRev) write(expectedRev + 1);
         else readRoot();
       };
-      settleTx(tx, resolve, reject, ()=> result);
+      this.settleWrite(tx, resolve, reject, ()=> split, ()=> result);
     }));
   }
 }
@@ -2524,7 +2620,7 @@ async function writeWholeFile(dir, name, data){
 class FolderLibraryStore {
   // getDir(create): the library's folder, or null when it doesn't exist
   // and create is false. opts as for IdbLibraryStore.
-  constructor(getDir, lockName, opts){ this.getDir = getDir; this.lockName = lockName; this.opts = opts || {}; this.dir = null; this.subs = {}; this.tidied = false; }
+  constructor(getDir, lockName, opts){ this.getDir = getDir; this.lockName = lockName; this.opts = opts || {}; this.dir = null; this.subs = {}; this.tidied = false; this.wavesCache = null; /* see splitLibraryWaveforms */ }
   async open(){
     if(this.opts.gone && this.opts.gone()) throw new DOMException("This library was deleted", "InvalidStateError");
     if(!this.dir){
@@ -2684,15 +2780,39 @@ class FolderLibraryStore {
   async get(store, key){
     return this.run(async()=>{
       const raw = await this.readRaw(store, key);
-      return raw === undefined ? undefined : this.revive(await this.sub(store), raw);
+      if(raw === undefined) return undefined;
+      const rec = await this.revive(await this.sub(store), raw);
+      if(store === "state" && key === "root") this.wavesCache = mergeLibraryWaveforms(rec && rec.value, await this.readWaves(), this.wavesCache);
+      return rec;
     });
+  }
+  // The waveforms record (see WAVES_KEY), or undefined when there is none or
+  // it can't be read: its tracks then have no waveform until one is made.
+  async readWaves(){
+    try{ return await this.readRaw("state", WAVES_KEY); }
+    catch(err){ console.warn("The library's waveforms can't be read:", err); return undefined; }
   }
   // Writes one record (under the lock): its files first, then its .json.
   // Returns the file names the previous version used and this one doesn't.
+  // The library record goes with its waveforms when they changed: those
+  // first, then the record without them (splitLibraryWaveforms).
   async writeRecord(store, record){
+    if(store !== "state" || !record || record.key !== "root") return this.writeRecordFile(store, record);
+    const split = splitLibraryWaveforms(record.value, this.wavesCache);
+    try{
+      let gone = [];
+      if(split.waves) gone = await this.writeRecordFile("state", split.waves, true);
+      gone = gone.concat(await this.writeRecordFile(store, Object.assign({}, record, {value: split.value})));
+      this.wavesCache = split.cache;
+      return gone;
+    }catch(err){ this.wavesCache = null; throw err; }
+  }
+  // plain: a record of numbers, with no files of its own (the waveforms),
+  // written as it is; a record with files walks through flat() as it goes.
+  async writeRecordFile(store, record, plain){
     const dir = await this.sub(store), fk = fileKeyOf(record[STORE_KEYPATH[store]]);
     let before = [];
-    try{ before = FolderLibraryStore.blobNames(await this.readRaw(store, record[STORE_KEYPATH[store]]), []); }catch(err){}
+    if(!plain){ try{ before = FolderLibraryStore.blobNames(await this.readRaw(store, record[STORE_KEYPATH[store]]), []); }catch(err){} }
     const base = store === "audio" && this.opts.recordingPath ? this.opts.recordingPath(record.id) : null;
     const tag = Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
     const written = [];
@@ -2732,7 +2852,7 @@ class FolderLibraryStore {
       return v;
     };
     try{
-      const json = await flat(record, "");
+      const json = plain ? record : await flat(record, "");
       await writeWholeFile(dir, fk + ".json", JSON.stringify(json));
       if(store === "audio") this.noteRecording(record.id, json.blob);
     }catch(err){
@@ -2795,6 +2915,7 @@ class FolderLibraryStore {
       for await (const [name, h] of dir.entries()){
         if(h.kind !== "file" || !/^[^.]+\.json$/.test(name)) continue;
         const k = keyOfFile(name.slice(0, -5));
+        if(store === "state" && k === WAVES_KEY) continue; // not a key of the state (see WAVES_KEY)
         if(!prefix || k.startsWith(prefix)) out.push(k);
       }
       return out.sort();
@@ -2808,7 +2929,10 @@ class FolderLibraryStore {
       let gone = [];
       const replaced = [];
       for(const rec of (r.put || [])){ const g = await this.writeRecord(store, rec); gone = gone.concat(g); replaced.push([rec, g]); }
-      for(const k of (r.del || [])) gone = gone.concat(await this.removeRecord(store, k));
+      for(const k of (r.del || [])){
+        gone = gone.concat(await this.removeRecord(store, k));
+        if(store === "state" && k === "root"){ gone = gone.concat(await this.removeRecord("state", WAVES_KEY)); this.wavesCache = null; }
+      }
       await this.addOrphans(gone);
       for(const [rec, g] of replaced) this.noteSuperseded(store, rec, g);
       return r.result;
@@ -2824,6 +2948,7 @@ class FolderLibraryStore {
         gone = gone.concat(await this.removeRecord(store, k));
       }
     }
+    if(!keepState.includes("root")){ gone = gone.concat(await this.removeRecord("state", WAVES_KEY)); this.wavesCache = null; }
     await this.addOrphans(gone);
   }
   clear(keep){ return this.locked(()=> this.clearExcept(keep || [], null)); }
@@ -5538,6 +5663,7 @@ const STRINGS = {
     "sharedBarUploading": "Shared library: sending {done} of {total}",
     "sharedOffline": "Couldn’t reach the shared library just now — it will try again.",
     "sharedFailFull": "This device is full, so changes from the shared library can't be stored here. Free up some space; it will try again.",
+    "sharedFailFullOwn": "This device is full, and 37 Player's shared-library sync is probably what filled it: {n} files from the shared library are still to come here. Free up some space (downloads, apps), or bring less here with What's on this device.",
     "sharedFailDriveFull": "The Google Drive of {account} is full, so changes and audio from this device can't be sent. Free up space in that Google Drive; 37 Player tries again by itself.",
     "driveSpaceLine": "Google Drive: {used} of {limit} used ({pct}%).",
     "driveSpaceUnlimited": "Google Drive: {used} used.",
@@ -5930,6 +6056,7 @@ const STRINGS = {
     "backupIndicatorFailed": "Backup failed",
     "notSavingShort": "Not saving",
     "notSavingFullShort": "Device full: not saving",
+    "notSavingWorkedAgain": "Saving works again. You can close this.",
     "notSavingTooltip": "Changes made here aren't being saved. Tap for more.",
     "notSavingTitle": "Changes here aren't being saved",
     "notSavingFullBody": "This device is out of storage space, so 37 Player can't save anything right now. Changes made here since {time} will be lost if 37 Player is closed, and nothing new can be stored (imports, files from a shared library). Playing what's already here still works. Free up some space (on an iPad: Settings → General → iPad Storage). 37 Player keeps trying, and saves everything as soon as there's room.",
@@ -7627,6 +7754,7 @@ const STRINGS = {
     "sharedBarUploading": "Biblioteca compartida: enviando {done} de {total}",
     "sharedOffline": "No se pudo contactar con la biblioteca compartida; se volverá a intentar.",
     "sharedFailFull": "Este dispositivo está lleno, así que los cambios de la biblioteca compartida no se pueden guardar aquí. Libera algo de espacio; se volverá a intentar.",
+    "sharedFailFullOwn": "Este dispositivo está lleno, y lo más probable es que lo haya llenado la sincronización de la biblioteca compartida de 37 Player: aún faltan {n} archivos de la biblioteca compartida por llegar aquí. Libera algo de espacio (descargas, apps) o trae menos aquí con «Qué hay en este dispositivo».",
     "sharedFailDriveFull": "El Google Drive de {account} está lleno, así que los cambios y el audio de este dispositivo no se pueden enviar. Libera espacio en ese Google Drive; 37 Player lo vuelve a intentar solo.",
     "driveSpaceLine": "Google Drive: {used} de {limit} usados ({pct} %).",
     "driveSpaceUnlimited": "Google Drive: {used} usados.",
@@ -8019,6 +8147,7 @@ const STRINGS = {
     "backupIndicatorFailed": "Falló la copia",
     "notSavingShort": "No se guarda",
     "notSavingFullShort": "Dispositivo lleno: no se guarda",
+    "notSavingWorkedAgain": "Ya se guarda de nuevo. Puedes cerrar esto.",
     "notSavingTooltip": "Los cambios hechos aquí no se están guardando. Toca para saber más.",
     "notSavingTitle": "Los cambios de aquí no se están guardando",
     "notSavingFullBody": "Este dispositivo se ha quedado sin espacio de almacenamiento, así que 37 Player no puede guardar nada ahora mismo. Los cambios hechos aquí desde las {time} se perderán si se cierra 37 Player, y no se puede guardar nada nuevo (importaciones, archivos de una biblioteca compartida). Reproducir lo que ya está aquí sigue funcionando. Libera algo de espacio (en un iPad: Ajustes → General → Almacenamiento del iPad). 37 Player sigue intentándolo y lo guarda todo en cuanto haya sitio.",
@@ -9715,6 +9844,7 @@ const STRINGS = {
     "sharedBarUploading": "Bibliothèque partagée : envoi {done} sur {total}",
     "sharedOffline": "Bibliothèque partagée injoignable pour l’instant — nouvel essai bientôt.",
     "sharedFailFull": "Cet appareil est plein : les modifications de la bibliothèque partagée ne peuvent pas être stockées ici. Libérez un peu d'espace ; un nouvel essai suivra.",
+    "sharedFailFullOwn": "Cet appareil est plein, et c'est probablement la synchronisation de la bibliothèque partagée de 37 Player qui l'a rempli : {n} fichiers de la bibliothèque partagée doivent encore arriver ici. Libérez de l'espace (téléchargements, applis) ou amenez-en moins ici avec « Ce qui est sur cet appareil ».",
     "sharedFailDriveFull": "Le Google Drive de {account} est plein : les changements et l'audio de cet appareil ne peuvent pas être envoyés. Libérez de la place dans ce Google Drive ; 37 Player réessaie de lui-même.",
     "driveSpaceLine": "Google Drive : {used} utilisés sur {limit} ({pct} %).",
     "driveSpaceUnlimited": "Google Drive : {used} utilisés.",
@@ -10107,6 +10237,7 @@ const STRINGS = {
     "backupIndicatorFailed": "Échec de la sauvegarde",
     "notSavingShort": "Non enregistré",
     "notSavingFullShort": "Appareil plein : rien n'est enregistré",
+    "notSavingWorkedAgain": "L'enregistrement refonctionne. Vous pouvez fermer ceci.",
     "notSavingTooltip": "Les modifications faites ici ne sont pas enregistrées. Touchez pour en savoir plus.",
     "notSavingTitle": "Les modifications faites ici ne sont pas enregistrées",
     "notSavingFullBody": "Cet appareil n'a plus d'espace de stockage, donc 37 Player ne peut rien enregistrer pour l'instant. Les modifications faites ici depuis {time} seront perdues si 37 Player est fermé, et rien de nouveau ne peut être stocké (importations, fichiers d'une bibliothèque partagée). La lecture de ce qui est déjà ici fonctionne toujours. Libérez un peu d'espace (sur un iPad : Réglages → Général → Stockage iPad). 37 Player continue d'essayer et enregistre tout dès qu'il y a de la place.",
@@ -11803,6 +11934,7 @@ const STRINGS = {
     "sharedBarUploading": "Biblioteca partilhada: a enviar {done} de {total}",
     "sharedOffline": "Não foi possível contactar a biblioteca partilhada — voltará a tentar.",
     "sharedFailFull": "Este dispositivo está cheio, então as alterações da biblioteca compartilhada não podem ser guardadas aqui. Libere algum espaço; haverá nova tentativa.",
+    "sharedFailFullOwn": "Este dispositivo está cheio, e provavelmente foi a sincronização da biblioteca compartilhada do 37 Player que o encheu: ainda faltam {n} arquivos da biblioteca compartilhada para chegar aqui. Libere espaço (downloads, apps) ou traga menos para cá com «O que está neste dispositivo».",
     "sharedFailDriveFull": "O Google Drive de {account} está cheio, então as alterações e o áudio deste dispositivo não podem ser enviados. Libere espaço nesse Google Drive; o 37 Player tenta de novo sozinho.",
     "driveSpaceLine": "Google Drive: {used} de {limit} usados ({pct}%).",
     "driveSpaceUnlimited": "Google Drive: {used} usados.",
@@ -12195,6 +12327,7 @@ const STRINGS = {
     "backupIndicatorFailed": "Falha no backup",
     "notSavingShort": "Não está salvando",
     "notSavingFullShort": "Dispositivo cheio: não está salvando",
+    "notSavingWorkedAgain": "Salvar voltou a funcionar. Você pode fechar isto.",
     "notSavingTooltip": "As alterações feitas aqui não estão sendo salvas. Toque para saber mais.",
     "notSavingTitle": "As alterações feitas aqui não estão sendo salvas",
     "notSavingFullBody": "Este dispositivo ficou sem espaço de armazenamento, então o 37 Player não consegue salvar nada agora. As alterações feitas aqui desde {time} serão perdidas se o 37 Player for fechado, e nada novo pode ser guardado (importações, arquivos de uma biblioteca compartilhada). Tocar o que já está aqui continua funcionando. Libere algum espaço (no iPad: Ajustes → Geral → Armazenamento do iPad). O 37 Player continua tentando e salva tudo assim que houver espaço.",
@@ -13891,6 +14024,7 @@ const STRINGS = {
     "sharedBarUploading": "Gemeinsame Bibliothek: sende {done} von {total}",
     "sharedOffline": "Die gemeinsame Bibliothek ist gerade nicht erreichbar – neuer Versuch folgt.",
     "sharedFailFull": "Dieses Gerät ist voll, daher können Änderungen aus der gemeinsamen Bibliothek hier nicht gespeichert werden. Gib etwas Speicherplatz frei; es wird erneut versucht.",
+    "sharedFailFullOwn": "Dieses Gerät ist voll, und sehr wahrscheinlich hat die Synchronisation der gemeinsamen Bibliothek von 37 Player es gefüllt: Es fehlen noch {n} Dateien aus der gemeinsamen Bibliothek. Gib Speicherplatz frei (Downloads, Apps) oder lade hier weniger herunter, über „Was auf diesem Gerät ist“.",
     "sharedFailDriveFull": "Das Google Drive von {account} ist voll, daher können Änderungen und Audio von diesem Gerät nicht gesendet werden. Schaffen Sie Platz in diesem Google Drive; 37 Player versucht es von selbst erneut.",
     "driveSpaceLine": "Google Drive: {used} von {limit} belegt ({pct} %).",
     "driveSpaceUnlimited": "Google Drive: {used} belegt.",
@@ -14283,6 +14417,7 @@ const STRINGS = {
     "backupIndicatorFailed": "Sicherung fehlgeschlagen",
     "notSavingShort": "Speichert nicht",
     "notSavingFullShort": "Gerät voll: speichert nicht",
+    "notSavingWorkedAgain": "Speichern funktioniert wieder. Du kannst dies schließen.",
     "notSavingTooltip": "Änderungen hier werden nicht gespeichert. Tippen für mehr.",
     "notSavingTitle": "Änderungen hier werden nicht gespeichert",
     "notSavingFullBody": "Auf diesem Gerät ist kein Speicherplatz mehr frei, daher kann 37 Player gerade nichts speichern. Änderungen, die hier seit {time} gemacht wurden, gehen verloren, wenn 37 Player geschlossen wird, und nichts Neues kann abgelegt werden (Importe, Dateien aus einer gemeinsamen Bibliothek). Abspielen, was schon hier ist, funktioniert weiterhin. Gib etwas Speicherplatz frei (auf einem iPad: Einstellungen → Allgemein → iPad-Speicher). 37 Player versucht es weiter und speichert alles, sobald Platz ist.",
@@ -15979,6 +16114,7 @@ const STRINGS = {
     "sharedBarUploading": "共享曲库：正在发送 {done}/{total}",
     "sharedOffline": "暂时无法连接共享曲库——稍后会重试。",
     "sharedFailFull": "此设备已满，共享曲库的更改无法存到这里。请释放一些空间；稍后会再试。",
+    "sharedFailFullOwn": "此设备已满，很可能是 37 Player 的共享曲库同步占满了它：共享曲库还有 {n} 个文件要来这里。请释放一些空间（下载、应用），或用“此设备上有什么”减少这里接收的内容。",
     "sharedFailDriveFull": "{account} 的 Google Drive 已满，本设备的更改和音频无法发送。请在该 Google Drive 中腾出空间；37 Player 会自动重试。",
     "driveSpaceLine": "Google Drive：已用 {used} / {limit}（{pct}%）。",
     "driveSpaceUnlimited": "Google Drive：已用 {used}。",
@@ -16371,6 +16507,7 @@ const STRINGS = {
     "backupIndicatorFailed": "备份失败",
     "notSavingShort": "无法保存",
     "notSavingFullShort": "设备已满：无法保存",
+    "notSavingWorkedAgain": "保存已恢复正常。可以关闭此窗口。",
     "notSavingTooltip": "在这里所做的更改没有被保存。点按了解更多。",
     "notSavingTitle": "这里的更改没有被保存",
     "notSavingFullBody": "此设备的存储空间已用完，所以 37 Player 现在无法保存任何内容。自 {time} 起在这里所做的更改，如果关闭 37 Player 就会丢失，而且无法存入任何新内容（导入、来自共享曲库的文件）。播放已有的内容仍然正常。请释放一些空间（iPad 上：设置 → 通用 → iPad 储存空间）。37 Player 会继续尝试，一有空间就保存全部内容。",
@@ -18067,6 +18204,7 @@ const STRINGS = {
     "sharedBarUploading": "Thư viện chung: đang gửi {done}/{total}",
     "sharedOffline": "Tạm thời không kết nối được thư viện chung — sẽ thử lại.",
     "sharedFailFull": "Thiết bị này đã đầy, nên các thay đổi từ thư viện dùng chung không lưu được ở đây. Hãy giải phóng bớt dung lượng; sẽ thử lại sau.",
+    "sharedFailFullOwn": "Thiết bị này đã đầy, và rất có thể đồng bộ thư viện dùng chung của 37 Player là thứ đã làm đầy nó: còn {n} tệp từ thư viện dùng chung sẽ chuyển đến đây. Hãy giải phóng dung lượng (tải xuống, ứng dụng) hoặc chuyển ít hơn về đây bằng “Nội dung trên thiết bị này”.",
     "sharedFailDriveFull": "Google Drive của {account} đã đầy, nên không gửi được thay đổi và âm thanh từ thiết bị này. Hãy giải phóng dung lượng trong Google Drive đó; 37 Player sẽ tự thử lại.",
     "driveSpaceLine": "Google Drive: đã dùng {used} / {limit} ({pct}%).",
     "driveSpaceUnlimited": "Google Drive: đã dùng {used}.",
@@ -18459,6 +18597,7 @@ const STRINGS = {
     "backupIndicatorFailed": "Sao lưu thất bại",
     "notSavingShort": "Không lưu được",
     "notSavingFullShort": "Thiết bị đầy: không lưu được",
+    "notSavingWorkedAgain": "Việc lưu đã hoạt động lại. Bạn có thể đóng cửa sổ này.",
     "notSavingTooltip": "Các thay đổi ở đây không được lưu. Chạm để biết thêm.",
     "notSavingTitle": "Các thay đổi ở đây không được lưu",
     "notSavingFullBody": "Thiết bị này đã hết dung lượng lưu trữ, nên 37 Player hiện không thể lưu gì. Các thay đổi làm ở đây từ {time} sẽ mất nếu đóng 37 Player, và không thể lưu thêm gì mới (nhập tệp, tệp từ thư viện dùng chung). Phát những gì đã có ở đây vẫn hoạt động. Hãy giải phóng bớt dung lượng (trên iPad: Cài đặt → Cài đặt chung → Dung lượng iPad). 37 Player sẽ tiếp tục thử và lưu tất cả ngay khi có chỗ.",
@@ -20155,6 +20294,7 @@ const STRINGS = {
     "sharedBarUploading": "Κοινόχρηστη βιβλιοθήκη: αποστολή {done} από {total}",
     "sharedOffline": "Δεν ήταν δυνατή η σύνδεση με την κοινόχρηστη βιβλιοθήκη — θα ξαναδοκιμάσει.",
     "sharedFailFull": "Αυτή η συσκευή είναι γεμάτη, οπότε οι αλλαγές από την κοινόχρηστη βιβλιοθήκη δεν μπορούν να αποθηκευτούν εδώ. Ελευθερώστε λίγο χώρο· θα γίνει νέα προσπάθεια.",
+    "sharedFailFullOwn": "Η συσκευή είναι γεμάτη, και πιθανότατα το γέμισε ο συγχρονισμός της κοινόχρηστης βιβλιοθήκης του 37 Player: ακόμη {n} αρχεία της κοινόχρηστης βιβλιοθήκης πρόκειται να έρθουν εδώ. Ελευθερώστε χώρο (λήψεις, εφαρμογές) ή φέρτε λιγότερα εδώ με το «Τι υπάρχει σε αυτή τη συσκευή».",
     "sharedFailDriveFull": "Το Google Drive του {account} είναι γεμάτο, οπότε οι αλλαγές και ο ήχος αυτής της συσκευής δεν μπορούν να σταλούν. Ελευθερώστε χώρο σε εκείνο το Google Drive· το 37 Player ξαναδοκιμάζει μόνο του.",
     "driveSpaceLine": "Google Drive: {used} από {limit} σε χρήση ({pct}%).",
     "driveSpaceUnlimited": "Google Drive: {used} σε χρήση.",
@@ -20547,6 +20687,7 @@ const STRINGS = {
     "backupIndicatorFailed": "Αποτυχία αντιγράφου",
     "notSavingShort": "Δεν αποθηκεύεται",
     "notSavingFullShort": "Συσκευή γεμάτη: δεν αποθηκεύεται",
+    "notSavingWorkedAgain": "Η αποθήκευση λειτουργεί ξανά. Μπορείτε να κλείσετε αυτό.",
     "notSavingTooltip": "Οι αλλαγές εδώ δεν αποθηκεύονται. Πατήστε για περισσότερα.",
     "notSavingTitle": "Οι αλλαγές εδώ δεν αποθηκεύονται",
     "notSavingFullBody": "Αυτή η συσκευή δεν έχει άλλο αποθηκευτικό χώρο, οπότε το 37 Player δεν μπορεί να αποθηκεύσει τίποτα αυτή τη στιγμή. Οι αλλαγές που έγιναν εδώ από τις {time} θα χαθούν αν κλείσει το 37 Player, και τίποτα νέο δεν μπορεί να αποθηκευτεί (εισαγωγές, αρχεία από κοινόχρηστη βιβλιοθήκη). Η αναπαραγωγή όσων υπάρχουν ήδη εδώ λειτουργεί κανονικά. Ελευθερώστε λίγο χώρο (σε iPad: Ρυθμίσεις → Γενικά → Αποθηκευτικός χώρος iPad). Το 37 Player συνεχίζει να προσπαθεί και αποθηκεύει τα πάντα μόλις υπάρξει χώρος.",
@@ -22243,6 +22384,7 @@ const STRINGS = {
     "sharedBarUploading": "Libreria condivisa: invio {done} su {total}",
     "sharedOffline": "Libreria condivisa non raggiungibile ora: riproverà.",
     "sharedFailFull": "Questo dispositivo è pieno, quindi le modifiche dalla libreria condivisa non possono essere memorizzate qui. Libera un po' di spazio; si riproverà.",
+    "sharedFailFullOwn": "Questo dispositivo è pieno, e probabilmente l'ha riempito la sincronizzazione della libreria condivisa di 37 Player: restano {n} file della libreria condivisa da portare qui. Libera spazio (download, app) oppure porta qui meno con «Cosa c'è su questo dispositivo».",
     "sharedFailDriveFull": "Il Google Drive di {account} è pieno, quindi le modifiche e l'audio di questo dispositivo non possono essere inviati. Libera spazio in quel Google Drive; 37 Player riprova da solo.",
     "driveSpaceLine": "Google Drive: {used} di {limit} usati ({pct}%).",
     "driveSpaceUnlimited": "Google Drive: {used} usati.",
@@ -22635,6 +22777,7 @@ const STRINGS = {
     "backupIndicatorFailed": "Backup non riuscito",
     "notSavingShort": "Non salva",
     "notSavingFullShort": "Dispositivo pieno: non salva",
+    "notSavingWorkedAgain": "Il salvataggio funziona di nuovo. Puoi chiudere questo.",
     "notSavingTooltip": "Le modifiche fatte qui non vengono salvate. Tocca per saperne di più.",
     "notSavingTitle": "Le modifiche fatte qui non vengono salvate",
     "notSavingFullBody": "Questo dispositivo ha esaurito lo spazio di archiviazione, quindi 37 Player non può salvare niente al momento. Le modifiche fatte qui dalle {time} andranno perse se 37 Player viene chiuso, e non si può memorizzare nulla di nuovo (importazioni, file da una libreria condivisa). La riproduzione di ciò che è già qui funziona ancora. Libera un po' di spazio (su un iPad: Impostazioni → Generali → Spazio iPad). 37 Player continua a provare e salva tutto appena c'è posto.",
@@ -23727,8 +23870,10 @@ function noteSaveWorked(){
   saveFailing = null;
   clearTimeout(saveRetryTimer);
   updateNotSavingIndicator();
+  // The dialog stays until it's closed (kr37, 18 Nov 2026: it went at the
+  // first save that worked, on a full iPad that still couldn't keep its files).
   const st = document.getElementById("notSavingStatus");
-  if(st) closeModal();
+  if(st) st.textContent = t("notSavingWorkedAgain");
 }
 function updateNotSavingIndicator(){
   const btn = document.getElementById("btnNotSaving");
@@ -46781,7 +46926,9 @@ document.addEventListener("click", async (e)=>{
 function sharedFailText(err){
   if(err && err.rejected) return sharedRejectedText();
   if(err && err.driveFull){ const cfg = sharedConfig(); return t("sharedFailDriveFull", {account: (cfg && cfg.account) || "Google"}); }
-  if(isQuotaError(err)) return t("sharedFailFull");
+  // Files still to come here are what fills the device: say so, and offer
+  // the way out (the fullOwn flag puts the button in Settings; kr37, 18 Nov 2026).
+  if(isQuotaError(err)) return sharedStatus.arriving > 0 ? t("sharedFailFullOwn", {n: sharedStatus.arriving}) : t("sharedFailFull");
   if(err && err.name === "TypeError") return t("sharedOffline"); // the request never got an answer
   const m = /\b([45]\d\d)\b/.exec(String(err && err.message || ""));
   if(m) return t("sharedFailServer", {code: m[1]});
@@ -47678,6 +47825,9 @@ function sharedFilesLock(name, fn){
   return navigator.locks.request(libScoped("37player-shared-" + name), {ifAvailable: true}, lock=> lock ? fn() : null);
 }
 function sharedSetStatus(patch){
+  // fullOwn (the device is full because of the files still to come here) is
+  // only as old as the state it was set with.
+  if("state" in patch && !("fullOwn" in patch)) sharedStatus.fullOwn = false;
   Object.assign(sharedStatus, patch);
   if("reviewCount" in patch) updateSharedReviewBadge();
   if(sharedAwake) sharedAwakeUpdate();
@@ -47936,7 +48086,7 @@ async function sharedSyncOnce(opts){
     }catch(err){
       console.warn("Shared library check:", err);
       sharedLog("check failed: " + errText(err) + (isQuotaError(err) ? " (this device is full)" : ""));
-      sharedSetStatus({state: "error", message: sharedFailText(err)});
+      sharedSetStatus({state: "error", message: sharedFailText(err), fullOwn: isQuotaError(err) && sharedStatus.arriving > 0});
     }
     return;
   }
@@ -48035,7 +48185,7 @@ async function sharedSyncOnce(opts){
     console.warn("Shared library sync:", err);
     if(err && err.driveFull) sharedDriveFullAt = Date.now();
     sharedLog("sync failed: " + errText(err) + (isQuotaError(err) ? " (this device is full)" : err && err.driveFull ? " (Google Drive is full)" : ""));
-    sharedSetStatus({state: "error", message: sharedFailText(err)});
+    sharedSetStatus({state: "error", message: sharedFailText(err), fullOwn: isQuotaError(err) && sharedStatus.arriving > 0});
   }
 }
 /* ---- Two copies of one recording (1.4.190, kr37's five cases)
@@ -48372,7 +48522,7 @@ async function sharedUploadInBackgroundHere(cfg){
     }
   }catch(err){
     console.warn("Shared library upload paused:", err);
-    if(err && err.driveFull){ sharedDriveFullAt = Date.now(); sharedDriveFullSaid = false; sharedSetStatus({state: "error", message: sharedFailText(err)}); }
+    if(err && err.driveFull){ sharedDriveFullAt = Date.now(); sharedDriveFullSaid = false; sharedSetStatus({state: "error", message: sharedFailText(err), fullOwn: isQuotaError(err) && sharedStatus.arriving > 0}); }
     sharedLog("sending stopped: " + (err && err.message || err));
   }
   finally{
@@ -51392,6 +51542,13 @@ function renderSharedStatusInto(){
   if(sharedTooBigNames.size) s += " " + t("sharedTooBigNote", {names: [...sharedTooBigNames].join(", ")});
   if(arriving && busy) s += " " + t(arriving === 1 ? "sharedStillArrivingOne" : "sharedStillArriving", {n: arriving});
   status.textContent = s;
+  // The way out when the device is full because of what's still to come here
+  // (sharedFailFullOwn): choose less to keep here, or free space in the app.
+  let fullBtn = document.getElementById("shFullChoose");
+  if(sharedStatus.state === "error" && sharedStatus.fullOwn){
+    if(!fullBtn){ fullBtn = document.createElement("button"); fullBtn.id = "shFullChoose"; fullBtn.type = "button"; fullBtn.className = "btn ghost"; fullBtn.addEventListener("click", ()=> openSharedChoose()); status.after(fullBtn); }
+    fullBtn.textContent = t("chooseBtn"); fullBtn.style.display = "";
+  } else if(fullBtn) fullBtn.style.display = "none";
   // Who keeps backups of the shared library.
   let kp = document.getElementById("shKeepers");
   if(!kp){ kp = document.createElement("p"); kp.id = "shKeepers"; kp.className = "settings-note"; kp.style.whiteSpace = "pre-line"; (status.closest(".sh-status-row") || status).after(kp); }
