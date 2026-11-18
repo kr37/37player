@@ -1,7 +1,7 @@
 <?php
 /*
  * 37 Player — shared library sync server.
- * Version 2.5.020 (the 37 Player version this file was last changed for;
+ * Version 2.5.043 (the 37 Player version this file was last changed for;
  * keep it the same as SYNC_VERSION below).
  *
  * One file, plain PHP (7.4+), no database. It keeps each shared library in
@@ -91,7 +91,7 @@ const KINDS = ['audio', 'artwork', 'peaks'];
 // The 37 Player version this file was last changed for (it doesn't change
 // with every release of the app, only when this file does). Shown in the
 // app's Settings → Shared library, and by `php sync.php version`.
-const SYNC_VERSION = '2.5.020';
+const SYNC_VERSION = '2.5.043';
 
 if (PHP_SAPI === 'cli') { exit(cli($argv)); }
 
@@ -115,6 +115,15 @@ if ($op === 'state' && $method === 'GET') {
     header('X-Library-Name: ' . rawurlencode($meta['name'] ?? $lib));
     header('X-Version: ' . latest($dir));
     header('X-Accepts-Gzip: 1');
+    // The device already has this version (?have=N, 37 Player 2.5.043): an
+    // empty "not modified" instead of the whole list again (361 KB for
+    // 2,800 tracks, every 3 minutes on every open device). Older pages
+    // don't ask, and get the list as before.
+    if (!isset($_GET['version']) && isset($_GET['have']) && intval($_GET['have']) === $v && $v > 0) {
+        header('Cache-Control: no-store');
+        http_response_code(304);
+        exit;
+    }
     if ($v <= 0) { json_out(null); }
     $f = state_file($dir, $v);
     if (!is_file($f)) fail(404, 'No such version');

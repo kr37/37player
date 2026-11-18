@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.5.042">
+<meta name="app-version" content="2.5.043">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -47164,6 +47164,9 @@ async function driveFetch(cfg, params, init){
   if(op === "state" && method === "GET"){
     const {version, file} = await driveLatest(cfg, lib);
     if(!file) return driveResponse("null", 200, Object.assign({"X-Version": "0", "X-Accepts-Gzip": "1"}, nameHeader));
+    // Already this device's version (2.5.043): the listing told us, so
+    // nothing to download (as sync.php's ?have=N).
+    if(params.have && parseInt(params.have, 10) === version) return driveResponse(null, 304, Object.assign({"X-Version": String(version), "X-Accepts-Gzip": "1"}, nameHeader));
     const res = await driveCall(cfg, "/drive/v3/files/" + encodeURIComponent(file.id) + "?alt=media");
     if(!res.ok) return driveResponse({error: "state " + res.status}, res.status);
     const blob = await res.blob();
@@ -47530,8 +47533,26 @@ async function sharedPostState(cfg, base, doc, prev, extra){
   }
   return res;
 }
+// The latest version, {version, doc, name}. A sync with nothing new
+// doesn't download it again (2.5.043): the list last received is kept in
+// memory with its version, the request says which version that is
+// (sync.php's ?have=N; Google Drive knows from its listing), and the
+// server answers "not modified" when it's still the latest. Every sync
+// (every 3 minutes, and after each change) used to download and read the
+// whole list: 361 KB for kr37's 2,800 tracks. Only what the server sent
+// is kept (a version never changes), not this device's saved base, which
+// isn't always the server's copy (a device that chooses what it holds,
+// a review). An older server sends the list as before.
+let sharedStateCache = null; // {key, version, doc, name}
+let sharedNotModified = 0;   // syncs answered "not modified" this session (tests)
+function sharedStateKey(cfg){ return cfg.kind === "gdrive" ? "gd:" + cfg.folderId : (cfg.url || "") + "|" + String(cfg.code || "").trim(); }
 async function sharedGetState(cfg){
-  const res = await sharedFetch(cfg, {op: "state"});
+  const key = sharedStateKey(cfg), cached = sharedStateCache && sharedStateCache.key === key ? sharedStateCache : null;
+  const res = await sharedFetch(cfg, cached ? {op: "state", have: cached.version} : {op: "state"});
+  if(res.status === 304 && cached){
+    sharedNotModified++;
+    return {version: cached.version, doc: syncClone(cached.doc), name: decodeURIComponent(res.headers.get("X-Library-Name") || "") || cached.name};
+  }
   if(!res.ok) throw new Error("state " + res.status);
   sharedServerGzip = res.headers.get("X-Accepts-Gzip") === "1";
   const version = parseInt(res.headers.get("X-Version") || "0", 10) || 0;
@@ -47543,6 +47564,7 @@ async function sharedGetState(cfg){
   // at every sync and that one put them back: a new version every few
   // minutes with nothing really changed (seen with peaksTried, Oct 2026).
   (doc.tracks || []).forEach(t=> SYNC_LOCAL_TRACK_FIELDS.forEach(k=> delete t[k]));
+  sharedStateCache = version > 0 ? {key, version, doc: syncClone(doc), name} : null;
   return {version, doc, name};
 }
 // History: the versions kept, newest first ({version, time, size, by?, what?}).
