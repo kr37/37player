@@ -72,7 +72,7 @@ pub fn answer(req: &Request, token: &str, find: &dyn Fn(&str, &str) -> Result<Pa
         },
         None => (0, len, false),
     };
-    let mut extra = vec![("Content-Type", crate::files::mime_for(rel).to_string()), ("Accept-Ranges", "bytes".to_string()), ("Content-Length", (end - start).to_string())];
+    let mut extra = vec![("Content-Type", crate::files::mime_for_file(&full, rel).to_string()), ("Accept-Ranges", "bytes".to_string()), ("Content-Length", (end - start).to_string())];
     if partial { extra.push(("Content-Range", format!("bytes {}-{}/{}", start, end - 1, len))); }
     out.write_all(head(if partial { "206 Partial Content" } else { "200 OK" }, &extra).as_bytes())?;
     if req.method == "HEAD" { return Ok(()); }
