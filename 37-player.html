@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.5.052">
+<meta name="app-version" content="2.5.053">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -6758,6 +6758,13 @@ const STRINGS = {
     "missingAudioBody": "These tracks are in the library, but their audio isn't — or this browser can't read it, for example after an import that was blocked partway. Replace the file to keep the track and its place in playlists, or restore from a backup that has it.",
     "missingAudioNone": "None — every track's audio is present and readable.",
     "removeAllZeroBtn": "Remove all {n} of these tracks",
+    "missingGroupLost": "Missing, with nothing on its way",
+    "missingGroupLostNote": "No device is sending these files: replace a file, or remove the track.",
+    "missingGroupComing": "Waiting to download",
+    "missingGroupComingNote": "The shared library has these files; they arrive here by themselves.",
+    "missingGroupWaiting": "Waiting for “{device}” to send them",
+    "missingGroupWaitingNoName": "Waiting for another device to send them",
+    "missingGroupWaitingNote": "The shared library doesn't have these files yet. Removing these tracks removes them from the shared library, on every device.",
     "zeroNotInPlaylists": "Not in any playlist",
     "zeroUsedIn": "Used in:",
     "saveLocationTip": "Tip: set your browser to ask where to save downloads, and choose your backups folder — the browser then remembers it for next time. (Firefox: Settings → General → \"Always ask you where to save files\". Safari: Settings → General → File download location → \"Ask for each download\".)",
@@ -8856,6 +8863,13 @@ const STRINGS = {
     "missingAudioBody": "Estas pistas están en la biblioteca, pero su audio no (o este navegador no puede leerlo), por ejemplo tras una importación bloqueada a medias. Reemplace el archivo para conservar la pista y su lugar en las listas, o restaure desde una copia que lo tenga.",
     "missingAudioNone": "Ninguna: el audio de todas las pistas está presente y se puede leer.",
     "removeAllZeroBtn": "Quitar estas {n} pistas",
+    "missingGroupLost": "Faltan, y no viene nada",
+    "missingGroupLostNote": "Ningún dispositivo está enviando estos archivos: reemplaza un archivo o quita la pista.",
+    "missingGroupComing": "Esperando la descarga",
+    "missingGroupComingNote": "La biblioteca compartida tiene estos archivos; llegarán aquí por sí solos.",
+    "missingGroupWaiting": "Esperando a que “{device}” los envíe",
+    "missingGroupWaitingNoName": "Esperando a que otro dispositivo los envíe",
+    "missingGroupWaitingNote": "La biblioteca compartida aún no tiene estos archivos. Quitar estas pistas las quita de la biblioteca compartida, en todos los dispositivos.",
     "zeroNotInPlaylists": "No está en ninguna lista",
     "zeroUsedIn": "Usada en:",
     "saveLocationTip": "Consejo: configura el navegador para que pregunte dónde guardar las descargas y elige tu carpeta de copias; así la recordará la próxima vez. (Firefox: Ajustes → General → \"Preguntar siempre dónde guardar los archivos\". Safari: Ajustes → General → Ubicación de descargas → \"Preguntar en cada descarga\".)",
@@ -10954,6 +10968,13 @@ const STRINGS = {
     "missingAudioBody": "Ces pistes sont dans la bibliothèque, mais pas leur audio — ou ce navigateur ne peut pas le lire, par exemple après une importation bloquée en cours de route. Remplacez le fichier pour garder la piste et sa place dans les playlists, ou restaurez une sauvegarde qui le contient.",
     "missingAudioNone": "Aucune — l'audio de chaque piste est présent et lisible.",
     "removeAllZeroBtn": "Retirer ces {n} pistes",
+    "missingGroupLost": "Manquants, rien n'est en route",
+    "missingGroupLostNote": "Aucun appareil n'envoie ces fichiers : remplacez un fichier ou retirez la piste.",
+    "missingGroupComing": "En attente de téléchargement",
+    "missingGroupComingNote": "La bibliothèque partagée a ces fichiers ; ils arriveront ici d'eux-mêmes.",
+    "missingGroupWaiting": "En attente de l'envoi par « {device} »",
+    "missingGroupWaitingNoName": "En attente de l'envoi par un autre appareil",
+    "missingGroupWaitingNote": "La bibliothèque partagée n'a pas encore ces fichiers. Retirer ces pistes les retire de la bibliothèque partagée, sur tous les appareils.",
     "zeroNotInPlaylists": "Dans aucune playlist",
     "zeroUsedIn": "Utilisée dans :",
     "saveLocationTip": "Astuce : réglez le navigateur pour qu'il demande où enregistrer les téléchargements, et choisissez votre dossier de sauvegardes — il s'en souviendra la prochaine fois. (Firefox : Paramètres → Général → « Toujours demander où enregistrer les fichiers ». Safari : Réglages → Général → Emplacement des téléchargements → « Demander pour chaque téléchargement ».)",
@@ -13052,6 +13073,13 @@ const STRINGS = {
     "missingAudioBody": "Estas faixas estão na biblioteca, mas o áudio não (ou este navegador não consegue lê-lo), por exemplo após uma importação bloqueada no meio. Substitua o arquivo para manter a faixa e seu lugar nas playlists, ou restaure de um backup que o tenha.",
     "missingAudioNone": "Nenhuma — o áudio de todas as faixas está presente e legível.",
     "removeAllZeroBtn": "Remover estas {n} faixas",
+    "missingGroupLost": "Faltando, e nada a caminho",
+    "missingGroupLostNote": "Nenhum dispositivo está enviando estes arquivos: substitua um arquivo ou remova a faixa.",
+    "missingGroupComing": "Aguardando download",
+    "missingGroupComingNote": "A biblioteca compartilhada tem estes arquivos; eles chegarão aqui sozinhos.",
+    "missingGroupWaiting": "Aguardando “{device}” enviá-los",
+    "missingGroupWaitingNoName": "Aguardando outro dispositivo enviá-los",
+    "missingGroupWaitingNote": "A biblioteca compartilhada ainda não tem estes arquivos. Remover estas faixas as remove da biblioteca compartilhada, em todos os dispositivos.",
     "zeroNotInPlaylists": "Não está em nenhuma playlist",
     "zeroUsedIn": "Usada em:",
     "saveLocationTip": "Dica: configure o navegador para perguntar onde salvar os downloads e escolha sua pasta de backups — ele se lembrará dela da próxima vez. (Firefox: Configurações → Geral → \"Sempre perguntar onde salvar arquivos\". Safari: Ajustes → Geral → Local dos downloads → \"Perguntar a cada download\".)",
@@ -15150,6 +15178,13 @@ const STRINGS = {
     "missingAudioBody": "Diese Titel sind in der Bibliothek, ihr Audio aber nicht – oder dieser Browser kann es nicht lesen, etwa nach einem teilweise blockierten Import. Ersetzen Sie die Datei, um den Titel und seinen Platz in Playlists zu behalten, oder stellen Sie eine Sicherung wieder her, die ihn enthält.",
     "missingAudioNone": "Keine – das Audio aller Titel ist vorhanden und lesbar.",
     "removeAllZeroBtn": "Alle {n} dieser Titel entfernen",
+    "missingGroupLost": "Fehlen, und nichts ist unterwegs",
+    "missingGroupLostNote": "Kein Gerät sendet diese Dateien: Ersetze eine Datei oder entferne den Titel.",
+    "missingGroupComing": "Warten auf den Download",
+    "missingGroupComingNote": "Die geteilte Bibliothek hat diese Dateien; sie kommen von selbst hierher.",
+    "missingGroupWaiting": "Warten, bis „{device}“ sie sendet",
+    "missingGroupWaitingNoName": "Warten, bis ein anderes Gerät sie sendet",
+    "missingGroupWaitingNote": "Die geteilte Bibliothek hat diese Dateien noch nicht. Wer diese Titel entfernt, entfernt sie aus der geteilten Bibliothek, auf allen Geräten.",
     "zeroNotInPlaylists": "In keiner Playlist",
     "zeroUsedIn": "Verwendet in:",
     "saveLocationTip": "Tipp: Stellen Sie den Browser so ein, dass er fragt, wo Downloads gespeichert werden, und wählen Sie Ihren Sicherungsordner – beim nächsten Mal merkt er ihn sich. (Firefox: Einstellungen → Allgemein → „Jedes Mal nachfragen, wo eine Datei gespeichert werden soll“. Safari: Einstellungen → Allgemein → Speicherort für Downloads → „Bei jedem Download fragen“.)",
@@ -17248,6 +17283,13 @@ const STRINGS = {
     "missingAudioBody": "这些曲目在曲库中，但其音频不在（或此浏览器无法读取），例如在导入中途被阻止之后。替换文件可保留曲目及其在播放列表中的位置，也可从包含它的备份中恢复。",
     "missingAudioNone": "没有——所有曲目的音频都存在且可读取。",
     "removeAllZeroBtn": "移除这全部 {n} 首曲目",
+    "missingGroupLost": "缺失，且没有正在传来的文件",
+    "missingGroupLostNote": "没有设备在发送这些文件：请替换文件，或移除该曲目。",
+    "missingGroupComing": "等待下载",
+    "missingGroupComingNote": "共享资料库已有这些文件；它们会自动来到这里。",
+    "missingGroupWaiting": "等待“{device}”发送",
+    "missingGroupWaitingNoName": "等待其他设备发送",
+    "missingGroupWaitingNote": "共享资料库还没有这些文件。移除这些曲目会把它们从共享资料库中移除，所有设备上都会移除。",
     "zeroNotInPlaylists": "不在任何播放列表中",
     "zeroUsedIn": "用于：",
     "saveLocationTip": "提示：将浏览器设置为每次询问下载保存位置，并选择你的备份文件夹——下次它会记住。（Firefox：设置 → 常规 →“总是询问保存文件的位置”。Safari：设置 → 通用 → 文件下载位置 →“每次下载时询问”。）",
@@ -19346,6 +19388,13 @@ const STRINGS = {
     "missingAudioBody": "Các bài này có trong thư viện nhưng âm thanh thì không (hoặc trình duyệt này không đọc được), ví dụ sau một lần nhập bị chặn giữa chừng. Thay tệp để giữ bài và vị trí của nó trong danh sách phát, hoặc khôi phục từ bản sao lưu có tệp đó.",
     "missingAudioNone": "Không có — âm thanh của mọi bài đều có và đọc được.",
     "removeAllZeroBtn": "Xóa tất cả {n} bài này",
+    "missingGroupLost": "Bị thiếu, không có gì đang đến",
+    "missingGroupLostNote": "Không thiết bị nào đang gửi các tệp này: hãy thay tệp, hoặc xóa bài.",
+    "missingGroupComing": "Đang chờ tải xuống",
+    "missingGroupComingNote": "Thư viện dùng chung có các tệp này; chúng sẽ tự đến đây.",
+    "missingGroupWaiting": "Đang chờ “{device}” gửi",
+    "missingGroupWaitingNoName": "Đang chờ một thiết bị khác gửi",
+    "missingGroupWaitingNote": "Thư viện dùng chung chưa có các tệp này. Xóa các bài này sẽ xóa chúng khỏi thư viện dùng chung, trên mọi thiết bị.",
     "zeroNotInPlaylists": "Không thuộc danh sách phát nào",
     "zeroUsedIn": "Dùng trong:",
     "saveLocationTip": "Mẹo: đặt trình duyệt hỏi nơi lưu tệp tải về, rồi chọn thư mục sao lưu — lần sau trình duyệt sẽ nhớ. (Firefox: Cài đặt → Chung → \"Luôn hỏi nơi lưu tệp\". Safari: Cài đặt → Chung → Vị trí tải về → \"Hỏi mỗi lần tải về\".)",
@@ -21444,6 +21493,13 @@ const STRINGS = {
     "missingAudioBody": "Αυτά τα κομμάτια είναι στη βιβλιοθήκη, αλλά ο ήχος τους όχι (ή το πρόγραμμα περιήγησης δεν μπορεί να τον διαβάσει), π.χ. μετά από εισαγωγή που μπλοκαρίστηκε στη μέση. Αντικαταστήστε το αρχείο για να κρατήσετε το κομμάτι και τη θέση του στις λίστες, ή επαναφέρετε από αντίγραφο που το έχει.",
     "missingAudioNone": "Κανένα — ο ήχος όλων των κομματιών υπάρχει και διαβάζεται.",
     "removeAllZeroBtn": "Αφαίρεση και των {n} αυτών κομματιών",
+    "missingGroupLost": "Λείπουν, και τίποτα δεν έρχεται",
+    "missingGroupLostNote": "Καμία συσκευή δεν στέλνει αυτά τα αρχεία: αντικαταστήστε ένα αρχείο ή αφαιρέστε το κομμάτι.",
+    "missingGroupComing": "Σε αναμονή λήψης",
+    "missingGroupComingNote": "Η κοινόχρηστη βιβλιοθήκη έχει αυτά τα αρχεία· θα έρθουν εδώ από μόνα τους.",
+    "missingGroupWaiting": "Σε αναμονή αποστολής από «{device}»",
+    "missingGroupWaitingNoName": "Σε αναμονή αποστολής από άλλη συσκευή",
+    "missingGroupWaitingNote": "Η κοινόχρηστη βιβλιοθήκη δεν έχει ακόμη αυτά τα αρχεία. Η αφαίρεση αυτών των κομματιών τα αφαιρεί από την κοινόχρηστη βιβλιοθήκη, σε όλες τις συσκευές.",
     "zeroNotInPlaylists": "Σε καμία λίστα",
     "zeroUsedIn": "Χρησιμοποιείται σε:",
     "saveLocationTip": "Συμβουλή: ρυθμίστε το πρόγραμμα περιήγησης να ρωτά πού θα αποθηκεύονται οι λήψεις και επιλέξτε τον φάκελο αντιγράφων — την επόμενη φορά θα τον θυμάται. (Firefox: Ρυθμίσεις → Γενικά → «Να ερωτάστε πάντα πού θα αποθηκεύονται τα αρχεία». Safari: Ρυθμίσεις → Γενικά → Θέση λήψεων → «Ερώτηση για κάθε λήψη».)",
@@ -23542,6 +23598,13 @@ const STRINGS = {
     "missingAudioBody": "Queste tracce sono nella libreria, ma il loro audio no (o questo browser non riesce a leggerlo), per esempio dopo un'importazione bloccata a metà. Sostituite il file per conservare la traccia e il suo posto nelle playlist, oppure ripristinate da un backup che lo contiene.",
     "missingAudioNone": "Nessuna: l'audio di ogni traccia è presente e leggibile.",
     "removeAllZeroBtn": "Rimuovi tutte queste {n} tracce",
+    "missingGroupLost": "Mancanti, e niente in arrivo",
+    "missingGroupLostNote": "Nessun dispositivo sta inviando questi file: sostituisci un file o rimuovi la traccia.",
+    "missingGroupComing": "In attesa di download",
+    "missingGroupComingNote": "La libreria condivisa ha questi file; arriveranno qui da soli.",
+    "missingGroupWaiting": "In attesa che “{device}” li invii",
+    "missingGroupWaitingNoName": "In attesa che un altro dispositivo li invii",
+    "missingGroupWaitingNote": "La libreria condivisa non ha ancora questi file. Rimuovere queste tracce le rimuove dalla libreria condivisa, su tutti i dispositivi.",
     "zeroNotInPlaylists": "In nessuna playlist",
     "zeroUsedIn": "Usata in:",
     "saveLocationTip": "Suggerimento: imposta il browser perché chieda dove salvare i download e scegli la tua cartella dei backup: la prossima volta la ricorderà. (Firefox: Impostazioni → Generale → \"Chiedi sempre dove salvare i file\". Safari: Impostazioni → Generali → Posizione download → \"Chiedi per ogni download\".)",
@@ -37539,8 +37602,10 @@ function showAudioMissing(libraryId, why){
     // Part of a shared library: still downloading, not sent yet by the
     // device that has it, or couldn't be fetched just now.
     if(document.getElementById("audioMissingBody")) closeModal(); // one dialog, however many presses
+    const lostHere = (()=>{ const m0 = sharedTrackMissing(libraryId), c0 = sharedConfig(); return !!(m0 && m0.waiting && m0.from && c0 && c0.deviceName && m0.from === c0.deviceName); })();
     openModal(`<h3>${t("sharedAudioArrivingTitle")}</h3><p id="audioMissingBody"></p>
-      <div class="modal-actions"><button class="btn primary" data-close>${t("ok")}</button></div>`);
+      <div class="modal-actions">${lostHere && tr ? `<button class="btn ghost" id="missingReplace" type="button">${escapeHtmlText(t("replaceFileBtn"))}</button>` : ""}<button class="btn primary" data-close>${t("ok")}</button></div>`);
+    wireMissingReplace(tr);
     const name = tr ? tr.name : "?";
     // Which device has to send it only when the shared library doesn't have
     // it: a 404 just now ("absent"), or not there at the last check, as the
@@ -37559,9 +37624,17 @@ function showAudioMissing(libraryId, why){
     return;
   }
   openModal(`<h3>${t("audioMissingTitle")}</h3><p id="audioMissingBody"></p>
-    <div class="modal-actions"><button class="btn ghost" id="openCleanup" type="button">${escapeHtmlText(t("settingsSecCleanup"))}</button><button class="btn primary" data-close>${t("ok")}</button></div>`);
+    <div class="modal-actions"><button class="btn ghost" id="openCleanup" type="button">${escapeHtmlText(t("settingsSecCleanup"))}</button>${tr ? `<button class="btn ghost" id="missingReplace" type="button">${escapeHtmlText(t("replaceFileBtn"))}</button>` : ""}<button class="btn primary" data-close>${t("ok")}</button></div>`);
   document.getElementById("audioMissingBody").textContent = t("audioMissingBody", {name: tr ? tr.name : "?"});
   wireOpenCleanup();
+  wireMissingReplace(tr);
+}
+// Replace file in a can't-be-played dialog (2.5.053, kr37: finding the track
+// in Library cleanup's long list was hard): this track's file, at once
+// (the file picker needs the click), behind the PIN as editing is.
+function wireMissingReplace(tr){
+  const b = document.getElementById("missingReplace");
+  if(b && tr) b.addEventListener("click", ()=>{ closeModal(); withPin(()=> replaceLibraryTrackFile(tr)); });
 }
 // "Library cleanup" in the can't-be-played dialogs (2.2.029, kr37):
 // straight to Settings → Library cleanup, which lists every such track.
@@ -40088,6 +40161,53 @@ async function renderOrphanList(ids){
   }
   if(ids.length > 40){ const more = document.createElement("p"); more.className = "settings-note"; more.textContent = t("orphanMore", {n: ids.length - 40}); list.appendChild(more); }
 }
+// Library cleanup's missing recordings, in groups that fold (2.5.053; kr37,
+// 19 Nov 2026: 200+ in one list on his MacBook, most of them simply not here
+// yet): (1) missing, with nothing on its way (not in a shared library, or
+// waiting for this very device, which no longer has it: nobody will send
+// it); (2) waiting to download (the shared library has the file); (3)
+// waiting for another device to send it, one group per device (kr37: the
+// ones he expects to delete). Remove all for (1) and (3), not (2), whose
+// files are fine and on their way; in a shared library a removed track goes
+// from every device, and (3) says so. Open or closed, each stays so while
+// the page is redrawn; a group of 20 or fewer starts open.
+const missingGroupsOpen = {};
+function renderMissingGroups(list, missing){
+  list.textContent = ""; // the page drawn twice in quick succession: one set of groups, not two
+  const cfg = sharedConfig(), usage = playlistsUsingTracks();
+  const lost = [], coming = [], waiting = new Map();
+  for(const tr of missing){
+    const m = sharedTrackMissing(tr.id);
+    if(!m || (m.waiting && cfg && cfg.deviceName && m.from === cfg.deviceName)) lost.push(tr);
+    else if(!m.waiting) coming.push(tr);
+    else { const k = m.from || ""; if(!waiting.has(k)) waiting.set(k, []); waiting.get(k).push(tr); }
+  }
+  const group = (key, title, noteText, tracks, removable)=>{
+    if(!tracks.length) return;
+    const d = document.createElement("details");
+    d.className = "sh-more missing-group"; d.dataset.group = key;
+    d.open = missingGroupsOpen[key] !== undefined ? missingGroupsOpen[key] : tracks.length <= 20;
+    d.addEventListener("toggle", ()=>{ missingGroupsOpen[key] = d.open; });
+    const sum = document.createElement("summary");
+    const ti = document.createElement("span"); ti.className = "sh-more-title"; ti.textContent = title + " (" + tracks.length + ")";
+    const no = document.createElement("span"); no.className = "settings-note"; no.textContent = noteText;
+    sum.append(ti, " ", no); d.appendChild(sum);
+    const body = document.createElement("div");
+    if(removable){
+      const all = document.createElement("button");
+      all.className = "btn danger"; all.style.margin = "4px 0 12px 0";
+      all.textContent = t("removeAllZeroBtn", {n: tracks.length});
+      all.addEventListener("click", ()=> confirmDeleteTracksFromLibrary(tracks.map(x=> x.id), ()=>{ const done = deleteLibraryTracks(tracks.map(x=> x.id)); renderSettingsSection(); return done; }));
+      body.appendChild(all);
+    }
+    tracks.forEach(tr=> body.appendChild(cleanupTrackRow(tr, usage, true)));
+    d.appendChild(body);
+    list.appendChild(d);
+  };
+  group("lost", t("missingGroupLost"), t("missingGroupLostNote"), lost, true);
+  group("coming", t("missingGroupComing"), t("missingGroupComingNote"), coming, false);
+  for(const [from, tracks] of waiting) group("waiting:" + from, from ? t("missingGroupWaiting", {device: from}) : t("missingGroupWaitingNoName"), t("missingGroupWaitingNote"), tracks, true);
+}
 function cleanupTrackRow(tr, usage, offerReplace){
   const row = document.createElement("div");
   row.className = "zero-row";
@@ -40454,8 +40574,7 @@ async function renderSettingsSection(fromTimer){
       missing = missing.filter(x=> !zeroIds.has(x.id)); // already listed below
       note.textContent = missing.length ? t("missingAudioBody") + " " : t("missingAudioNone");
       if(missing.length) cleanupShowLink(note, "missingAudio");
-      const usage = playlistsUsingTracks();
-      missing.forEach(tr=> list.appendChild(cleanupTrackRow(tr, usage, true)));
+      renderMissingGroups(list, missing);
     });
     // Converted tracks' originals kept for export, with a way to let them go.
     {
