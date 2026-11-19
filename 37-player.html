@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.5.046">
+<meta name="app-version" content="2.5.047">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -40190,16 +40190,16 @@ async function renderSettingsSection(fromTimer){
       <p class="settings-note">${t("levelBoostNote")}</p>
       <p class="settings-note">${t("levelTrackAdjustNote")}</p>
       <p class="settings-note" id="levelMeasured"></p>
-      <div class="settings-row has-switch" style="justify-content:space-between; max-width:560px; margin-top:18px;">
+      ${silentLoopUsed() ? `<div class="settings-row has-switch" style="justify-content:space-between; max-width:560px; margin-top:18px;">
         <strong>${escapeHtmlText(t("stopLockLabel"))}</strong>
         <label class="switch"><input type="checkbox" id="stopLockToggle" ${stopsKeepLockScreen() ? "checked" : ""}><span class="track"></span></label>
       </div>
-      <p class="settings-note">${escapeHtmlText(t("stopLockNote"))}</p>
+      <p class="settings-note">${escapeHtmlText(t("stopLockNote"))}</p>` : "" /* a computer has no lock screen to keep ready (2.5.047; as sharedAwakeBtn) */}
       ${idleSwitchHtml()}
       <details class="settings-log" style="margin-top:18px;"><summary>${escapeHtmlText(t("playLogLabel"))}</summary>
         <div class="settings-log-body">${logActionsHtml("play")}
         <pre id="playLog" style="white-space:pre-wrap; font-size:12px; max-height:240px; overflow:auto; margin:8px 0 0; user-select:text;"></pre></div></details>`;
-    document.getElementById("stopLockToggle").addEventListener("change", (e)=>{
+    document.getElementById("stopLockToggle")?.addEventListener("change", (e)=>{
       root.settings.stopLockScreen = e.target.checked;
       saveState();
       if(!e.target.checked && stopHold){ stopHold = false; updateLoopHold(); updateMediaSessionMetadata(); updateMediaSessionPlaybackState(); }
@@ -45496,7 +45496,7 @@ function allSettingsRows(){
   add({name: t("showLoudnessLabel"), scope: "device", control: {kind: "toggle", el: ()=> pop("showLoudnessToggle")}, desc: t("allDescLoudness")});
   if(pop("keepAwakeRow") && pop("keepAwakeRow").style.display !== "none")
     add({name: t("keepScreenOnLabel"), scope: "device", control: {kind: "toggle", el: ()=> pop("keepAwakeToggle")}, desc: t("allDescKeepScreen")});
-  add({name: t("stopLockLabel"), scope: "device", control: {kind: "bool", get: stopsKeepLockScreen, set: v=>{ root.settings.stopLockScreen = v; saveState(); if(!v && stopHold){ stopHold = false; updateLoopHold(); updateMediaSessionMetadata(); updateMediaSessionPlaybackState(); } if(!v && pauseHold) setPauseHold(false, "setting off"); }}, desc: t("stopLockNote"), link: link("playback")});
+  if(silentLoopUsed()) add({name: t("stopLockLabel"), scope: "device", control: {kind: "bool", get: stopsKeepLockScreen, set: v=>{ root.settings.stopLockScreen = v; saveState(); if(!v && stopHold){ stopHold = false; updateLoopHold(); updateMediaSessionMetadata(); updateMediaSessionPlaybackState(); } if(!v && pauseHold) setPauseHold(false, "setting off"); }}, desc: t("stopLockNote"), link: link("playback")});
   add({name: t("allNameIdle"), scope: "device", control: {kind: "choice", options: [[true, t("fmtIdleOn")], [false, t("fmtIdleOff")]], get: standardizeOnlyWhenIdle, set: v=>{ root.settings.standardizeOnlyWhenIdle = v; saveState(); }}, desc: t("allDescIdle"), link: link("playback")});
   add({name: t("sharedDeviceLabel"), scope: "device", value: root.settings.sharedLastDevice || "—", desc: t("allDescDeviceName"), link: link("shared")});
   add({name: t("sharedServerLabel"), scope: "device", value: root.settings.sharedLastUrl || SHARED_DEFAULT_SERVER, desc: t("allDescServer"), link: link("shared")});
