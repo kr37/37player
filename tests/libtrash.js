@@ -100,6 +100,21 @@ const removeRow = (p, name)=> p.evaluate((name)=>{
   ok(await p.evaluate(()=> !window.__disk.readLibraryList().list.some(l=> l.id === 'only1')), 'and the library leaves the list');
   ok(/“Only copy” was moved to the Trash/.test(await toastText(p)), 'and says so');
   ok(dirs.includes('All shared') && dirs.includes('Not all sent'), 'the other libraries\' folders are untouched');
+  // 2.5.056 (report 2026-11-19-184915-2a6a08): the questions opened the
+  // removed library's store, which tidied its folder 20 s later and, the
+  // folder gone, made a new empty "My library" in its place.
+  await sleep(25000);
+  const later = await libDirs(p);
+  ok(later.length === dirs.length && !later.some(x=> /^My library/.test(x) && !dirs.includes(x)), '25 s later, no new folder in its place (' + later.join(', ') + ')');
+
+  // ---- Remove from the list (forget): its folder stays, and none is made.
+  const before = await libDirs(p);
+  await openLibraries(p); await removeRow(p, 'Backed up'); await waitModal(p, /from the list\?/);
+  await clickText(p, '.modal button', '^Remove from the list$'); await sleep(1500);
+  ok(await p.evaluate(()=> !window.__disk.readLibraryList().list.some(l=> l.id === 'backed1')), 'Remove from the list: the library leaves the list');
+  await sleep(25000);
+  const after = await libDirs(p);
+  ok(JSON.stringify(after) === JSON.stringify(before), 'its folder stays, and 25 s later no new one was made (' + after.join(', ') + ')');
 
   // ---- An older shell (no Trash): no third button.
   await p.evaluate(()=> window.__trash.noTrash());

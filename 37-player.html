@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.5.055">
+<meta name="app-version" content="2.5.056">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -2670,7 +2670,12 @@ class FolderLibraryStore {
       let own = await folderChild(dir, OWN_FILES_FOLDER, false);
       if(!own) own = (await folderChild(dir, "state", false)) || !(this.opts.recordingPath || this.opts.ownFiles) ? dir : await folderChild(dir, OWN_FILES_FOLDER, true);
       this.dir = dir; this.own = own; this.subs = {};
-      if(!this.tidied){
+      // Only a window's own library tidies its folder (opts.tidies, libStore).
+      // Another library's store is a quick look (Remove's questions, a copy):
+      // tidied 20 s later, a library removed meanwhile had its folder made
+      // again, empty, as "My library (2)" (2.5.056; kr37's MacBook, 19 Nov
+      // 2026, report 2026-11-19-184915-2a6a08). It tidies itself when opened.
+      if(!this.tidied && this.opts.tidies){
         this.tidied = true;
         setTimeout(()=> this.tidy().then(()=> this.renameRecordings()).then(()=>{ if(this === libStore) return syncPlaylistFiles(); }).catch(err=> console.warn("Tidying the library's files:", err)), 20000);
         // And every few hours while it stays open: a window open for days
@@ -4473,6 +4478,9 @@ async function desktopLibraryDir(id, create, nameHint){
   if(!(rid in await desktopRoots())){
     if(!(rid in await desktopRoots(true))){
       if(!create) return null;
+      // A library no longer on the list (removed) never gets a folder made
+      // for it, whatever asks (2.5.056: see FolderLibraryStore.open).
+      if(id !== LIBRARY_ID && !libraryEntry(id)) throw new DOMException("That library isn't on the list any more", "NotFoundError");
       const e = libraryEntry(id), name = nameHint || (e && e.name) || (id === LIBRARY_ID && root && root.settings && root.settings.libraryName) || t("libDefaultName");
       await desktopInvoke("fs_root_default", {id: rid, name});
       await desktopRoots(true);
@@ -4538,7 +4546,7 @@ async function storageRemove(id){
   });
 }
 // This window's library.
-const libStore = storageOpen(LIBRARY_ID, {gone: ()=> libraryGone, onCreated: ()=>{ dbJustCreated = true; }}); // dbJustCreated: see storageLooksUsedBefore
+const libStore = storageOpen(LIBRARY_ID, {gone: ()=> libraryGone, onCreated: ()=>{ dbJustCreated = true; }, tidies: true}); // dbJustCreated: see storageLooksUsedBefore
 function idbGet(store, key){ return libStore.get(store, key); }
 // Each track's audio and artwork carry a revision tag that changes whenever
 // either is replaced (Standardize, Replace audio, new artwork, …). Shared-
