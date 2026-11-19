@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.5.049">
+<meta name="app-version" content="2.5.050">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -4344,13 +4344,28 @@ function desktopHttpUrlFor(blob){
 }
 // (Such an address names the file's place, which a rename changes: not kept between plays.)
 function isDesktopHttpUrl(url){ const base = desktopFilesHttp(); return !!base && typeof url === "string" && url.startsWith(base + "/"); }
+// WebKit on the Mac chooses its player from an address's extension, before
+// any answer arrives: a WebM named ".mp3" (Standardize's, before 2.5.048)
+// went to Apple's player, which can't play WebM, though shell 2.5.5 served
+// it typed audio/webm (kr37's MacBook, 19 Nov 2026). So a recording whose
+// content and extension disagree gets "/.p37type.<ext>" on the end of its
+// address, which shell 2.5.6 takes off (typed_path). One read of its first
+// bytes as it's loaded.
+async function playbackTypeTail(blob){
+  if(!(desktopShell && desktopShell.typed_path)) return "";
+  const ext = ((blob.p37path || "").match(/\.([a-z0-9]+)$/i) || ["", ""])[1];
+  let s = null;
+  try{ s = await sniffAudioFormat(blob, blob.name); }catch(err){ return ""; }
+  return s && s.kind && !extMatchesKind(ext, s.kind) ? "/.p37type" + s.ext : "";
+}
 async function audioObjectUrl(blob, filenameHint){
   const http = desktopHttpUrlFor(blob);
   if(http) return http;
   if(isDiskBlob(blob) && !blob.whole) blob = await realBlob(blob); // a part of a file: its own bytes
   if(isDiskBlob(blob)){
-    if(window.__p37FileUrl) return window.__p37FileUrl(blob.p37root, blob.p37path); // the tests' stand-in shell
-    return window.__TAURI__.core.convertFileSrc(blob.p37root + "/" + blob.p37path, "p37lib");
+    const tail = await playbackTypeTail(blob);
+    if(window.__p37FileUrl) return window.__p37FileUrl(blob.p37root, blob.p37path + tail); // the tests' stand-in shell
+    return window.__TAURI__.core.convertFileSrc(blob.p37root + "/" + blob.p37path + tail, "p37lib");
   }
   return URL.createObjectURL(await typedAudioBlob(blob, filenameHint));
 }
