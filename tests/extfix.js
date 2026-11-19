@@ -34,6 +34,23 @@ let fails = 0; const ok=(c,m)=>{ console.log((c?'ok   ':'FAIL ')+m); if(!c) fail
       throw new Error('no such command: ' + cmd);
     }};
   });
+  // 2.5.052: a picked file typed by its name gets its content's type for playing and measuring; a track takes its content's extension.
+  const t2 = await p.evaluate(async()=>{
+    const webm = new Uint8Array([0x1A, 0x45, 0xDF, 0xA3, 0x9F, 0x42, 0x86, 0x81, 0x01, ...new Array(60).fill(7)]);
+    const id3 = new Uint8Array([0x49, 0x44, 0x33, 3, 0, 0, 0, 0, 0, 0, ...new Array(40).fill(0)]);
+    const aiff = new Uint8Array([...'FORM'].map(c=> c.charCodeAt(0)).concat([0, 0, 0, 40], [...'AIFF'].map(c=> c.charCodeAt(0)), new Array(40).fill(2)));
+    const {typedAudioBlob, fileNameForContent} = window.__ext;
+    const mp3Blob = new Blob([id3], {type: 'audio/mpeg'}), junk = new Blob(['not audio'], {type: 'audio/mpeg'});
+    return {
+      webmType: (await typedAudioBlob(new File([webm], 'Talk.mp3', {type: 'audio/mpeg'}))).type,
+      mp3Same: (await typedAudioBlob(mp3Blob)) === mp3Blob, junkSame: (await typedAudioBlob(junk)) === junk,
+      recorderSame: (await typedAudioBlob(new Blob([webm], {type: 'audio/webm;codecs=opus'}))).type,
+      names: [await fileNameForContent(new File([webm], 'Talk.mp3')), await fileNameForContent(new File([aiff], 'Take 5.aif')), await fileNameForContent(new File(['x'], 'odd.mp3')), await fileNameForContent(new File([webm], 'noext'))],
+    };
+  });
+  ok(t2.webmType === 'audio/webm', 'a picked WebM named .mp3 is played and measured as audio/webm (' + t2.webmType + ')');
+  ok(t2.mp3Same && t2.junkSame && t2.recorderSame === 'audio/webm;codecs=opus', 'an MP3, content it can\'t tell, and a rightly typed WebM keep their own blobs and types');
+  ok(JSON.stringify(t2.names) === JSON.stringify(['Talk.webm', 'Take 5.aif', 'odd.mp3', 'noext.webm']), 'a track takes its content\'s extension: ' + t2.names.join(', '));
   for(const mode of ['browser', 'desktop']){
     const r = await p.evaluate(async(mode)=>{
       const D = mode === 'desktop', name = 'extfix-' + mode;
