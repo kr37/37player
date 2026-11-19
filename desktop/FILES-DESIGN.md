@@ -272,6 +272,7 @@ folder), with localStorage as its copy:
 | `37player.libTable` | Library → Table's columns | device.json |
 | `37player.playLog` | the playback log | device.json (a log file beside it, trimmed) |
 | `37player.storage`, `37player.autoRestore`, `37player.driveSignIn` | how this device stores, restores, signs in | device.json (Drive sign-in: re-asked if lost, fine) |
+| `37player.install` | this install's ID (the Install choice) | device.json from shell 2.5.4; shell 2.5.3 refused it and with it the whole write, so the page leaves out a key the shell refuses (2.5.046), and the shell now leaves out unknown keys instead of refusing |
 | `37player.feedbackSent`, `37player.logsSentAt` | when feedback and logs were last sent | can be lost |
 | `37player.acceptEmpty`, `37player.newEmpty`, `37player.pendingJoin`, sessionStorage `37player.library`, `37player.place` | a step in progress, this window's library and place | can be lost |
 

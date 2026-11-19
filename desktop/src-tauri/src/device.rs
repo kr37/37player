@@ -16,11 +16,13 @@ use serde_json::{Map, Value};
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 
-/// Keys the page may keep here (others are refused, so device.json stays
-/// what it says it is).
-pub const KEYS: [&str; 7] = [
-    "37player.libraries", "37player.device", "37player.libTable", "37player.storage",
-    "37player.autoRestore", "37player.driveSignIn", "37player.playLog",
+/// Keys the page may keep here (others are left out, so device.json stays
+/// what it says it is). "37player.install" from shell 2.5.4: the page has
+/// sent it since its Install choice, and shell 2.5.3, not knowing it,
+/// refused every write after (kr37's MacBook, 18 Nov 2026).
+pub const KEYS: [&str; 8] = [
+    "37player.libraries", "37player.device", "37player.install", "37player.libTable",
+    "37player.storage", "37player.autoRestore", "37player.driveSignIn", "37player.playLog",
 ];
 /// Large enough for a long playback log; a page sending more is refused.
 const MAX_BYTES: usize = 4 * 1024 * 1024;
@@ -36,13 +38,13 @@ impl Device {
         read_file(&self.file).or_else(|| read_file(&bak(&self.file))).unwrap_or_default()
     }
 
-    /// Replaces what's stored with these values (only known keys, strings).
+    /// Replaces what's stored with these values: known keys with strings.
+    /// Anything else is left out, not refused, so a newer page's new key
+    /// doesn't stop the rest being kept (as shell 2.5.3 did for "37player.install").
     pub fn write(&self, values: &Map<String, Value>) -> Result<(), String> {
-        let mut out = Map::new();
-        for (k, v) in values {
-            if !KEYS.contains(&k.as_str()) { return Err(format!("not a device key: {k}")); }
-            match v { Value::String(_) => { out.insert(k.clone(), v.clone()); } _ => return Err(format!("{k}: not a string")) }
-        }
+        let out: Map<String, Value> = values.iter()
+            .filter(|(k, v)| KEYS.contains(&k.as_str()) && v.is_string())
+            .map(|(k, v)| (k.clone(), v.clone())).collect();
         let bytes = serde_json::to_vec_pretty(&Value::Object(out)).map_err(|e| e.to_string())?;
         if bytes.len() > MAX_BYTES { return Err("too big".into()); }
         let _g = self.lock.lock().unwrap();
@@ -92,12 +94,15 @@ mod tests {
     }
 
     #[test]
-    fn only_known_keys_and_strings() {
+    fn only_known_keys_and_strings_and_the_rest_still_kept() {
         let d = Device::new(tmp("keys"));
-        assert!(d.write(&map(&[("something.else", "x")])).is_err());
-        let mut m = Map::new(); m.insert("37player.device".into(), Value::Bool(true));
-        assert!(d.write(&m).is_err());
-        assert!(d.read().is_empty(), "nothing written");
+        let mut m = map(&[("something.else", "x"), ("37player.install", "abc"), ("37player.playLog", "[]")]);
+        m.insert("37player.device".into(), Value::Bool(true));
+        d.write(&m).unwrap();
+        let r = d.read();
+        assert_eq!(r.len(), 2, "{r:?}");
+        assert_eq!(r["37player.install"], "abc");
+        assert_eq!(r["37player.playLog"], "[]");
     }
 
     #[test]
