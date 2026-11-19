@@ -86,7 +86,10 @@ const waitIdle = async (p)=>{ for(let k=0;k<300;k++){ const s = await p.evaluate
   // Room again: Try again now saves, everything clears
   await A.evaluate(()=>{ window.__full = false; });
   await A.click('#notSavingRetry'); await sleep(800);
-  ok(!(await bar(A)).shown && !(await dialog(A)), 'room again: Try again now saves, and the bar and dialog go');
+  // The bar clears at once; the dialog stays until it's closed, saying saving works (2.5.044).
+  ok(!(await bar(A)).shown && /Saving works again/.test(await dialog(A)), 'room again: Try again now saves; the bar goes, and the dialog stays with "Saving works again"');
+  await A.evaluate(()=> document.querySelector('.modal [data-close]')?.click()); await sleep(300);
+  ok(!(await dialog(A)), 'closing the dialog dismisses it');
   const lg = await log(A);
   ok(/saving on this device failed: QuotaExceededError/.test(lg) && /saving works again/.test(lg), 'the sync log records both');
   await opened(A);
