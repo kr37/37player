@@ -53,7 +53,7 @@ Don't clear the browser's data in this situation — that would erase the audio 
 
 ### Damaged files
 
-A stored recording can be damaged without anything showing, until it won't play: Safari has stored some files wrongly in the past (a recording re-tagged on a Mac, or a whole .zip kept in place of each recording taken from it). Settings → **Library cleanup** → **Damaged files** → **Check stored files** reads each one through and lists any that are damaged. Where Safari's mistake left the original inside, **Repair** puts it back; otherwise it says so straight away: replace the track's audio with a good copy (**Replace audio file**), or delete it and import it again. A damaged file is never sent to a shared library or put into an export.
+A stored recording can be damaged without anything showing, until it won't play: Safari has stored some files wrongly in the past (a recording re-tagged on a Mac, or a whole .zip kept in place of each recording taken from it). Settings → **Library cleanup** → **Damaged files** → **Check stored files** reads each one through and lists any that are damaged. Where Safari's mistake left the original inside, **Repair** puts it back; otherwise it says so straight away: replace the track's audio with a good copy (**Find or replace…**), or delete it and import it again. A damaged file is never sent to a shared library or put into an export.
 
 ### If storage comes back empty
 

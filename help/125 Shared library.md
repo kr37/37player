@@ -75,7 +75,7 @@ A track whose audio isn't on this device yet shows its name in **bold**, with th
 
 - **"On its way from the shared library"** means the shared library has the audio, and it's downloading. On Playing, **Get them now** above the list fetches a playlist's missing tracks straight away, even while something plays.
 - **"Waiting for Office laptop to send it"** means the device that added the track hasn't sent its audio yet, perhaps because it was closed too soon. It arrives once that device is open and online again.
-- **"It was to send this copy, but no longer has it"** means this device itself was the one to send it, and that copy is gone. Use **Replace audio file** with a good copy, or delete the track.
+- **"It was to send this copy, but no longer has it"** means this device itself was the one to send it, and that copy is gone. Use **Find or replace…** with a good copy, or delete the track.
 
 Big recordings are sent in pieces of 16 MB (from version 1.4.187, with a server that's been updated too). If the connection drops part-way, sending carries on from where it stopped instead of starting again, and Safari, iPads and the Mac app can send files of a gigabyte or more.
 
