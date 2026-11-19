@@ -43,7 +43,7 @@
     window.__fakeShellPaths.push(cmd + ' ' + ((args && (args.path || args.from)) || '')); // which file, for tests that count reads of one file
     args = args || {};
     switch(cmd){
-      case 'p37_shell_info': return {version: '2.0.000', bridge: 2, pages: false, device: true, updates: !!window.__fakeShellUpdates, zoom: !!window.__fakeShellZoom, trash: window.__fakeShellTrash !== false, watch: true, append_range: !window.__fakeNoAppendRange, files_http: window.__fakeFilesHttp || null};
+      case 'p37_shell_info': return {version: '2.0.000', bridge: 2, pages: false, device: true, updates: !!window.__fakeShellUpdates, zoom: !!window.__fakeShellZoom, trash: window.__fakeShellTrash !== false, watch: true, append_range: !window.__fakeNoAppendRange, typed_path: !!window.__fakeShellTypedPath, files_http: window.__fakeFilesHttp || null};
       // The Size setting, by the shell (2.4.000): what it was asked for is kept for the test.
       case 'p37_zoom': if(!window.__fakeShellZoom) throw new Error('unknown command'); (window.__fakeZooms = window.__fakeZooms || []).push(args.scale); return null;
       // The shell updating itself (shellupd.js): window.__fakeShellUpdates = {version, current} or null (none).
@@ -183,6 +183,8 @@
   window.__TAURI__ = {core: {invoke, convertFileSrc: (path, scheme)=> scheme + '://localhost/' + path}, event: {listen: async ()=> ()=>{}}};
   // Reading a file by address (p37lib://localhost/<root>/<path>), as the
   // shell serves it: the stand-in hands the page the file itself.
-  window.__p37FileUrl = async (root, path)=> URL.createObjectURL(await fileOf(root, path));
+  // An address's "/.p37type.<ext>" tail comes off, as shell 2.5.6 does (files::strip_type_suffix); the paths asked for are kept for typedpath.js.
+  window.__fileUrlPaths = [];
+  window.__p37FileUrl = async (root, path)=>{ window.__fileUrlPaths.push(path); const m = /\/\.p37type\.[A-Za-z0-9]{1,5}$/.exec(path); return URL.createObjectURL(await fileOf(root, m ? path.slice(0, m.index) : path)); };
   window.__fakeShell = {readRoots, fileOf, statOf};
 })();

@@ -42,6 +42,9 @@ const modalText = p=> p.evaluate(()=> document.querySelector('.modal-backdrop.sh
   await p.evaluate(()=>{ window.__dbg.setMode('editing'); window.__dbg4.settings(); window.__dbg4.section('about'); }); await sleep(500);
   const about = await p.evaluate(()=> document.getElementById('aboutRunning').textContent);
   ok(/desktop app \(version 1\.4\.159\)/.test(about), 'About names the desktop app\'s own version (' + about + ')');
+  // 2.5.049: its link goes to its channel's site; with no page channel known (no page updates), 37player.com, not the page's own address.
+  const site1 = await p.evaluate(()=> ({href: document.getElementById('aboutSite').href, note: !document.getElementById('aboutChannel').hidden}));
+  ok(site1.href === 'https://37player.com/' && !site1.note, 'About links to 37player.com when the channel isn\'t known (' + site1.href + ')');
   // 2.2.031: and the converter's, the one beside the app while none is on this device.
   const servedConv = fs.readFileSync(path.join(__dirname, 'www', 'ffmpeg', 'VERSION'), 'utf8').trim();
   let conv = ''; for(let i = 0; i < 20 && !(conv = await p.evaluate(()=> document.getElementById('aboutConverter')?.textContent || '')); i++) await sleep(150);
@@ -76,6 +79,12 @@ const modalText = p=> p.evaluate(()=> document.querySelector('.modal-backdrop.sh
   ok(await p.evaluate(()=> document.getElementById('appVersion').classList.contains('has-update') && /Update now/.test(document.getElementById('appVersion').textContent)), 'a newer page waiting: "Update now" under the version');
   await p.evaluate(()=> window.__listeners['p37-page-ready'] && window.__listeners['p37-page-ready']({payload: '9.9.002'})); await sleep(200);
   ok(await p.evaluate(()=> /9\.9\.002/.test(document.getElementById('appVersion').title)), 'one downloaded while open: the same ("p37-page-ready")');
+  // About in a d build (2.5.049): the shell says channel "test", so the link is test.37player.com, with a line saying it's a test build.
+  await p.evaluate(()=> localStorage.setItem('__pageInfo', JSON.stringify({running: '1.4.182', channel: 'test'})));
+  await p.reload({waitUntil:'networkidle0'}); await sleep(2500);
+  await p.evaluate(()=>{ window.__dbg.setMode('editing'); window.__dbg4.settings(); window.__dbg4.section('about'); }); await sleep(500);
+  const site2 = await p.evaluate(()=> ({href: document.getElementById('aboutSite').href, text: document.getElementById('aboutSite').textContent, note: document.getElementById('aboutChannel').hidden ? '' : document.getElementById('aboutChannel').textContent}));
+  ok(site2.href === 'https://test.37player.com/' && site2.text === 'test.37player.com' && /test build/i.test(site2.note), 'a d build: About links to test.37player.com and says it\'s a test build (' + site2.note + ')');
   // Check for updates.
   const check = async (answer)=>{
     await p.evaluate((a)=> localStorage.setItem('__pageCheck', JSON.stringify(a)), answer);

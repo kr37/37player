@@ -14,7 +14,7 @@ const clickText = (p, sel, src) => p.evaluate((sel, src)=>{ const re=new RegExp(
   await p.goto('http://localhost:8861/37-player.html', {waitUntil: 'networkidle0'}); await sleep(700);
   for(const x of ['^English$', '^Start a library on this device$', '^No, just start$', '^Skip for now$', '^Finish$']){ await clickText(p, '.modal button', x); await sleep(300); }
   await p.evaluate(()=> document.querySelectorAll('.modal [data-close]').forEach(x=> x.click()));
-  const about = ()=> p.evaluate(()=>{ const q = id=> (document.querySelector('#' + id) || {}).textContent || ''; return {ver: q('aboutVersion'), run: q('aboutRunning'), conv: q('aboutConverter'), upd: !!document.querySelector('#checkUpdates'), fb: !!document.querySelector('#aboutFeedback'), link: !!document.querySelector('a[href="https://37player.com/"]')}; });
+  const about = ()=> p.evaluate(()=>{ const q = id=> (document.querySelector('#' + id) || {}).textContent || ''; return {ver: q('aboutVersion'), run: q('aboutRunning'), conv: q('aboutConverter'), upd: !!document.querySelector('#checkUpdates'), fb: !!document.querySelector('#aboutFeedback'), link: ((document.querySelector('#aboutSite') || {}).href || '') === location.origin + '/' /* its own site (2.5.049) */}; });
   // What Settings says.
   await p.evaluate(()=> document.getElementById('btnSettings').click()); await sleep(400);
   await clickText(p, '#settingsNav *', '^About$'); await sleep(900);
@@ -26,7 +26,7 @@ const clickText = (p, sel, src) => p.evaluate((sel, src)=>{ const re=new RegExp(
   ok(rail.last === 'About' && rail.n > 5 && rail.above, 'Help\'s last topic is About, above Send feedback (' + rail.n + ' topics)');
   await p.evaluate(()=> document.getElementById('helpAboutRow').click()); await sleep(900);
   const inHelp = await about();
-  ok(inHelp.ver === inSettings.ver && inHelp.run === inSettings.run && inHelp.conv === inSettings.conv && inHelp.upd && inHelp.link, 'it says what Settings says: version, where it runs from, converter, Check for updates');
+  ok(inHelp.ver === inSettings.ver && inHelp.run === inSettings.run && inHelp.conv === inSettings.conv && inHelp.upd && inHelp.link, 'it says what Settings says: version, where it runs from, converter, Check for updates, a link to its own site');
   ok(!inHelp.fb, 'without a second Send feedback (the one below the list serves)');
   ok(await p.evaluate(()=> document.querySelector('#helpTopicBody h2').textContent === 'About' && document.querySelector('#helpAboutRow').classList.contains('active')), 'headed and marked like any topic');
   // Another topic and back.
