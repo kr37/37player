@@ -715,6 +715,7 @@ pub fn serve(app: &tauri::AppHandle, req: &tauri::http::Request<Vec<u8>>) -> tau
     let fail = |code: StatusCode, msg: String| Response::builder().status(code).header("Access-Control-Allow-Origin", "*").body(msg.into_bytes()).unwrap();
     let path = percent_decode(req.uri().path().trim_start_matches('/'));
     let Some((root, rel)) = path.split_once('/') else { return fail(StatusCode::NOT_FOUND, "no root".into()) };
+    let rel = strip_type_suffix(rel);
     let base = match roots(app).get(root) { Ok(b) => b, Err(e) => return fail(StatusCode::NOT_FOUND, e) };
     let full = match resolve(&base, rel) { Ok(p) => p, Err(e) => return fail(StatusCode::FORBIDDEN, e) };
     let len = match fs::metadata(&full) { Ok(m) if m.is_file() => m.len(), _ => return fail(StatusCode::NOT_FOUND, "not there".into()) };
@@ -733,6 +734,20 @@ pub fn serve(app: &tauri::AppHandle, req: &tauri::http::Request<Vec<u8>>) -> tau
         .header("Access-Control-Allow-Origin", "*").header("Access-Control-Allow-Headers", "Range").header("Access-Control-Expose-Headers", "Content-Range, Content-Length, Accept-Ranges");
     r = if partial { r.status(StatusCode::PARTIAL_CONTENT).header("Content-Range", format!("bytes {}-{}/{}", start, end.saturating_sub(1), len)) } else { r.status(StatusCode::OK) };
     r.body(body).unwrap()
+}
+
+// The page may end a recording's address with "/.p37type.<ext>" (page
+// 2.5.050, shell 2.5.6): WebKit on the Mac chooses its player from the
+// address's extension before any answer arrives, so a WebM named ".mp3"
+// went to Apple's player, which can't play WebM, whatever type was served
+// (kr37's MacBook, 19 Nov 2026). The tail gives WebKit the right extension;
+// here it's taken off to find the file.
+pub fn strip_type_suffix(rel: &str) -> &str {
+    if let Some(i) = rel.rfind("/.p37type.") {
+        let ext = &rel[i + "/.p37type.".len()..];
+        if !ext.is_empty() && ext.len() <= 5 && ext.chars().all(|c| c.is_ascii_alphanumeric()) { return &rel[..i]; }
+    }
+    rel
 }
 
 // A recording's type from its first bytes when they say clearly, else from
@@ -789,6 +804,13 @@ mod tests {
         let _ = fs::remove_dir_all(&d);
         fs::create_dir_all(&d).unwrap();
         d
+    }
+    #[test]
+    fn type_suffix_comes_off() {
+        assert_eq!(strip_type_suffix("music/a/01 Talk.mp3/.p37type.webm"), "music/a/01 Talk.mp3");
+        assert_eq!(strip_type_suffix("music/a/01 Talk.mp3"), "music/a/01 Talk.mp3");
+        assert_eq!(strip_type_suffix("music/a/01 Talk.mp3/.p37type."), "music/a/01 Talk.mp3/.p37type.");
+        assert_eq!(strip_type_suffix("music/a/01 Talk.mp3/.p37type.we/bm"), "music/a/01 Talk.mp3/.p37type.we/bm");
     }
     #[test]
     fn types_by_content() {

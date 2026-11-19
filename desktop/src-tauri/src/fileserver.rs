@@ -63,6 +63,7 @@ pub fn answer(req: &Request, token: &str, find: &dyn Fn(&str, &str) -> Result<Pa
     let Some(rest) = path.strip_prefix('/').and_then(|p| p.strip_prefix(token)).and_then(|p| p.strip_prefix('/')) else { return refuse(out, "403 Forbidden") };
     let rest = crate::files::percent_decode(rest);
     let Some((root, rel)) = rest.split_once('/') else { return refuse(out, "404 Not Found") };
+    let rel = crate::files::strip_type_suffix(rel);
     let Ok(full) = find(root, rel) else { return refuse(out, "404 Not Found") };
     let len = match std::fs::metadata(&full) { Ok(m) if m.is_file() => m.len(), _ => return refuse(out, "404 Not Found") };
     let (start, end, partial) = match req.range.as_deref() {

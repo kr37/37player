@@ -48,7 +48,7 @@ struct Quitting(AtomicBool);
 const BRIDGE: u32 = 2;
 
 #[derive(serde::Serialize)]
-struct ShellInfo { version: String, bridge: u32, pages: bool, device: bool, updates: bool, zoom: bool, trash: bool, watch: bool, append_range: bool, files_http: Option<String> }
+struct ShellInfo { version: String, bridge: u32, pages: bool, device: bool, updates: bool, zoom: bool, trash: bool, watch: bool, append_range: bool, typed_path: bool, files_http: Option<String> }
 
 // The shell's version is the page's version as of the shell's own last
 // change (tauri.conf.json "version"), like sync.php's.
@@ -63,6 +63,8 @@ fn p37_shell_info(app: tauri::AppHandle) -> ShellInfo {
         watch: true,
         // append_range: fs_append_range, a stretch of one file put on the end of another on disk (shell 2.5.3).
         append_range: true,
+        // typed_path: a recording's address may end in "/.p37type.<ext>", taken off before the file is found (files::strip_type_suffix, shell 2.5.6).
+        typed_path: true,
         // files_http: where recordings are also served, on Linux (fileserver.rs, shell 2.5.0).
         files_http: app.try_state::<fileserver::FileServer>().map(|f| f.base.clone()) }
 }
