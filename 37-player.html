@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.5.045">
+<meta name="app-version" content="2.5.047">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -2057,14 +2057,24 @@ if(window.__TAURI_INTERNALS__ && window.__p37Device && typeof window.__p37Device
   }
 }
 let deviceMirrorTimer = null;
+// Keys the app refused. Shell 2.5.3 doesn't know "37player.install" and
+// refuses the whole write for it, so device.json stopped changing once the
+// Install choice was saved (2.5.046; kr37's MacBook, 18 Nov 2026: its copy
+// still held two log lines of 14 Nov). Such a key is left out and the rest
+// sent again.
+const deviceMirrorRefused = new Set();
+function deviceMirrorSend(){
+  const values = {};
+  for(const k of DEVICE_MIRROR_KEYS){ if(deviceMirrorRefused.has(k)) continue; try{ const v = localStorage.getItem(k); if(v !== null) values[k] = v; }catch(err){} }
+  window.__TAURI__.core.invoke("p37_device_put", {values}).catch(err=>{ // an older app has no device.json: nothing to do
+    const m = /not a device key: (\S+)/.exec(String(err && err.message || err));
+    if(m && DEVICE_MIRROR_KEYS.includes(m[1]) && !deviceMirrorRefused.has(m[1])){ deviceMirrorRefused.add(m[1]); deviceMirrorSend(); }
+  });
+}
 function deviceMirrorSoon(){
   if(!window.__TAURI__ || !window.__TAURI__.core) return;
   clearTimeout(deviceMirrorTimer);
-  deviceMirrorTimer = setTimeout(()=>{
-    const values = {};
-    for(const k of DEVICE_MIRROR_KEYS){ try{ const v = localStorage.getItem(k); if(v !== null) values[k] = v; }catch(err){} }
-    window.__TAURI__.core.invoke("p37_device_put", {values}).catch(()=>{}); // an older app has no device.json: nothing to do
-  }, 1000);
+  deviceMirrorTimer = setTimeout(deviceMirrorSend, 1000);
 }
 if(window.__TAURI_INTERNALS__){
   const set = Storage.prototype.setItem, remove = Storage.prototype.removeItem;
@@ -37567,6 +37577,7 @@ let stopHold = false;
 let pauseHold = false, pauseHoldTimer = null;
 const PAUSE_HOLD_MS = 30 * 60 * 1000;
 function setPauseHold(on, why){
+  if(on && !silentLoopUsed()) return; // a computer has no lock screen to keep ready
   clearTimeout(pauseHoldTimer);
   if(on === pauseHold){ if(on) pauseHoldTimer = setTimeout(()=> setPauseHold(false, "30 minutes paused"), PAUSE_HOLD_MS); return; }
   pauseHold = on;
@@ -37696,7 +37707,7 @@ async function activateItem(itemId, autoplay){
     if(autoplay) tickSilence();
   } else if(item.kind==="stop"){
     stoppedActive = true;
-    stopHold = !!autoplay && stopsKeepLockScreen();
+    stopHold = !!autoplay && stopsKeepLockScreen() && silentLoopUsed();
     if(stopHold){ updateLoopHold(); playLog("at a stop: lock screen kept ready"); }
     endPlayBridge("stop");
     updateMediaSessionMetadata();
@@ -37971,8 +37982,7 @@ function silentKeepAlive(){
   return el;
 }
 function startSilenceKeepAlive(){
-  const el = silentKeepAlive();
-  if(el.paused) el.play().catch(()=>{});
+  if(silentLoopUsed()){ const el = silentKeepAlive(); if(el.paused) el.play().catch(()=>{}); }
   updateMediaSessionMetadata();
   if("mediaSession" in navigator) navigator.mediaSession.playbackState = "playing";
 }
@@ -37987,6 +37997,15 @@ function startSilenceKeepAlive(){
 // Not on touch screens, where the silent loop's arrangement was tested on
 // phones and tablets and is left as it is.
 function useSilenceClock(){ return !(navigator.maxTouchPoints > 0 && /iPad|iPhone|Android|Macintosh/.test(navigator.userAgent) && "ontouchend" in document); }
+// The silent loop (silentKeepAlive) is for phones and tablets: their lock
+// screens, and their habit of silencing a page that's off screen. A
+// computer has neither, and times a silence with the clock above, so there
+// it stays off (2.5.046; kr37's MacBook, 18 Nov 2026). It used to start and
+// stop each time the window was hidden with a track paused, about 60 times
+// in a day and a half; one of those stops hung the Mac's media process
+// inside pause(), and the page, waiting on that process to switch audio
+// on, froze for good.
+function silentLoopUsed(){ return !useSilenceClock(); }
 let silenceClockEl = null, silenceClockUrl = null;
 function silentWavBlob(seconds){
   const rate = 8000, n = Math.max(1, Math.round(seconds * rate));
@@ -38036,7 +38055,7 @@ function stopSilenceKeepAlive(){
    stop, at the end of the playlist, or after 15 s whatever happens. */
 let playBridge = false, playBridgeTimer = null, loopHold = false;
 function updateLoopHold(){
-  const want = (document.hidden && (!audioEl.paused || playBridge || silenceState.active)) || stopHold || pauseHold;
+  const want = silentLoopUsed() && ((document.hidden && (!audioEl.paused || playBridge || silenceState.active)) || stopHold || pauseHold);
   if(want && !loopHold){
     loopHold = true;
     const el = silentKeepAlive();
@@ -40171,16 +40190,16 @@ async function renderSettingsSection(fromTimer){
       <p class="settings-note">${t("levelBoostNote")}</p>
       <p class="settings-note">${t("levelTrackAdjustNote")}</p>
       <p class="settings-note" id="levelMeasured"></p>
-      <div class="settings-row has-switch" style="justify-content:space-between; max-width:560px; margin-top:18px;">
+      ${silentLoopUsed() ? `<div class="settings-row has-switch" style="justify-content:space-between; max-width:560px; margin-top:18px;">
         <strong>${escapeHtmlText(t("stopLockLabel"))}</strong>
         <label class="switch"><input type="checkbox" id="stopLockToggle" ${stopsKeepLockScreen() ? "checked" : ""}><span class="track"></span></label>
       </div>
-      <p class="settings-note">${escapeHtmlText(t("stopLockNote"))}</p>
+      <p class="settings-note">${escapeHtmlText(t("stopLockNote"))}</p>` : "" /* a computer has no lock screen to keep ready (2.5.047; as sharedAwakeBtn) */}
       ${idleSwitchHtml()}
       <details class="settings-log" style="margin-top:18px;"><summary>${escapeHtmlText(t("playLogLabel"))}</summary>
         <div class="settings-log-body">${logActionsHtml("play")}
         <pre id="playLog" style="white-space:pre-wrap; font-size:12px; max-height:240px; overflow:auto; margin:8px 0 0; user-select:text;"></pre></div></details>`;
-    document.getElementById("stopLockToggle").addEventListener("change", (e)=>{
+    document.getElementById("stopLockToggle")?.addEventListener("change", (e)=>{
       root.settings.stopLockScreen = e.target.checked;
       saveState();
       if(!e.target.checked && stopHold){ stopHold = false; updateLoopHold(); updateMediaSessionMetadata(); updateMediaSessionPlaybackState(); }
@@ -45477,7 +45496,7 @@ function allSettingsRows(){
   add({name: t("showLoudnessLabel"), scope: "device", control: {kind: "toggle", el: ()=> pop("showLoudnessToggle")}, desc: t("allDescLoudness")});
   if(pop("keepAwakeRow") && pop("keepAwakeRow").style.display !== "none")
     add({name: t("keepScreenOnLabel"), scope: "device", control: {kind: "toggle", el: ()=> pop("keepAwakeToggle")}, desc: t("allDescKeepScreen")});
-  add({name: t("stopLockLabel"), scope: "device", control: {kind: "bool", get: stopsKeepLockScreen, set: v=>{ root.settings.stopLockScreen = v; saveState(); if(!v && stopHold){ stopHold = false; updateLoopHold(); updateMediaSessionMetadata(); updateMediaSessionPlaybackState(); } if(!v && pauseHold) setPauseHold(false, "setting off"); }}, desc: t("stopLockNote"), link: link("playback")});
+  if(silentLoopUsed()) add({name: t("stopLockLabel"), scope: "device", control: {kind: "bool", get: stopsKeepLockScreen, set: v=>{ root.settings.stopLockScreen = v; saveState(); if(!v && stopHold){ stopHold = false; updateLoopHold(); updateMediaSessionMetadata(); updateMediaSessionPlaybackState(); } if(!v && pauseHold) setPauseHold(false, "setting off"); }}, desc: t("stopLockNote"), link: link("playback")});
   add({name: t("allNameIdle"), scope: "device", control: {kind: "choice", options: [[true, t("fmtIdleOn")], [false, t("fmtIdleOff")]], get: standardizeOnlyWhenIdle, set: v=>{ root.settings.standardizeOnlyWhenIdle = v; saveState(); }}, desc: t("allDescIdle"), link: link("playback")});
   add({name: t("sharedDeviceLabel"), scope: "device", value: root.settings.sharedLastDevice || "—", desc: t("allDescDeviceName"), link: link("shared")});
   add({name: t("sharedServerLabel"), scope: "device", value: root.settings.sharedLastUrl || SHARED_DEFAULT_SERVER, desc: t("allDescServer"), link: link("shared")});
