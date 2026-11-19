@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.5.050">
+<meta name="app-version" content="2.5.051">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -21,7 +21,8 @@
   try{
     const link = document.querySelector('link[rel="manifest"]');
     const here = location.href.split(/[?#]/)[0];
-    if(/^https?:$/.test(location.protocol) && /\/37-player\.html$/.test(new URL(here).pathname)){ link.href = new URL("manifest.webmanifest", here).href; return; }
+    // With choices carried in the address (an iPhone's Install, 2.5.051): manifest.php, the same manifest with them in its start address.
+    if(/^https?:$/.test(location.protocol) && /\/37-player\.html$/.test(new URL(here).pathname)){ link.href = new URL(/[?&](lang|sk)=/.test(location.search) ? "manifest.php" + location.search : "manifest.webmanifest", here).href; return; }
     const m = JSON.parse(atob(link.href.split(",")[1]));
     m.start_url = here; m.id = here; m.scope = new URL("./", here).href;
     link.href = "data:application/manifest+json;base64," + btoa(JSON.stringify(m));
@@ -4680,6 +4681,11 @@ const STRINGS = {
     "folderLibDesktopApp": "the desktop app's own storage",
     "aboutRunningDesktop": "Running in the desktop app (version {version}).",
     "aboutTestBuild": "A test build: it gets the versions being tried, as test.37player.com has them.",
+    "carryJoinTitle": "Join your shared library here?",
+    "carryJoinBody": "In Safari, this device was in the shared library “{name}”. Join it here too? Everything in it then arrives here by itself.",
+    "carryJoinBodyNoName": "In Safari, this device was in a shared library. Join it here too? Everything in it then arrives here by itself.",
+    "carryJoinBtn": "Join",
+    "carryJoinNotNow": "Not now",
     "desktopShellOldTitle": "Please download the newer desktop app",
     "desktopShellOldBody": "This version of 37 Player needs a newer desktop app than this one ({shell}). Download it from github.com/kr37/37player/releases. Until then, some things may not work.",
     "desktopUpdatesBody": "This is a test build of the desktop app, with 37 Player {version}. For now, a newer version comes as a new download from github.com/kr37/37player/releases; updating by itself comes later.",
@@ -6782,6 +6788,11 @@ const STRINGS = {
     "folderLibDesktopApp": "el almacenamiento propio de la aplicación de escritorio",
     "aboutRunningDesktop": "Funcionando en la aplicación de escritorio (versión {version}).",
     "aboutTestBuild": "Una versión de prueba: recibe las versiones en prueba, como test.37player.com.",
+    "carryJoinTitle": "¿Unirte aquí a tu biblioteca compartida?",
+    "carryJoinBody": "En Safari, este dispositivo estaba en la biblioteca compartida “{name}”. ¿Unirte también aquí? Todo lo que contiene llegará aquí por sí solo.",
+    "carryJoinBodyNoName": "En Safari, este dispositivo estaba en una biblioteca compartida. ¿Unirte también aquí? Todo lo que contiene llegará aquí por sí solo.",
+    "carryJoinBtn": "Unirme",
+    "carryJoinNotNow": "Ahora no",
     "desktopShellOldTitle": "Descargue la aplicación de escritorio más nueva",
     "desktopShellOldBody": "Esta versión de 37 Player necesita una aplicación de escritorio más nueva que esta ({shell}). Descárguela desde github.com/kr37/37player/releases. Mientras tanto, algunas cosas pueden no funcionar.",
     "desktopUpdatesBody": "Esta es una versión de prueba de la aplicación de escritorio, con 37 Player {version}. Por ahora, una versión más nueva se descarga de nuevo desde github.com/kr37/37player/releases; la actualización automática vendrá más adelante.",
@@ -8874,6 +8885,11 @@ const STRINGS = {
     "folderLibDesktopApp": "le stockage propre à l'application de bureau",
     "aboutRunningDesktop": "Fonctionne dans l'application de bureau (version {version}).",
     "aboutTestBuild": "Une version de test : elle reçoit les versions à l'essai, comme test.37player.com.",
+    "carryJoinTitle": "Rejoindre ici votre bibliothèque partagée ?",
+    "carryJoinBody": "Dans Safari, cet appareil faisait partie de la bibliothèque partagée « {name} ». La rejoindre ici aussi ? Tout son contenu arrivera alors ici de lui-même.",
+    "carryJoinBodyNoName": "Dans Safari, cet appareil faisait partie d'une bibliothèque partagée. La rejoindre ici aussi ? Tout son contenu arrivera alors ici de lui-même.",
+    "carryJoinBtn": "Rejoindre",
+    "carryJoinNotNow": "Pas maintenant",
     "desktopShellOldTitle": "Téléchargez l'application de bureau plus récente",
     "desktopShellOldBody": "Cette version de 37 Player demande une application de bureau plus récente que celle-ci ({shell}). Téléchargez-la depuis github.com/kr37/37player/releases. En attendant, certaines choses peuvent ne pas fonctionner.",
     "desktopUpdatesBody": "Ceci est une version d'essai de l'application de bureau, avec 37 Player {version}. Pour l'instant, une version plus récente se télécharge à nouveau depuis github.com/kr37/37player/releases ; la mise à jour automatique viendra plus tard.",
@@ -10966,6 +10982,11 @@ const STRINGS = {
     "folderLibDesktopApp": "o armazenamento próprio do aplicativo de computador",
     "aboutRunningDesktop": "Rodando no aplicativo de computador (versão {version}).",
     "aboutTestBuild": "Uma versão de teste: recebe as versões em teste, como test.37player.com.",
+    "carryJoinTitle": "Entrar aqui na sua biblioteca compartilhada?",
+    "carryJoinBody": "No Safari, este dispositivo estava na biblioteca compartilhada “{name}”. Entrar nela aqui também? Tudo o que ela contém chegará aqui sozinho.",
+    "carryJoinBodyNoName": "No Safari, este dispositivo estava em uma biblioteca compartilhada. Entrar nela aqui também? Tudo o que ela contém chegará aqui sozinho.",
+    "carryJoinBtn": "Entrar",
+    "carryJoinNotNow": "Agora não",
     "desktopShellOldTitle": "Baixe o aplicativo de computador mais novo",
     "desktopShellOldBody": "Esta versão do 37 Player precisa de um aplicativo de computador mais novo que este ({shell}). Baixe-o em github.com/kr37/37player/releases. Até lá, algumas coisas podem não funcionar.",
     "desktopUpdatesBody": "Esta é uma versão de teste do aplicativo de computador, com o 37 Player {version}. Por enquanto, uma versão mais nova é um novo download em github.com/kr37/37player/releases; a atualização automática virá depois.",
@@ -13058,6 +13079,11 @@ const STRINGS = {
     "folderLibDesktopApp": "dem eigenen Speicher der Desktop-App",
     "aboutRunningDesktop": "Läuft in der Desktop-App (Version {version}).",
     "aboutTestBuild": "Eine Testversion: Sie bekommt die Versionen, die gerade erprobt werden, wie test.37player.com.",
+    "carryJoinTitle": "Hier deiner geteilten Bibliothek beitreten?",
+    "carryJoinBody": "In Safari war dieses Gerät in der geteilten Bibliothek „{name}“. Auch hier beitreten? Alles darin kommt dann von selbst hierher.",
+    "carryJoinBodyNoName": "In Safari war dieses Gerät in einer geteilten Bibliothek. Auch hier beitreten? Alles darin kommt dann von selbst hierher.",
+    "carryJoinBtn": "Beitreten",
+    "carryJoinNotNow": "Nicht jetzt",
     "desktopShellOldTitle": "Bitte die neuere Desktop-App herunterladen",
     "desktopShellOldBody": "Diese Version von 37 Player braucht eine neuere Desktop-App als diese ({shell}). Laden Sie sie von github.com/kr37/37player/releases herunter. Bis dahin funktioniert manches vielleicht nicht.",
     "desktopUpdatesBody": "Dies ist eine Testversion der Desktop-App mit 37 Player {version}. Vorerst kommt eine neuere Version als neuer Download von github.com/kr37/37player/releases; automatische Aktualisierung kommt später.",
@@ -15150,6 +15176,11 @@ const STRINGS = {
     "folderLibDesktopApp": "桌面应用自己的存储空间",
     "aboutRunningDesktop": "在桌面应用中运行（版本 {version}）。",
     "aboutTestBuild": "测试版：它获取正在试用的版本，与 test.37player.com 相同。",
+    "carryJoinTitle": "在这里加入你的共享资料库？",
+    "carryJoinBody": "在 Safari 中，这台设备在共享资料库“{name}”里。也在这里加入吗？其中的一切会自动来到这里。",
+    "carryJoinBodyNoName": "在 Safari 中，这台设备在一个共享资料库里。也在这里加入吗？其中的一切会自动来到这里。",
+    "carryJoinBtn": "加入",
+    "carryJoinNotNow": "暂不",
     "desktopShellOldTitle": "请下载较新的桌面应用",
     "desktopShellOldBody": "这个版本的 37 Player 需要比当前（{shell}）更新的桌面应用。请从 github.com/kr37/37player/releases 下载。在此之前，有些功能可能无法使用。",
     "desktopUpdatesBody": "这是桌面应用的测试版，含 37 Player {version}。目前，更新版本需要从 github.com/kr37/37player/releases 重新下载；自动更新以后再提供。",
@@ -17242,6 +17273,11 @@ const STRINGS = {
     "folderLibDesktopApp": "bộ nhớ riêng của ứng dụng máy tính",
     "aboutRunningDesktop": "Đang chạy trong ứng dụng máy tính (phiên bản {version}).",
     "aboutTestBuild": "Bản thử nghiệm: nhận các phiên bản đang được thử, giống test.37player.com.",
+    "carryJoinTitle": "Tham gia thư viện dùng chung của bạn tại đây?",
+    "carryJoinBody": "Trong Safari, thiết bị này thuộc thư viện dùng chung “{name}”. Tham gia cả ở đây? Mọi thứ trong đó sẽ tự đến đây.",
+    "carryJoinBodyNoName": "Trong Safari, thiết bị này thuộc một thư viện dùng chung. Tham gia cả ở đây? Mọi thứ trong đó sẽ tự đến đây.",
+    "carryJoinBtn": "Tham gia",
+    "carryJoinNotNow": "Để sau",
     "desktopShellOldTitle": "Hãy tải ứng dụng máy tính mới hơn",
     "desktopShellOldBody": "Phiên bản 37 Player này cần ứng dụng máy tính mới hơn bản hiện có ({shell}). Hãy tải về từ github.com/kr37/37player/releases. Trong lúc chờ, một số thứ có thể không hoạt động.",
     "desktopUpdatesBody": "Đây là bản thử nghiệm của ứng dụng máy tính, với 37 Player {version}. Hiện tại, bản mới hơn là một lần tải về mới từ github.com/kr37/37player/releases; tự cập nhật sẽ có sau.",
@@ -19334,6 +19370,11 @@ const STRINGS = {
     "folderLibDesktopApp": "τον δικό αποθηκευτικό χώρο της εφαρμογής υπολογιστή",
     "aboutRunningDesktop": "Λειτουργεί στην εφαρμογή υπολογιστή (έκδοση {version}).",
     "aboutTestBuild": "Δοκιμαστική έκδοση: λαμβάνει τις εκδόσεις υπό δοκιμή, όπως το test.37player.com.",
+    "carryJoinTitle": "Συμμετοχή εδώ στην κοινόχρηστη βιβλιοθήκη σας;",
+    "carryJoinBody": "Στο Safari, αυτή η συσκευή ήταν στην κοινόχρηστη βιβλιοθήκη «{name}». Να συμμετέχει και εδώ; Όλα όσα περιέχει θα έρθουν εδώ από μόνα τους.",
+    "carryJoinBodyNoName": "Στο Safari, αυτή η συσκευή ήταν σε μια κοινόχρηστη βιβλιοθήκη. Να συμμετέχει και εδώ; Όλα όσα περιέχει θα έρθουν εδώ από μόνα τους.",
+    "carryJoinBtn": "Συμμετοχή",
+    "carryJoinNotNow": "Όχι τώρα",
     "desktopShellOldTitle": "Κατεβάστε τη νεότερη εφαρμογή υπολογιστή",
     "desktopShellOldBody": "Αυτή η έκδοση του 37 Player χρειάζεται νεότερη εφαρμογή υπολογιστή από αυτήν ({shell}). Κατεβάστε τη από το github.com/kr37/37player/releases. Ως τότε, κάποια πράγματα ίσως δεν λειτουργούν.",
     "desktopUpdatesBody": "Αυτή είναι δοκιμαστική έκδοση της εφαρμογής υπολογιστή, με το 37 Player {version}. Προς το παρόν, μια νεότερη έκδοση είναι νέα λήψη από το github.com/kr37/37player/releases· η αυτόματη ενημέρωση έρχεται αργότερα.",
@@ -21426,6 +21467,11 @@ const STRINGS = {
     "folderLibDesktopApp": "lo spazio di archiviazione dell'app per computer",
     "aboutRunningDesktop": "In esecuzione nell'app per computer (versione {version}).",
     "aboutTestBuild": "Una versione di prova: riceve le versioni in prova, come test.37player.com.",
+    "carryJoinTitle": "Entrare qui nella tua libreria condivisa?",
+    "carryJoinBody": "In Safari, questo dispositivo era nella libreria condivisa “{name}”. Entrarci anche qui? Tutto ciò che contiene arriverà qui da solo.",
+    "carryJoinBodyNoName": "In Safari, questo dispositivo era in una libreria condivisa. Entrarci anche qui? Tutto ciò che contiene arriverà qui da solo.",
+    "carryJoinBtn": "Entra",
+    "carryJoinNotNow": "Non ora",
     "desktopShellOldTitle": "Scarica l'app per computer più recente",
     "desktopShellOldBody": "Questa versione di 37 Player ha bisogno di un'app per computer più recente di questa ({shell}). Scaricala da github.com/kr37/37player/releases. Nel frattempo, alcune cose potrebbero non funzionare.",
     "desktopUpdatesBody": "Questa è una versione di prova dell'app per computer, con 37 Player {version}. Per ora, una versione più nuova è un nuovo download da github.com/kr37/37player/releases; l'aggiornamento automatico arriverà più avanti.",
@@ -42913,6 +42959,11 @@ async function openSetupWizard(){
   // Chosen once per device: not asked again when setup is (a second library).
   const dev = readDeviceSettings();
   if(dev && dev.language && root.settings.language) return setupWelcomeStep();
+  // Chosen already in Safari, before this Home Screen app was made (2.5.051).
+  if(SETUP_CARRY && LANGUAGES.some(l=> l.code === SETUP_CARRY.lang)){
+    if(root.settings.language !== SETUP_CARRY.lang){ root.settings.language = SETUP_CARRY.lang; await saveState(); applyDisplaySettings(); refreshCurrentView(); }
+    return setupWelcomeStep();
+  }
   const current = root.settings.language || detectDefaultLanguage();
   const lang = await askChoice(t("setupLanguageTitle"), "", LANGUAGES.map(l=> ({label: l.name, value: l.code, kind: l.code===current ? "primary" : "ghost"})));
   if(!lang) return; // closed — ask again next launch
@@ -42964,6 +43015,7 @@ async function setupWelcomeStep(){
   if(window.__autoTry) return firstRunDone();
   const want = takeSetupHash();
   if(want === "try") return startTrial();
+  if(env.standalone && await setupCarryJoin(env)) return;
   if(want === "setup" || env.standalone) return startInstallSetup();
   const c = await askChoice(t("setupWelcomeTitle"), `<p>${t("sgWelcomeBody")}</p>`, [
     {label: t("sgTryBtn"), value: "try"},
@@ -43206,6 +43258,67 @@ const SETUP_HASH = (()=>{
   if(m){ try{ history.replaceState(null, "", location.pathname + location.search); }catch(err){} }
   return m ? m[1] : null;
 })();
+// Choices carried into an iPhone's or iPad's Home Screen app (2.5.051; kr37,
+// 19 Nov 2026: someone setting up on an iPhone was asked the language again
+// in the Home Screen app, and thought something had gone wrong). That app
+// has storage of its own, apart from Safari's. So when Install is chosen in
+// a Safari tab, the page reloads with the choices in its address
+// (setupCarryQuery: the language, and a shared library this tab is in: its
+// join code and server, or its Google Drive folder, the device's name and
+// the library's name; never a sign-in or account), its manifest is then
+// manifest.php with the same ones, and the Home Screen app opens at that
+// address. There they're taken on the first start only (setup not done
+// yet): the language without asking, then "Join it here too?". The icon
+// keeps the address for good, so later starts ignore them; the app takes
+// them out of its own address.
+const CARRY_KEYS = ["lang", "sk", "sc", "su", "sf", "sd", "sn"];
+function carryQueryOf(get){
+  const q = new URLSearchParams();
+  for(const k of CARRY_KEYS){ const v = get(k); if(v) q.set(k, v); }
+  const str = q.toString();
+  return str ? "?" + str : "";
+}
+const SETUP_CARRY = (()=>{
+  const q = new URLSearchParams(location.search), c = {};
+  for(const k of CARRY_KEYS) if(q.get(k)) c[k] = q.get(k);
+  if(!Object.keys(c).length) return null;
+  let standalone = false;
+  try{ standalone = window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true; }catch(err){}
+  if(standalone){ // the tab keeps them (its manifest needs them); the app doesn't
+    for(const k of CARRY_KEYS) q.delete(k);
+    const rest = q.toString();
+    try{ history.replaceState(null, "", location.pathname + (rest ? "?" + rest : "") + location.hash); }catch(err){}
+  }
+  return c;
+})();
+function setupCarryQuery(){
+  const cfg = sharedConfig(), v = {lang: root.settings.language || ""};
+  if(cfg && cfg.kind === "gdrive" && cfg.folderId) Object.assign(v, {sk: "g", sf: cfg.folderId});
+  else if(cfg && cfg.code) Object.assign(v, {sk: "s", sc: cfg.code, su: cfg.url && cfg.url !== SHARED_DEFAULT_SERVER ? cfg.url : ""});
+  if(v.sk) Object.assign(v, {sd: cfg.deviceName || root.settings.sharedLastDevice || "", sn: cfg.libraryName || ""});
+  return carryQueryOf(k=> v[k]);
+}
+// In the Home Screen app's first start: join the shared library the tab was
+// in. True when it joined, or the joining was handed to a dialog.
+async function setupCarryJoin(env){
+  const c = SETUP_CARRY;
+  if(!c || !c.sk || !libraryIsEmptyEnough()) return false;
+  const ans = await askChoice(t("carryJoinTitle"), `<p>${escapeHtmlText(c.sn ? t("carryJoinBody", {name: c.sn}) : t("carryJoinBodyNoName"))}</p>`, [
+    {label: t("carryJoinBtn"), value: "go", kind: "primary"}, {label: t("carryJoinNotNow"), value: null}]);
+  if(ans !== "go") return false;
+  if(c.sd){ root.settings.sharedLastDevice = c.sd; await saveState(); }
+  if(c.sk === "g"){
+    root.settings.sharedLastWhere = "gdrive"; await saveState();
+    driveStartFrom(null, {what: "connect", fromSetup: true, device: c.sd || "", folder: c.sf || ""}); // the chooser picks that library (openDriveChooser)
+    return true;
+  }
+  const r = await joinSharedLibrary(c.su || "", c.sc, c.sd || "", {});
+  if(r && r.ok){ await firstRunDone(); sharedSyncInit(); return true; }
+  if(r && r.cancelled) return false;
+  // Didn't work: the join dialog, with the code in it, and the guide behind it.
+  await setupJoinStep(env, (r && r.error) || "", {code: c.sc}, {back: ()=> startInstallSetup()});
+  return true;
+}
 let setupHashUsed = false;
 function takeSetupHash(){ if(setupHashUsed) return null; setupHashUsed = true; return SETUP_HASH; }
 function deviceOs(){
@@ -43313,6 +43426,12 @@ let setupGuideRedraw = null; // while the guide is open
 function openSetupGuide(opts){
   opts = opts || {};
   let env = setupEnvironment();
+  // An iPhone or iPad in Safari: the address (and so the manifest the Home
+  // Screen app is made from) carries this tab's choices first (SETUP_CARRY).
+  if(env.ios && !env.standalone && !IN_DESKTOP_APP && /^https?:$/.test(location.protocol) && !window.__noCarryReload){
+    const want = setupCarryQuery(), have = carryQueryOf(k=> new URLSearchParams(location.search).get(k));
+    if(want && want !== have){ location.replace(location.pathname + want + "#setup"); return Promise.resolve(); }
+  }
   const os = deviceOs();
   const notes = {};
   let chromeWay = false, noDrive = false;
@@ -47758,7 +47877,8 @@ async function openDriveChooser(res, intent){
     modalCloseCallbacks.push(()=>{ if(!settled){ settled = true; resolve(); } });
     const sel = document.getElementById("drLib");
     [...sel.options].forEach(o=>{ o.textContent = o.value === "new" ? t("driveCreateBtn") : libs[+o.value].name; });
-    sel.value = libs.length ? "0" : "new";
+    const carried = intent.folder ? libs.findIndex(l=> l.id === intent.folder) : -1; // the library a Safari tab was in (setupCarryJoin)
+    sel.value = carried >= 0 ? String(carried) : libs.length ? "0" : "new";
     const showChoice = ()=>{
       const isNew = sel.value === "new";
       document.getElementById("drNewBox").style.display = isNew ? "" : "none";
