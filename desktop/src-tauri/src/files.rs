@@ -718,7 +718,7 @@ pub fn serve(app: &tauri::AppHandle, req: &tauri::http::Request<Vec<u8>>) -> tau
     let base = match roots(app).get(root) { Ok(b) => b, Err(e) => return fail(StatusCode::NOT_FOUND, e) };
     let full = match resolve(&base, rel) { Ok(p) => p, Err(e) => return fail(StatusCode::FORBIDDEN, e) };
     let len = match fs::metadata(&full) { Ok(m) if m.is_file() => m.len(), _ => return fail(StatusCode::NOT_FOUND, "not there".into()) };
-    let mime = mime_for(rel);
+    let mime = mime_for_file(&full, rel);
     let range = req.headers().get("range").and_then(|v| v.to_str().ok());
     let (start, end, partial) = match range {
         Some(h) => match parse_range(h, len) {
@@ -733,6 +733,43 @@ pub fn serve(app: &tauri::AppHandle, req: &tauri::http::Request<Vec<u8>>) -> tau
         .header("Access-Control-Allow-Origin", "*").header("Access-Control-Allow-Headers", "Range").header("Access-Control-Expose-Headers", "Content-Range, Content-Length, Accept-Ranges");
     r = if partial { r.status(StatusCode::PARTIAL_CONTENT).header("Content-Range", format!("bytes {}-{}/{}", start, end.saturating_sub(1), len)) } else { r.status(StatusCode::OK) };
     r.body(body).unwrap()
+}
+
+// A recording's type from its first bytes when they say clearly, else from
+// its extension (shell 2.5.5). WebKit on the Mac believes the type it's
+// given: a WebM named ".mp3" (page 2.5.047 and before kept Standardize's
+// Opus/WebM files that way) was handed to the MP3 player and wouldn't play,
+// while Linux's webviews look at the content themselves (kr37, 19 Nov 2026).
+// Only audio and unknown kinds are looked at; an extension that agrees with
+// the content keeps its own type (raw ADTS AAC goes as audio/aac).
+pub fn mime_for_file(full: &Path, rel: &str) -> &'static str {
+    let by_name = mime_for(rel);
+    if !(by_name.starts_with("audio/") || by_name == "application/octet-stream") { return by_name; }
+    let mut head = [0u8; 12];
+    let n = match fs::File::open(full).and_then(|mut f| f.read(&mut head)) { Ok(n) => n, Err(_) => return by_name };
+    match sniff_audio(&head[..n]) {
+        Some(t) if t != by_name && !(t == "audio/mpeg" && by_name == "audio/flac") => {
+            if t == "audio/webm" && rel.to_ascii_lowercase().ends_with(".mka") { "audio/x-matroska" } else { t }
+        }
+        _ => by_name,
+    }
+}
+
+// What a file's first bytes say it is (as the page's sniffAudioFormat).
+// An ID3 tag says MP3, though a FLAC file sometimes carries one in front;
+// mime_for_file keeps a ".flac" name's type then.
+pub fn sniff_audio(b: &[u8]) -> Option<&'static str> {
+    let at = |i: usize, s: &[u8]| b.len() >= i + s.len() && &b[i..i + s.len()] == s;
+    if at(0, b"ID3") { return Some("audio/mpeg"); }
+    if b.len() >= 2 && b[0] == 0xFF && (b[1] & 0xE0) == 0xE0 && (b[1] & 0x06) != 0 { return Some("audio/mpeg"); }
+    if at(0, b"FORM") && (at(8, b"AIFF") || at(8, b"AIFC")) { return Some("audio/aiff"); }
+    if at(4, b"ftyp") { return Some("audio/mp4"); }
+    if at(0, b"RIFF") && at(8, b"WAVE") { return Some("audio/wav"); }
+    if at(0, b"fLaC") { return Some("audio/flac"); }
+    if at(0, b"OggS") { return Some("audio/ogg"); }
+    if at(0, &[0x1A, 0x45, 0xDF, 0xA3]) { return Some("audio/webm"); }
+    if b.len() >= 2 && b[0] == 0xFF && (b[1] & 0xF6) == 0xF0 { return Some("audio/aac"); }
+    None
 }
 
 pub fn mime_for(rel: &str) -> &'static str {
@@ -752,6 +789,21 @@ mod tests {
         let _ = fs::remove_dir_all(&d);
         fs::create_dir_all(&d).unwrap();
         d
+    }
+    #[test]
+    fn types_by_content() {
+        let d = tmp("sniff");
+        let put = |name: &str, bytes: &[u8]| { fs::write(d.join(name), bytes).unwrap(); d.join(name) };
+        let webm = [0x1A, 0x45, 0xDF, 0xA3, 0x9F, 0x42, 0x86, 0x81, 0x01, 0, 0, 0];
+        assert_eq!(mime_for_file(&put("talk.mp3", &webm), "music/a/talk.mp3"), "audio/webm"); // Standardize's WebM, named .mp3
+        assert_eq!(mime_for_file(&put("talk.mka", &webm), "music/a/talk.mka"), "audio/x-matroska");
+        assert_eq!(mime_for_file(&put("x.mp3", b"ID3\x03\0\0\0\0\0\0"), "x.mp3"), "audio/mpeg");
+        assert_eq!(mime_for_file(&put("x.flac", b"ID3\x03\0\0\0\0\0\0"), "x.flac"), "audio/flac"); // an ID3 tag in front of FLAC
+        assert_eq!(mime_for_file(&put("y.mp3", b"\0\0\0\x20ftypM4A "), "y.mp3"), "audio/mp4");
+        assert_eq!(mime_for_file(&put("z.wav", b"RIFF\0\0\0\0WAVE"), "z.wav"), "audio/wav");
+        assert_eq!(mime_for_file(&put("odd.mp3", b"not audio at all"), "odd.mp3"), "audio/mpeg"); // can't tell: the name decides
+        assert_eq!(mime_for_file(&put("w.json", &webm), "w.json"), "application/json"); // only audio is looked at
+        assert_eq!(mime_for_file(&d.join("gone.mp3"), "gone.mp3"), "audio/mpeg");
     }
     #[test]
     fn a_range_request_may_be_asked_about_first() {
