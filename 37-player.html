@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.5.047">
+<meta name="app-version" content="2.5.048">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -2856,9 +2856,10 @@ class FolderLibraryStore {
         return {$place: v.p37root, $at: v.p37path, type: v.type || "", size: v.size, name: v.name, lastModified: v.lastModified};
       const isBuf = v instanceof ArrayBuffer || ArrayBuffer.isView(v);
       if(isBlobLike(v) || isBuf){
-        const ext = isBuf ? ".bin" : path === "blob" && store === "audio" ? extensionFor(v) : path === "blob" && store === "artwork" ? imageExtensionFor(v) : ".bin";
+        let ext = isBuf ? ".bin" : path === "blob" && store === "audio" ? extensionFor(v) : path === "blob" && store === "artwork" ? imageExtensionFor(v) : ".bin";
         let ph;
         if(base && path === "blob" && !isBuf){
+          ext = await recordingExtFor(v); // a readable name: what's inside decides (2.5.048)
           const mine = (before.find(n=> n.startsWith("/")) || "").slice(1);
           const rp = await this.freePath(base, ext, mine);
           await this.addOrphans(["/" + rp]); // until the record points at it (see tidy)
@@ -36081,7 +36082,8 @@ function recordingNameOpts(){
 function trackHeldByAPlayer(tid){
   const ctx = typeof findPlayingContext === "function" ? findPlayingContext() : null;
   if(ctx && ctx.item && ctx.item.refId === tid) return true;
-  return tid === libPreviewTrackId || tid === edPreviewTrackId;
+  // and the next track, loaded ahead (2.5.036): its player has the file open
+  return tid === libPreviewTrackId || tid === edPreviewTrackId || tid === nextReadyId;
 }
 // After the library's details are saved: recordings whose names no longer
 // fit are moved, a moment later (see FolderLibraryStore.renameRecordings).
@@ -44561,11 +44563,38 @@ function buildPlaceholderEntries(playlistsForZip){
   });
   return {zipEntries, silencePathByKey, stopPathByKey};
 }
+// From a file's name, else its type (without parameters: the browser's
+// recorder types its WebM "audio/webm;codecs=opus"), else ".mp3". Before
+// 2.5.048 WebM, Matroska and AIFF weren't in the list, so a recording
+// Standardize had made as Opus/WebM (no name) was kept as ".mp3", and the
+// Mac's desktop app, typing files by their extension, wouldn't play it
+// (kr37, 19 Nov 2026). Recordings already kept that way aren't renamed:
+// kr37 would rather not carry one-time fixes, and the desktop app's shell
+// types files by their first bytes since shell 2.5.5, so they play. A
+// recording written into a library's folder goes by its content
+// (recordingExtFor).
 function extensionFor(blob){
   if(blob && blob.name){ const m = blob.name.match(/\.[a-z0-9]+$/i); if(m) return m[0].toLowerCase(); }
-  const map = {"audio/mpeg":".mp3","audio/mp3":".mp3","audio/wav":".wav","audio/x-wav":".wav","audio/mp4":".m4a","audio/x-m4a":".m4a","audio/aac":".aac","audio/ogg":".ogg","audio/flac":".flac","audio/x-flac":".flac"};
-  if(blob && blob.type && map[blob.type]) return map[blob.type];
+  const map = {"audio/mpeg":".mp3","audio/mp3":".mp3","audio/wav":".wav","audio/x-wav":".wav","audio/wave":".wav","audio/mp4":".m4a","audio/x-m4a":".m4a","audio/aac":".aac","audio/ogg":".ogg","audio/opus":".opus","audio/flac":".flac","audio/x-flac":".flac","audio/webm":".webm","video/webm":".webm","audio/x-matroska":".mka","audio/aiff":".aif","audio/x-aiff":".aif"};
+  const type = blob && blob.type ? String(blob.type).split(";")[0].trim().toLowerCase() : "";
+  if(type && map[type]) return map[type];
   return ".mp3";
+}
+// Which kind of file an extension says it is, in sniffAudioFormat's terms
+// (Ogg's two kinds counted as one).
+const EXT_AUDIO_KIND = {mp3:"mp3", m4a:"mp4", mp4:"mp4", m4b:"mp4", aac:"aac", flac:"flac", ogg:"ogg", oga:"ogg", opus:"ogg", wav:"wav", wave:"wav", aif:"aiff", aiff:"aiff", aifc:"aiff", webm:"webm", mka:"webm"};
+function extMatchesKind(ext, kind){
+  const k = EXT_AUDIO_KIND[String(ext || "").replace(/^\./, "").toLowerCase()];
+  return !!k && k === (kind === "oggother" ? "ogg" : kind);
+}
+// The extension a recording should be kept under: its own name's or type's
+// when that agrees with what's inside, else what's inside (2.5.048).
+async function recordingExtFor(blob){
+  const named = extensionFor(blob);
+  let s = null;
+  try{ s = await sniffAudioFormat(blob); }catch(err){}
+  if(!s || !s.kind || extMatchesKind(named, s.kind)) return named;
+  return s.ext;
 }
 function relativePath(fromDirParts, toParts){
   let i=0;
