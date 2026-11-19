@@ -6,7 +6,7 @@ Two ways to take back a change. **Undo** (↶) is for your own last few changes 
 
 On 'Edit Playlists' and 'Library', the ↶ button beside Settings takes back your last change, and ↷ puts it back again. The keyboard does the same: <kbd>Ctrl</kbd>+<kbd>Z</kbd> (<kbd>⌘</kbd>+<kbd>Z</kbd> on a Mac) to undo, <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Z</kbd> or <kbd>Ctrl</kbd>+<kbd>Y</kbd> to redo.
 
-- **What counts as a change:** anything you do to tracks, playlists and folders: renaming, editing a track's details, moving, reordering, adding or removing items, silences and stops, deleting, splitting, importing, a new picture for a track, and **Replace audio file**. Changes made within a second or so of each other count as one.
+- **What counts as a change:** anything you do to tracks, playlists and folders: renaming, editing a track's details, moving, reordering, adding or removing items, silences and stops, deleting, splitting, importing, a new picture for a track, and **Replace file**. Changes made within a second or so of each other count as one.
 - **Hold the pointer over ↶** to see what it will undo, for example "Undo: changed “Morning”". After undoing, a short message at the bottom says what was undone.
 - **Hold ↶ down, or right-click it,** to open History.
 - **Up to 30 steps** are kept, for each library, and they're still there after closing and reopening 37 Player.

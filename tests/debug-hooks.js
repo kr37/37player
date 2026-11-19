@@ -192,3 +192,4 @@ window.__trash = {fp: (r)=> libraryFingerprint(r), facts: (id)=> libraryTrashFac
 // A full device with files still to come (fullowned.js, 2.5.044).
 window.__shf = {text: (e)=> sharedFailText(e), st: ()=> sharedStatus, toCome: ()=> sharedStillToComeHere(), pending: (p)=>{ sharedPending = p; },
   dialog: (e)=>{ saveFailing = {since: Date.now(), full: isQuotaError(e), denied: false, text: errText(e)}; openNotSavingDialog(); }, unfail: ()=>{ saveFailing = null; }, render: ()=> renderSharedStatusInto()};
+window.__ext = {typedAudioBlob, fileNameForContent}; // extfix.js (2.5.052)

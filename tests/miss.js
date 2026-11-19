@@ -55,6 +55,17 @@ const waitIdle = async (p)=>{ for(let k=0;k<400;k++){ const s = await p.evaluate
   console.log('B detail:', JSON.stringify(await B.evaluate(()=>{ const r=window.__dbg.getRoot(); return r.library.map(t=>[t.id.slice(0,8), t.name, t.audioRev, t.audioFrom, window.__dbg3.missing(t.id)]); })));
   console.log('B pending:', JSON.stringify(await B.evaluate(()=>window.__dbg3.pending())));
   ok(m && m.waiting && m.from==='Laptop', 'B knows the track is waiting for Laptop');
+  // Library cleanup's groups (2.5.053): which one the track is in, and Remove all where it belongs.
+  const groups = async ()=>{
+    await B.evaluate(()=>{ window.__dbg.setMode('editing'); window.__dbg4.settings(); window.__dbg4.section('cleanup'); }); await sleep(2500);
+    const g = await B.evaluate(()=> [...document.querySelectorAll('.missing-group')].map(d=> ({key: d.dataset.group, title: d.querySelector('.sh-more-title').textContent, open: d.open, text: d.innerText, removeAll: !!d.querySelector(':scope > div > .btn.danger')})));
+    await B.keyboard.press('Escape'); await sleep(400);
+    await B.evaluate(()=> window.__dbg.setMode('playing')); await sleep(400); // back where the test was
+    return g;
+  };
+  const g1 = await groups(), w1 = g1.find(x=> x.key === 'waiting:Laptop');
+  ok(w1 && /Laptop/.test(w1.title) && /New Talk/.test(w1.text) && w1.removeAll && /every device/.test(w1.text) && !g1.some(x=> x.key !== 'waiting:Laptop' && /New Talk/.test(x.text)), 'Library cleanup: in "Waiting for “Laptop” to send them", with Remove all and its warning (' + g1.map(x=> x.title).join(' | ') + ')');
+  ok(w1 && w1.open, 'a small group starts open');
   // show it on Playing
   await B.evaluate((n)=>{ const el=[...document.querySelectorAll('nav.rail *')].find(e=>e.children.length===0 && e.textContent.trim()===n); el && el.click(); }, plName); await sleep(2200);
   const view = await B.evaluate(()=>({banner: document.querySelector('.not-here-banner')?.innerText, row: document.querySelector('#playingTrackList .item-row.not-here')?.innerText}));
@@ -80,6 +91,8 @@ const waitIdle = async (p)=>{ for(let k=0;k<400;k++){ const s = await p.evaluate
   const m2 = await B.evaluate(()=> window.__dbg3.missing('newtrk'));
   tx = await dlg();
   ok(m2 && !m2.waiting && /on its way to this device/.test(tx) && !/Laptop/.test(tx), 'in the shared library, not downloaded yet: on its way, no device named (' + JSON.stringify(m2) + ': ' + tx + ')');
+  const g2 = await groups(), c2 = g2.find(x=> x.key === 'coming');
+  ok(c2 && /New Talk/.test(c2.text) && !c2.removeAll && !g2.some(x=> x.key.startsWith('waiting:')), 'then in "Waiting to download", without Remove all (' + g2.map(x=> x.title).join(' | ') + ')');
   blockGet = false;
   await B.evaluate(()=>window.__dbg3.sync()); await sleep(3000); await waitIdle(B); await sleep(2000);
   const after = await B.evaluate(()=>({m: window.__dbg3.missing('newtrk'), banner: !!document.querySelector('.not-here-banner')}));
