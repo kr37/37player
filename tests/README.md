@@ -95,9 +95,10 @@ By hand: `./serve.sh` in one terminal (servers on ports 8861 and 8870), then
 | play | Pressing play on a track still downloading: one download, no restarts, never starts by itself |
 | silclock | A silence ends on time with no animation frames or timeupdates (a covered window on a Mac), 1.4.158 |
 | bridge3 | Screen off: silent loop through track → silence → track, lock-screen buttons |
-| stoplock | Stops keep the lock screen ready; ▶ there continues |
-| ph | Pausing off screen keeps the lock screen ready; ▶ resumes |
+| stoplock | Stops keep the lock screen ready; ▶ there continues (as an iPad) |
+| ph | Pausing off screen keeps the lock screen ready; ▶ resumes (as an iPad) |
 | pausesync | Syncing after a pause keeps the paused track on the lock screen |
+| noloop | No silent loop on a computer (paused or stopped off screen, track → silence → track); a key the desktop app refuses doesn't stop device.json, 2.5.046 |
 | awk2 | "Keep syncing with the screen off": starts, gives way to playing, resumes, stops when done |
 | pk2 | Waveforms on the server: flat ones never sent, real ones replace flat ones |
 | crash | A track whose analysis closed the page is skipped afterwards |
