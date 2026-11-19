@@ -22,12 +22,13 @@ const clickText = (p, sel, src) => p.evaluate((sel, src)=>{ const re=new RegExp(
   await p.evaluate(async()=>{ const r = window.__dbg.getRoot(); r.library.push({id: 'gone1', name: 'Gone Talk', artist: 'A', album: 'B', duration: 600, peaks: [], fileSize: 1000, filename: 'gone.mp3', addedAt: Date.now()}); await window.__dbg.saveState(); });
   const groups = async ()=>{
     await p.evaluate(()=>{ window.__dbg.setMode('editing'); window.__dbg4.settings(); window.__dbg4.section('cleanup'); }); await sleep(2000);
-    const g = await p.evaluate(()=> [...document.querySelectorAll('.missing-group')].map(d=> ({key: d.dataset.group, title: d.querySelector('.sh-more-title').textContent, text: d.innerText, removeAll: !!d.querySelector(':scope > div > .btn.danger'), rowBtn: d.querySelector('[data-act="replace"]')?.textContent || ''})));
+    const g = await p.evaluate(()=> [...document.querySelectorAll('.missing-group')].map(d=> ({key: d.dataset.group, title: d.querySelector('.sh-more-title').textContent, text: d.innerText, removeAll: !!d.querySelector(':scope > div > .btn.danger'), rowBtn: d.querySelector('[data-act="replace"]')?.textContent || '', outline: (()=>{ const x = d.querySelector('[data-act="replace"]'); if(!x) return ''; const c = getComputedStyle(x); return c.borderTopStyle !== 'none' && parseFloat(c.borderTopWidth) > 0 && !/rgba\(0, 0, 0, 0\)|transparent/.test(c.borderTopColor) ? c.borderTopColor : ''; })()})));
+    if(g.length) await p.screenshot({path: 'shots/missreplace-row.png', clip: await p.evaluate(()=>{ const r = document.querySelector('.missing-group').getBoundingClientRect(); return {x: r.x, y: r.y, width: r.width, height: Math.min(r.height, 260)}; })});
     await p.keyboard.press('Escape'); await sleep(400);
     return g;
   };
   const g1 = await groups();
-  ok(g1.length === 1 && g1[0].key === 'lost' && /Gone Talk/.test(g1[0].text) && g1[0].removeAll && g1[0].rowBtn === 'Find or replace…', 'Library cleanup: under "Missing, with nothing on its way", with Remove all, its row offering Find or replace… (' + g1.map(x=> x.title).join(' | ') + ')');
+  ok(g1.length === 1 && g1[0].key === 'lost' && /Gone Talk/.test(g1[0].text) && g1[0].removeAll && g1[0].rowBtn === 'Find or replace…' && !!g1[0].outline, 'Library cleanup: under "Missing, with nothing on its way", with Remove all, its row offering Find or replace…, outlined (' + g1[0].outline + '; ' + g1.map(x=> x.title).join(' | ') + ')');
   await p.evaluate(()=> window.__disk.showAudioMissing('gone1')); await sleep(300);
   ok(await p.evaluate(()=> !!document.getElementById('missingReplace') && document.getElementById('missingReplace').textContent === 'Find or replace…'), 'its "can\'t be played" dialog has Find or replace… (2.5.054)');
   const [chooser] = await Promise.all([p.waitForFileChooser({timeout: 5000}).catch(()=> null), p.evaluate(()=> document.getElementById('missingReplace').click())]);

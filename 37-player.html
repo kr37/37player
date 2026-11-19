@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.5.054">
+<meta name="app-version" content="2.5.055">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -212,6 +212,12 @@
   .btn.danger:hover{ background:rgba(177,90,69,0.15); }
   .btn.ghost{ background:transparent; border-color:transparent; }
   .btn.ghost:hover{ background:var(--bg-panel-raised); }
+  /* A quiet button with a light outline (2.5.055, kr37): beside a Remove
+     (.btn.danger) in a row, so the two read as equal choices; a ghost
+     button there looked like plain text. As the top bar's Install. */
+  .btn.outline{ background:transparent; border-color:var(--text-dim); color:var(--text); }
+  body.theme-light .btn.outline{ border-color:var(--text-faint); } /* the dim text colour drew it heavier than the rust beside it */
+  .btn.outline:hover{ background:var(--bg-panel-raised); }
   .btn.icon{ padding:7px 9px; font-size:17px; line-height:1; }
   .btn:disabled{ opacity:0.35; cursor:default; }
   .btn:disabled:hover{ background:var(--bg-panel-raised); }
@@ -36057,7 +36063,7 @@ function renderStandardizeListInto(listEl, handlers){
         <div style="font-size:12px; color:var(--text-dim); margin-top:2px;"></div>
         <div class="sq-error" style="font-size:11.5px; color:var(--rust-bright); margin-top:2px; overflow-wrap:anywhere; display:none;"></div>
       </div>
-      <button class="btn ghost sq-replace" style="font-size:12px; padding:5px 9px; flex-shrink:0;">${t("replaceFileBtn")}</button>
+      <button class="btn outline sq-replace" style="font-size:12px; padding:5px 9px; flex-shrink:0;">${t("replaceFileBtn")}</button>
       <button class="btn danger sq-remove" style="font-size:12px; padding:5px 9px; flex-shrink:0;">${t("removeFromLibraryBtn")}</button>
     `;
     row.querySelector(".sq-path").textContent = pathParts;
@@ -40221,7 +40227,7 @@ function cleanupTrackRow(tr, usage, offerReplace){
   const row = document.createElement("div");
   row.className = "zero-row";
   row.innerHTML = `<div style="flex:1; min-width:0;"><div class="zero-name"></div><div class="settings-note zero-file"></div><div class="zero-used"></div></div>
-    ${offerReplace ? `<button class="btn ghost" data-act="replace" type="button" style="font-size:12.5px; padding:5px 10px; flex-shrink:0;">${t("replaceMissingBtn")}</button>` : ""}
+    ${offerReplace ? `<button class="btn outline" data-act="replace" type="button" style="font-size:12.5px; padding:5px 10px; flex-shrink:0;">${t("replaceMissingBtn")}</button>` : ""}
     <button class="btn danger" data-act="remove" type="button" style="font-size:12.5px; padding:5px 10px; flex-shrink:0;">${t("removeFromLibraryBtn")}</button>`;
   row.querySelector(".zero-name").textContent = tr.name || tr.filename || tr.id;
   row.querySelector(".zero-file").textContent = [tr.artist, tr.album, tr.filename].filter(Boolean).join(" / ");
@@ -40644,7 +40650,7 @@ async function renderSettingsSection(fromTimer){
         const row = cleanupTrackRow(tr, usage, true);
         if(trackCanBeConverted(tr)){
           const b = document.createElement("button");
-          b.className = "btn ghost"; b.type = "button"; b.style.cssText = "font-size:12.5px; padding:5px 10px; flex-shrink:0;";
+          b.className = "btn outline"; b.type = "button"; b.style.cssText = "font-size:12.5px; padding:5px 10px; flex-shrink:0;";
           b.textContent = convertQueue.includes(tr.id) ? t("convertQueuedLabel") : t("convertBtn");
           b.disabled = convertQueue.includes(tr.id);
           b.addEventListener("click", ()=>{ b.disabled = true; b.textContent = t("convertQueuedLabel"); convertTracks([tr.id]); });
