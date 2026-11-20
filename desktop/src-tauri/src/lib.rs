@@ -270,7 +270,20 @@ pub fn run() {
         .manage(updates::Pending::default())
         .register_asynchronous_uri_scheme_protocol("p37lib", |ctx, req, responder| {
             let app = ctx.app_handle().clone();
-            std::thread::spawn(move || responder.respond(files::serve(&app, &req)));
+            // The file is read here, off the main thread; the answer goes back
+            // on the main thread (shell 2.5.7). WebKit cancels a request
+            // (stopURLSchemeTask) on its main thread, and wry checks that a
+            // request is still alive before each step of an answer; answered
+            // from this thread, a cancel could land between the check and the
+            // step, WebKit raised, and the app aborted with "panic in a
+            // function that cannot unwind" (kr37's SKBC Mac mini, macOS 12,
+            // playing a long WebM, which WebKit asks for in many small,
+            // often-cancelled pieces; report 2026-11-20-050726). On the main
+            // thread the check and the step can't be split.
+            std::thread::spawn(move || {
+                let resp = files::serve(&app, &req);
+                let _ = app.run_on_main_thread(move || responder.respond(resp));
+            });
         })
         .setup(move |app| {
             let roots_file = app.path().app_data_dir().map(|d| d.join("roots.json")).unwrap_or_else(|_| std::path::PathBuf::from("roots.json"));
