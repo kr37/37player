@@ -108,7 +108,7 @@ page, media and Networking processes, and iPadOS around them.
 The full list of fixes, in order, is at the end. These are the findings with
 the most at stake:
 
-1. **Big commands block other commands.** Commands the page marks "async" don't run on threads of their own. They share Tauri's pool, as many threads as there are cores (4 on the Mac mini), and our file commands do slow disk work there without letting go. A few slow ones fill the pool, and every other command queues behind them. That includes:
+1. **Big commands block other commands.** Commands the shell marks "async" don't run on threads of their own. They share Tauri's pool, as many threads as there are cores (4 on the Mac mini), and our file commands do slow disk work there without letting go. A few slow ones fill the pool, and every other command queues behind them. That includes:
    - a 2 GB copy;
    - a read from a drive that's waking up or gone;
    - an open folder chooser, which holds a pool thread for as long as it's open.
