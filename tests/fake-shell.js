@@ -6,7 +6,12 @@
 // device.json is kept in localStorage under "__fakeDevice" (a test that
 // empties storage the way CCleaner would keeps the keys starting "__").
 // Commands: fs_* (files.rs), p37_shell_info, p37_device_get/put, the page
-// update commands (no updates), p37_quit.
+// update commands (no updates), p37_quit, p37_opened_take.
+// Files opened with 37 Player (shell 2.5.9; openshell.js): with
+// __fakeShellOpened set, a test calls window.__fakeOpen('Downloads/Talk.mp3')
+// for a file on the stand-in disk: it gets a root "open-<n>" through which
+// only that file can be read (as files::Roots::get_read), waits for
+// p37_opened_take, and "p37-files-opened" is sent.
 (function(){
   if(window.__TAURI_INTERNALS__) return; // put in twice (a test that brings its own, run with STORE=desktop)
   window.__p37Bridge = 2;
@@ -21,7 +26,8 @@
   const writeRoots = async (r)=>{ const w = await (await (await top()).getFileHandle('roots.json', {create: true})).createWritable(); await w.write(JSON.stringify(r)); await w.close(); };
   const parts = (p)=> (p || '').split('/').filter(Boolean);
   const checkRel = (p)=>{ for(const x of parts(p)) if(x === '..' || x === '.') throw new Error('outside the folder: ' + p); };
-  const baseOf = async (root)=>{ const r = await readRoots(); if(!(root in r)) throw new Error('not a folder on the list: ' + root); let d = await top(); for(const x of parts(r[root])){ try{ d = await d.getDirectoryHandle(x); }catch(e){ throw new Error('the folder of ' + root + ' is gone'); } } return d; }; // (as files.rs: a root that's gone isn't made again)
+  const opened = {}; let openedWaiting = [];
+  const baseOf = async (root)=>{ if(opened[root] != null){ let d = await top(); const segs = parts(opened[root]); segs.pop(); for(const x of segs) d = await d.getDirectoryHandle(x); return d; } const r = await readRoots(); if(!(root in r)) throw new Error('not a folder on the list: ' + root); let d = await top(); for(const x of parts(r[root])){ try{ d = await d.getDirectoryHandle(x); }catch(e){ throw new Error('the folder of ' + root + ' is gone'); } } return d; }; // (as files.rs: a root that's gone isn't made again)
   const dirOf = async (root, path, create)=>{ checkRel(path); let d = await baseOf(root); for(const x of parts(path)) d = await d.getDirectoryHandle(x, {create}); return d; };
   const split = (path)=>{ const p = parts(path); return {dir: p.slice(0, -1).join('/'), name: p[p.length - 1]}; };
   const statOf = async (root, path)=>{
@@ -42,8 +48,15 @@
     window.__fakeShellCalls.push(cmd);
     window.__fakeShellPaths.push(cmd + ' ' + ((args && (args.path || args.from)) || '')); // which file, for tests that count reads of one file
     args = args || {};
+    // An opened file's root: that one file read, nothing else (files::Roots::get_read; get doesn't know it).
+    if(args.root != null && opened[args.root] != null){
+      const only = parts(opened[args.root]).pop(), rel = cmd === 'fs_copy' || cmd === 'fs_append_range' ? args.from : args.path;
+      if(!['fs_stat', 'fs_read', 'fs_copy', 'fs_append_range'].includes(cmd) || rel !== only) throw new Error('only the opened file can be read through ' + args.root);
+    }
+    for(const k of ['toRoot', 'to_root']) if(args[k] != null && opened[args[k]] != null) throw new Error('no folder called ' + args[k] + ' on the list');
     switch(cmd){
-      case 'p37_shell_info': return {version: '2.0.000', bridge: 2, pages: false, device: true, updates: !!window.__fakeShellUpdates, zoom: !!window.__fakeShellZoom, trash: window.__fakeShellTrash !== false, watch: true, append_range: !window.__fakeNoAppendRange, typed_path: !!window.__fakeShellTypedPath, files_http: window.__fakeFilesHttp || null};
+      case 'p37_shell_info': return {version: '2.0.000', bridge: 2, pages: false, device: true, updates: !!window.__fakeShellUpdates, zoom: !!window.__fakeShellZoom, trash: window.__fakeShellTrash !== false, watch: true, append_range: !window.__fakeNoAppendRange, typed_path: !!window.__fakeShellTypedPath, opened: !!window.__fakeShellOpened, files_http: window.__fakeFilesHttp || null};
+      case 'p37_opened_take': { if(!window.__fakeShellOpened) throw new Error('unknown command'); await openedAtStart; const w = openedWaiting; openedWaiting = []; return w; }
       // The Size setting, by the shell (2.4.000): what it was asked for is kept for the test.
       case 'p37_zoom': if(!window.__fakeShellZoom) throw new Error('unknown command'); (window.__fakeZooms = window.__fakeZooms || []).push(args.scale); return null;
       // The shell updating itself (shellupd.js): window.__fakeShellUpdates = {version, current} or null (none).
@@ -180,7 +193,20 @@
     throw new Error('no such command in the stand-in shell: ' + cmd);
   };
   window.__TAURI_INTERNALS__ = {invoke};
-  window.__TAURI__ = {core: {invoke, convertFileSrc: (path, scheme)=> scheme + '://localhost/' + path}, event: {listen: async ()=> ()=>{}}};
+  const listeners = {};
+  window.__TAURI__ = {core: {invoke, convertFileSrc: (path, scheme)=> scheme + '://localhost/' + path}, event: {listen: async (name, fn)=>{ (listeners[name] = listeners[name] || []).push(fn); return ()=>{}; }}};
+  window.__fakeOpen = async (...paths)=>{
+    for(const at of paths){
+      const segs = parts(at), name = segs.pop(); let d = await top(); for(const x of segs) d = await d.getDirectoryHandle(x);
+      const f = await (await d.getFileHandle(name)).getFile();
+      let root = Object.keys(opened).find(k=> opened[k] === at); if(!root){ root = 'open-' + (Object.keys(opened).length + 1); opened[root] = at; }
+      openedWaiting.push({root, path: name, size: f.size, modified: f.lastModified});
+    }
+    for(const fn of listeners['p37-files-opened'] || []) fn({payload: null});
+  };
+  // Files the app was "started with": localStorage __fakeOpenAtStart (a JSON list of paths), taken once.
+  let openedAtStart = Promise.resolve();
+  try{ const at = JSON.parse(localStorage.getItem('__fakeOpenAtStart') || 'null'); if(at){ localStorage.removeItem('__fakeOpenAtStart'); window.__fakeShellOpened = true; openedAtStart = window.__fakeOpen(...at).catch(e=> console.warn('fake open:', e)); } }catch(e){}
   // Reading a file by address (p37lib://localhost/<root>/<path>), as the
   // shell serves it: the stand-in hands the page the file itself.
   // An address's "/.p37type.<ext>" tail comes off, as shell 2.5.6 does (files::strip_type_suffix); the paths asked for are kept for typedpath.js.

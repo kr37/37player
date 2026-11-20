@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.5.061">
+<meta name="app-version" content="2.5.062">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -6376,6 +6376,8 @@ const STRINGS = {
     "fbKindPlay": "playback log",
     "fbKindSync": "sync log",
     "fbSharedLogsNote": "Other devices' logs, from the shared library:",
+    "fbOtherLogsAll": "Select all",
+    "fbOtherLogsNone": "Select none",
     "settingsSecLibrary": "Library",
     "infoAllLibraries": "All libraries",
     "infoAllLibrariesNote": "On this device: {n}. Open, make, rename or delete them here.",
@@ -8506,6 +8508,8 @@ const STRINGS = {
     "fbKindPlay": "registro de reproducción",
     "fbKindSync": "registro de sincronización",
     "fbSharedLogsNote": "Registros de otros dispositivos, de la biblioteca compartida:",
+    "fbOtherLogsAll": "Seleccionar todos",
+    "fbOtherLogsNone": "No seleccionar ninguno",
     "settingsSecLibrary": "Biblioteca",
     "infoAllLibraries": "Todas las bibliotecas",
     "infoAllLibrariesNote": "En este dispositivo: {n}. Ábrelas, créalas, renómbralas o bórralas aquí.",
@@ -10635,6 +10639,8 @@ const STRINGS = {
     "fbKindPlay": "journal de lecture",
     "fbKindSync": "journal de synchronisation",
     "fbSharedLogsNote": "Journaux des autres appareils, depuis la bibliothèque partagée :",
+    "fbOtherLogsAll": "Tout sélectionner",
+    "fbOtherLogsNone": "Ne rien sélectionner",
     "settingsSecLibrary": "Bibliothèque",
     "infoAllLibraries": "Toutes les bibliothèques",
     "infoAllLibrariesNote": "Sur cet appareil : {n}. Ouvrez-les, créez-en, renommez-les ou supprimez-les ici.",
@@ -12764,6 +12770,8 @@ const STRINGS = {
     "fbKindPlay": "registo de reprodução",
     "fbKindSync": "registo de sincronização",
     "fbSharedLogsNote": "Registos de outros dispositivos, da biblioteca compartilhada:",
+    "fbOtherLogsAll": "Selecionar todos",
+    "fbOtherLogsNone": "Não selecionar nenhum",
     "settingsSecLibrary": "Biblioteca",
     "infoAllLibraries": "Todas as bibliotecas",
     "infoAllLibrariesNote": "Neste dispositivo: {n}. Abra, crie, renomeie ou apague-as aqui.",
@@ -14893,6 +14901,8 @@ const STRINGS = {
     "fbKindPlay": "Wiedergabe-Protokoll",
     "fbKindSync": "Sync-Protokoll",
     "fbSharedLogsNote": "Protokolle anderer Geräte, aus der gemeinsamen Bibliothek:",
+    "fbOtherLogsAll": "Alle auswählen",
+    "fbOtherLogsNone": "Keine auswählen",
     "settingsSecLibrary": "Bibliothek",
     "infoAllLibraries": "Alle Bibliotheken",
     "infoAllLibrariesNote": "Auf diesem Gerät: {n}. Hier öffnen, anlegen, umbenennen oder löschen.",
@@ -17022,6 +17032,8 @@ const STRINGS = {
     "fbKindPlay": "播放日志",
     "fbKindSync": "同步日志",
     "fbSharedLogsNote": "来自共享曲库的其他设备日志：",
+    "fbOtherLogsAll": "全选",
+    "fbOtherLogsNone": "全不选",
     "settingsSecLibrary": "曲库",
     "infoAllLibraries": "所有曲库",
     "infoAllLibrariesNote": "本设备上：{n} 个。在这里打开、新建、重命名或删除。",
@@ -19151,6 +19163,8 @@ const STRINGS = {
     "fbKindPlay": "nhật ký phát",
     "fbKindSync": "nhật ký đồng bộ",
     "fbSharedLogsNote": "Nhật ký của các thiết bị khác, từ thư viện chung:",
+    "fbOtherLogsAll": "Chọn tất cả",
+    "fbOtherLogsNone": "Bỏ chọn tất cả",
     "settingsSecLibrary": "Thư viện",
     "infoAllLibraries": "Tất cả thư viện",
     "infoAllLibrariesNote": "Trên thiết bị này: {n}. Mở, tạo, đổi tên hoặc xóa chúng ở đây.",
@@ -21280,6 +21294,8 @@ const STRINGS = {
     "fbKindPlay": "αρχείο αναπαραγωγής",
     "fbKindSync": "αρχείο συγχρονισμού",
     "fbSharedLogsNote": "Αρχεία άλλων συσκευών, από την κοινή βιβλιοθήκη:",
+    "fbOtherLogsAll": "Επιλογή όλων",
+    "fbOtherLogsNone": "Καμία επιλογή",
     "settingsSecLibrary": "Βιβλιοθήκη",
     "infoAllLibraries": "Όλες οι βιβλιοθήκες",
     "infoAllLibrariesNote": "Σε αυτή τη συσκευή: {n}. Ανοίξτε, φτιάξτε, μετονομάστε ή διαγράψτε τες εδώ.",
@@ -23409,6 +23425,8 @@ const STRINGS = {
     "fbKindPlay": "registro di riproduzione",
     "fbKindSync": "registro di sincronizzazione",
     "fbSharedLogsNote": "Registri di altri dispositivi, dalla libreria condivisa:",
+    "fbOtherLogsAll": "Seleziona tutti",
+    "fbOtherLogsNone": "Non selezionare nessuno",
     "settingsSecLibrary": "Libreria",
     "infoAllLibraries": "Tutte le librerie",
     "infoAllLibrariesNote": "Su questo dispositivo: {n}. Aprile, creale, rinominale o eliminale qui.",
@@ -38479,8 +38497,24 @@ if("mediaSession" in navigator){
     if(document.hidden) startPlayBridge("continuing after a stop");
     continueAfterStop();
   };
+  // A computer's "play" on waking (2.5.062; kr37's MacBook, report
+  // 2026-11-20-153553: twice, 37 Player started playing when he opened the
+  // lid, though it had been paused). The log showed the pattern each time:
+  // as the lid closed, macOS sent "pause" while 37 Player was already
+  // paused (ignored), and when it opened, hours later, "play", which was
+  // obeyed. So on a computer, a "play" that comes over a minute after a
+  // pause that found 37 Player already paused, with nothing played since,
+  // is taken as the system's and ignored. A second press of the play key
+  // plays (the first one used the guard up). Phones and tablets keep every
+  // "play": their lock screen is how people use it.
+  let pausedPauseAt = 0;
+  const WAKE_PLAY_AFTER_MS = 60000;
+  audioEl.addEventListener("play", ()=>{ pausedPauseAt = 0; });
   navigator.mediaSession.setActionHandler("play", ()=>{
     if(stopHold){ continueFromLockScreen("play"); return; }
+    const wakePlay = useSilenceClock() && pausedPauseAt && Date.now() - pausedPauseAt > WAKE_PLAY_AFTER_MS && !mainPlaying();
+    pausedPauseAt = 0;
+    if(wakePlay){ playLog("lock screen / phone: play, ignored: the computer's own, on waking (it was already paused when the computer said pause)"); return; }
     playLog("lock screen / phone: play" + (mainPlaying() ? " (already playing: ignored)" : ""));
     if(awakeOnly()){
       // Syncing after a pause: play picks the session up again (syncing
@@ -38494,6 +38528,7 @@ if("mediaSession" in navigator){
     if(stopHold){ continueFromLockScreen("pause"); return; }
     if(pauseHold && audioEl.paused){ playLog("lock screen / phone: pause while paused: resuming"); togglePlay(); return; }
     playLog("lock screen / phone: pause" + (mainPlaying() ? "" : " (already paused: ignored)"));
+    pausedPauseAt = mainPlaying() ? 0 : Date.now();
     if(awakeOnly()){
       // Some lock screens show a pause button while the silent loop plays:
       // with a track paused part-way, it's the only way back to it.
@@ -41960,12 +41995,21 @@ function openFeedbackDialog(){
   const list = document.getElementById("fbSentList");
   if(list) sent.slice().reverse().forEach(x=>{ const li = document.createElement("li"); li.textContent = new Date(x.at).toLocaleString() + " · " + x.first; list.appendChild(li); });
   msgEl.focus();
-  // Other devices' logs, from the shared library: ticked when from the last three days.
+  // Other devices' logs, from the shared library: none chosen to begin with,
+  // and Select all / Select none above them (2.5.062; kr37, report
+  // 2026-11-20-153553: about 20 listed, the recent ones (last three days)
+  // chosen, and he took them off one by one every time).
   sharedOtherLogs().then(others=>{
     const box = document.getElementById("fbOtherLogs");
     if(!box || !others.length) return;
-    box.innerHTML = `<p class="settings-note" style="margin:8px 0 2px;">${escapeHtmlText(t("fbSharedLogsNote"))}</p>` + others.map((o, i)=> `<label class="join-partial" style="font-weight:normal;"><input type="checkbox" data-fb-other="${i}" ${Date.now() - o.time < 3 * 86400000 ? "checked" : ""}> <span></span></label>`).join("");
+    box.innerHTML = `<p class="settings-note" style="margin:8px 0 2px;">${escapeHtmlText(t("fbSharedLogsNote"))}</p>`
+      + `<div class="settings-row" style="gap:8px; flex-wrap:wrap; margin:2px 0 4px;"><button class="btn ghost" data-fb-others="all" type="button">${escapeHtmlText(t("fbOtherLogsAll"))}</button><button class="btn ghost" data-fb-others="none" type="button">${escapeHtmlText(t("fbOtherLogsNone"))}</button></div>`
+      + others.map((o, i)=> `<label class="join-partial" style="font-weight:normal;"><input type="checkbox" data-fb-other="${i}"> <span></span></label>`).join("");
     box.querySelectorAll("[data-fb-other]").forEach(cb=>{ const o = others[+cb.dataset.fbOther]; cb.nextElementSibling.textContent = t("fbSharedLog", {device: o.device, kind: t(o.kind === "play" ? "fbKindPlay" : "fbKindSync"), when: fmtWhenShort(o.time)}); cb._log = o; });
+    box.querySelectorAll("[data-fb-others]").forEach(b=> b.addEventListener("click", ()=>{
+      const on = b.dataset.fbOthers === "all";
+      box.querySelectorAll("[data-fb-other]").forEach(cb=>{ cb.checked = on; });
+    }));
   });
   go.addEventListener("click", async ()=>{
     const message = msgEl.value.trim();
@@ -47772,7 +47816,7 @@ async function logExportText(kind){
    round, at most every half hour, this device sends its playback and sync
    logs there (sync.php op=log, or a "logs" folder on Drive), replacing its
    last copy, so a problem on the iPad can be read from the laptop: Send
-   feedback lists the other devices' logs, ticked when recent. Named by the
+   feedback lists the other devices' logs, none chosen until asked. Named by the
    device, "<device>-<hash>-<kind>.txt" (the hash keeps two devices whose
    names differ only in letters a file name can't carry apart). */
 const LOGS_SENT_KEY = "37player.logsSentAt", LOGS_EVERY_MS = 30 * 60 * 1000;
@@ -53504,6 +53548,32 @@ async function takeSharedFiles(){
   }catch(err){ console.warn("Shared files couldn't be read:", err); }
   takeOpenedFiles(files);
 }
+// The desktop app (shell 2.5.9, `opened`; kr37's MacBook, report
+// 2026-11-20-153553: Finder → Open with → 37 Player opened the app and
+// nothing more). macOS hands an opened file over as an Apple Event, Windows
+// and Linux on the command line (and, with 37 Player already running,
+// through the single-instance hand-over); the shell gives each one a root
+// of its own for this run only, through which only that file can be read,
+// keeps them until the page asks (p37_opened_take), and says
+// "p37-files-opened" when more arrive. Each is read where it lies, as a
+// folder used in place is (DesktopFileHandle: a DiskBlob when big), and goes
+// to the same question as the browser's Open with.
+async function desktopTakeOpenedFiles(){
+  let list = [];
+  try{ list = await window.__TAURI_INTERNALS__.invoke("p37_opened_take") || []; }catch(err){ console.warn("p37_opened_take:", err); return; }
+  const files = [];
+  for(const o of list){
+    try{ files.push(await new DesktopFileHandle(o.root, o.path).getFile()); }
+    catch(err){ console.warn("An opened file couldn't be read:", o.path, err); }
+  }
+  if(files.length) playLog("opened with 37 Player: " + files.map(f=> f.name).join(", "));
+  takeOpenedFiles(files);
+}
+function desktopOpenedFilesStart(){
+  if(!(window.__TAURI__ && window.__TAURI__.event)) return;
+  window.__TAURI__.event.listen("p37-files-opened", ()=> desktopTakeOpenedFiles());
+  desktopTakeOpenedFiles(); // any the app was opened with
+}
 async function openWithFiles(files){
   // A backup double-clicked (.37p, claimed by the installed app): restore it.
   const backups = files.filter(f=> /\.37p$/i.test(f.name));
@@ -53531,7 +53601,10 @@ async function openWithFiles(files){
 function openFilePlayer(files){
   if(isAnythingPlaying()) togglePlay();
   const lib = document.getElementById("libPreviewAudio"); if(lib && !lib.paused) lib.pause();
-  const urls = files.map(f=> URL.createObjectURL(f));
+  // Each file's address when it's first played: a file the desktop app
+  // opened is read where it lies (a DiskBlob, served by the shell), which an
+  // object URL can't hold (2.5.062).
+  const urls = [];
   const list = files.length > 1 ? `<div class="open-list">${files.map((f, i)=> `<button class="btn ghost open-item" data-i="${i}" type="button">${escapeHtmlText(f.name)}</button>`).join("")}</div>` : "";
   openModal(`<h3 id="openPlayingName"></h3>${list}
     <audio id="openedAudio" controls autoplay style="width:100%; margin:8px 0;"></audio>
@@ -53539,10 +53612,13 @@ function openFilePlayer(files){
     <div class="modal-actions"><button class="btn ghost" id="openedImport" type="button">${t("openImportBtn")}</button><button class="btn primary" data-close type="button">${t("closeBtn")}</button></div>`);
   const el = document.getElementById("openedAudio"), name = document.getElementById("openPlayingName"), problem = document.getElementById("openedProblem");
   let at = 0;
-  const playAt = (i)=>{
+  const playAt = async (i)=>{
     at = i; problem.style.display = "none";
     name.textContent = files[i].name;
     document.querySelectorAll(".open-item").forEach(b=> b.classList.toggle("active", +b.dataset.i === i));
+    try{ if(!urls[i]) urls[i] = await audioObjectUrl(files[i], files[i].name); }
+    catch(err){ problem.textContent = t("openCantPlay"); problem.style.display = ""; return; }
+    if(at !== i) return; // another was chosen meanwhile
     el.src = urls[i]; el.play().catch(()=>{});
   };
   el.addEventListener("ended", ()=>{ if(at + 1 < files.length) playAt(at + 1); });
@@ -53585,7 +53661,7 @@ if(IN_DESKTOP_APP){
   window.addEventListener("resize", fitHeight);
 }
 const DESKTOP_BRIDGE_NEEDED = +((document.querySelector('meta[name="desktop-bridge"]') || {}).content || 1);
-let desktopShell = null; // {version, bridge, pages, device, updates, zoom, trash (2.5.2), watch (2.5.3), append_range (2.5.3), files_http}
+let desktopShell = null; // {version, bridge, pages, device, updates, zoom, trash (2.5.2), watch (2.5.3), append_range (2.5.3), files_http, typed_path (2.5.6), opened (2.5.9)}
 async function desktopShellCheck(){
   if(!IN_DESKTOP_APP || !window.__TAURI__ || !window.__TAURI__.core) return;
   try{ desktopShell = await window.__TAURI__.core.invoke("p37_shell_info"); }catch(err){ desktopShell = {version: "?", bridge: 0}; }
@@ -53594,6 +53670,7 @@ async function desktopShellCheck(){
   try{ applyDisplaySettings(); }catch(err){}
   try{ desktopPlayerDiagnostics(); }catch(err){}
   if(desktopShell.watch) desktopWatchPoll();
+  if(desktopShell.opened) desktopOpenedFilesStart();
   // Which tracks are used in place, read ahead of the first Play (placeAwarePlay).
   setTimeout(()=>{ try{ if(STORAGE_KIND === "desktop" && libStore && libStore.placeRefs) libStore.placeRefs().catch(()=>{}); }catch(err){} }, 2500);
   if((desktopShell.bridge || 0) < DESKTOP_BRIDGE_NEEDED)
