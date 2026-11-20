@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.5.060">
+<meta name="app-version" content="2.5.061">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -41007,7 +41007,7 @@ async function renderSettingsSection(fromTimer){
       // The format is just above, so the sentence leaves it out; converting,
       // and the list of tracks, are in Library cleanup with the other actions.
       el.textContent = t("fmtEffectSomeShort", {n: list.length, from: fmtBytes(from), to: fmtBytes(to)}) + " ";
-      const b = document.createElement("button"); b.className = "btn ghost"; b.style.marginLeft = "6px"; b.textContent = t("fmtReviewBtn");
+      const b = document.createElement("button"); b.className = "btn outline"; b.style.marginLeft = "6px"; b.textContent = t("fmtReviewBtn"); // boxed (2.5.061, kr37), as row buttons beside Remove
       b.addEventListener("click", ()=> goToSettingsSection("cleanup", "cleanupConvert"));
       el.appendChild(b);
     };
