@@ -19,7 +19,9 @@ const clickText = (p, sel, src) => p.evaluate((sel, src)=>{ const re=new RegExp(
   p.on('dialog', d=>{ console.log('ALERT:', d.message()); d.dismiss(); });
   const settle = async ()=>{ for(const x of ['^English$','^Start a library on this device$','^No, just start$','^Skip for now$','^Finish$']){ await clickText(p,'.modal button',x); await sleep(300); } await p.evaluate(()=> document.querySelectorAll('.modal [data-close]').forEach(b=> b.click())); };
   await p.goto('http://localhost:8861/37-player.html', {waitUntil:'networkidle0'}); await sleep(800); await settle();
-  await p.evaluate(async()=>{ const r = window.__dbg.getRoot(); r.library = []; r.tree = [{id:'pl1', kind:'playlist', name:'Session', items:[]}]; await window.__dbg.saveState(); });
+  // Don't touch my files, without its question (convkeep.js has those), so
+  // the WebM comes in as it is.
+  await p.evaluate(async()=>{ const r = window.__dbg.getRoot(); r.library = []; r.tree = [{id:'pl1', kind:'playlist', name:'Session', items:[]}]; r.formatPolicy = {preset: 'standard', when: 'untouched', noAsk: true}; await window.__dbg.saveState(); });
   await p.evaluate(async()=>{
     for(const n of ['festival.mp3', 'ok.mp3']){ const blob = await (await fetch('/conv/' + n)).blob(); await window.__conv.importFiles([new File([blob], n)], window.__dbg.getRoot().tree[0], null, true); document.querySelectorAll('.modal [data-close]').forEach(b=> b.click()); }
   });
@@ -33,7 +35,7 @@ const clickText = (p, sel, src) => p.evaluate((sel, src)=>{ const re=new RegExp(
   // A track that came in before this was recorded: named .mp3, no record.
   await p.evaluate(async(id)=>{ const tr = window.__dbg.getRoot().library.find(t=> t.id === id); tr.filename = 'festival.mp3'; delete tr.fileType; await window.__dbg.saveState(); }, fest.id);
   ok(await p.evaluate((id)=> window.__kind.ext(id), fest.id) === 'mp3', 'without the record, its name says MP3');
-  await p.evaluate(()=>{ window.__dbg.getRoot().formatPolicy = {preset: 'standard', when: 'rules', rules: {uncompressed: true, types: true}}; });
+  await p.evaluate(()=>{ window.__dbg.getRoot().formatPolicy = {preset: 'standard', when: 'rules', rules: {uncompressed: true, types: true}}; }); // (as before 2.5.060's keep list: becomes MP3, M4A and other kinds kept)
   ok(!(await p.evaluate((id)=> window.__conv.matches(id), fest.id)), '… so "less widely playable types" passes it by');
   // Table: the Type column shown.
   await p.evaluate(()=> window.__dbg.setMode('library')); await sleep(500);

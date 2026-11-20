@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.5.059">
+<meta name="app-version" content="2.5.060">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -3343,7 +3343,9 @@ function folderNameFor(name){ return (name || "").replace(/[\\/:*?"<>|\u0000-\u0
 const FOLDER_README = "This folder is a 37 Player library: 37 Player keeps everything about it here.\r\n"
   + "The recordings are in \"music\", in a folder for each artist, then each album,\r\n"
   + "named after their details (\"music/Artist/Album/01 Title.mp3\"); you can play\r\n"
-  + "them or copy them elsewhere. \"playlists\" has each playlist as an .m3u8 file\r\n"
+  + "them or copy them elsewhere. \"originals\" has, the same way, the original files of\r\n"
+  + "tracks 37 Player converted, when you chose to keep them (on this computer only).\r\n"
+  + "\"playlists\" has each playlist as an .m3u8 file\r\n"
   + "for other players (37 Player keeps them up to date but doesn't read them).\r\n"
   + "37 Player's own record of playlists, artwork and settings is in\r\n"
   + "\"37 Player's own files\".\r\n"
@@ -6674,15 +6676,20 @@ const STRINGS = {
     "fmtWhenTitle": "Which files to convert",
     "fmtWhen_untouched": "Don't touch my files",
     "fmtWhenNote_untouched": "Nothing in the library is changed, however big. A file this browser can't play still gets a playable copy, and its original is kept too.",
-    "fmtWhen_reduce": "Reduce uncompressed audio (recommended)",
-    "fmtWhenNote_reduce": "WAV and AIFF files are converted as they come in. Everything else that plays is left as it is.",
+    "fmtWhen_reduce": "Make every file playable everywhere (recommended)",
+    "fmtWhenNote_reduce": "Anything but MP3 and M4A (AAC) is converted as it comes in: WAV, AIFF, FLAC, WebM, Opus, Ogg and the rest, which some devices can't play. MP3 and M4A files are left as they are.",
     "fmtWhen_rules": "Choose the rules",
     "fmtWhenNote_rules": "Files that match any of these are converted, for a library that's all alike (to take back to Music.app, say).",
-    "fmtRuleUncompressed": "Uncompressed audio (WAV, AIFF)",
+    "fmtKeepTitle": "Kinds of file left as they are (the rest are converted):",
+    "fmtKeepOther": "Other kinds (WMA and the rest)",
+    "fmtAlsoTitle": "Also converted, whatever their kind:",
+    "fmtLosslessHigh": "Convert lossless files (WAV, AIFF, FLAC, Apple Lossless) at the highest quality, {q}, for the few who'd hear a difference",
+    "fmtFlacRetired": "FLAC isn't offered any more: it doesn't play on every device. This library keeps it until you choose another format.",
+    "fmtFlacShared": "In a shared library, files are converted to Standard (MP3 192k) instead of FLAC, since they go to every device.",
+    "fmtSharedUniversal": "In a shared library, files of a kind that not every device can play (anything but MP3 and M4A) are always converted as they come in, whatever is chosen here, since they go to every device.",
     "fmtRuleAbove": "Bitrate above {input} kbps",
     "fmtRuleRate": "A sample rate other than the preferred format's",
     "fmtRuleChannels": "A channel count other than the preferred format's",
-    "fmtRuleTypes": "Less widely playable types: Opus, Ogg, WebM, and FLAC when the preferred format isn't FLAC",
     "fmtEffectNone": "The library already matches these settings: nothing to convert.",
     "fmtEffectSome": "With these settings, {n} tracks already in the library would be converted to {format} ({from} → about {to}).",
     "fmtEffectBtn": "Convert them now",
@@ -6743,6 +6750,17 @@ const STRINGS = {
     "convertAskedSame": "{n} of them are {format} already, the format this library converts to: left as they are.",
     "convertAskedSameOne": "One of them is {format} already, the format this library converts to: left as it is.",
     "convertAskedNone": "Already {format}, the format this library converts to: nothing to convert.",
+    "keptKindsTitle": "Some of these may not play on every device",
+    "keptKindsBody": "{n} of the files just added are kinds that some devices can't play, or play with no sound: older Macs, iPhones and iPads, Safari. This library is set to “Don't touch my files”. Convert them to {format} now? Their originals are kept.",
+    "keptKindsBodyOne": "One of the files just added is a kind that some devices can't play, or play with no sound: older Macs, iPhones and iPads, Safari. This library is set to “Don't touch my files”. Convert it to {format} now? Its original is kept.",
+    "keptKindsAlways": "Convert such files from now on (the recommended setting)",
+    "keptKindsNoAsk": "Don't ask again in this library",
+    "keptKindsLeave": "Leave as they are",
+    "shareCheckTitle": "Some tracks may not play on every device",
+    "shareCheckBody": "{n} tracks here are kinds that some devices can't play, or play with no sound (only MP3 and M4A play everywhere). A shared library's files go to every device. Convert them to {format} before sharing? Each file then goes up once, already converted; originals you keep stay on this device.",
+    "shareCheckBodyOne": "One track here is a kind that some devices can't play, or play with no sound (only MP3 and M4A play everywhere). A shared library's files go to every device. Convert it to {format} before sharing? It then goes up once, already converted; an original you keep stays on this device.",
+    "shareCheckConvert": "Convert, then share",
+    "shareCheckAsIs": "Share as they are",
     "convertAllBtn": "Convert all {n}",
     "convertSelectedBtn": "Convert selected ({n})",
     "convertThemNowBtn": "Convert them now",
@@ -8787,15 +8805,20 @@ const STRINGS = {
     "fmtWhenTitle": "Qué archivos convertir",
     "fmtWhen_untouched": "No tocar mis archivos",
     "fmtWhenNote_untouched": "No se cambia nada de la biblioteca, por grande que sea. Un archivo que este navegador no puede reproducir recibe igualmente una copia reproducible, y se conserva también su original.",
-    "fmtWhen_reduce": "Reducir el audio sin comprimir (recomendado)",
-    "fmtWhenNote_reduce": "Los archivos WAV y AIFF se convierten al entrar. Todo lo demás que se reproduce queda como está.",
+    "fmtWhen_reduce": "Que todos los archivos se reproduzcan en todas partes (recomendado)",
+    "fmtWhenNote_reduce": "Todo lo que no sea MP3 o M4A (AAC) se convierte al entrar: WAV, AIFF, FLAC, WebM, Opus, Ogg y los demás, que algunos dispositivos no pueden reproducir. Los MP3 y M4A quedan como están.",
     "fmtWhen_rules": "Elegir las reglas",
     "fmtWhenNote_rules": "Se convierten los archivos que cumplan cualquiera de estas, para una biblioteca uniforme (para llevarla de vuelta a Music.app, por ejemplo).",
-    "fmtRuleUncompressed": "Audio sin comprimir (WAV, AIFF)",
+    "fmtKeepTitle": "Tipos de archivo que se dejan como están (los demás se convierten):",
+    "fmtKeepOther": "Otros tipos (WMA y los demás)",
+    "fmtAlsoTitle": "También se convierten, sea cual sea su tipo:",
+    "fmtLosslessHigh": "Convertir los archivos sin pérdida (WAV, AIFF, FLAC, Apple Lossless) a la máxima calidad, {q}, para los pocos que oirían una diferencia",
+    "fmtFlacRetired": "FLAC ya no se ofrece: no se reproduce en todos los dispositivos. Esta biblioteca lo conserva hasta que elijas otro formato.",
+    "fmtFlacShared": "En una biblioteca compartida, los archivos se convierten a Estándar (MP3 192k) en lugar de FLAC, porque van a todos los dispositivos.",
+    "fmtSharedUniversal": "En una biblioteca compartida, los archivos de un tipo que no todos los dispositivos pueden reproducir (todo lo que no sea MP3 o M4A) se convierten siempre al entrar, se elija lo que se elija aquí, porque van a todos los dispositivos.",
     "fmtRuleAbove": "Tasa de bits superior a {input} kbps",
     "fmtRuleRate": "Una frecuencia de muestreo distinta de la del formato preferido",
     "fmtRuleChannels": "Un número de canales distinto del formato preferido",
-    "fmtRuleTypes": "Tipos menos reproducibles: Opus, Ogg, WebM, y FLAC si el formato preferido no es FLAC",
     "fmtEffectNone": "La biblioteca ya cumple estos ajustes: no hay nada que convertir.",
     "fmtEffectSome": "Con estos ajustes se convertirían a {format} {n} pistas que ya están en la biblioteca ({from} → unos {to}).",
     "fmtEffectBtn": "Convertirlas ahora",
@@ -8856,6 +8879,17 @@ const STRINGS = {
     "convertAskedSame": "{n} de ellas ya están en {format}, el formato al que convierte esta biblioteca: se dejan como están.",
     "convertAskedSameOne": "Una de ellas ya está en {format}, el formato al que convierte esta biblioteca: se deja como está.",
     "convertAskedNone": "Ya está en {format}, el formato al que convierte esta biblioteca: no hay nada que convertir.",
+    "keptKindsTitle": "Algunos de estos quizá no se reproduzcan en todos los dispositivos",
+    "keptKindsBody": "{n} de los archivos recién añadidos son de tipos que algunos dispositivos no pueden reproducir, o reproducen sin sonido: Mac antiguos, iPhone y iPad, Safari. Esta biblioteca está configurada como «No tocar mis archivos». ¿Convertirlos a {format} ahora? Se conservan los originales.",
+    "keptKindsBodyOne": "Uno de los archivos recién añadidos es de un tipo que algunos dispositivos no pueden reproducir, o reproducen sin sonido: Mac antiguos, iPhone y iPad, Safari. Esta biblioteca está configurada como «No tocar mis archivos». ¿Convertirlo a {format} ahora? Se conserva el original.",
+    "keptKindsAlways": "Convertir estos archivos a partir de ahora (el ajuste recomendado)",
+    "keptKindsNoAsk": "No volver a preguntar en esta biblioteca",
+    "keptKindsLeave": "Dejarlos como están",
+    "shareCheckTitle": "Algunas pistas quizá no se reproduzcan en todos los dispositivos",
+    "shareCheckBody": "{n} pistas de aquí son de tipos que algunos dispositivos no pueden reproducir, o reproducen sin sonido (solo MP3 y M4A se reproducen en todas partes). Los archivos de una biblioteca compartida van a todos los dispositivos. ¿Convertirlas a {format} antes de compartir? Así cada archivo sube una sola vez, ya convertido; los originales que conserves se quedan en este dispositivo.",
+    "shareCheckBodyOne": "Una pista de aquí es de un tipo que algunos dispositivos no pueden reproducir, o reproducen sin sonido (solo MP3 y M4A se reproducen en todas partes). Los archivos de una biblioteca compartida van a todos los dispositivos. ¿Convertirla a {format} antes de compartir? Así sube una sola vez, ya convertida; el original que conserves se queda en este dispositivo.",
+    "shareCheckConvert": "Convertir y luego compartir",
+    "shareCheckAsIs": "Compartirlas como están",
     "convertAllBtn": "Convertir las {n}",
     "convertSelectedBtn": "Convertir las seleccionadas ({n})",
     "convertThemNowBtn": "Convertirlas ahora",
@@ -10900,15 +10934,20 @@ const STRINGS = {
     "fmtWhenTitle": "Quels fichiers convertir",
     "fmtWhen_untouched": "Ne pas toucher à mes fichiers",
     "fmtWhenNote_untouched": "Rien n'est modifié dans la bibliothèque, aussi gros que ce soit. Un fichier que ce navigateur ne peut pas lire reçoit quand même une copie lisible, et son original est gardé aussi.",
-    "fmtWhen_reduce": "Réduire l'audio non compressé (recommandé)",
-    "fmtWhenNote_reduce": "Les fichiers WAV et AIFF sont convertis à leur arrivée. Tout le reste de ce qui se lit est laissé tel quel.",
+    "fmtWhen_reduce": "Rendre chaque fichier lisible partout (recommandé)",
+    "fmtWhenNote_reduce": "Tout ce qui n'est pas MP3 ou M4A (AAC) est converti à son arrivée : WAV, AIFF, FLAC, WebM, Opus, Ogg et le reste, que certains appareils ne peuvent pas lire. Les fichiers MP3 et M4A sont laissés tels quels.",
     "fmtWhen_rules": "Choisir les règles",
     "fmtWhenNote_rules": "Les fichiers qui répondent à l'une de ces règles sont convertis, pour une bibliothèque homogène (pour la ramener dans Musique, par exemple).",
-    "fmtRuleUncompressed": "Audio non compressé (WAV, AIFF)",
+    "fmtKeepTitle": "Types de fichiers laissés tels quels (les autres sont convertis) :",
+    "fmtKeepOther": "Autres types (WMA et le reste)",
+    "fmtAlsoTitle": "Convertis aussi, quel que soit leur type :",
+    "fmtLosslessHigh": "Convertir les fichiers sans perte (WAV, AIFF, FLAC, Apple Lossless) à la meilleure qualité, {q}, pour les rares personnes qui entendraient une différence",
+    "fmtFlacRetired": "FLAC n'est plus proposé : il ne se lit pas sur tous les appareils. Cette bibliothèque le garde jusqu'à ce que vous choisissiez un autre format.",
+    "fmtFlacShared": "Dans une bibliothèque partagée, les fichiers sont convertis en Standard (MP3 192k) au lieu de FLAC, car ils vont sur tous les appareils.",
+    "fmtSharedUniversal": "Dans une bibliothèque partagée, les fichiers d'un type que tous les appareils ne peuvent pas lire (tout sauf MP3 et M4A) sont toujours convertis à leur arrivée, quel que soit le choix ici, car ils vont sur tous les appareils.",
     "fmtRuleAbove": "Débit supérieur à {input} kbps",
     "fmtRuleRate": "Une fréquence d'échantillonnage autre que celle du format préféré",
     "fmtRuleChannels": "Un nombre de canaux autre que celui du format préféré",
-    "fmtRuleTypes": "Types moins largement lisibles : Opus, Ogg, WebM, et FLAC si le format préféré n'est pas FLAC",
     "fmtEffectNone": "La bibliothèque correspond déjà à ces réglages : rien à convertir.",
     "fmtEffectSome": "Avec ces réglages, {n} pistes déjà dans la bibliothèque seraient converties en {format} ({from} → environ {to}).",
     "fmtEffectBtn": "Les convertir maintenant",
@@ -10969,6 +11008,17 @@ const STRINGS = {
     "convertAskedSame": "{n} d'entre elles sont déjà en {format}, le format vers lequel cette bibliothèque convertit : laissées telles quelles.",
     "convertAskedSameOne": "L'une d'elles est déjà en {format}, le format vers lequel cette bibliothèque convertit : laissée telle quelle.",
     "convertAskedNone": "Déjà en {format}, le format vers lequel cette bibliothèque convertit : rien à convertir.",
+    "keptKindsTitle": "Certains de ces fichiers risquent de ne pas se lire sur tous les appareils",
+    "keptKindsBody": "{n} des fichiers qui viennent d'être ajoutés sont de types que certains appareils ne peuvent pas lire, ou lisent sans son : Mac anciens, iPhone et iPad, Safari. Cette bibliothèque est réglée sur « Ne pas toucher à mes fichiers ». Les convertir en {format} maintenant ? Les originaux sont gardés.",
+    "keptKindsBodyOne": "L'un des fichiers qui viennent d'être ajoutés est d'un type que certains appareils ne peuvent pas lire, ou lisent sans son : Mac anciens, iPhone et iPad, Safari. Cette bibliothèque est réglée sur « Ne pas toucher à mes fichiers ». Le convertir en {format} maintenant ? L'original est gardé.",
+    "keptKindsAlways": "Convertir ces fichiers dorénavant (le réglage recommandé)",
+    "keptKindsNoAsk": "Ne plus demander dans cette bibliothèque",
+    "keptKindsLeave": "Les laisser tels quels",
+    "shareCheckTitle": "Certaines pistes risquent de ne pas se lire sur tous les appareils",
+    "shareCheckBody": "{n} pistes d'ici sont de types que certains appareils ne peuvent pas lire, ou lisent sans son (seuls MP3 et M4A se lisent partout). Les fichiers d'une bibliothèque partagée vont sur tous les appareils. Les convertir en {format} avant de partager ? Chaque fichier n'est alors envoyé qu'une fois, déjà converti ; les originaux gardés restent sur cet appareil.",
+    "shareCheckBodyOne": "Une piste d'ici est d'un type que certains appareils ne peuvent pas lire, ou lisent sans son (seuls MP3 et M4A se lisent partout). Les fichiers d'une bibliothèque partagée vont sur tous les appareils. La convertir en {format} avant de partager ? Elle n'est alors envoyée qu'une fois, déjà convertie ; un original gardé reste sur cet appareil.",
+    "shareCheckConvert": "Convertir, puis partager",
+    "shareCheckAsIs": "Les partager telles quelles",
     "convertAllBtn": "Tout convertir ({n})",
     "convertSelectedBtn": "Convertir la sélection ({n})",
     "convertThemNowBtn": "Les convertir maintenant",
@@ -13013,15 +13063,20 @@ const STRINGS = {
     "fmtWhenTitle": "Quais arquivos converter",
     "fmtWhen_untouched": "Não mexer nos meus arquivos",
     "fmtWhenNote_untouched": "Nada na biblioteca é alterado, por maior que seja. Um arquivo que este navegador não reproduz ainda ganha uma cópia reproduzível, e o original também é mantido.",
-    "fmtWhen_reduce": "Reduzir o áudio sem compressão (recomendado)",
-    "fmtWhenNote_reduce": "Arquivos WAV e AIFF são convertidos ao entrar. Todo o resto que toca fica como está.",
+    "fmtWhen_reduce": "Fazer todo arquivo tocar em toda parte (recomendado)",
+    "fmtWhenNote_reduce": "Tudo o que não for MP3 ou M4A (AAC) é convertido ao entrar: WAV, AIFF, FLAC, WebM, Opus, Ogg e o resto, que alguns dispositivos não conseguem tocar. Arquivos MP3 e M4A ficam como estão.",
     "fmtWhen_rules": "Escolher as regras",
     "fmtWhenNote_rules": "Os arquivos que se encaixam em qualquer destas são convertidos, para uma biblioteca uniforme (para levar de volta ao Música, por exemplo).",
-    "fmtRuleUncompressed": "Áudio sem compressão (WAV, AIFF)",
+    "fmtKeepTitle": "Tipos de arquivo deixados como estão (os demais são convertidos):",
+    "fmtKeepOther": "Outros tipos (WMA e o resto)",
+    "fmtAlsoTitle": "Também convertidos, seja qual for o tipo:",
+    "fmtLosslessHigh": "Converter arquivos sem perdas (WAV, AIFF, FLAC, Apple Lossless) na qualidade máxima, {q}, para os poucos que ouviriam diferença",
+    "fmtFlacRetired": "FLAC não é mais oferecido: não toca em todos os dispositivos. Esta biblioteca o mantém até você escolher outro formato.",
+    "fmtFlacShared": "Numa biblioteca compartilhada, os arquivos são convertidos para Padrão (MP3 192k) em vez de FLAC, pois vão para todos os dispositivos.",
+    "fmtSharedUniversal": "Numa biblioteca compartilhada, arquivos de um tipo que nem todo dispositivo consegue tocar (tudo o que não for MP3 ou M4A) são sempre convertidos ao entrar, seja o que for escolhido aqui, pois vão para todos os dispositivos.",
     "fmtRuleAbove": "Taxa de bits acima de {input} kbps",
     "fmtRuleRate": "Uma taxa de amostragem diferente da do formato preferido",
     "fmtRuleChannels": "Um número de canais diferente do formato preferido",
-    "fmtRuleTypes": "Tipos menos reproduzíveis: Opus, Ogg, WebM, e FLAC quando o formato preferido não é FLAC",
     "fmtEffectNone": "A biblioteca já está de acordo com estas configurações: nada a converter.",
     "fmtEffectSome": "Com estas configurações, {n} faixas que já estão na biblioteca seriam convertidas para {format} ({from} → cerca de {to}).",
     "fmtEffectBtn": "Convertê-las agora",
@@ -13082,6 +13137,17 @@ const STRINGS = {
     "convertAskedSame": "{n} delas já estão em {format}, o formato para o qual esta biblioteca converte: ficam como estão.",
     "convertAskedSameOne": "Uma delas já está em {format}, o formato para o qual esta biblioteca converte: fica como está.",
     "convertAskedNone": "Já está em {format}, o formato para o qual esta biblioteca converte: nada a converter.",
+    "keptKindsTitle": "Alguns destes podem não tocar em todos os dispositivos",
+    "keptKindsBody": "{n} dos arquivos recém-adicionados são de tipos que alguns dispositivos não conseguem tocar, ou tocam sem som: Macs mais antigos, iPhones e iPads, Safari. Esta biblioteca está definida como “Não mexer nos meus arquivos”. Convertê-los para {format} agora? Os originais são mantidos.",
+    "keptKindsBodyOne": "Um dos arquivos recém-adicionados é de um tipo que alguns dispositivos não conseguem tocar, ou tocam sem som: Macs mais antigos, iPhones e iPads, Safari. Esta biblioteca está definida como “Não mexer nos meus arquivos”. Convertê-lo para {format} agora? O original é mantido.",
+    "keptKindsAlways": "Converter esses arquivos daqui em diante (a configuração recomendada)",
+    "keptKindsNoAsk": "Não perguntar de novo nesta biblioteca",
+    "keptKindsLeave": "Deixar como estão",
+    "shareCheckTitle": "Algumas faixas podem não tocar em todos os dispositivos",
+    "shareCheckBody": "{n} faixas aqui são de tipos que alguns dispositivos não conseguem tocar, ou tocam sem som (só MP3 e M4A tocam em toda parte). Os arquivos de uma biblioteca compartilhada vão para todos os dispositivos. Convertê-las para {format} antes de compartilhar? Assim cada arquivo sobe uma só vez, já convertido; os originais que você mantiver ficam neste dispositivo.",
+    "shareCheckBodyOne": "Uma faixa aqui é de um tipo que alguns dispositivos não conseguem tocar, ou tocam sem som (só MP3 e M4A tocam em toda parte). Os arquivos de uma biblioteca compartilhada vão para todos os dispositivos. Convertê-la para {format} antes de compartilhar? Assim ela sobe uma só vez, já convertida; um original que você mantiver fica neste dispositivo.",
+    "shareCheckConvert": "Converter e depois compartilhar",
+    "shareCheckAsIs": "Compartilhar como estão",
     "convertAllBtn": "Converter as {n}",
     "convertSelectedBtn": "Converter as selecionadas ({n})",
     "convertThemNowBtn": "Convertê-las agora",
@@ -15126,15 +15192,20 @@ const STRINGS = {
     "fmtWhenTitle": "Welche Dateien umgewandelt werden",
     "fmtWhen_untouched": "Meine Dateien nicht anrühren",
     "fmtWhenNote_untouched": "In der Bibliothek wird nichts verändert, egal wie groß. Eine Datei, die dieser Browser nicht abspielen kann, bekommt trotzdem eine abspielbare Kopie, und ihr Original bleibt ebenfalls erhalten.",
-    "fmtWhen_reduce": "Unkomprimiertes Audio verkleinern (empfohlen)",
-    "fmtWhenNote_reduce": "WAV- und AIFF-Dateien werden beim Hereinkommen umgewandelt. Alles andere, was sich abspielen lässt, bleibt, wie es ist.",
+    "fmtWhen_reduce": "Jede Datei überall abspielbar machen (empfohlen)",
+    "fmtWhenNote_reduce": "Alles außer MP3 und M4A (AAC) wird beim Hereinkommen umgewandelt: WAV, AIFF, FLAC, WebM, Opus, Ogg und der Rest, die manche Geräte nicht abspielen können. MP3- und M4A-Dateien bleiben, wie sie sind.",
     "fmtWhen_rules": "Regeln selbst wählen",
     "fmtWhenNote_rules": "Dateien, auf die eine dieser Regeln zutrifft, werden umgewandelt – für eine einheitliche Bibliothek (etwa für die Rückkehr zu Musik).",
-    "fmtRuleUncompressed": "Unkomprimiertes Audio (WAV, AIFF)",
+    "fmtKeepTitle": "Dateiarten, die bleiben, wie sie sind (die übrigen werden umgewandelt):",
+    "fmtKeepOther": "Andere Arten (WMA und der Rest)",
+    "fmtAlsoTitle": "Außerdem umgewandelt, welcher Art auch immer:",
+    "fmtLosslessHigh": "Verlustfreie Dateien (WAV, AIFF, FLAC, Apple Lossless) in höchster Qualität umwandeln, {q}, für die wenigen, die einen Unterschied hören würden",
+    "fmtFlacRetired": "FLAC wird nicht mehr angeboten: Es spielt nicht auf jedem Gerät. Diese Bibliothek behält es, bis du ein anderes Format wählst.",
+    "fmtFlacShared": "In einer geteilten Bibliothek werden Dateien in Standard (MP3 192k) statt in FLAC umgewandelt, da sie auf jedes Gerät gehen.",
+    "fmtSharedUniversal": "In einer geteilten Bibliothek werden Dateien einer Art, die nicht jedes Gerät abspielen kann (alles außer MP3 und M4A), beim Hereinkommen immer umgewandelt, was hier auch gewählt ist, da sie auf jedes Gerät gehen.",
     "fmtRuleAbove": "Bitrate über {input} kbps",
     "fmtRuleRate": "Eine andere Abtastrate als die des bevorzugten Formats",
     "fmtRuleChannels": "Eine andere Kanalzahl als die des bevorzugten Formats",
-    "fmtRuleTypes": "Weniger verbreitet abspielbare Typen: Opus, Ogg, WebM und FLAC, wenn das bevorzugte Format nicht FLAC ist",
     "fmtEffectNone": "Die Bibliothek entspricht diesen Einstellungen bereits: nichts umzuwandeln.",
     "fmtEffectSome": "Mit diesen Einstellungen würden {n} Titel, die schon in der Bibliothek sind, in {format} umgewandelt ({from} → etwa {to}).",
     "fmtEffectBtn": "Jetzt umwandeln",
@@ -15195,6 +15266,17 @@ const STRINGS = {
     "convertAskedSame": "{n} davon sind schon {format}, das Format, in das diese Bibliothek umwandelt: bleiben, wie sie sind.",
     "convertAskedSameOne": "Einer davon ist schon {format}, das Format, in das diese Bibliothek umwandelt: bleibt, wie er ist.",
     "convertAskedNone": "Schon {format}, das Format, in das diese Bibliothek umwandelt: nichts umzuwandeln.",
+    "keptKindsTitle": "Manche davon spielen vielleicht nicht auf jedem Gerät",
+    "keptKindsBody": "{n} der eben hinzugefügten Dateien sind Arten, die manche Geräte nicht abspielen können oder ohne Ton abspielen: ältere Macs, iPhones und iPads, Safari. Diese Bibliothek ist auf „Meine Dateien nicht anrühren“ eingestellt. Jetzt in {format} umwandeln? Die Originale bleiben erhalten.",
+    "keptKindsBodyOne": "Eine der eben hinzugefügten Dateien ist eine Art, die manche Geräte nicht abspielen können oder ohne Ton abspielen: ältere Macs, iPhones und iPads, Safari. Diese Bibliothek ist auf „Meine Dateien nicht anrühren“ eingestellt. Jetzt in {format} umwandeln? Das Original bleibt erhalten.",
+    "keptKindsAlways": "Solche Dateien ab jetzt umwandeln (die empfohlene Einstellung)",
+    "keptKindsNoAsk": "In dieser Bibliothek nicht mehr fragen",
+    "keptKindsLeave": "So lassen",
+    "shareCheckTitle": "Manche Titel spielen vielleicht nicht auf jedem Gerät",
+    "shareCheckBody": "{n} Titel hier sind Arten, die manche Geräte nicht abspielen können oder ohne Ton abspielen (nur MP3 und M4A spielen überall). Die Dateien einer geteilten Bibliothek gehen auf jedes Gerät. Vor dem Teilen in {format} umwandeln? Dann geht jede Datei einmal hoch, schon umgewandelt; behaltene Originale bleiben auf diesem Gerät.",
+    "shareCheckBodyOne": "Ein Titel hier ist eine Art, die manche Geräte nicht abspielen können oder ohne Ton abspielen (nur MP3 und M4A spielen überall). Die Dateien einer geteilten Bibliothek gehen auf jedes Gerät. Vor dem Teilen in {format} umwandeln? Dann geht er einmal hoch, schon umgewandelt; ein behaltenes Original bleibt auf diesem Gerät.",
+    "shareCheckConvert": "Umwandeln, dann teilen",
+    "shareCheckAsIs": "So teilen, wie sie sind",
     "convertAllBtn": "Alle {n} umwandeln",
     "convertSelectedBtn": "Ausgewählte umwandeln ({n})",
     "convertThemNowBtn": "Jetzt umwandeln",
@@ -17239,15 +17321,20 @@ const STRINGS = {
     "fmtWhenTitle": "转换哪些文件",
     "fmtWhen_untouched": "不要改动我的文件",
     "fmtWhenNote_untouched": "资料库中的任何内容都不改动，无论多大。此浏览器无法播放的文件仍会得到可播放的副本，原始文件也会保留。",
-    "fmtWhen_reduce": "缩小未压缩音频（推荐）",
-    "fmtWhenNote_reduce": "WAV 和 AIFF 文件在导入时转换。其他可以播放的文件保持原样。",
+    "fmtWhen_reduce": "让每个文件在任何地方都能播放（推荐）",
+    "fmtWhenNote_reduce": "MP3 和 M4A（AAC）以外的一切在导入时都会转换：WAV、AIFF、FLAC、WebM、Opus、Ogg 等，有些设备无法播放它们。MP3 和 M4A 文件保持原样。",
     "fmtWhen_rules": "自己选择规则",
     "fmtWhenNote_rules": "符合以下任一条件的文件都会转换，让整个资料库保持一致（例如要放回“音乐”应用时）。",
-    "fmtRuleUncompressed": "未压缩音频（WAV、AIFF）",
+    "fmtKeepTitle": "保持原样的文件类型（其余的会转换）：",
+    "fmtKeepOther": "其他类型（WMA 等）",
+    "fmtAlsoTitle": "无论类型，以下也会转换：",
+    "fmtLosslessHigh": "以最高质量（{q}）转换无损文件（WAV、AIFF、FLAC、Apple Lossless），供少数能听出差别的人使用",
+    "fmtFlacRetired": "不再提供 FLAC：它不能在所有设备上播放。此资料库会保留它，直到你选择其他格式。",
+    "fmtFlacShared": "在共享资料库中，文件会转换为标准格式（MP3 192k）而不是 FLAC，因为它们会发送到每台设备。",
+    "fmtSharedUniversal": "在共享资料库中，并非每台设备都能播放的文件类型（MP3 和 M4A 以外的一切）在导入时总会转换，无论这里选择什么，因为它们会发送到每台设备。",
     "fmtRuleAbove": "码率高于 {input} kbps",
     "fmtRuleRate": "采样率与首选格式不同",
     "fmtRuleChannels": "声道数与首选格式不同",
-    "fmtRuleTypes": "兼容性较差的类型：Opus、Ogg、WebM，以及首选格式不是 FLAC 时的 FLAC",
     "fmtEffectNone": "资料库已符合这些设置：没有需要转换的内容。",
     "fmtEffectSome": "按这些设置，资料库中已有的 {n} 首曲目会被转换为 {format}（{from} → 约 {to}）。",
     "fmtEffectBtn": "立即转换",
@@ -17308,6 +17395,17 @@ const STRINGS = {
     "convertAskedSame": "其中 {n} 首已经是 {format}，即此资料库转换的格式：保持不变。",
     "convertAskedSameOne": "其中一首已经是 {format}，即此资料库转换的格式：保持不变。",
     "convertAskedNone": "已经是 {format}，即此资料库转换的格式：无需转换。",
+    "keptKindsTitle": "其中一些可能无法在每台设备上播放",
+    "keptKindsBody": "刚添加的文件中有 {n} 个属于某些设备无法播放（或播放时没有声音）的类型：较旧的 Mac、iPhone 和 iPad、Safari。此资料库设置为“不要改动我的文件”。现在将它们转换为 {format} 吗？原始文件会保留。",
+    "keptKindsBodyOne": "刚添加的文件中有一个属于某些设备无法播放（或播放时没有声音）的类型：较旧的 Mac、iPhone 和 iPad、Safari。此资料库设置为“不要改动我的文件”。现在将它转换为 {format} 吗？原始文件会保留。",
+    "keptKindsAlways": "从现在起转换此类文件（推荐设置）",
+    "keptKindsNoAsk": "在此资料库中不再询问",
+    "keptKindsLeave": "保持原样",
+    "shareCheckTitle": "有些曲目可能无法在每台设备上播放",
+    "shareCheckBody": "这里有 {n} 首曲目属于某些设备无法播放（或播放时没有声音）的类型（只有 MP3 和 M4A 在任何地方都能播放）。共享资料库的文件会发送到每台设备。共享前将它们转换为 {format} 吗？这样每个文件只上传一次，且已转换；你保留的原始文件只留在此设备上。",
+    "shareCheckBodyOne": "这里有一首曲目属于某些设备无法播放（或播放时没有声音）的类型（只有 MP3 和 M4A 在任何地方都能播放）。共享资料库的文件会发送到每台设备。共享前将它转换为 {format} 吗？这样它只上传一次，且已转换；你保留的原始文件只留在此设备上。",
+    "shareCheckConvert": "先转换，再共享",
+    "shareCheckAsIs": "按原样共享",
     "convertAllBtn": "全部转换（{n}）",
     "convertSelectedBtn": "转换所选（{n}）",
     "convertThemNowBtn": "立即转换",
@@ -19352,15 +19450,20 @@ const STRINGS = {
     "fmtWhenTitle": "Chuyển đổi những tệp nào",
     "fmtWhen_untouched": "Đừng động vào tệp của tôi",
     "fmtWhenNote_untouched": "Không thay đổi gì trong thư viện, dù lớn đến đâu. Tệp trình duyệt này không phát được vẫn có một bản phát được, và bản gốc cũng được giữ lại.",
-    "fmtWhen_reduce": "Thu nhỏ âm thanh không nén (nên dùng)",
-    "fmtWhenNote_reduce": "Tệp WAV và AIFF được chuyển đổi khi nhập vào. Mọi thứ khác phát được thì giữ nguyên.",
+    "fmtWhen_reduce": "Làm cho mọi tệp phát được ở mọi nơi (nên dùng)",
+    "fmtWhenNote_reduce": "Mọi thứ trừ MP3 và M4A (AAC) được chuyển đổi khi nhập vào: WAV, AIFF, FLAC, WebM, Opus, Ogg và các loại khác, mà một số thiết bị không phát được. Tệp MP3 và M4A được giữ nguyên.",
     "fmtWhen_rules": "Tự chọn quy tắc",
     "fmtWhenNote_rules": "Tệp khớp với bất kỳ quy tắc nào dưới đây sẽ được chuyển đổi, để cả thư viện đồng nhất (chẳng hạn để đưa trở lại Music.app).",
-    "fmtRuleUncompressed": "Âm thanh không nén (WAV, AIFF)",
+    "fmtKeepTitle": "Các loại tệp được giữ nguyên (các loại khác được chuyển đổi):",
+    "fmtKeepOther": "Các loại khác (WMA và những loại còn lại)",
+    "fmtAlsoTitle": "Cũng được chuyển đổi, dù là loại gì:",
+    "fmtLosslessHigh": "Chuyển các tệp không mất dữ liệu (WAV, AIFF, FLAC, Apple Lossless) ở chất lượng cao nhất, {q}, cho số ít người nghe được sự khác biệt",
+    "fmtFlacRetired": "FLAC không còn được cung cấp: nó không phát được trên mọi thiết bị. Thư viện này giữ nó cho đến khi bạn chọn định dạng khác.",
+    "fmtFlacShared": "Trong thư viện dùng chung, tệp được chuyển sang Tiêu chuẩn (MP3 192k) thay vì FLAC, vì chúng được gửi đến mọi thiết bị.",
+    "fmtSharedUniversal": "Trong thư viện dùng chung, tệp thuộc loại mà không phải thiết bị nào cũng phát được (mọi thứ trừ MP3 và M4A) luôn được chuyển đổi khi nhập vào, dù chọn gì ở đây, vì chúng được gửi đến mọi thiết bị.",
     "fmtRuleAbove": "Tốc độ bit trên {input} kbps",
     "fmtRuleRate": "Tần số lấy mẫu khác với định dạng ưu tiên",
     "fmtRuleChannels": "Số kênh khác với định dạng ưu tiên",
-    "fmtRuleTypes": "Các loại ít phổ biến: Opus, Ogg, WebM, và FLAC khi định dạng ưu tiên không phải FLAC",
     "fmtEffectNone": "Thư viện đã đúng với các cài đặt này: không có gì cần chuyển đổi.",
     "fmtEffectSome": "Với các cài đặt này, {n} bài đã có trong thư viện sẽ được chuyển sang {format} ({from} → khoảng {to}).",
     "fmtEffectBtn": "Chuyển đổi ngay",
@@ -19421,6 +19524,17 @@ const STRINGS = {
     "convertAskedSame": "{n} bài trong số đó đã là {format}, định dạng mà thư viện này chuyển sang: được giữ nguyên.",
     "convertAskedSameOne": "Một bài trong số đó đã là {format}, định dạng mà thư viện này chuyển sang: được giữ nguyên.",
     "convertAskedNone": "Đã là {format}, định dạng mà thư viện này chuyển sang: không có gì để chuyển.",
+    "keptKindsTitle": "Một số tệp này có thể không phát được trên mọi thiết bị",
+    "keptKindsBody": "{n} tệp vừa thêm thuộc loại mà một số thiết bị không phát được, hoặc phát không có tiếng: máy Mac cũ, iPhone và iPad, Safari. Thư viện này đang đặt “Đừng động vào tệp của tôi”. Chuyển chúng sang {format} ngay bây giờ? Bản gốc được giữ lại.",
+    "keptKindsBodyOne": "Một tệp vừa thêm thuộc loại mà một số thiết bị không phát được, hoặc phát không có tiếng: máy Mac cũ, iPhone và iPad, Safari. Thư viện này đang đặt “Đừng động vào tệp của tôi”. Chuyển nó sang {format} ngay bây giờ? Bản gốc được giữ lại.",
+    "keptKindsAlways": "Từ nay chuyển đổi những tệp như vậy (cài đặt nên dùng)",
+    "keptKindsNoAsk": "Không hỏi lại trong thư viện này",
+    "keptKindsLeave": "Giữ nguyên",
+    "shareCheckTitle": "Một số bài có thể không phát được trên mọi thiết bị",
+    "shareCheckBody": "{n} bài ở đây thuộc loại mà một số thiết bị không phát được, hoặc phát không có tiếng (chỉ MP3 và M4A phát được ở mọi nơi). Tệp của thư viện dùng chung được gửi đến mọi thiết bị. Chuyển chúng sang {format} trước khi chia sẻ? Khi đó mỗi tệp chỉ tải lên một lần, đã chuyển đổi; bản gốc bạn giữ ở lại trên thiết bị này.",
+    "shareCheckBodyOne": "Một bài ở đây thuộc loại mà một số thiết bị không phát được, hoặc phát không có tiếng (chỉ MP3 và M4A phát được ở mọi nơi). Tệp của thư viện dùng chung được gửi đến mọi thiết bị. Chuyển nó sang {format} trước khi chia sẻ? Khi đó nó chỉ tải lên một lần, đã chuyển đổi; bản gốc bạn giữ ở lại trên thiết bị này.",
+    "shareCheckConvert": "Chuyển đổi rồi chia sẻ",
+    "shareCheckAsIs": "Chia sẻ nguyên như vậy",
     "convertAllBtn": "Chuyển đổi cả {n}",
     "convertSelectedBtn": "Chuyển đổi mục đã chọn ({n})",
     "convertThemNowBtn": "Chuyển đổi ngay",
@@ -21465,15 +21579,20 @@ const STRINGS = {
     "fmtWhenTitle": "Ποια αρχεία μετατρέπονται",
     "fmtWhen_untouched": "Μην αγγίζεις τα αρχεία μου",
     "fmtWhenNote_untouched": "Τίποτε στη βιβλιοθήκη δεν αλλάζει, όσο μεγάλο κι αν είναι. Ένα αρχείο που δεν παίζει αυτό το πρόγραμμα περιήγησης παίρνει ωστόσο ένα αντίγραφο που παίζει, και κρατιέται και το πρωτότυπο.",
-    "fmtWhen_reduce": "Μείωση του ασυμπίεστου ήχου (προτείνεται)",
-    "fmtWhenNote_reduce": "Τα αρχεία WAV και AIFF μετατρέπονται καθώς μπαίνουν. Ό,τι άλλο παίζει μένει όπως είναι.",
+    "fmtWhen_reduce": "Κάθε αρχείο να παίζει παντού (προτείνεται)",
+    "fmtWhenNote_reduce": "Οτιδήποτε εκτός από MP3 και M4A (AAC) μετατρέπεται καθώς μπαίνει: WAV, AIFF, FLAC, WebM, Opus, Ogg και τα υπόλοιπα, που κάποιες συσκευές δεν μπορούν να παίξουν. Τα αρχεία MP3 και M4A μένουν όπως είναι.",
     "fmtWhen_rules": "Επιλογή κανόνων",
     "fmtWhenNote_rules": "Μετατρέπονται τα αρχεία που ταιριάζουν σε οποιονδήποτε από αυτούς, για ενιαία βιβλιοθήκη (π.χ. για επιστροφή στη Μουσική).",
-    "fmtRuleUncompressed": "Ασυμπίεστος ήχος (WAV, AIFF)",
+    "fmtKeepTitle": "Είδη αρχείων που μένουν όπως είναι (τα υπόλοιπα μετατρέπονται):",
+    "fmtKeepOther": "Άλλα είδη (WMA και τα υπόλοιπα)",
+    "fmtAlsoTitle": "Μετατρέπονται επίσης, όποιο κι αν είναι το είδος τους:",
+    "fmtLosslessHigh": "Μετατροπή αρχείων χωρίς απώλειες (WAV, AIFF, FLAC, Apple Lossless) στην υψηλότερη ποιότητα, {q}, για τους λίγους που θα άκουγαν διαφορά",
+    "fmtFlacRetired": "Το FLAC δεν προσφέρεται πια: δεν παίζει σε κάθε συσκευή. Αυτή η βιβλιοθήκη το κρατά μέχρι να επιλέξετε άλλη μορφή.",
+    "fmtFlacShared": "Σε κοινόχρηστη βιβλιοθήκη, τα αρχεία μετατρέπονται σε Τυπική (MP3 192k) αντί για FLAC, αφού πηγαίνουν σε κάθε συσκευή.",
+    "fmtSharedUniversal": "Σε κοινόχρηστη βιβλιοθήκη, αρχεία είδους που δεν παίζει κάθε συσκευή (οτιδήποτε εκτός από MP3 και M4A) μετατρέπονται πάντα καθώς μπαίνουν, ό,τι κι αν έχει επιλεγεί εδώ, αφού πηγαίνουν σε κάθε συσκευή.",
     "fmtRuleAbove": "Ρυθμός bit πάνω από {input} kbps",
     "fmtRuleRate": "Συχνότητα δειγματοληψίας διαφορετική από της προτιμώμενης μορφής",
     "fmtRuleChannels": "Αριθμός καναλιών διαφορετικός από της προτιμώμενης μορφής",
-    "fmtRuleTypes": "Λιγότερο διαδεδομένοι τύποι: Opus, Ogg, WebM, και FLAC όταν η προτιμώμενη μορφή δεν είναι FLAC",
     "fmtEffectNone": "Η βιβλιοθήκη ταιριάζει ήδη με αυτές τις ρυθμίσεις: τίποτα για μετατροπή.",
     "fmtEffectSome": "Με αυτές τις ρυθμίσεις, {n} κομμάτια που είναι ήδη στη βιβλιοθήκη θα μετατρέπονταν σε {format} ({from} → περίπου {to}).",
     "fmtEffectBtn": "Μετατροπή τώρα",
@@ -21534,6 +21653,17 @@ const STRINGS = {
     "convertAskedSame": "{n} από αυτά είναι ήδη {format}, η μορφή στην οποία μετατρέπει αυτή η βιβλιοθήκη: μένουν όπως είναι.",
     "convertAskedSameOne": "Ένα από αυτά είναι ήδη {format}, η μορφή στην οποία μετατρέπει αυτή η βιβλιοθήκη: μένει όπως είναι.",
     "convertAskedNone": "Είναι ήδη {format}, η μορφή στην οποία μετατρέπει αυτή η βιβλιοθήκη: τίποτα για μετατροπή.",
+    "keptKindsTitle": "Κάποια από αυτά ίσως να μην παίζουν σε κάθε συσκευή",
+    "keptKindsBody": "{n} από τα αρχεία που μόλις προστέθηκαν είναι είδη που κάποιες συσκευές δεν μπορούν να παίξουν ή παίζουν χωρίς ήχο: παλαιότερα Mac, iPhone και iPad, Safari. Αυτή η βιβλιοθήκη είναι ρυθμισμένη σε «Μην αγγίζεις τα αρχεία μου». Μετατροπή τους σε {format} τώρα; Τα πρωτότυπα κρατιούνται.",
+    "keptKindsBodyOne": "Ένα από τα αρχεία που μόλις προστέθηκαν είναι είδος που κάποιες συσκευές δεν μπορούν να παίξουν ή παίζουν χωρίς ήχο: παλαιότερα Mac, iPhone και iPad, Safari. Αυτή η βιβλιοθήκη είναι ρυθμισμένη σε «Μην αγγίζεις τα αρχεία μου». Μετατροπή του σε {format} τώρα; Το πρωτότυπο κρατιέται.",
+    "keptKindsAlways": "Μετατροπή τέτοιων αρχείων από εδώ και πέρα (η προτεινόμενη ρύθμιση)",
+    "keptKindsNoAsk": "Να μην ξαναρωτηθώ σε αυτή τη βιβλιοθήκη",
+    "keptKindsLeave": "Να μείνουν όπως είναι",
+    "shareCheckTitle": "Κάποια κομμάτια ίσως να μην παίζουν σε κάθε συσκευή",
+    "shareCheckBody": "{n} κομμάτια εδώ είναι είδη που κάποιες συσκευές δεν μπορούν να παίξουν ή παίζουν χωρίς ήχο (μόνο τα MP3 και M4A παίζουν παντού). Τα αρχεία μιας κοινόχρηστης βιβλιοθήκης πηγαίνουν σε κάθε συσκευή. Μετατροπή τους σε {format} πριν από την κοινή χρήση; Έτσι κάθε αρχείο ανεβαίνει μία φορά, ήδη μετατρεμμένο· τα πρωτότυπα που κρατάτε μένουν σε αυτή τη συσκευή.",
+    "shareCheckBodyOne": "Ένα κομμάτι εδώ είναι είδος που κάποιες συσκευές δεν μπορούν να παίξουν ή παίζουν χωρίς ήχο (μόνο τα MP3 και M4A παίζουν παντού). Τα αρχεία μιας κοινόχρηστης βιβλιοθήκης πηγαίνουν σε κάθε συσκευή. Μετατροπή του σε {format} πριν από την κοινή χρήση; Έτσι ανεβαίνει μία φορά, ήδη μετατρεμμένο· ένα πρωτότυπο που κρατάτε μένει σε αυτή τη συσκευή.",
+    "shareCheckConvert": "Μετατροπή και μετά κοινή χρήση",
+    "shareCheckAsIs": "Κοινή χρήση όπως είναι",
     "convertAllBtn": "Μετατροπή και των {n}",
     "convertSelectedBtn": "Μετατροπή επιλεγμένων ({n})",
     "convertThemNowBtn": "Μετατροπή τώρα",
@@ -23578,15 +23708,20 @@ const STRINGS = {
     "fmtWhenTitle": "Quali file convertire",
     "fmtWhen_untouched": "Non toccare i miei file",
     "fmtWhenNote_untouched": "Nella libreria non cambia nulla, per quanto grande. Un file che questo browser non riproduce riceve comunque una copia riproducibile, e si tiene anche l'originale.",
-    "fmtWhen_reduce": "Ridurre l'audio non compresso (consigliato)",
-    "fmtWhenNote_reduce": "I file WAV e AIFF vengono convertiti quando entrano. Tutto il resto che si riproduce resta com'è.",
+    "fmtWhen_reduce": "Rendere ogni file riproducibile ovunque (consigliato)",
+    "fmtWhenNote_reduce": "Tutto ciò che non è MP3 o M4A (AAC) viene convertito quando entra: WAV, AIFF, FLAC, WebM, Opus, Ogg e il resto, che alcuni dispositivi non riescono a riprodurre. I file MP3 e M4A restano come sono.",
     "fmtWhen_rules": "Scegli le regole",
     "fmtWhenNote_rules": "Vengono convertiti i file che corrispondono a una qualsiasi di queste, per una libreria uniforme (per riportarla in Musica, ad esempio).",
-    "fmtRuleUncompressed": "Audio non compresso (WAV, AIFF)",
+    "fmtKeepTitle": "Tipi di file lasciati come sono (gli altri vengono convertiti):",
+    "fmtKeepOther": "Altri tipi (WMA e il resto)",
+    "fmtAlsoTitle": "Convertiti anche, di qualunque tipo:",
+    "fmtLosslessHigh": "Convertire i file senza perdita (WAV, AIFF, FLAC, Apple Lossless) alla massima qualità, {q}, per i pochi che sentirebbero una differenza",
+    "fmtFlacRetired": "FLAC non è più offerto: non si riproduce su tutti i dispositivi. Questa libreria lo mantiene finché non scegli un altro formato.",
+    "fmtFlacShared": "In una libreria condivisa, i file vengono convertiti in Standard (MP3 192k) invece che in FLAC, perché vanno su tutti i dispositivi.",
+    "fmtSharedUniversal": "In una libreria condivisa, i file di un tipo che non tutti i dispositivi riproducono (tutto tranne MP3 e M4A) vengono sempre convertiti quando entrano, qualunque cosa sia scelta qui, perché vanno su tutti i dispositivi.",
     "fmtRuleAbove": "Bitrate oltre {input} kbps",
     "fmtRuleRate": "Una frequenza di campionamento diversa da quella del formato preferito",
     "fmtRuleChannels": "Un numero di canali diverso da quello del formato preferito",
-    "fmtRuleTypes": "Tipi meno diffusi: Opus, Ogg, WebM, e FLAC quando il formato preferito non è FLAC",
     "fmtEffectNone": "La libreria corrisponde già a queste impostazioni: niente da convertire.",
     "fmtEffectSome": "Con queste impostazioni, {n} tracce già nella libreria verrebbero convertite in {format} ({from} → circa {to}).",
     "fmtEffectBtn": "Convertile ora",
@@ -23647,6 +23782,17 @@ const STRINGS = {
     "convertAskedSame": "{n} di esse sono già in {format}, il formato in cui questa libreria converte: lasciate come sono.",
     "convertAskedSameOne": "Una di esse è già in {format}, il formato in cui questa libreria converte: lasciata com'è.",
     "convertAskedNone": "Già in {format}, il formato in cui questa libreria converte: niente da convertire.",
+    "keptKindsTitle": "Alcuni di questi potrebbero non riprodursi su tutti i dispositivi",
+    "keptKindsBody": "{n} dei file appena aggiunti sono di tipi che alcuni dispositivi non riescono a riprodurre, o riproducono senza suono: Mac meno recenti, iPhone e iPad, Safari. Questa libreria è impostata su «Non toccare i miei file». Convertirli in {format} ora? Gli originali vengono tenuti.",
+    "keptKindsBodyOne": "Uno dei file appena aggiunti è di un tipo che alcuni dispositivi non riescono a riprodurre, o riproducono senza suono: Mac meno recenti, iPhone e iPad, Safari. Questa libreria è impostata su «Non toccare i miei file». Convertirlo in {format} ora? L'originale viene tenuto.",
+    "keptKindsAlways": "Convertire d'ora in poi questi file (l'impostazione consigliata)",
+    "keptKindsNoAsk": "Non chiedere più in questa libreria",
+    "keptKindsLeave": "Lasciarli come sono",
+    "shareCheckTitle": "Alcune tracce potrebbero non riprodursi su tutti i dispositivi",
+    "shareCheckBody": "{n} tracce qui sono di tipi che alcuni dispositivi non riescono a riprodurre, o riproducono senza suono (solo MP3 e M4A si riproducono ovunque). I file di una libreria condivisa vanno su tutti i dispositivi. Convertirle in {format} prima di condividere? Così ogni file sale una sola volta, già convertito; gli originali che tieni restano su questo dispositivo.",
+    "shareCheckBodyOne": "Una traccia qui è di un tipo che alcuni dispositivi non riescono a riprodurre, o riproducono senza suono (solo MP3 e M4A si riproducono ovunque). I file di una libreria condivisa vanno su tutti i dispositivi. Convertirla in {format} prima di condividere? Così sale una sola volta, già convertita; un originale che tieni resta su questo dispositivo.",
+    "shareCheckConvert": "Convertire, poi condividere",
+    "shareCheckAsIs": "Condividerle come sono",
     "convertAllBtn": "Converti tutte ({n})",
     "convertSelectedBtn": "Converti i selezionati ({n})",
     "convertThemNowBtn": "Convertile ora",
@@ -29857,19 +30003,64 @@ const FORMAT_PRESETS = {
   small:    {format: "mp3", kbps: 96, rate: 44100, channels: 2},
   lossless: {format: "flac", kbps: null, rate: null, channels: null},
 };
+// Kinds of file, by extension (a track's: trackExt), for the format rules
+// (2.5.060). Only MP3 and AAC in M4A play on every device (UNIVERSAL_KINDS;
+// kr37: 37 Player is first a player for Centers' pujas and retreats, so what
+// a library plays should play anywhere). "other": WMA, AMR and the rest.
+const FILE_KINDS = [["mp3", /^mp3$/, "MP3"], ["m4a", /^(m4a|mp4|m4b|aac)$/, "M4A (AAC)"], ["wav", /^(wav|wave)$/, "WAV"], ["aiff", /^(aif|aiff|aifc)$/, "AIFF"],
+  ["flac", /^flac$/, "FLAC"], ["opus", /^opus$/, "Opus"], ["ogg", /^(ogg|oga)$/, "Ogg"], ["webm", /^(webm|mka)$/, "WebM"], ["other", null, null]];
+const UNIVERSAL_KINDS = ["mp3", "m4a"];
+function fileKindOfExt(ext){
+  if(!ext) return ""; // not known: left alone
+  for(const [id, re] of FILE_KINDS) if(re && re.test(ext)) return id;
+  return "other";
+}
+// The kinds the settings leave as they are: the recommended setting's two,
+// or the rules' list; and always the preferred format's own.
+function keptKinds(pol){
+  const own = fileKindOfExt(FORMAT_KINDS[preferredFormat(pol).format].ext.slice(1));
+  return (pol.when === "rules" ? pol.rules.keep : UNIVERSAL_KINDS).concat(own);
+}
+// Whether a track is a kind that may not play on every device.
+function trackNotUniversal(tr){ const k = fileKindOfExt(trackExt(tr)); return !!k && !UNIVERSAL_KINDS.includes(k); }
+// Becoming shared (the sharing check in joinShared): as if shared already.
+let joiningShared = false;
+// rules.keep (2.5.060): the kinds of file "Choose the rules" leaves as they
+// are (FILE_KINDS' ids); the rest are converted. A library set to the rules
+// before then gets the list its two old checkboxes meant: WAV and AIFF kept
+// unless "uncompressed" was on, Opus, Ogg, WebM and FLAC unless "types" was,
+// and other kinds kept, as they were. losslessHigh: a lossless file is
+// converted at the highest quality (losslessTarget). noAsk: "Don't touch my
+// files" without the question at import (askAboutKeptKinds).
 function formatPolicy(){
   const p = root.formatPolicy || {};
+  const rules = Object.assign({aboveKbps: null, rate: false, channels: false}, p.rules || {});
+  if(!Array.isArray(rules.keep)){
+    const old = p.rules && ("uncompressed" in p.rules || "types" in p.rules);
+    rules.keep = UNIVERSAL_KINDS.slice();
+    if(old && p.rules.uncompressed === false) rules.keep.push("wav", "aiff");
+    if(old && !p.rules.types) rules.keep.push("flac", "opus", "ogg", "webm");
+    if(old) rules.keep.push("other");
+  }
+  delete rules.uncompressed; delete rules.types;
   return {
     preset: (FORMAT_PRESETS[p.preset] || p.preset === "custom") ? p.preset : "standard",
     custom: Object.assign({}, FORMAT_PRESETS.standard, p.custom || {}),
     when: ["untouched", "reduce", "rules"].includes(p.when) ? p.when : "reduce",
-    rules: Object.assign({uncompressed: true, aboveKbps: null, rate: false, channels: false, types: false}, p.rules || {}),
+    rules,
+    losslessHigh: !!p.losslessHigh,
+    noAsk: !!p.noAsk,
   };
 }
 function preferredFormat(pol){
   pol = pol || formatPolicy();
   const f = pol.preset === "custom" ? pol.custom : FORMAT_PRESETS[pol.preset];
-  return FORMAT_KINDS[f.format] ? f : FORMAT_PRESETS.standard;
+  if(!FORMAT_KINDS[f.format]) return FORMAT_PRESETS.standard;
+  // FLAC isn't offered any more (2.5.060): it doesn't play everywhere. A
+  // library that chose it keeps it, except a shared one (or one becoming
+  // shared), whose files go to every device: Standard there.
+  if(f.format === "flac" && (sharedConfig() || joiningShared)) return FORMAT_PRESETS.standard;
+  return f;
 }
 function formatLabel(f){
   f = f || preferredFormat();
@@ -29878,8 +30069,6 @@ function formatLabel(f){
   if(f.channels) bits.push(t(f.channels === 1 ? "fmtMono" : "fmtStereo"));
   return bits.join(", ");
 }
-const UNCOMPRESSED_EXT = /^(wav|wave|aif|aiff|aifc)$/;
-const LESS_PLAYABLE_EXT = /^(opus|ogg|oga|webm|mka|flac)$/;
 function fileExt(name){ const m = String(name || "").toLowerCase().match(/\.([a-z0-9]+)$/); return m ? m[1] : ""; }
 // What kind of file a track's audio is, as an extension ("webm"): what was
 // found inside it (track.fileType, 2.5.059), else its name's. kr37's
@@ -29893,19 +30082,21 @@ function trackSourceName(tr){
 }
 // Whether the library's settings would convert this track (a file this
 // browser can't play is a separate matter: it's always converted).
+// A shared library holds only kinds every device plays, whatever its
+// settings (2.5.060): its files go to every device.
 function trackMatchesPolicy(tr, pol){
   if(!tr) return false;
   pol = pol || formatPolicy();
+  if((sharedConfig() || joiningShared) && trackNotUniversal(tr)) return true;
   if(pol.when === "untouched") return false;
   const ext = trackExt(tr), target = preferredFormat(pol), kind = FORMAT_KINDS[target.format];
-  const uncompressed = UNCOMPRESSED_EXT.test(ext);
-  if(uncompressed) return pol.when === "reduce" || !!pol.rules.uncompressed;
+  const k = fileKindOfExt(ext);
+  if(k && !keptKinds(pol).includes(k)) return true;
   if(pol.when !== "rules") return false;
   const sameType = ("." + ext) === kind.ext || (ext === "mp4" && target.format === "aac");
   const kbps = tr.fileSize && tr.duration ? tr.fileSize * 8 / tr.duration / 1000 : null;
   if(pol.rules.rate && target.rate && tr.sampleRate && tr.sampleRate !== target.rate) return true;
   if(pol.rules.channels && target.channels && tr.channels && tr.channels !== target.channels) return true;
-  if(pol.rules.types && LESS_PLAYABLE_EXT.test(ext) && !sameType) return true;
   // A bitrate above the line: never for a file already in the preferred
   // format near its own bitrate, or it would be converted over and over.
   if(pol.rules.aboveKbps && kbps && kbps > pol.rules.aboveKbps + 8){
@@ -30181,7 +30372,19 @@ async function blobHeadHex(blob){
 // and sample rate kept unless the format sets them or can't hold them, tags
 // carried, and the file's picture too when it has one. Returns the new file
 // as a Blob.
+// A lossless recording (WAV, AIFF, FLAC, Apple Lossless…), by its codec.
+const LOSSLESS_CODEC = /^(pcm_|flac$|alac$|wavpack$|ape$|tta$|mlp$|truehd$)/;
+// The library's own format for a lossless recording when "highest quality
+// for lossless files" is on (2.5.060, kr37: an option for the few who'd
+// mind, such as a festival's remastered FLACs; off, so WAVs brought into a
+// personal library don't become 320k MP3s): MP3 320k or AAC 256k.
+function losslessTarget(target, info){
+  const kind = FORMAT_KINDS[target.format];
+  if(!kind.lossy || !formatPolicy().losslessHigh || !LOSSLESS_CODEC.test(info.codec || "")) return target;
+  return Object.assign({}, target, {kbps: target.format === "aac" ? 256 : 320});
+}
 async function converterConvert(blob, sourceName, onFraction, target){
+  const own = !target; // the library's format (an export names its own)
   target = target || preferredFormat();
   const kind = FORMAT_KINDS[target.format];
   await converterStart();
@@ -30190,6 +30393,7 @@ async function converterConvert(blob, sourceName, onFraction, target){
   const probe = await converterAsk({type: "run", file, args: ["-hide_banner", "-nostdin", "-i", "/in/" + file.name]});
   const info = converterReadInput(probe.log);
   if(!info.hasAudio) throw converterNoAudioError(probe.log, {page: await blobHeadHex(blob), worker: probe.head, size: blob.size});
+  if(own) target = losslessTarget(target, info);
   const outName = "out" + kind.ext;
   const head = ["-hide_banner", "-nostdin", "-y", "-i", "/in/" + file.name, "-map_metadata", "0"];
   const shape = formatArgs(target, info);
@@ -30648,6 +30852,10 @@ async function isAppleLosslessFile(blob){
 async function convertAfterImport(names, importedIds){
   const unplayable = names.ids || [];
   const byPolicy = (importedIds || []).filter(id=> !unplayable.includes(id) && (alacImported.has(id) || trackMatchesPolicy(findLibraryTrack(id))));
+  // Kinds not every device plays that the settings leave (Don't touch my
+  // files): asked about, after this import's own conversions are queued.
+  const left = (importedIds || []).filter(id=> !unplayable.includes(id) && !byPolicy.includes(id) && trackNotUniversal(findLibraryTrack(id)));
+  if(left.length) setTimeout(()=> askAboutKeptKinds(left), 0);
   // (The mark stays until the converted file is in place: the queue asks trackCanBeConverted again.)
   if(!unplayable.length && !byPolicy.length){ if(names.length) showUnplayableFilesWarning(names); return; }
   const ids = unplayable.concat(byPolicy);
@@ -30658,6 +30866,63 @@ async function convertAfterImport(names, importedIds){
   } finally {
     ids.forEach(id=> convertSoon.delete(id)); // queued by now (convertQueue holds them), or not to be
   }
+}
+// Before a library's own tracks go up to a shared library (2.5.060, kr37:
+// a library not shared before, now shared): those of kinds not every device
+// plays (anything but MP3 and M4A), offered for converting first, so each
+// file goes up once, already converted (converting afterwards would send
+// the original, then the new file, to every device). The join waits for the
+// conversions; closing the question shares them as they are (the join was
+// already chosen). They're converted as in a shared library (joiningShared:
+// to Standard, not FLAC).
+async function shareCheckConvert(doc){
+  const have = new Set(((doc && doc.tracks) || []).map(rt=> rt.id));
+  joiningShared = true;
+  try{
+    const list = root.library.filter(tr=> !have.has(tr.id) && trackNotUniversal(tr) && !trackCantPlay(tr.id) && !damagedAudio.ids.has(tr.id));
+    if(!list.length) return;
+    const format = FORMAT_KINDS[preferredFormat().format].label;
+    const choice = await askChoice(t("shareCheckTitle"), `<p>${escapeHtmlText(t(list.length === 1 ? "shareCheckBodyOne" : "shareCheckBody", {n: list.length, format}))}</p>`,
+      [{label: t("shareCheckAsIs"), value: "asis"}, {label: t("shareCheckConvert"), value: "convert", kind: "primary"}]);
+    if(choice !== "convert") return;
+    await convertTracks(list.map(tr=> tr.id), {asked: true});
+    while(convertRunning || convertQueue.length) await new Promise(r=> setTimeout(r, 500));
+  } finally { joiningShared = false; }
+}
+// After an import into a library set to "Don't touch my files" (2.5.060,
+// kr37: that choice is for starting out, not for ever; a library may be
+// shared later, or played on a device that can't play these): convert
+// these just this once, or switch to the recommended setting, or leave
+// them; with "Don't ask again in this library" (policy.noAsk).
+function askAboutKeptKinds(ids){
+  const pol = formatPolicy();
+  if(pol.noAsk || pol.when !== "untouched") return;
+  ids = ids.filter(id=> findLibraryTrack(id));
+  if(!ids.length) return;
+  const format = FORMAT_KINDS[preferredFormat().format].label;
+  return showWhenFree(t("keptKindsTitle"), ()=>{
+    openModal(`<h3>${escapeHtmlText(t("keptKindsTitle"))}</h3>
+      <p>${escapeHtmlText(t(ids.length === 1 ? "keptKindsBodyOne" : "keptKindsBody", {n: ids.length, format}))}</p>
+      <ul id="keptKindsList" style="max-height:200px; overflow-y:auto; font-size:13px; color:var(--text-dim); margin:10px 0; padding-left:20px;"></ul>
+      <label class="fmt-rule"><input type="checkbox" id="keptKindsAlways"> <span>${escapeHtmlText(t("keptKindsAlways"))}</span></label>
+      <label class="fmt-rule"><input type="checkbox" id="keptKindsNoAsk"> <span>${escapeHtmlText(t("keptKindsNoAsk"))}</span></label>
+      <div class="modal-actions"><button class="btn" id="keptKindsLeave">${escapeHtmlText(t("keptKindsLeave"))}</button><button class="btn primary" id="keptKindsGo">${escapeHtmlText(t("convertBtn"))}</button></div>`);
+    const list = document.getElementById("keptKindsList");
+    ids.forEach(id=>{ const tr = findLibraryTrack(id), li = document.createElement("li"); li.textContent = (tr.name || tr.filename || "") + " (" + trackExt(tr).toUpperCase() + ")"; list.appendChild(li); });
+    const always = document.getElementById("keptKindsAlways"), noAsk = document.getElementById("keptKindsNoAsk");
+    always.addEventListener("change", ()=>{ if(always.checked) noAsk.checked = false; });
+    noAsk.addEventListener("change", ()=>{ if(noAsk.checked) always.checked = false; });
+    const finish = async (go)=>{
+      const p = root.formatPolicy || (root.formatPolicy = {});
+      if(always.checked) p.when = "reduce";
+      if(noAsk.checked) p.noAsk = true;
+      closeModal();
+      if(always.checked || noAsk.checked) await saveState();
+      if(go) convertTracks(ids.filter(id=> findLibraryTrack(id)), {asked: true});
+    };
+    document.getElementById("keptKindsGo").addEventListener("click", ()=> finish(true));
+    document.getElementById("keptKindsLeave").addEventListener("click", ()=> finish(false));
+  });
 }
 function showConvertFailures(failures, bodyKey){
   return showWhenFree(t(bodyKey ? "videoFailedTitle" : "convertFailedTitle"), ()=> showConvertFailuresNow(failures, bodyKey));
@@ -36375,9 +36640,21 @@ function showTracksInLibrary(ids, focusEntryId){
 // For a library with readable names (FolderLibraryStore): a recording's path
 // from its track's current details, and whether it may be moved now (no
 // player holds it; a held one is copied instead).
+// A kept original (ORIGINAL_KEY_PREFIX) goes under originals/ the same way
+// (2.5.060, kr37: the library folder is friendly to read, so the originals
+// should be too), not beside the file the library plays: music/ holds only
+// what's played, for anyone browsing it or pointing another player at it.
+// One kept before then is moved there by renameRecordings, as an older
+// library's recordings were moved out of audio/.
 function recordingNameOpts(){
   return {
-    recordingPath: (tid)=>{ const tr = root && root.library && root.library.find(x=> x.id === tid); return tr ? recordingPathFor(tr) : null; },
+    recordingPath: (tid)=>{
+      const orig = typeof tid === "string" && tid.startsWith(ORIGINAL_KEY_PREFIX), id = orig ? tid.slice(ORIGINAL_KEY_PREFIX.length) : tid;
+      const tr = root && root.library && root.library.find(x=> x.id === id);
+      if(!tr) return null;
+      const p = recordingPathFor(tr);
+      return orig ? p.replace(/^music\//, "originals/") : p;
+    },
     canMove: (tid)=> !trackHeldByAPlayer(tid),
   };
 }
@@ -38755,7 +39032,7 @@ const HELP_TOPICS = [
   {
     "id": "itunes-music-app",
     "title": "iTunes / Music.app",
-    "bodyHtml": "\u003cp>How 37 Player works alongside Music.app on a Mac and iTunes on Windows: bringing a library in, taking one back out, and why standardizing matters there.\u003c/p>\n\u003ch3>Importing\u003c/h3>\n\u003cp>37 Player can bring in a whole Music.app or iTunes library in one go — the audio, and every playlist inside its playlist folders.\u003c/p>\n\u003cp>\u003cstrong>1. Export the library file.\u003c/strong> In Music.app (or iTunes), choose \u003cstrong>File → Library → Export Library…\u003c/strong> and save the file into the folder that holds your music:\u003c/p>\n\u003cul>\n\u003cli>\u003cstrong>Music.app:\u003c/strong> the \u003cstrong>Media\u003c/strong> folder, usually in your Music folder under \u003cstrong>Music → Media\u003c/strong>.\u003c/li>\n\u003cli>\u003cstrong>iTunes on Windows:\u003c/strong> the \u003cstrong>iTunes Media\u003c/strong> folder, usually in your Music folder under \u003cstrong>iTunes → iTunes Media\u003c/strong>.\u003c/li>\n\u003c/ul>\n\u003cp>Keep the name it suggests (Library.xml). That one file lists every playlist and where each of its tracks is.\u003c/p>\n\u003cp>\u003cstrong>2. Import the folder.\u003c/strong> In 37 Player, open 'Import / Export', choose \u003cstrong>Import a folder…\u003c/strong>, and pick that same folder. 37 Player reads the library file along with the audio, and the usual review appears: how many tracks are new, and which playlist entries couldn't be found. Choose \u003cstrong>Import\u003c/strong>, and the playlists appear in 'Edit Playlists' in the same folders they had in Music.app.\u003c/p>\n\u003cp>Good to know:\u003c/p>\n\u003cul>\n\u003cli>\u003cstrong>Everything in the folder is imported\u003c/strong>, not just the tracks your playlists use. To bring in less, pick a smaller folder (one artist, say) — playlists still come in, with anything outside that folder listed as missing.\u003c/li>\n\u003cli>\u003cstrong>Apple's own lists\u003c/strong> (Library, Music, Downloaded and the like) are left out. A smart playlist comes in as the tracks it held when you exported — it doesn't keep updating.\u003c/li>\n\u003cli>\u003cstrong>A track that can't be found\u003c/strong> — never downloaded (streamed from Apple Music, or left in the cloud), or outside the folder you picked — leaves a \u003cstrong>Stop\u003c/strong> in its place in the playlist, named \"MISSING TRACK: title — album\", so playback halts right there instead of quietly skipping it, and the playlist is flagged. Once the track is in the library, put it in where the Stop is, and remove the Stop.\u003c/li>\n\u003cli>\u003cstrong>AIFF files\u003c/strong> (.aif), common in older iTunes libraries, come in as WAV, since most browsers can't play AIFF. The sound is identical, and the name, artist, album and artwork come along.\u003c/li>\n\u003cli>\u003cstrong>Older iTunes Store purchases\u003c/strong> protected against copying (.m4p files) can't be played in a browser.\u003c/li>\n\u003cli>\u003cstrong>Files a browser can't play\u003c/strong> — Windows Media Audio (.wma), Apple Lossless (ALAC, inside an .m4a) outside Safari, compressed AIFF and a few others — are converted to MP3 as they come in, so they play everywhere and keep their place in the playlists. 37 Player then asks whether to keep the originals too, for a later export (a portable export takes the original), showing how much room they take; Settings → Library cleanup can discard them later. Converting needs 37 Player's converter, which it fetches by itself (about 26 MB, once) and keeps, so it works offline afterwards; it waits while anything is playing. Without the converter (no internet the first time, say), such files come in marked \"Can't be played\", with \u003cstrong>Convert them now\u003c/strong> for later. A file over 500 MB is never converted by itself, since converting needs about as much memory as the file's size: Settings → Library cleanup offers it, with a warning first.\u003c/li>\n\u003cli>\u003cstrong>Your music doesn't have to be organized the way Music.app keeps it.\u003c/strong> Tracks are found by their folder names and file name, and if a file has moved, by its name and size.\u003c/li>\n\u003cli>\u003cstrong>Single playlists\u003c/strong> work too: a playlist exported on its own (\u003cstrong>File → Library → Export Playlist…\u003c/strong>, as an .m3u file), or an .m3u, .m3u8 or .xspf (VLC) from another player. Put it in the music folder and import the folder. ('Importing playlists' explains where playlists end up.)\u003c/li>\n\u003c/ul>\n\u003ch3>Exporting\u003c/h3>\n\u003cp>To take a library from 37 Player into Music.app or iTunes, use 'Import / Export' → Export and choose \u003cstrong>Portable\u003c/strong>. It unpacks into a \u003cstrong>music\u003c/strong> folder (artist / album / tracks) and a \u003cstrong>playlists\u003c/strong> folder of .m3u8 files.\u003c/p>\n\u003cul>\n\u003cli>\u003cstrong>The audio:\u003c/strong> in Music.app, choose \u003cstrong>File → Import…\u003c/strong> and pick the \u003cstrong>music\u003c/strong> folder.\u003c/li>\n\u003cli>\u003cstrong>The playlists:\u003c/strong> choose \u003cstrong>File → Library → Import Playlist…\u003c/strong> and pick each .m3u8 file. Music.app doesn't recreate folders from these, so a playlist lands at the top level; drag it into a playlist folder afterwards if you want one.\u003c/li>\n\u003c/ul>\n\u003cp>Every track keeps its name, artist, album, track number and artwork, since 37 Player writes those into the files themselves.\u003c/p>\n\u003cp>Volume adjustments made in 37 Player, and its evening out, don't come along: they aren't written into the files as ReplayGain tags, so Music.app plays each file at its own level. Music.app's own \u003cstrong>Sound Check\u003c/strong> (in its Playback settings) evens tracks out in a similar way.\u003c/p>\n\u003ch3>Why standardize for Music.app and iTunes\u003c/h3>\n\u003cp>Music.app and iTunes play one track straight into the next — but only smoothly when the two are alike. When the next track is a different file type (MP3 after AAC), or has a different sample rate (44.1 kHz after 48 kHz, say) or a different number of channels (mono after stereo), the player has to reset its audio output between them, and you hear a click, dropout, short gap, or worse.\u003c/p>\n\u003cp>37 Player itself doesn't have this problem, so there's no need to change the library for it. Instead, when exporting with \u003cstrong>Portable\u003c/strong>, select \u003cstrong>Convert to the preferred format\u003c/strong>: every file in the export comes out alike, and the library stays as it is. For a stricter match, set the preferred format (Settings → \u003cstrong>File conversion\u003c/strong>) to \u003cstrong>Best for Apple\u003c/strong> (AAC, 44.1 kHz, stereo), or choose your own under Custom.\u003c/p>\n\u003ch3>The library's file format\u003c/h3>\n\u003cp>Settings → \u003cstrong>File conversion\u003c/strong> sets one \u003cstrong>preferred format\u003c/strong> for the library — Standard (MP3 192k, recommended), Best for Apple, Very small, Lossless (FLAC, not recommended: much larger, with no difference you can hear), or Custom — and which files are converted to it:\u003c/p>\n\u003cul>\n\u003cli>\u003cstrong>Don't touch my files:\u003c/strong> nothing is changed. A file this browser can't play still gets a playable copy, and its original is kept too.\u003c/li>\n\u003cli>\u003cstrong>Reduce uncompressed audio\u003c/strong> (recommended): WAV and AIFF files are converted as they come in.\u003c/li>\n\u003cli>\u003cstrong>Choose the rules:\u003c/strong> uncompressed audio, a bitrate above a limit, a sample rate or channel count other than the preferred format's, or less widely playable types (Opus, Ogg, WebM).\u003c/li>\n\u003c/ul>\n\u003cp>The page says what the settings would mean for the library as it is (\"12 tracks would be converted…\"). Converting them is in Settings → \u003cstrong>Library cleanup\u003c/strong> → Convert to the preferred format, with \u003cstrong>Convert them now\u003c/strong> and the list of those tracks (name, album, type, size, sample rate, bit rate, channels). Any tracks can be converted too, whatever the settings: select them in 'Library' → Table and click \u003cstrong>Convert\u003c/strong> (see 'Audio playback problems'). In a shared library these settings belong to the library, so a change on one device applies on all of them, and a file about to be converted is never sent before its converted version is ready.\u003c/p>\n\u003cp>Videos (a recorded teaching, say) can come in too: 37 Player asks whether to take their sound as audio tracks. The video itself isn't kept.\u003c/p>"
+    "bodyHtml": "\u003cp>How 37 Player works alongside Music.app on a Mac and iTunes on Windows: bringing a library in, taking one back out, and why standardizing matters there.\u003c/p>\n\u003ch3>Importing\u003c/h3>\n\u003cp>37 Player can bring in a whole Music.app or iTunes library in one go — the audio, and every playlist inside its playlist folders.\u003c/p>\n\u003cp>\u003cstrong>1. Export the library file.\u003c/strong> In Music.app (or iTunes), choose \u003cstrong>File → Library → Export Library…\u003c/strong> and save the file into the folder that holds your music:\u003c/p>\n\u003cul>\n\u003cli>\u003cstrong>Music.app:\u003c/strong> the \u003cstrong>Media\u003c/strong> folder, usually in your Music folder under \u003cstrong>Music → Media\u003c/strong>.\u003c/li>\n\u003cli>\u003cstrong>iTunes on Windows:\u003c/strong> the \u003cstrong>iTunes Media\u003c/strong> folder, usually in your Music folder under \u003cstrong>iTunes → iTunes Media\u003c/strong>.\u003c/li>\n\u003c/ul>\n\u003cp>Keep the name it suggests (Library.xml). That one file lists every playlist and where each of its tracks is.\u003c/p>\n\u003cp>\u003cstrong>2. Import the folder.\u003c/strong> In 37 Player, open 'Import / Export', choose \u003cstrong>Import a folder…\u003c/strong>, and pick that same folder. 37 Player reads the library file along with the audio, and the usual review appears: how many tracks are new, and which playlist entries couldn't be found. Choose \u003cstrong>Import\u003c/strong>, and the playlists appear in 'Edit Playlists' in the same folders they had in Music.app.\u003c/p>\n\u003cp>Good to know:\u003c/p>\n\u003cul>\n\u003cli>\u003cstrong>Everything in the folder is imported\u003c/strong>, not just the tracks your playlists use. To bring in less, pick a smaller folder (one artist, say) — playlists still come in, with anything outside that folder listed as missing.\u003c/li>\n\u003cli>\u003cstrong>Apple's own lists\u003c/strong> (Library, Music, Downloaded and the like) are left out. A smart playlist comes in as the tracks it held when you exported — it doesn't keep updating.\u003c/li>\n\u003cli>\u003cstrong>A track that can't be found\u003c/strong> — never downloaded (streamed from Apple Music, or left in the cloud), or outside the folder you picked — leaves a \u003cstrong>Stop\u003c/strong> in its place in the playlist, named \"MISSING TRACK: title — album\", so playback halts right there instead of quietly skipping it, and the playlist is flagged. Once the track is in the library, put it in where the Stop is, and remove the Stop.\u003c/li>\n\u003cli>\u003cstrong>AIFF files\u003c/strong> (.aif), common in older iTunes libraries, come in as WAV, since most browsers can't play AIFF. The sound is identical, and the name, artist, album and artwork come along.\u003c/li>\n\u003cli>\u003cstrong>Older iTunes Store purchases\u003c/strong> protected against copying (.m4p files) can't be played in a browser.\u003c/li>\n\u003cli>\u003cstrong>Files a browser can't play\u003c/strong> — Windows Media Audio (.wma), Apple Lossless (ALAC, inside an .m4a) outside Safari, compressed AIFF and a few others — are converted to MP3 as they come in, so they play everywhere and keep their place in the playlists. 37 Player then asks whether to keep the originals too, for a later export (a portable export takes the original), showing how much room they take; Settings → Library cleanup can discard them later. Converting needs 37 Player's converter, which it fetches by itself (about 26 MB, once) and keeps, so it works offline afterwards; it waits while anything is playing. Without the converter (no internet the first time, say), such files come in marked \"Can't be played\", with \u003cstrong>Convert them now\u003c/strong> for later. A file over 500 MB is never converted by itself, since converting needs about as much memory as the file's size: Settings → Library cleanup offers it, with a warning first.\u003c/li>\n\u003cli>\u003cstrong>Your music doesn't have to be organized the way Music.app keeps it.\u003c/strong> Tracks are found by their folder names and file name, and if a file has moved, by its name and size.\u003c/li>\n\u003cli>\u003cstrong>Single playlists\u003c/strong> work too: a playlist exported on its own (\u003cstrong>File → Library → Export Playlist…\u003c/strong>, as an .m3u file), or an .m3u, .m3u8 or .xspf (VLC) from another player. Put it in the music folder and import the folder. ('Importing playlists' explains where playlists end up.)\u003c/li>\n\u003c/ul>\n\u003ch3>Exporting\u003c/h3>\n\u003cp>To take a library from 37 Player into Music.app or iTunes, use 'Import / Export' → Export and choose \u003cstrong>Portable\u003c/strong>. It unpacks into a \u003cstrong>music\u003c/strong> folder (artist / album / tracks) and a \u003cstrong>playlists\u003c/strong> folder of .m3u8 files.\u003c/p>\n\u003cul>\n\u003cli>\u003cstrong>The audio:\u003c/strong> in Music.app, choose \u003cstrong>File → Import…\u003c/strong> and pick the \u003cstrong>music\u003c/strong> folder.\u003c/li>\n\u003cli>\u003cstrong>The playlists:\u003c/strong> choose \u003cstrong>File → Library → Import Playlist…\u003c/strong> and pick each .m3u8 file. Music.app doesn't recreate folders from these, so a playlist lands at the top level; drag it into a playlist folder afterwards if you want one.\u003c/li>\n\u003c/ul>\n\u003cp>Every track keeps its name, artist, album, track number and artwork, since 37 Player writes those into the files themselves.\u003c/p>\n\u003cp>Volume adjustments made in 37 Player, and its evening out, don't come along: they aren't written into the files as ReplayGain tags, so Music.app plays each file at its own level. Music.app's own \u003cstrong>Sound Check\u003c/strong> (in its Playback settings) evens tracks out in a similar way.\u003c/p>\n\u003ch3>Why standardize for Music.app and iTunes\u003c/h3>\n\u003cp>Music.app and iTunes play one track straight into the next — but only smoothly when the two are alike. When the next track is a different file type (MP3 after AAC), or has a different sample rate (44.1 kHz after 48 kHz, say) or a different number of channels (mono after stereo), the player has to reset its audio output between them, and you hear a click, dropout, short gap, or worse.\u003c/p>\n\u003cp>37 Player itself doesn't have this problem, so there's no need to change the library for it. Instead, when exporting with \u003cstrong>Portable\u003c/strong>, select \u003cstrong>Convert to the preferred format\u003c/strong>: every file in the export comes out alike, and the library stays as it is. For a stricter match, set the preferred format (Settings → \u003cstrong>File conversion\u003c/strong>) to \u003cstrong>Best for Apple\u003c/strong> (AAC, 44.1 kHz, stereo), or choose your own under Custom.\u003c/p>\n\u003ch3>The library's file format\u003c/h3>\n\u003cp>Settings → \u003cstrong>File conversion\u003c/strong> sets one \u003cstrong>preferred format\u003c/strong> for the library — Standard (MP3 192k, recommended), Best for Apple (AAC 192k), Very small, or Custom — and which files are converted to it. Only MP3 and M4A (AAC) play on every device, so:\u003c/p>\n\u003cul>\n\u003cli>\u003cstrong>Make every file playable everywhere\u003c/strong> (recommended): anything but MP3 and M4A is converted as it comes in — WAV, AIFF, FLAC, WebM, Opus, Ogg, WMA and the rest.\u003c/li>\n\u003cli>\u003cstrong>Don't touch my files:\u003c/strong> nothing is changed by itself. A file this browser can't play still gets a playable copy, and its original is kept too. After an import that brings in kinds some devices can't play, 37 Player asks whether to convert them this once (or from now on); \u003cstrong>Don't ask again in this library\u003c/strong> stops the question.\u003c/li>\n\u003cli>\u003cstrong>Choose the rules:\u003c/strong> tick the kinds of file left as they are (the rest are converted; the preferred format's own kind is always kept), plus a bitrate above a limit, or a sample rate or channel count other than the preferred format's.\u003c/li>\n\u003c/ul>\n\u003cp>\u003cstrong>Lossless files at the highest quality\u003c/strong> (off unless ticked): WAV, AIFF, FLAC and Apple Lossless files are converted to MP3 320k (AAC 256k) instead of the preferred format's bitrate, for the few who'd hear a difference. FLAC itself is no longer offered as a preferred format, since it doesn't play on every device; a library that chose it before keeps it.\u003c/p>\n\u003cp>\u003cstrong>A shared library holds only files every device can play:\u003c/strong> whatever the settings, files of other kinds are converted as they come in (or are copied in from another library), to Standard if the library had chosen FLAC. When a library starts sharing, 37 Player offers to convert its tracks of other kinds first (\u003cstrong>Convert, then share\u003c/strong>), so each file goes up once, already converted.\u003c/p>\n\u003cp>A converted track's original can be kept, for a later export (37 Player asks after converting; Library → Show → \u003cstrong>Kept originals\u003c/strong> lists them). It stays on that device only. In a library kept in a folder (the desktop app), originals are in the folder's \u003cstrong>originals\u003c/strong> folder, named like the tracks in \u003cstrong>music\u003c/strong>.\u003c/p>\n\u003cp>The page says what the settings would mean for the library as it is (\"12 tracks would be converted…\"). Converting them is in Settings → \u003cstrong>Library cleanup\u003c/strong> → Convert to the preferred format, with \u003cstrong>Convert them now\u003c/strong> and the list of those tracks (name, album, type, size, sample rate, bit rate, channels). Any tracks can be converted too, whatever the settings: select them in 'Library' → Table and click \u003cstrong>Convert\u003c/strong> (see 'Audio playback problems'). In a shared library these settings belong to the library, so a change on one device applies on all of them, and a file about to be converted is never sent before its converted version is ready.\u003c/p>\n\u003cp>Videos (a recorded teaching, say) can come in too: 37 Player asks whether to take their sound as audio tracks. The video itself isn't kept.\u003c/p>"
   },
   {
     "id": "importing-playlists",
@@ -38790,7 +39067,7 @@ const HELP_TOPICS = [
   {
     "id": "audio-playback-problems",
     "title": "Audio playback problems",
-    "bodyHtml": "\u003cp>Most recordings play everywhere: \u003cstrong>MP3\u003c/strong>, \u003cstrong>M4A\u003c/strong> (AAC) and \u003cstrong>WAV\u003c/strong> play in every browser and in the desktop app. A few other kinds of file play on some devices but not on others: \u003cstrong>WebM\u003c/strong> and \u003cstrong>Opus\u003c/strong> (common for recordings made in a browser or on an Android phone, and for many downloads from the web), \u003cstrong>Ogg\u003c/strong>, \u003cstrong>FLAC\u003c/strong>, \u003cstrong>AIFF\u003c/strong>, \u003cstrong>Apple Lossless\u003c/strong> (ALAC, outside Safari) and some rarer ones. An older Mac, an iPad or iPhone, and Safari are the likeliest to have trouble with them.\u003c/p>\n\u003ch3>What it looks like\u003c/h3>\n\u003cul>\n\u003cli>\u003cstrong>A track won't start\u003c/strong>, and 37 Player says it can't be played.\u003c/li>\n\u003cli>\u003cstrong>The time runs, but there's no sound.\u003c/strong>\u003c/li>\n\u003cli>\u003cstrong>The length is wrong\u003c/strong>, or moving to another point in the track doesn't land where it should.\u003c/li>\n\u003cli>\u003cstrong>The same track plays well on another device.\u003c/strong>\u003c/li>\n\u003c/ul>\n\u003ch3>What to do: convert it\u003c/h3>\n\u003cp>Converting makes the recording into the library's preferred format (Settings → \u003cstrong>File conversion\u003c/strong>: MP3, unless you've chosen another), which plays on every device. The converted file takes the place of the old one, so the track keeps its name, its details and its place in every playlist. In a shared library the converted file goes to every device.\u003c/p>\n\u003col>\n\u003cli>Open 'Library' → \u003cstrong>Table\u003c/strong>.\u003c/li>\n\u003cli>Click the \u003cstrong>Type\u003c/strong> heading to sort by it, so that tracks of the same kind are together.\u003c/li>\n\u003cli>Select the tracks that have trouble: click one, then Shift+click another to select everything between them.\u003c/li>\n\u003cli>Click \u003cstrong>Convert\u003c/strong> in the bar under the table. (In \u003cstrong>Browse\u003c/strong>, \u003cstrong>Convert\u003c/strong> is in the bar above the tracks.)\u003c/li>\n\u003c/ol>\n\u003cp>Converting needs 37 Player's converter, which it fetches the first time (about 26 MB) and then keeps, so it works offline afterwards. It waits while anything is playing, and shows how far it has got at the bottom of the window, with \u003cstrong>Stop\u003c/strong>. A track that is already in the preferred format is left as it is. Afterwards 37 Player asks whether to keep the originals too, for a later export (with \u003cstrong>Don't touch my files\u003c/strong> they are simply kept). A file over 500 MB gets a warning first, since converting needs about as much memory as the file's size.\u003c/p>\n\u003cp>Convert goes by your choice, whatever the settings on the File conversion page say. To have 37 Player convert such files by itself as they come in, choose \u003cstrong>Choose the rules\u003c/strong> there, with \u003cstrong>Less widely playable types\u003c/strong>.\u003c/p>\n\u003ch3>What Type shows\u003c/h3>\n\u003cp>Table's \u003cstrong>Type\u003c/strong> shows what kind of file a track really is, found from what's inside it, not only from its name: a file can be named .mp3 and be WebM inside. Tracks are recorded this way as they come in. For tracks that came in before 37 Player did this, Settings → Library cleanup → \u003cstrong>Check library\u003c/strong> finds out, and says how many were another kind than their names said.\u003c/p>\n\u003ch3>When converting doesn't help\u003c/h3>\n\u003cul>\n\u003cli>\u003cstrong>A track that can't be played on any device\u003c/strong> may have lost its file, or the file may be damaged. Settings → \u003cstrong>Library cleanup\u003c/strong> lists such tracks, with \u003cstrong>Find or replace…\u003c/strong> to give a track its file again.\u003c/li>\n\u003cli>\u003cstrong>Still no sound?\u003c/strong> Use \u003cstrong>Send feedback…\u003c/strong> in Help to tell the author of 37 Player, with a note of which track and what happened. The playback log goes with it, and says which kinds of file this device can play.\u003c/li>\n\u003c/ul>"
+    "bodyHtml": "\u003cp>Most recordings play everywhere: \u003cstrong>MP3\u003c/strong> and \u003cstrong>M4A\u003c/strong> (AAC) play in every browser and in the desktop app, and so does \u003cstrong>WAV\u003c/strong>, though it's very large. A few other kinds of file play on some devices but not on others: \u003cstrong>WebM\u003c/strong> and \u003cstrong>Opus\u003c/strong> (common for recordings made in a browser or on an Android phone, and for many downloads from the web), \u003cstrong>Ogg\u003c/strong>, \u003cstrong>FLAC\u003c/strong>, \u003cstrong>AIFF\u003c/strong>, \u003cstrong>Apple Lossless\u003c/strong> (ALAC, outside Safari) and some rarer ones. An older Mac, an iPad or iPhone, and Safari are the likeliest to have trouble with them.\u003c/p>\n\u003ch3>What it looks like\u003c/h3>\n\u003cul>\n\u003cli>\u003cstrong>A track won't start\u003c/strong>, and 37 Player says it can't be played.\u003c/li>\n\u003cli>\u003cstrong>The time runs, but there's no sound.\u003c/strong>\u003c/li>\n\u003cli>\u003cstrong>The length is wrong\u003c/strong>, or moving to another point in the track doesn't land where it should.\u003c/li>\n\u003cli>\u003cstrong>The same track plays well on another device.\u003c/strong>\u003c/li>\n\u003c/ul>\n\u003ch3>What to do: convert it\u003c/h3>\n\u003cp>Converting makes the recording into the library's preferred format (Settings → \u003cstrong>File conversion\u003c/strong>: MP3, unless you've chosen another), which plays on every device. The converted file takes the place of the old one, so the track keeps its name, its details and its place in every playlist. In a shared library the converted file goes to every device.\u003c/p>\n\u003col>\n\u003cli>Open 'Library' → \u003cstrong>Table\u003c/strong>.\u003c/li>\n\u003cli>Click the \u003cstrong>Type\u003c/strong> heading to sort by it, so that tracks of the same kind are together.\u003c/li>\n\u003cli>Select the tracks that have trouble: click one, then Shift+click another to select everything between them.\u003c/li>\n\u003cli>Click \u003cstrong>Convert\u003c/strong> in the bar under the table. (In \u003cstrong>Browse\u003c/strong>, \u003cstrong>Convert\u003c/strong> is in the bar above the tracks.)\u003c/li>\n\u003c/ol>\n\u003cp>Converting needs 37 Player's converter, which it fetches the first time (about 26 MB) and then keeps, so it works offline afterwards. It waits while anything is playing, and shows how far it has got at the bottom of the window, with \u003cstrong>Stop\u003c/strong>. A track that is already in the preferred format is left as it is. Afterwards 37 Player asks whether to keep the originals too, for a later export (with \u003cstrong>Don't touch my files\u003c/strong> they are simply kept). A file over 500 MB gets a warning first, since converting needs about as much memory as the file's size.\u003c/p>\n\u003cp>Convert goes by your choice, whatever the settings on the File conversion page say. With the recommended setting there (\u003cstrong>Make every file playable everywhere\u003c/strong>), 37 Player converts such files by itself as they come in, and a shared library always does.\u003c/p>\n\u003ch3>What Type shows\u003c/h3>\n\u003cp>Table's \u003cstrong>Type\u003c/strong> shows what kind of file a track really is, found from what's inside it, not only from its name: a file can be named .mp3 and be WebM inside. Tracks are recorded this way as they come in. For tracks that came in before 37 Player did this, Settings → Library cleanup → \u003cstrong>Check library\u003c/strong> finds out, and says how many were another kind than their names said.\u003c/p>\n\u003ch3>When converting doesn't help\u003c/h3>\n\u003cul>\n\u003cli>\u003cstrong>A track that can't be played on any device\u003c/strong> may have lost its file, or the file may be damaged. Settings → \u003cstrong>Library cleanup\u003c/strong> lists such tracks, with \u003cstrong>Find or replace…\u003c/strong> to give a track its file again.\u003c/li>\n\u003cli>\u003cstrong>Still no sound?\u003c/strong> Use \u003cstrong>Send feedback…\u003c/strong> in Help to tell the author of 37 Player, with a note of which track and what happened. The playback log goes with it, and says which kinds of file this device can play.\u003c/li>\n\u003c/ul>"
   },
   {
     "id": "keyboard-shortcuts",
@@ -40668,7 +40945,8 @@ async function renderSettingsSection(fromTimer){
     // The library's format: the preferred format, which files are converted
     // to it, and what the settings would mean for the library as it is.
     const pol = formatPolicy(), cfgShared = sharedConfig();
-    const presetOpts = ["standard", "apple", "small", "lossless", "custom"].map(k=> `<option value="${k}" ${pol.preset===k?"selected":""}>${escapeHtmlText(t("fmtPreset_" + k))}</option>`).join("");
+    // FLAC: only for a library that chose it before 2.5.060.
+    const presetOpts = ["standard", "apple", "small", "lossless", "custom"].filter(k=> k !== "lossless" || pol.preset === "lossless").map(k=> `<option value="${k}" ${pol.preset===k?"selected":""}>${escapeHtmlText(t("fmtPreset_" + k))}</option>`).join("");
     const c = pol.custom;
     const sel = (id, opts, cur)=> `<select id="${id}">${opts.map(([v, label])=> `<option value="${v}" ${String(cur)===String(v)?"selected":""}>${escapeHtmlText(label)}</option>`).join("")}</select>`;
     const radio = (v)=> `<label class="export-format"><input type="radio" name="fmtWhen" value="${v}" ${pol.when===v?"checked":""}> <span><strong>${t("fmtWhen_" + v)}</strong><br><span class="export-format-desc">${t("fmtWhenNote_" + v)}</span></span></label>`;
@@ -40685,20 +40963,27 @@ async function renderSettingsSection(fromTimer){
       <p class="settings-note">${t("fmtPreferredNote")}</p>
       <div class="settings-row">${`<select id="fmtPreset">${presetOpts}</select>`}</div>
       <div id="fmtCustom" class="settings-row" style="flex-wrap:wrap; gap:10px; ${pol.preset==="custom"?"":"display:none;"}">
-        <label>${t("fmtFormatLabel")} ${sel("fmtFormat", [["mp3","MP3"],["aac","AAC (.m4a)"],["flac","FLAC"]], c.format)}</label>
+        <label>${t("fmtFormatLabel")} ${sel("fmtFormat", [["mp3","MP3"],["aac","AAC (.m4a)"]].concat(c.format === "flac" ? [["flac","FLAC"]] : []), c.format)}</label>
         <label id="fmtKbpsWrap">${t("fmtBitrateLabel")} ${sel("fmtKbps", [64,96,128,160,192,256,320].map(k=> [k, k + "k"]), c.kbps || 192)}</label>
         <label>${t("fmtRateLabel")} ${sel("fmtRate", [["", t("fmtKeep")],[44100,"44.1 kHz"],[48000,"48 kHz"]], c.rate || "")}</label>
         <label>${t("fmtChannelsLabel")} ${sel("fmtChannels", [["", t("fmtKeep")],[2, t("fmtStereo")],[1, t("fmtMono")]], c.channels || "")}</label>
       </div>
+      <p class="settings-note" id="fmtFlacNote" style="${preferredFormat(pol).format === "flac" || (cfgShared && (pol.preset === "lossless" || (pol.preset === "custom" && c.format === "flac"))) ? "" : "display:none;"}">${escapeHtmlText(t(cfgShared ? "fmtFlacShared" : "fmtFlacRetired"))}</p>
+      <label class="fmt-rule" id="fmtLosslessWrap"><input type="checkbox" id="fmtLosslessHigh" ${pol.losslessHigh ? "checked" : ""}> <span>${escapeHtmlText(t("fmtLosslessHigh", {q: preferredFormat(pol).format === "aac" ? "AAC 256k" : "MP3 320k"}))}</span></label>
       ${cfgShared ? `<p class="settings-note">${escapeHtmlText(t("fmtSharedNote", {name: cfgShared.libraryName || ""}))}</p>` : ""}
       <h3 class="settings-h3">${t("fmtWhenTitle")} <span class="settings-saved" id="fmtSaved2"></span></h3>
+      ${cfgShared ? `<p class="settings-note">${escapeHtmlText(t("fmtSharedUniversal"))}</p>` : ""}
       ${radio("untouched")}${radio("reduce")}${radio("rules")}
       <div id="fmtRules" style="margin:4px 0 0 28px; ${pol.when==="rules"?"":"display:none;"}">
-        ${rule("uncompressed", t("fmtRuleUncompressed"))}
+        <div class="settings-note" style="margin:2px 0 4px;">${escapeHtmlText(t("fmtKeepTitle"))}</div>
+        <div style="display:flex; flex-wrap:wrap; gap:4px 16px; margin:0 0 8px;">${FILE_KINDS.map(([id, , label])=>{
+          const own = id === fileKindOfExt(FORMAT_KINDS[preferredFormat(pol).format].ext.slice(1));
+          return `<label class="fmt-rule" style="margin:0;"><input type="checkbox" data-keep="${id}" ${own || pol.rules.keep.includes(id) ? "checked" : ""} ${own ? "disabled" : ""}> <span>${escapeHtmlText(label || t("fmtKeepOther"))}</span></label>`;
+        }).join("")}</div>
+        <div class="settings-note" style="margin:2px 0 4px;">${escapeHtmlText(t("fmtAlsoTitle"))}</div>
         ${rule("above", t("fmtRuleAbove", {input: `<input type="number" id="fmtAbove" min="64" max="2000" step="16" value="${pol.rules.aboveKbps || 320}" style="width:5.5em; margin:0 4px;">`}))}
         ${rule("rate", t("fmtRuleRate"))}
         ${rule("channels", t("fmtRuleChannels"))}
-        ${rule("types", t("fmtRuleTypes"))}
       </div>
       <p class="settings-note" id="fmtEffect" style="margin-top:14px;"></p>`;
     wireIdleLinks(body);
@@ -40709,6 +40994,8 @@ async function renderSettingsSection(fromTimer){
       p.custom = {format: document.getElementById("fmtFormat").value, kbps: +document.getElementById("fmtKbps").value || null, rate: +document.getElementById("fmtRate").value || null, channels: +document.getElementById("fmtChannels").value || null};
       const w = document.querySelector('input[name="fmtWhen"]:checked'); p.when = w ? w.value : "reduce";
       body.querySelectorAll("[data-rule]").forEach(cb=>{ if(cb.dataset.rule === "above") p.rules.aboveKbps = cb.checked ? (+document.getElementById("fmtAbove").value || 320) : null; else p.rules[cb.dataset.rule] = cb.checked; });
+      p.rules.keep = [...body.querySelectorAll("[data-keep]")].filter(cb=> cb.checked).map(cb=> cb.dataset.keep);
+      p.losslessHigh = document.getElementById("fmtLosslessHigh").checked;
       return p;
     };
     const showEffect = ()=>{
@@ -40737,10 +41024,13 @@ async function renderSettingsSection(fromTimer){
       document.getElementById("fmtCustom").style.display = p.preset === "custom" ? "" : "none";
       document.getElementById("fmtRules").style.display = p.when === "rules" ? "" : "none";
       document.getElementById("fmtKbpsWrap").style.display = p.custom.format === "flac" ? "none" : "";
+      // The preferred format's own kind is always kept: the list follows it.
+      if(preferredFormat(before).format !== preferredFormat(p).format){ renderSettingsSection(); return; }
       showEffect();
     };
     document.getElementById("fmtKbpsWrap").style.display = c.format === "flac" ? "none" : "";
-    body.querySelectorAll("#fmtPreset, #fmtFormat, #fmtKbps, #fmtRate, #fmtChannels, input[name=fmtWhen], [data-rule], #fmtAbove").forEach(el=> el.addEventListener("change", save));
+    document.getElementById("fmtLosslessWrap").style.display = FORMAT_KINDS[preferredFormat(pol).format].lossy ? "" : "none";
+    body.querySelectorAll("#fmtPreset, #fmtFormat, #fmtKbps, #fmtRate, #fmtChannels, input[name=fmtWhen], [data-rule], [data-keep], #fmtAbove, #fmtLosslessHigh").forEach(el=> el.addEventListener("change", save));
     fmtRefreshEffect = showEffect; // the 4-second refresh updates just this line
     showEffect();
   }
@@ -49897,6 +50187,9 @@ async function joinSharedLibraryHere(url, code, deviceName, opts){
     } else if(opts.partial && hasShared){ cfg.partial = true; await sharedFoldDuplicates(remote.doc); } // nothing to ask about: as ticked
     if(hasShared && !cfg.partial) useShared = true;
   }
+  // The sharing check (2.5.060): what goes up, of kinds not every device
+  // plays, is offered for converting first.
+  if(!useShared) await shareCheckConvert(remote.doc);
   // Tracks this device brings to the shared library: it's the one that has them.
   if(!useShared) root.library.forEach(tr=>{ if(!remote.doc.tracks.some(rt=> rt.id === tr.id)) tr.audioFrom = cfg.deviceName; });
   cfg.libraryName = remote.name;
@@ -52477,7 +52770,7 @@ async function applyIncomingCopies(){
     if(!list.length) return;
     for(let i = 0; i < 200 && !undoLoaded; i++) await new Promise(r=> setTimeout(r, 50)); // so the copy is one Undo step
     const cfg = sharedConfig();
-    const notes = [];
+    const notes = [], arrived = [];
     list.forEach(entry=>{
       let tracks = 0;
       (entry.tracks || []).forEach(tr=>{
@@ -52485,6 +52778,7 @@ async function applyIncomingCopies(){
         const c = JSON.parse(JSON.stringify(tr));
         if(cfg) c.audioFrom = cfg.deviceName || "";
         root.library.push(c);
+        arrived.push(c.id);
         tracks++;
       });
       let playlists = 0;
@@ -52499,6 +52793,9 @@ async function applyIncomingCopies(){
     }
     refreshCurrentView();
     notes.forEach(n=> showToast(n));
+    // Copied in is brought in (2.5.060): converted as an import's files are
+    // (in a shared library, any kind not every device plays).
+    if(arrived.length) convertAfterImport([], arrived);
   };
   if(navigator.locks && navigator.locks.request) await navigator.locks.request(libScoped("37player-incoming"), run);
   else await run();

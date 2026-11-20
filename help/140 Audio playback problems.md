@@ -1,6 +1,6 @@
 Audio playback problems
 
-Most recordings play everywhere: **MP3**, **M4A** (AAC) and **WAV** play in every browser and in the desktop app. A few other kinds of file play on some devices but not on others: **WebM** and **Opus** (common for recordings made in a browser or on an Android phone, and for many downloads from the web), **Ogg**, **FLAC**, **AIFF**, **Apple Lossless** (ALAC, outside Safari) and some rarer ones. An older Mac, an iPad or iPhone, and Safari are the likeliest to have trouble with them.
+Most recordings play everywhere: **MP3** and **M4A** (AAC) play in every browser and in the desktop app, and so does **WAV**, though it's very large. A few other kinds of file play on some devices but not on others: **WebM** and **Opus** (common for recordings made in a browser or on an Android phone, and for many downloads from the web), **Ogg**, **FLAC**, **AIFF**, **Apple Lossless** (ALAC, outside Safari) and some rarer ones. An older Mac, an iPad or iPhone, and Safari are the likeliest to have trouble with them.
 
 ### What it looks like
 
@@ -20,7 +20,7 @@ Converting makes the recording into the library's preferred format (Settings →
 
 Converting needs 37 Player's converter, which it fetches the first time (about 26 MB) and then keeps, so it works offline afterwards. It waits while anything is playing, and shows how far it has got at the bottom of the window, with **Stop**. A track that is already in the preferred format is left as it is. Afterwards 37 Player asks whether to keep the originals too, for a later export (with **Don't touch my files** they are simply kept). A file over 500 MB gets a warning first, since converting needs about as much memory as the file's size.
 
-Convert goes by your choice, whatever the settings on the File conversion page say. To have 37 Player convert such files by itself as they come in, choose **Choose the rules** there, with **Less widely playable types**.
+Convert goes by your choice, whatever the settings on the File conversion page say. With the recommended setting there (**Make every file playable everywhere**), 37 Player converts such files by itself as they come in, and a shared library always does.
 
 ### What Type shows
 
