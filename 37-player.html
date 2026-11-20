@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.5.062">
+<meta name="app-version" content="2.6.000">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -38497,7 +38497,7 @@ if("mediaSession" in navigator){
     if(document.hidden) startPlayBridge("continuing after a stop");
     continueAfterStop();
   };
-  // A computer's "play" on waking (2.5.062; kr37's MacBook, report
+  // A computer's "play" on waking (2.6.000; kr37's MacBook, report
   // 2026-11-20-153553: twice, 37 Player started playing when he opened the
   // lid, though it had been paused). The log showed the pattern each time:
   // as the lid closed, macOS sent "pause" while 37 Player was already
@@ -41996,7 +41996,7 @@ function openFeedbackDialog(){
   if(list) sent.slice().reverse().forEach(x=>{ const li = document.createElement("li"); li.textContent = new Date(x.at).toLocaleString() + " · " + x.first; list.appendChild(li); });
   msgEl.focus();
   // Other devices' logs, from the shared library: none chosen to begin with,
-  // and Select all / Select none above them (2.5.062; kr37, report
+  // and Select all / Select none above them (2.6.000; kr37, report
   // 2026-11-20-153553: about 20 listed, the recent ones (last three days)
   // chosen, and he took them off one by one every time).
   sharedOtherLogs().then(others=>{
@@ -53548,7 +53548,7 @@ async function takeSharedFiles(){
   }catch(err){ console.warn("Shared files couldn't be read:", err); }
   takeOpenedFiles(files);
 }
-// The desktop app (shell 2.5.9, `opened`; kr37's MacBook, report
+// The desktop app (shell 2.6.0, `opened`; kr37's MacBook, report
 // 2026-11-20-153553: Finder → Open with → 37 Player opened the app and
 // nothing more). macOS hands an opened file over as an Apple Event, Windows
 // and Linux on the command line (and, with 37 Player already running,
@@ -53603,7 +53603,7 @@ function openFilePlayer(files){
   const lib = document.getElementById("libPreviewAudio"); if(lib && !lib.paused) lib.pause();
   // Each file's address when it's first played: a file the desktop app
   // opened is read where it lies (a DiskBlob, served by the shell), which an
-  // object URL can't hold (2.5.062).
+  // object URL can't hold (2.6.000).
   const urls = [];
   const list = files.length > 1 ? `<div class="open-list">${files.map((f, i)=> `<button class="btn ghost open-item" data-i="${i}" type="button">${escapeHtmlText(f.name)}</button>`).join("")}</div>` : "";
   openModal(`<h3 id="openPlayingName"></h3>${list}
@@ -53661,7 +53661,7 @@ if(IN_DESKTOP_APP){
   window.addEventListener("resize", fitHeight);
 }
 const DESKTOP_BRIDGE_NEEDED = +((document.querySelector('meta[name="desktop-bridge"]') || {}).content || 1);
-let desktopShell = null; // {version, bridge, pages, device, updates, zoom, trash (2.5.2), watch (2.5.3), append_range (2.5.3), files_http, typed_path (2.5.6), opened (2.5.9)}
+let desktopShell = null; // {version, bridge, pages, device, updates, zoom, trash (2.5.2), watch (2.5.3), append_range (2.5.3), files_http, typed_path (2.5.6), opened (2.6.0)}
 async function desktopShellCheck(){
   if(!IN_DESKTOP_APP || !window.__TAURI__ || !window.__TAURI__.core) return;
   try{ desktopShell = await window.__TAURI__.core.invoke("p37_shell_info"); }catch(err){ desktopShell = {version: "?", bridge: 0}; }

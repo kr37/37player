@@ -1,6 +1,6 @@
 // Devices' logs in the shared library (1.4.137): each device sends its logs
 // after a sync round (at most every half hour), and Send feedback lists the
-// other devices' logs, none chosen until Select all (2.5.062); this device's own copy isn't listed.
+// other devices' logs, none chosen until Select all (2.6.000); this device's own copy isn't listed.
 //   node sharedlogs.js CODE        (servers from serve.sh)
 const puppeteer = require('puppeteer-core'); const sleep = ms=>new Promise(r=>setTimeout(r,ms));
 const CODE = process.argv[2], URL_SYNC = 'http://127.0.0.1:8870/sync.php', APP = 'http://localhost:8861/37-player.html';
@@ -32,7 +32,7 @@ async function device(b, name){
     const t0 = await A.evaluate(()=> localStorage.getItem([...Object.keys(localStorage)].find(k=> /logsSentAt/.test(k))));
     await A.evaluate(()=> window.__logs.send()); 
     ok(await A.evaluate(()=> localStorage.getItem([...Object.keys(localStorage)].find(k=> /logsSentAt/.test(k)))) === t0, 'not sent again within half an hour');
-    // Send feedback on B lists them, none chosen to begin with (2.5.062), with Select all / Select none
+    // Send feedback on B lists them, none chosen to begin with (2.6.000), with Select all / Select none
     await B.evaluate(()=> window.__logs.feedback()); await sleep(1200);
     const others = ()=> B.evaluate(()=> [...document.querySelectorAll('[data-fb-other]')].map(c=> (c.checked ? '[x] ' : '[ ] ') + c.parentNode.textContent.trim()));
     let other = await others();

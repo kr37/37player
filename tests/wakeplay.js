@@ -1,4 +1,4 @@
-// A computer's "play" on waking is ignored (2.5.062; kr37's MacBook, report
+// A computer's "play" on waking is ignored (2.6.000; kr37's MacBook, report
 // 2026-11-20-153553: 37 Player started playing when he opened the lid,
 // though it had been paused). macOS sent "pause" as the lid closed, with
 // 37 Player already paused, and "play" on waking. On a computer: such a

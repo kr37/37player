@@ -7,7 +7,7 @@
 // empties storage the way CCleaner would keeps the keys starting "__").
 // Commands: fs_* (files.rs), p37_shell_info, p37_device_get/put, the page
 // update commands (no updates), p37_quit, p37_opened_take.
-// Files opened with 37 Player (shell 2.5.9; openshell.js): with
+// Files opened with 37 Player (shell 2.6.0; openshell.js): with
 // __fakeShellOpened set, a test calls window.__fakeOpen('Downloads/Talk.mp3')
 // for a file on the stand-in disk: it gets a root "open-<n>" through which
 // only that file can be read (as files::Roots::get_read), waits for

@@ -1,4 +1,4 @@
-// Audio files opened with the desktop app (page 2.5.062, shell 2.5.9; kr37's
+// Audio files opened with the desktop app (page 2.6.000, shell 2.6.0; kr37's
 // MacBook, report 2026-11-20-153553: Finder → Open with started 37 Player
 // and nothing more). Through the stand-in shell (fake-shell.js): a file the
 // app was started with is asked about once the welcome is done; Play it now

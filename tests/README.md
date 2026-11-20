@@ -132,7 +132,7 @@ By hand: `./serve.sh` in one terminal (servers on ports 8861 and 8870), then
 | damaged | Library cleanup → Damaged files finds a stored file damaged the Safari way and repairs it from the old file inside; export leaves a damaged file out and names it |
 | starter | A library that is still only the starter prayer: no "Back up library", and restoring a backup over it gives no "older than your library" warning; once a track of the person's own is added, both behave as before |
 | openwith | Audio files opened with 37 Player (Open with, Android Share): Play it now leaves the library alone, Import imports, Play and import does both; the manifest offers the right types |
-| openshell | The same in the desktop app (shell 2.5.9, through the stand-in shell): a file the app was started with, and one opened while it runs, are asked about; Play it now plays it where it lies; its root reads only that file; an older shell isn't asked |
+| openshell | The same in the desktop app (shell 2.6.0, through the stand-in shell): a file the app was started with, and one opened while it runs, are asked about; Play it now plays it where it lies; its root reads only that file; an older shell isn't asked |
 | exportfile | Exporting without a zip: one track as just its file, several as separate files into a chosen folder (a stand-in), a name already there kept |
 | allsettings | Settings → All settings: grouped by whose setting it is; theme, a switch, loudness and language changed in the table take effect; PIN links to its page |
 | big413 | A file the server refuses as too big isn't sent again at every sync, and the status says so |
@@ -145,7 +145,7 @@ By hand: `./serve.sh` in one terminal (servers on ports 8861 and 8870), then
 | shellupd | The desktop app updating itself: offered once a start when nothing would be stopped; Update and restart has the shell install it; Not now until the next start; Check for updates offers it again; nothing asked on an older shell |
 | denied | A save refused (a read-only library folder, "Permission denied (os error 13)") says 37 Player isn't allowed to save in the library's folder, not that the device is full; a full device keeps its own message |
 | stuckpause | Pause still pauses after a passing error on the player (it used to mark any track "stuck", and Pause then played) |
-| wakeplay | A computer's Media Session "play" on waking, after a "pause" that found 37 Player paused, is ignored once (2.5.062); a real pause, within a minute, something played since, or a tablet: play plays |
+| wakeplay | A computer's Media Session "play" on waking, after a "pause" that found 37 Player paused, is ignored once (2.6.000); a real pause, within a minute, something played since, or a tablet: play plays |
 | wrapalbum | Wrap and Album both on, a narrow window: the album wraps too and takes at most a third of the row, so the title isn't squeezed |
 | shellzoom | The Size setting in the desktop app: the shell zooms the webview and the page isn't magnified, from the start after a restart; an older shell keeps the page's own way |
 | leaveunsent | A device that leaves takes the tracks it never finished sending out of the shared library (they stay in its own library): the Leave question says so, and another device stops listing and waiting for them |
