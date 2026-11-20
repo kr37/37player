@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.5.058">
+<meta name="app-version" content="2.5.059">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -6703,6 +6703,8 @@ const STRINGS = {
     "chkFixed": "Tracks fixed: {fixed}. Still can't be played: {left}.",
     "chkNothing": "Nothing needed fixing.",
     "chkNoWave": "Tracks that play but still have no waveform: {n}.",
+    "chkStepTypes": "Checking the library: what kind of file each track is, {done} of {total}",
+    "chkMistyped": "Files that are another kind than their names say (Table's Type now shows what they are): {n}.",
     "chkWhyLong": "Too long to read whole on this device, and it couldn't be read a piece at a time (the converter, which can, may not be on this device yet).",
     "chkWhyDecode": "This browser plays it, but couldn't decode it to draw one.",
     "chkShowInLibrary": "Show them in the Library",
@@ -6737,6 +6739,10 @@ const STRINGS = {
     "originalsKeptNote": "Originals of converted tracks kept for export: {n} ({mb} MB).",
     "discardOriginalsBtn": "Discard them",
     "convertBtn": "Convert",
+    "ctxConvertTip": "Convert the selected tracks to {format} (Settings → File conversion), for a device that can't play them as they are",
+    "convertAskedSame": "{n} of them are {format} already, the format this library converts to: left as they are.",
+    "convertAskedSameOne": "One of them is {format} already, the format this library converts to: left as it is.",
+    "convertAskedNone": "Already {format}, the format this library converts to: nothing to convert.",
     "convertAllBtn": "Convert all {n}",
     "convertSelectedBtn": "Convert selected ({n})",
     "convertThemNowBtn": "Convert them now",
@@ -6773,6 +6779,7 @@ const STRINGS = {
     "restoringKeepOpen": "Please keep this window open until it's finished — a large library can take several minutes.",
     "audioMissingTitle": "This track can't be played",
     "audioMissingBody": "“{name}” can't be played: its audio is missing from this library, or this browser can't read it. Nothing else was changed — anything that was playing carries on. Settings → Library cleanup lists every track like this, with a way to replace its file.",
+    "playbackHelpLink": "Plays on some devices but not on this one? Help: Audio playback problems",
     "missingAudioTitle": "Tracks with missing audio",
     "missingAudioBody": "These tracks are in the library, but their audio isn't — or this browser can't read it, for example after an import that was blocked partway. Replace the file to keep the track and its place in playlists, or restore from a backup that has it.",
     "missingAudioNone": "None — every track's audio is present and readable.",
@@ -8809,6 +8816,8 @@ const STRINGS = {
     "chkFixed": "Pistas arregladas: {fixed}. Aún no se pueden reproducir: {left}.",
     "chkNothing": "No había nada que arreglar.",
     "chkNoWave": "Pistas que se reproducen pero siguen sin forma de onda: {n}.",
+    "chkStepTypes": "Revisando la biblioteca: qué tipo de archivo es cada pista, {done} de {total}",
+    "chkMistyped": "Archivos de otro tipo que el que dicen sus nombres (el Tipo de la Tabla ahora muestra lo que son): {n}.",
     "chkWhyLong": "Demasiado larga para leerla entera en este dispositivo, y no se pudo leer por partes (el convertidor, que puede hacerlo, quizá aún no esté en este dispositivo).",
     "chkWhyDecode": "Este navegador la reproduce, pero no pudo decodificarla para dibujarla.",
     "chkShowInLibrary": "Mostrarlas en la biblioteca",
@@ -8843,6 +8852,10 @@ const STRINGS = {
     "originalsKeptNote": "Originales de pistas convertidas guardados para exportar: {n} ({mb} MB).",
     "discardOriginalsBtn": "Descartarlos",
     "convertBtn": "Convertir",
+    "ctxConvertTip": "Convertir las pistas seleccionadas a {format} (Ajustes → Conversión de archivos), para un dispositivo que no puede reproducirlas tal como están",
+    "convertAskedSame": "{n} de ellas ya están en {format}, el formato al que convierte esta biblioteca: se dejan como están.",
+    "convertAskedSameOne": "Una de ellas ya está en {format}, el formato al que convierte esta biblioteca: se deja como está.",
+    "convertAskedNone": "Ya está en {format}, el formato al que convierte esta biblioteca: no hay nada que convertir.",
     "convertAllBtn": "Convertir las {n}",
     "convertSelectedBtn": "Convertir las seleccionadas ({n})",
     "convertThemNowBtn": "Convertirlas ahora",
@@ -8879,6 +8892,7 @@ const STRINGS = {
     "restoringKeepOpen": "Mantenga esta ventana abierta hasta que termine; una biblioteca grande puede tardar varios minutos.",
     "audioMissingTitle": "No se puede reproducir esta pista",
     "audioMissingBody": "«{name}» no se puede reproducir: su audio falta en esta biblioteca o este navegador no puede leerlo. No se ha cambiado nada más; lo que se estaba reproduciendo continúa. Ajustes → Limpieza de la biblioteca muestra todas las pistas así, con la opción de reemplazar el archivo.",
+    "playbackHelpLink": "¿Se reproduce en otros dispositivos pero no en este? Ayuda: «Audio playback problems»",
     "missingAudioTitle": "Pistas sin audio",
     "missingAudioBody": "Estas pistas están en la biblioteca, pero su audio no (o este navegador no puede leerlo), por ejemplo tras una importación bloqueada a medias. Reemplace el archivo para conservar la pista y su lugar en las listas, o restaure desde una copia que lo tenga.",
     "missingAudioNone": "Ninguna: el audio de todas las pistas está presente y se puede leer.",
@@ -10915,6 +10929,8 @@ const STRINGS = {
     "chkFixed": "Pistes réparées : {fixed}. Toujours illisibles : {left}.",
     "chkNothing": "Rien n'avait besoin d'être réparé.",
     "chkNoWave": "Pistes qui se lisent mais n'ont toujours pas de forme d'onde : {n}.",
+    "chkStepTypes": "Vérification de la bibliothèque : le type de fichier de chaque piste, {done} sur {total}",
+    "chkMistyped": "Fichiers d'un autre type que ce que disent leurs noms (le Type du Tableau montre maintenant ce qu'ils sont) : {n}.",
     "chkWhyLong": "Trop longue pour être lue en entier sur cet appareil, et elle n'a pas pu être lue morceau par morceau (le convertisseur, qui le peut, n'est peut-être pas encore sur cet appareil).",
     "chkWhyDecode": "Ce navigateur la lit, mais n'a pas pu la décoder pour la dessiner.",
     "chkShowInLibrary": "Les montrer dans la bibliothèque",
@@ -10949,6 +10965,10 @@ const STRINGS = {
     "originalsKeptNote": "Originaux de pistes converties gardés pour l'exportation : {n} ({mb} Mo).",
     "discardOriginalsBtn": "Les supprimer",
     "convertBtn": "Convertir",
+    "ctxConvertTip": "Convertir les pistes sélectionnées en {format} (Paramètres → Conversion des fichiers), pour un appareil qui ne peut pas les lire telles quelles",
+    "convertAskedSame": "{n} d'entre elles sont déjà en {format}, le format vers lequel cette bibliothèque convertit : laissées telles quelles.",
+    "convertAskedSameOne": "L'une d'elles est déjà en {format}, le format vers lequel cette bibliothèque convertit : laissée telle quelle.",
+    "convertAskedNone": "Déjà en {format}, le format vers lequel cette bibliothèque convertit : rien à convertir.",
     "convertAllBtn": "Tout convertir ({n})",
     "convertSelectedBtn": "Convertir la sélection ({n})",
     "convertThemNowBtn": "Les convertir maintenant",
@@ -10985,6 +11005,7 @@ const STRINGS = {
     "restoringKeepOpen": "Gardez cette fenêtre ouverte jusqu'à la fin — une grande bibliothèque peut prendre plusieurs minutes.",
     "audioMissingTitle": "Impossible de lire cette piste",
     "audioMissingBody": "« {name} » ne peut pas être lue : son audio manque dans cette bibliothèque, ou ce navigateur ne peut pas le lire. Rien d'autre n'a changé — ce qui était en lecture continue. Réglages → Nettoyage de la bibliothèque liste toutes ces pistes, avec un moyen de remplacer le fichier.",
+    "playbackHelpLink": "Se lit sur d'autres appareils mais pas sur celui-ci ? Aide : « Audio playback problems »",
     "missingAudioTitle": "Pistes sans audio",
     "missingAudioBody": "Ces pistes sont dans la bibliothèque, mais pas leur audio — ou ce navigateur ne peut pas le lire, par exemple après une importation bloquée en cours de route. Remplacez le fichier pour garder la piste et sa place dans les playlists, ou restaurez une sauvegarde qui le contient.",
     "missingAudioNone": "Aucune — l'audio de chaque piste est présent et lisible.",
@@ -13021,6 +13042,8 @@ const STRINGS = {
     "chkFixed": "Faixas corrigidas: {fixed}. Ainda não reproduzíveis: {left}.",
     "chkNothing": "Não havia nada a corrigir.",
     "chkNoWave": "Faixas que tocam mas continuam sem forma de onda: {n}.",
+    "chkStepTypes": "Verificando a biblioteca: que tipo de arquivo é cada faixa, {done} de {total}",
+    "chkMistyped": "Arquivos de outro tipo do que dizem os seus nomes (o Tipo da Tabela agora mostra o que são): {n}.",
     "chkWhyLong": "Demasiado longa para ler inteira neste dispositivo, e não foi possível lê-la por partes (o conversor, que consegue, talvez ainda não esteja neste dispositivo).",
     "chkWhyDecode": "Este navegador reprodu-la, mas não a conseguiu descodificar para a desenhar.",
     "chkShowInLibrary": "Mostrá-las na biblioteca",
@@ -13055,6 +13078,10 @@ const STRINGS = {
     "originalsKeptNote": "Originais de faixas convertidas guardados para exportação: {n} ({mb} MB).",
     "discardOriginalsBtn": "Descartá-los",
     "convertBtn": "Converter",
+    "ctxConvertTip": "Converter as faixas selecionadas para {format} (Configurações → Conversão de arquivos), para um dispositivo que não consegue reproduzi-las como estão",
+    "convertAskedSame": "{n} delas já estão em {format}, o formato para o qual esta biblioteca converte: ficam como estão.",
+    "convertAskedSameOne": "Uma delas já está em {format}, o formato para o qual esta biblioteca converte: fica como está.",
+    "convertAskedNone": "Já está em {format}, o formato para o qual esta biblioteca converte: nada a converter.",
     "convertAllBtn": "Converter as {n}",
     "convertSelectedBtn": "Converter as selecionadas ({n})",
     "convertThemNowBtn": "Convertê-las agora",
@@ -13091,6 +13118,7 @@ const STRINGS = {
     "restoringKeepOpen": "Mantenha esta janela aberta até terminar — uma biblioteca grande pode levar vários minutos.",
     "audioMissingTitle": "Não é possível reproduzir esta faixa",
     "audioMissingBody": "“{name}” não pode ser reproduzida: o áudio falta nesta biblioteca ou este navegador não consegue lê-lo. Nada mais foi alterado — o que estava tocando continua. Configurações → Limpeza da biblioteca lista todas as faixas assim, com a opção de substituir o arquivo.",
+    "playbackHelpLink": "Toca em outros dispositivos, mas não neste? Ajuda: “Audio playback problems”",
     "missingAudioTitle": "Faixas sem áudio",
     "missingAudioBody": "Estas faixas estão na biblioteca, mas o áudio não (ou este navegador não consegue lê-lo), por exemplo após uma importação bloqueada no meio. Substitua o arquivo para manter a faixa e seu lugar nas playlists, ou restaure de um backup que o tenha.",
     "missingAudioNone": "Nenhuma — o áudio de todas as faixas está presente e legível.",
@@ -15127,6 +15155,8 @@ const STRINGS = {
     "chkFixed": "Behobene Titel: {fixed}. Weiterhin nicht abspielbar: {left}.",
     "chkNothing": "Es gab nichts zu beheben.",
     "chkNoWave": "Titel, die spielen, aber weiterhin keine Wellenform haben: {n}.",
+    "chkStepTypes": "Bibliothek wird geprüft: welche Art Datei jeder Titel ist, {done} von {total}",
+    "chkMistyped": "Dateien, die eine andere Art sind, als ihre Namen sagen (der Typ in der Tabelle zeigt jetzt, was sie sind): {n}.",
     "chkWhyLong": "Zu lang, um auf diesem Gerät ganz gelesen zu werden, und stückweise ließ er sich nicht lesen (der Konverter, der das kann, ist vielleicht noch nicht auf diesem Gerät).",
     "chkWhyDecode": "Dieser Browser spielt ihn ab, konnte ihn aber nicht decodieren, um eine zu zeichnen.",
     "chkShowInLibrary": "In der Bibliothek zeigen",
@@ -15161,6 +15191,10 @@ const STRINGS = {
     "originalsKeptNote": "Für den Export behaltene Originale umgewandelter Titel: {n} ({mb} MB).",
     "discardOriginalsBtn": "Verwerfen",
     "convertBtn": "Umwandeln",
+    "ctxConvertTip": "Die ausgewählten Titel in {format} umwandeln (Einstellungen → Dateikonvertierung), für ein Gerät, das sie so nicht abspielen kann",
+    "convertAskedSame": "{n} davon sind schon {format}, das Format, in das diese Bibliothek umwandelt: bleiben, wie sie sind.",
+    "convertAskedSameOne": "Einer davon ist schon {format}, das Format, in das diese Bibliothek umwandelt: bleibt, wie er ist.",
+    "convertAskedNone": "Schon {format}, das Format, in das diese Bibliothek umwandelt: nichts umzuwandeln.",
     "convertAllBtn": "Alle {n} umwandeln",
     "convertSelectedBtn": "Ausgewählte umwandeln ({n})",
     "convertThemNowBtn": "Jetzt umwandeln",
@@ -15197,6 +15231,7 @@ const STRINGS = {
     "restoringKeepOpen": "Bitte lassen Sie dieses Fenster geöffnet, bis es fertig ist – eine große Bibliothek kann einige Minuten dauern.",
     "audioMissingTitle": "Dieser Titel kann nicht abgespielt werden",
     "audioMissingBody": "„{name}“ kann nicht abgespielt werden: Das Audio fehlt in dieser Bibliothek, oder dieser Browser kann es nicht lesen. Sonst wurde nichts geändert – was gerade spielt, läuft weiter. Einstellungen → Bibliothek aufräumen listet alle solchen Titel auf, mit der Möglichkeit, die Datei zu ersetzen.",
+    "playbackHelpLink": "Spielt auf anderen Geräten, aber nicht auf diesem? Hilfe: „Audio playback problems“",
     "missingAudioTitle": "Titel ohne Audio",
     "missingAudioBody": "Diese Titel sind in der Bibliothek, ihr Audio aber nicht – oder dieser Browser kann es nicht lesen, etwa nach einem teilweise blockierten Import. Ersetzen Sie die Datei, um den Titel und seinen Platz in Playlists zu behalten, oder stellen Sie eine Sicherung wieder her, die ihn enthält.",
     "missingAudioNone": "Keine – das Audio aller Titel ist vorhanden und lesbar.",
@@ -17233,6 +17268,8 @@ const STRINGS = {
     "chkFixed": "已修复的曲目：{fixed}。仍无法播放：{left}。",
     "chkNothing": "没有需要修复的内容。",
     "chkNoWave": "可以播放但仍没有波形的曲目：{n}。",
+    "chkStepTypes": "正在检查资料库：每首曲目是哪种文件，{done} / {total}",
+    "chkMistyped": "实际类型与文件名不符的文件（表格的类型现在显示其真实类型）：{n}。",
     "chkWhyLong": "太长，无法在此设备上一次读完，也无法分段读取（能做到的转换器可能还不在此设备上）。",
     "chkWhyDecode": "此浏览器能播放它，但无法解码以绘制波形。",
     "chkShowInLibrary": "在资料库中显示",
@@ -17267,6 +17304,10 @@ const STRINGS = {
     "originalsKeptNote": "为导出而保留的已转换曲目原始文件：{n} 个（{mb} MB）。",
     "discardOriginalsBtn": "丢弃它们",
     "convertBtn": "转换",
+    "ctxConvertTip": "将所选曲目转换为 {format}（设置 → 文件转换），供无法按原样播放它们的设备使用",
+    "convertAskedSame": "其中 {n} 首已经是 {format}，即此资料库转换的格式：保持不变。",
+    "convertAskedSameOne": "其中一首已经是 {format}，即此资料库转换的格式：保持不变。",
+    "convertAskedNone": "已经是 {format}，即此资料库转换的格式：无需转换。",
     "convertAllBtn": "全部转换（{n}）",
     "convertSelectedBtn": "转换所选（{n}）",
     "convertThemNowBtn": "立即转换",
@@ -17303,6 +17344,7 @@ const STRINGS = {
     "restoringKeepOpen": "请保持此窗口打开直到完成——较大的曲库可能需要几分钟。",
     "audioMissingTitle": "无法播放此曲目",
     "audioMissingBody": "“{name}”无法播放：此曲库中缺少它的音频，或此浏览器无法读取。其他内容均未更改——正在播放的内容会继续。设置 → 曲库清理会列出所有此类曲目，并可替换其文件。",
+    "playbackHelpLink": "在其他设备上能播放，在这台上不能？帮助：“Audio playback problems”",
     "missingAudioTitle": "缺少音频的曲目",
     "missingAudioBody": "这些曲目在曲库中，但其音频不在（或此浏览器无法读取），例如在导入中途被阻止之后。替换文件可保留曲目及其在播放列表中的位置，也可从包含它的备份中恢复。",
     "missingAudioNone": "没有——所有曲目的音频都存在且可读取。",
@@ -19339,6 +19381,8 @@ const STRINGS = {
     "chkFixed": "Bài đã sửa: {fixed}. Vẫn chưa phát được: {left}.",
     "chkNothing": "Không có gì cần sửa.",
     "chkNoWave": "Số bài phát được nhưng vẫn chưa có dạng sóng: {n}.",
+    "chkStepTypes": "Đang kiểm tra thư viện: mỗi bài là loại tệp gì, {done} trên {total}",
+    "chkMistyped": "Tệp có loại khác với tên của chúng (cột Loại trong Bảng giờ cho thấy loại thật): {n}.",
     "chkWhyLong": "Quá dài để đọc một lần trên thiết bị này, và không đọc từng phần được (bộ chuyển đổi, vốn làm được, có thể chưa có trên thiết bị này).",
     "chkWhyDecode": "Trình duyệt này phát được, nhưng không giải mã được để vẽ.",
     "chkShowInLibrary": "Hiện trong thư viện",
@@ -19373,6 +19417,10 @@ const STRINGS = {
     "originalsKeptNote": "Bản gốc của các bài đã chuyển đổi, giữ lại để xuất: {n} ({mb} MB).",
     "discardOriginalsBtn": "Bỏ chúng",
     "convertBtn": "Chuyển đổi",
+    "ctxConvertTip": "Chuyển các bài đã chọn sang {format} (Cài đặt → Chuyển đổi tệp), cho thiết bị không phát được chúng như hiện tại",
+    "convertAskedSame": "{n} bài trong số đó đã là {format}, định dạng mà thư viện này chuyển sang: được giữ nguyên.",
+    "convertAskedSameOne": "Một bài trong số đó đã là {format}, định dạng mà thư viện này chuyển sang: được giữ nguyên.",
+    "convertAskedNone": "Đã là {format}, định dạng mà thư viện này chuyển sang: không có gì để chuyển.",
     "convertAllBtn": "Chuyển đổi cả {n}",
     "convertSelectedBtn": "Chuyển đổi mục đã chọn ({n})",
     "convertThemNowBtn": "Chuyển đổi ngay",
@@ -19409,6 +19457,7 @@ const STRINGS = {
     "restoringKeepOpen": "Vui lòng để cửa sổ này mở cho đến khi xong — thư viện lớn có thể mất vài phút.",
     "audioMissingTitle": "Không phát được bài này",
     "audioMissingBody": "Không phát được “{name}”: âm thanh của bài bị thiếu trong thư viện này, hoặc trình duyệt này không đọc được. Không có gì khác bị thay đổi — thứ đang phát vẫn tiếp tục. Cài đặt → Dọn dẹp thư viện liệt kê mọi bài như vậy, kèm cách thay tệp.",
+    "playbackHelpLink": "Phát được trên thiết bị khác nhưng không phát được trên thiết bị này? Trợ giúp: “Audio playback problems”",
     "missingAudioTitle": "Bài bị thiếu âm thanh",
     "missingAudioBody": "Các bài này có trong thư viện nhưng âm thanh thì không (hoặc trình duyệt này không đọc được), ví dụ sau một lần nhập bị chặn giữa chừng. Thay tệp để giữ bài và vị trí của nó trong danh sách phát, hoặc khôi phục từ bản sao lưu có tệp đó.",
     "missingAudioNone": "Không có — âm thanh của mọi bài đều có và đọc được.",
@@ -21445,6 +21494,8 @@ const STRINGS = {
     "chkFixed": "Κομμάτια που διορθώθηκαν: {fixed}. Ακόμη δεν παίζουν: {left}.",
     "chkNothing": "Δεν χρειαζόταν διόρθωση τίποτα.",
     "chkNoWave": "Κομμάτια που παίζουν αλλά ακόμη δεν έχουν κυματομορφή: {n}.",
+    "chkStepTypes": "Έλεγχος βιβλιοθήκης: τι είδους αρχείο είναι κάθε κομμάτι, {done} από {total}",
+    "chkMistyped": "Αρχεία άλλου είδους από αυτό που λένε τα ονόματά τους (ο Τύπος στον Πίνακα δείχνει τώρα τι είναι): {n}.",
     "chkWhyLong": "Πολύ μεγάλο για να διαβαστεί ολόκληρο σε αυτή τη συσκευή, και δεν διαβάστηκε κομμάτι-κομμάτι (ο μετατροπέας, που μπορεί, ίσως δεν είναι ακόμη σε αυτή τη συσκευή).",
     "chkWhyDecode": "Αυτός ο browser το παίζει, αλλά δεν μπόρεσε να το αποκωδικοποιήσει για να τη σχεδιάσει.",
     "chkShowInLibrary": "Εμφάνιση στη βιβλιοθήκη",
@@ -21479,6 +21530,10 @@ const STRINGS = {
     "originalsKeptNote": "Πρωτότυπα μετατραπέντων κομματιών που κρατήθηκαν για εξαγωγή: {n} ({mb} MB).",
     "discardOriginalsBtn": "Απόρριψή τους",
     "convertBtn": "Μετατροπή",
+    "ctxConvertTip": "Μετατροπή των επιλεγμένων κομματιών σε {format} (Ρυθμίσεις → Μετατροπή αρχείων), για συσκευή που δεν μπορεί να τα παίξει όπως είναι",
+    "convertAskedSame": "{n} από αυτά είναι ήδη {format}, η μορφή στην οποία μετατρέπει αυτή η βιβλιοθήκη: μένουν όπως είναι.",
+    "convertAskedSameOne": "Ένα από αυτά είναι ήδη {format}, η μορφή στην οποία μετατρέπει αυτή η βιβλιοθήκη: μένει όπως είναι.",
+    "convertAskedNone": "Είναι ήδη {format}, η μορφή στην οποία μετατρέπει αυτή η βιβλιοθήκη: τίποτα για μετατροπή.",
     "convertAllBtn": "Μετατροπή και των {n}",
     "convertSelectedBtn": "Μετατροπή επιλεγμένων ({n})",
     "convertThemNowBtn": "Μετατροπή τώρα",
@@ -21515,6 +21570,7 @@ const STRINGS = {
     "restoringKeepOpen": "Κρατήστε αυτό το παράθυρο ανοιχτό μέχρι να τελειώσει — μια μεγάλη βιβλιοθήκη μπορεί να πάρει αρκετά λεπτά.",
     "audioMissingTitle": "Αυτό το κομμάτι δεν μπορεί να παίξει",
     "audioMissingBody": "Το «{name}» δεν μπορεί να παίξει: ο ήχος του λείπει από αυτή τη βιβλιοθήκη ή αυτό το πρόγραμμα περιήγησης δεν μπορεί να τον διαβάσει. Τίποτε άλλο δεν άλλαξε — ό,τι έπαιζε συνεχίζει. Οι Ρυθμίσεις → Καθαρισμός βιβλιοθήκης δείχνουν όλα αυτά τα κομμάτια, με δυνατότητα αντικατάστασης του αρχείου.",
+    "playbackHelpLink": "Παίζει σε άλλες συσκευές αλλά όχι σε αυτήν; Βοήθεια: «Audio playback problems»",
     "missingAudioTitle": "Κομμάτια χωρίς ήχο",
     "missingAudioBody": "Αυτά τα κομμάτια είναι στη βιβλιοθήκη, αλλά ο ήχος τους όχι (ή το πρόγραμμα περιήγησης δεν μπορεί να τον διαβάσει), π.χ. μετά από εισαγωγή που μπλοκαρίστηκε στη μέση. Αντικαταστήστε το αρχείο για να κρατήσετε το κομμάτι και τη θέση του στις λίστες, ή επαναφέρετε από αντίγραφο που το έχει.",
     "missingAudioNone": "Κανένα — ο ήχος όλων των κομματιών υπάρχει και διαβάζεται.",
@@ -23551,6 +23607,8 @@ const STRINGS = {
     "chkFixed": "Tracce corrette: {fixed}. Ancora non riproducibili: {left}.",
     "chkNothing": "Non c'era niente da correggere.",
     "chkNoWave": "Tracce che si riproducono ma non hanno ancora la forma d'onda: {n}.",
+    "chkStepTypes": "Controllo della libreria: che tipo di file è ogni traccia, {done} di {total}",
+    "chkMistyped": "File di un tipo diverso da quello che dicono i loro nomi (il Tipo della Tabella ora mostra cosa sono): {n}.",
     "chkWhyLong": "Troppo lunga per leggerla intera su questo dispositivo, e non si è potuta leggere a pezzi (il convertitore, che può farlo, forse non è ancora su questo dispositivo).",
     "chkWhyDecode": "Questo browser la riproduce, ma non è riuscito a decodificarla per disegnarla.",
     "chkShowInLibrary": "Mostrale nella libreria",
@@ -23585,6 +23643,10 @@ const STRINGS = {
     "originalsKeptNote": "Originali delle tracce convertite tenuti per l'esportazione: {n} ({mb} MB).",
     "discardOriginalsBtn": "Scartali",
     "convertBtn": "Converti",
+    "ctxConvertTip": "Converti le tracce selezionate in {format} (Impostazioni → Conversione dei file), per un dispositivo che non riesce a riprodurle così come sono",
+    "convertAskedSame": "{n} di esse sono già in {format}, il formato in cui questa libreria converte: lasciate come sono.",
+    "convertAskedSameOne": "Una di esse è già in {format}, il formato in cui questa libreria converte: lasciata com'è.",
+    "convertAskedNone": "Già in {format}, il formato in cui questa libreria converte: niente da convertire.",
     "convertAllBtn": "Converti tutte ({n})",
     "convertSelectedBtn": "Converti i selezionati ({n})",
     "convertThemNowBtn": "Convertile ora",
@@ -23621,6 +23683,7 @@ const STRINGS = {
     "restoringKeepOpen": "Tenete aperta questa finestra fino alla fine: una libreria grande può richiedere diversi minuti.",
     "audioMissingTitle": "Impossibile riprodurre questa traccia",
     "audioMissingBody": "«{name}» non può essere riprodotta: il suo audio manca da questa libreria, oppure questo browser non riesce a leggerlo. Nient'altro è stato modificato: ciò che era in riproduzione continua. Impostazioni → Pulizia della libreria elenca tutte queste tracce, con la possibilità di sostituirne il file.",
+    "playbackHelpLink": "Si riproduce su altri dispositivi ma non su questo? Guida: «Audio playback problems»",
     "missingAudioTitle": "Tracce senza audio",
     "missingAudioBody": "Queste tracce sono nella libreria, ma il loro audio no (o questo browser non riesce a leggerlo), per esempio dopo un'importazione bloccata a metà. Sostituite il file per conservare la traccia e il suo posto nelle playlist, oppure ripristinate da un backup che lo contiene.",
     "missingAudioNone": "Nessuna: l'audio di ogni traccia è presente e leggibile.",
@@ -24381,7 +24444,7 @@ async function undoApply(step, dir){
    (idbPut), so a shared library sends it on as the newest. A file whose
    day has passed can't come back: Undo leaves the track as it is and says
    so. Conversions are not steps ("Keep the originals?" is for those). */
-const UNDO_FILE_AUDIO = ["filename", "fileSize", "fileModified", "sampleRate", "channels", "duration", "loudness", "fileTags", "needsConvert", "peaks", "standardizeAttempts"];
+const UNDO_FILE_AUDIO = ["filename", "fileType", "fileSize", "fileModified", "sampleRate", "channels", "duration", "loudness", "fileTags", "needsConvert", "peaks", "standardizeAttempts"];
 let undoPendingFiles = [];
 async function undoFileAside(track, kind){
   const rec = await idbGet(kind === "audio" ? "audio" : "artwork", track.id).catch(()=> null);
@@ -25889,7 +25952,8 @@ const CTX_ICONS = {
   dupTrack: "M8 8h12v12H8z M4 16V4h12 M14 11v6 M11 14h6",
   fit: "M8 5H4v14h4 M16 5h4v14h-4 M9 12h6",
   scroll: "M4 12h16 M8 8l-4 4 4 4 M16 8l4 4-4 4",
-  full: "M2 5h20v14H2z M6 12h12 M9 9l-3 3 3 3 M15 9l3 3-3 3"
+  full: "M2 5h20v14H2z M6 12h12 M9 9l-3 3 3 3 M15 9l3 3-3 3",
+  convert: "M4 12a8 8 0 0 1 14-5.3 M18 3v4h-4 M20 12a8 8 0 0 1-14 5.3 M6 21v-4h4"
 };
 function ctxSvg(name, size){
   return `<svg viewBox="0 0 24 24" width="${size || 18}" height="${size || 18}" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${CTX_ICONS[name]}"/></svg>`;
@@ -26167,11 +26231,23 @@ function buildLibTableViewControls(el){
     "undo",
     {icon: "edit", label: t("ctxEdit"), tip: t("editDetails") + " (E)", enabled: anySel, act: libEditSelected},
     {icon: "dupTrack", label: t("ctxCopyTrack"), tip: t("duplicate"), enabled: ()=> !!libFocusTrackId(), act: ()=>{ const tr = findLibraryTrack(libFocusTrackId()); if(tr) duplicateLibraryTrack(tr); }},
+    libConvertDef(),
     {icon: "del", label: t("ctxDelete"), tip: t("dlgDelete"), danger: true, enabled: anySel, act: libDeleteSelected}
   ]);
   // The "how it's shown" half, before the count: first to lose its words.
   for(const c of el.children){ if(c === count) break; c.classList.add("tb-view"); }
   watchCtxFit(el);
+}
+// Convert, in Table's and Browse's bars (2.5.059, kr37): the selected
+// tracks to the preferred format, for a device that can't play them as they
+// are (Help: Audio playback problems).
+function libConvertDef(){
+  return {icon: "convert", label: t("convertBtn"), tip: t("ctxConvertTip", {format: formatLabel()}),
+    enabled: ()=> libSelectedIds().some(id=> !convertQueue.includes(id)), act: libConvertSelected};
+}
+function libConvertSelected(){
+  const ids = libSelectedIds();
+  if(ids.length) withPin(()=> convertTracks(ids, {asked: true}));
 }
 function watchCtxFit(el){
   if(!el._fitObs && window.ResizeObserver){ el._fitObs = new ResizeObserver(()=> fitCtxInline(el)); el._fitObs.observe(el.parentElement || el); }
@@ -26231,6 +26307,7 @@ function buildLibraryCtxActions(){
     "|",
     {icon: "edit", label: t("ctxEdit"), tip: t("editDetails") + " (E)", enabled: anySel, act: libEditSelected},
     {icon: "split", label: t("ctxSplit"), tip: t("splitTrackBtn"), enabled: canSplitLibraryPreviewNow, act: libSplitNow},
+    libConvertDef(),
     {icon: "del", label: t("ctxDelete"), tip: t("dlgDelete"), danger: true, enabled: anySel, act: libDeleteSelected},
   ]);
   [...bar.children].forEach(c=> c.classList.toggle("tb-view", c.id === "btnUndo" || c.id === "btnRedo")); // the arrows are clear without words: they go first
@@ -28928,15 +29005,15 @@ function browserLabel(){
   return "?";
 }
 // How many tracks of each file type the library holds, most common first,
-// with the space they take. Worked out from the filename, or — for a track
-// without one (restored from an older archive) — from the file itself.
+// with the space they take. Worked out from what was found inside (2.5.059)
+// or the filename, or — for a track without one (restored from an older
+// archive) — from the file itself.
 async function libraryFileTypeCounts(){
   const byExt = {mp3:"MP3", m4a:"M4A", mp4:"M4A", m4b:"M4A", aac:"AAC", wav:"WAV", wave:"WAV", flac:"FLAC", opus:"Opus", ogg:"Ogg Vorbis", oga:"Ogg", webm:"WebM", mka:"Matroska", aif:"AIFF", aiff:"AIFF", aifc:"AIFF"};
   const byKind = {mp3:"MP3", mp4:"M4A", aac:"AAC", wav:"WAV", flac:"FLAC", webm:"WebM", aiff:"AIFF", oggother:"Ogg"};
   const counts = new Map();
   for(const tr of root.library){
-    const m = (tr.filename || "").toLowerCase().match(/\.([a-z0-9]+)$/);
-    let label = m && byExt[m[1]];
+    let label = byExt[trackExt(tr)];
     let bytes = tr.fileSize > 1 ? tr.fileSize : 0;
     if(!label){
       const rec = await idbGet("audio", tr.id);
@@ -29804,13 +29881,23 @@ function formatLabel(f){
 const UNCOMPRESSED_EXT = /^(wav|wave|aif|aiff|aifc)$/;
 const LESS_PLAYABLE_EXT = /^(opus|ogg|oga|webm|mka|flac)$/;
 function fileExt(name){ const m = String(name || "").toLowerCase().match(/\.([a-z0-9]+)$/); return m ? m[1] : ""; }
+// What kind of file a track's audio is, as an extension ("webm"): what was
+// found inside it (track.fileType, 2.5.059), else its name's. kr37's
+// festival recording was WebM named .mp3: Table's Type said MP3, and the
+// format rules took it for one.
+function trackExt(tr){ return tr ? (tr.fileType || fileExt(tr.filename)) : ""; }
+// The track's file name with that extension, for the converter's input.
+function trackSourceName(tr){
+  const name = (tr && tr.filename) || "track", ext = trackExt(tr);
+  return ext && fileExt(name) !== ext ? name.replace(/\.[a-z0-9]+$/i, "") + "." + ext : name;
+}
 // Whether the library's settings would convert this track (a file this
 // browser can't play is a separate matter: it's always converted).
 function trackMatchesPolicy(tr, pol){
   if(!tr) return false;
   pol = pol || formatPolicy();
   if(pol.when === "untouched") return false;
-  const ext = fileExt(tr.filename), target = preferredFormat(pol), kind = FORMAT_KINDS[target.format];
+  const ext = trackExt(tr), target = preferredFormat(pol), kind = FORMAT_KINDS[target.format];
   const uncompressed = UNCOMPRESSED_EXT.test(ext);
   if(uncompressed) return pol.when === "reduce" || !!pol.rules.uncompressed;
   if(pol.when !== "rules") return false;
@@ -30254,8 +30341,12 @@ function trackIsBigFile(tr){ return !!tr && (tr.fileSize || 0) > BIG_FILE_BYTES;
 // agreed to are remembered for this session (convertBigOk), since a queue
 // carried over a restart never converts a big file by itself.
 const convertBigOk = new Set();
+// opts.asked: chosen with Convert in Table's or Browse's bar (2.5.059):
+// converted whatever the format settings say (askedConvertIds).
 async function convertTracks(ids, opts){
-  ids = ids.filter(id=> trackCanBeConverted(findLibraryTrack(id)) && !convertQueue.includes(id));
+  const asked = !!(opts && opts.asked);
+  if(asked) ids = await askedConvertIds(ids);
+  else ids = ids.filter(id=> trackCanBeConverted(findLibraryTrack(id)) && !convertQueue.includes(id));
   const big = bigFilesConvertFromDisk() ? [] : ids.filter(id=> trackIsBigFile(findLibraryTrack(id)));
   if(big.length && opts && opts.auto) ids = ids.filter(id=> !big.includes(id));
   else if(big.length){
@@ -30275,17 +30366,45 @@ async function convertTracks(ids, opts){
     const ok = await askToDownloadConverter(); // couldn't fetch it quietly: say so, and let them try
     if(!ok) return;
   }
+  if(asked) ids.forEach(id=> convertAsked.add(id));
   convertQueue.push(...ids);
   convertTotal += ids.length;
   convertQueueSave();
   runConvertQueue();
+}
+// Tracks a person chose to convert (2.5.059, kr37: a file that plays on one
+// device and not another, chosen in Table sorted by Type). Kept with the
+// list waiting, so a run carried over a restart still converts them.
+const convertAsked = new Set();
+function trackConvertWanted(tr){ return trackCanBeConverted(tr) || (!!tr && convertAsked.has(tr.id) && tr.needsConvert !== NEEDS_CONVERT_PLAYLIST); }
+// Which of the chosen tracks go: any the settings would convert or that
+// can't be played, and the rest unless they're in the preferred format
+// already, going by what's inside them (found here, and recorded, for a
+// track that has no record of it yet). Says which were left as they are.
+async function askedConvertIds(ids){
+  const target = preferredFormat(), kind = FORMAT_KINDS[target.format], go = [], same = [];
+  let found = false;
+  for(const id of ids){
+    const tr = findLibraryTrack(id);
+    if(!tr || tr.needsConvert === NEEDS_CONVERT_PLAYLIST || convertQueue.includes(id)) continue;
+    if(!tr.fileType && await recordTrackKind(tr)) found = true;
+    const ext = trackExt(tr);
+    if(trackCanBeConverted(tr) || !(("." + ext) === kind.ext || (ext === "mp4" && target.format === "aac"))) go.push(id);
+    else same.push(id);
+  }
+  if(found){ await saveState(); refreshCurrentView(); }
+  if(same.length){
+    const format = target.format === "aac" ? "AAC (M4A)" : kind.label; // Table's Type says M4A
+    showToast(!go.length ? t("convertAskedNone", {format}) : same.length === 1 ? t("convertAskedSameOne", {format}) : t("convertAskedSame", {n: same.length, format}));
+  }
+  return go;
 }
 // The list waiting to be converted is kept in the library's own storage
 // (rows 13 and 17, 1.4.099): a run cut off by a reload, switching libraries
 // or the page closing carries on by itself the next time this library opens,
 // once nothing plays. Stop (in the bar) ends it for good.
 function convertQueueSave(){
-  if(convertQueue.length) idbPut("state", {key: "convertQueue", value: {ids: convertQueue.slice(), total: convertTotal, done: convertDone}}).catch(()=>{});
+  if(convertQueue.length) idbPut("state", {key: "convertQueue", value: {ids: convertQueue.slice(), total: convertTotal, done: convertDone, asked: convertQueue.filter(id=> convertAsked.has(id))}}).catch(()=>{});
   else idbDelete("state", "convertQueue").catch(()=>{});
 }
 // A minute after opening, not six seconds (2.2.010, kr37): nothing
@@ -30300,7 +30419,8 @@ function scheduleConvertResume(){
     // Never a big file by itself: one that was being converted when the app
     // had to be force-quit would start again at every opening (the Mac
     // mini, 8 Nov 2026). It's still listed in Library cleanup, to ask again.
-    const ids = v.ids.filter(id=> trackCanBeConverted(findLibraryTrack(id)) && !trackIsBigFile(findLibraryTrack(id)) && !convertQueue.includes(id));
+    (Array.isArray(v.asked) ? v.asked : []).forEach(id=> convertAsked.add(id));
+    const ids = v.ids.filter(id=> trackConvertWanted(findLibraryTrack(id)) && !trackIsBigFile(findLibraryTrack(id)) && !convertQueue.includes(id));
     if(!ids.length){ idbDelete("state", "convertQueue").catch(()=>{}); return; }
     if(!(await converterStored()) && !(await ensureConverter())) return; // try again next start
     convertQueue.push(...ids);
@@ -30359,7 +30479,7 @@ async function runConvertQueue(){
       }
       const id = convertQueue[0];
       const tr = findLibraryTrack(id);
-      if(!trackCanBeConverted(tr) || (trackIsBigFile(tr) && !convertBigOk.has(id) && !bigFilesConvertFromDisk())){ convertQueue.shift(); convertDone++; continue; }
+      if(!trackConvertWanted(tr) || (trackIsBigFile(tr) && !convertBigOk.has(id) && !bigFilesConvertFromDisk())){ convertQueue.shift(); convertDone++; continue; }
       converterBigUnasked = trackIsBigFile(tr) && !convertBigOk.has(id);
       const name = tr.name || tr.filename || "";
       setActiveOperationProgress(convertBarText(name, null), stopConverting, undefined, {links: convertBarLinks()});
@@ -30370,7 +30490,7 @@ async function runConvertQueue(){
       const watch = setInterval(()=>{ if(convertShouldWait()) converterStop(); }, 1000);
       try{
         const wasBig = trackIsBigFile(tr);
-        const out = await converterConvert(rec.blob, tr.filename, (f)=> setActiveOperationProgress(convertBarText(name, f), stopConverting, undefined, {links: convertBarLinks()}));
+        const out = await converterConvert(rec.blob, trackSourceName(tr), (f)=> setActiveOperationProgress(convertBarText(name, f), stopConverting, undefined, {links: convertBarLinks()}));
         clearInterval(watch);
         await applyConvertedAudio(id, out.blob, rec.blob, out.kind);
         convertQueue.shift(); convertDone++;
@@ -30403,6 +30523,7 @@ async function runConvertQueue(){
     clearActiveOperation(stopConverting);
     const failures = convertFailures, kept = convertKept;
     convertQueue = []; convertDone = 0; convertTotal = 0; convertFailures = []; convertKept = [];
+    convertAsked.clear();
     convertQueueSave(); // done, or stopped: nothing to carry on with
     // Asked once any dialog already open (an import's summary, say) is closed.
     renderCleanupConvert();
@@ -30582,7 +30703,7 @@ async function applyConvertedAudio(id, blob, original, kind){
   const stem = (tr.filename || "").replace(/\.[^.]+$/, "");
   const newName = (stem || tr.name || "track") + kind.ext;
   await idbPut("audio", {id, blob: new File([blob], newName, {type: kind.mime, lastModified: Date.now()})});
-  tr.filename = newName; tr.fileSize = blob.size; tr.fileModified = Date.now();
+  tr.filename = newName; tr.fileType = kind.ext.slice(1); tr.fileSize = blob.size; tr.fileModified = Date.now();
   alacImported.delete(id);
   tr.duration = a.duration; tr.peaks = a.peaks;
   if(a.sampleRate) tr.sampleRate = a.sampleRate;
@@ -30660,7 +30781,8 @@ async function importOneAudioFile(file, precomputedAnalysis, precomputedTags){
     await idbPut("artwork", {id, blob: new Blob([tags.artwork.bytes], {type: tags.artwork.mime})});
     hasArtwork = true;
   }
-  const track = {id, name, artist, album, trackNo, duration, peaks, hasArtwork, filename: await fileNameForContent(file), fileSize: file.size, fileModified: file.lastModified||null, sampleRate, channels, loudness: loudness || undefined, standardizeAttempts:0};
+  const named = await fileNameAndKind(file);
+  const track = {id, name, artist, album, trackNo, duration, peaks, hasArtwork, filename: named.name, fileType: named.kind || undefined, fileSize: file.size, fileModified: file.lastModified||null, sampleRate, channels, loudness: loudness || undefined, standardizeAttempts:0};
   track.fileTags = librarySnapshot(track, hasArtwork ? tags.artwork.bytes.length : null); // see effectiveTagMeta
   if(convertedFromAiff) track.fileTags = librarySnapshot({}, null); // the new WAV has no tags yet — written just below
   root.library.push(track);
@@ -30677,7 +30799,7 @@ async function overwriteLibraryTrackAudio(track, file, precomputedAnalysis){
   await idbPut("audio", {id: track.id, blob:file});
   const {duration, peaks, sampleRate, channels, loudness, likelyUnplayable} = precomputedAnalysis || await analyzeAudio(file);
   track.duration = duration; track.peaks = peaks; track.sampleRate = sampleRate; track.channels = channels; if(loudness) track.loudness = loudness; else delete track.loudness;
-  track.filename = await fileNameForContent(file); track.fileSize = file.size; track.fileModified = file.lastModified||null;
+  await setTrackFile(track, file); track.fileSize = file.size; track.fileModified = file.lastModified||null;
   track.fileTags = librarySnapshot({}, null); // the library's values are the ones to keep: written into this file (see effectiveTagMeta)
   if(likelyUnplayable) await markNeedsConvert(track, file); else delete track.needsConvert;
   if(!likelyUnplayable && await isAppleLosslessFile(file)) alacImported.add(track.id); else alacImported.delete(track.id);
@@ -31007,7 +31129,7 @@ async function splitByBytes(blob, kind, segs, ids, step, created){
 async function splitViaConverter(sourceTrack, blob, fmt, segs, ids, mode, step, created){
   const run = async ()=>{
     await converterStart();
-    const ext = fileExt(sourceTrack.filename) || (fmt.ext || ".bin").replace(/^\./, "");
+    const ext = trackExt(sourceTrack) || (fmt.ext || ".bin").replace(/^\./, "");
     const file = await converterInput(blob, "source." + ext);
     const probe = await converterAsk({type: "run", file, args: ["-hide_banner", "-nostdin", "-i", "/in/" + file.name]});
     const info = converterReadInput(probe.log);
@@ -31923,7 +32045,7 @@ function splitRenderPieces(){
 }
 // What Split will make, and in what format.
 function splitFormatNote(){
-  const tr = spl.track, ext = (fileExt(tr.filename) || "").toUpperCase();
+  const tr = spl.track, ext = (trackExt(tr) || "").toUpperCase();
   if(trackMatchesPolicy(tr)) return t(converterRecCache ? "splitFmtConvert" : "splitFmtConvertLater", {format: formatLabel()});
   if(/^(MP3|WAV|WAVE)$/.test(ext) || converterRecCache) return t("splitFmtSame", {format: ext || "?"});
   return t("splitFmtWav");
@@ -35116,7 +35238,7 @@ async function replaceLibraryTrackFile(track){
     track.fileSize = file.size;
     track.standardizeAttempts = 0; // fresh file — any prior standardization failures no longer apply to it
     await dropKeptOriginal(track);
-    track.filename = await fileNameForContent(file);
+    await setTrackFile(track, file);
     if(newDuration > 0) delete track.needsConvert; else await markNeedsConvert(track, file);
     track.fileTags = librarySnapshot({}, null); // whatever was chosen below is written into the new file (see effectiveTagMeta)
     fieldRows.forEach(r=>{ if(choices[r.field]==="new") track[r.field] = r.newVal; });
@@ -35192,8 +35314,8 @@ function isFallbackCodecFilename(filename){
 // happens naturally the first time the queue actually processes it. Until
 // then it's neither known-fine nor known-broken.
 function standardizeCategory(track){
-  if(isUncompressedFilename(track.filename)) return "uncompressed";
-  if(isFallbackCodecFilename(track.filename)) return "wrongcodec";
+  if(isUncompressedFilename(trackSourceName(track))) return "uncompressed";
+  if(isFallbackCodecFilename(trackSourceName(track))) return "wrongcodec";
   if(track.channels!=null && track.channels!==STANDARDIZE_TARGET_CHANNELS) return "channels";
   if(track.sampleRate!=null && track.sampleRate!==getStandardizeTargetSampleRate()) return "samplerate";
   if(track.channels==null || track.sampleRate==null) return "unchecked";
@@ -35589,6 +35711,7 @@ async function runStandardizeStepHere(){
     const newFilename = (track.filename||track.name||"track").replace(/\.[^.]+$/,"") + extension;
     await idbPut("audio", {id: track.id, blob: converted});
     track.filename = newFilename;
+    track.fileType = extension.replace(/^\./, "");
     track.fileSize = converted.size;
     track.sampleRate = sampleRate;
     track.channels = channels;
@@ -36042,7 +36165,7 @@ function setMainVolume(v){
 }
 
 function standardizeProblemLabel(category, track){
-  if(category==="uncompressed") return "." + (track.filename||"").split(".").pop().toLowerCase();
+  if(category==="uncompressed") return "." + trackExt(track);
   if(category==="wrongcodec") return t("wrongcodecLabel");
   if(category==="channels") return (track.channels!=null?track.channels:"?") + "ch";
   if(category==="samplerate") return (track.sampleRate!=null?track.sampleRate:"?") + "Hz";
@@ -37195,7 +37318,7 @@ function libTableColumns(usage){
     {key: "album", label: t("libColAlbum"), text: true, val: tr=> tr.album || ""},
     {key: "length", label: t("libColLength"), num: true, val: tr=> tr.duration || 0, show: tr=> tr.duration ? fmtTimeLong(tr.duration) : dash},
     {key: "used", label: t("libColUsed"), num: true, val: tr=> usage.get(tr.id) || 0, show: tr=> String(usage.get(tr.id) || 0)},
-    {key: "type", label: t("fmtListType"), text: true, val: tr=> fileExt(tr.filename).toUpperCase(), show: tr=> fileExt(tr.filename).toUpperCase() || dash},
+    {key: "type", label: t("fmtListType"), text: true, val: tr=> trackExt(tr).toUpperCase(), show: tr=> trackExt(tr).toUpperCase() || dash},
     {key: "size", label: t("fmtListSize"), num: true, val: tr=> tr.fileSize || 0, show: tr=> tr.fileSize ? fmtBytes(tr.fileSize) : dash},
     {key: "kbps", label: t("fmtListKbps"), num: true, val: tr=> libTrackKbps(tr) || 0, show: tr=> libTrackKbps(tr) ? Math.round(libTrackKbps(tr)) + " kbps" : dash},
     {key: "rate", label: t("fmtListRate"), num: true, val: tr=> tr.sampleRate || 0, show: tr=> tr.sampleRate ? (tr.sampleRate / 1000).toLocaleString(undefined, {maximumFractionDigits: 2}) + " kHz" : dash},
@@ -37579,13 +37702,36 @@ async function typedAudioBlob(blob, filenameHint){
 // The name a file is kept under in a track (track.filename: Table's Type,
 // exports): its own, with the extension of what's inside when the two
 // disagree (2.5.052), as recordingExtFor names it on the disk.
-async function fileNameForContent(file){
+async function fileNameForContent(file){ return (await fileNameAndKind(file)).name; }
+// That name, and the kind of file found inside ("webm"; "" when it isn't
+// one 37 Player knows): track.fileType (2.5.059).
+async function fileNameAndKind(file){
   const name = (file && file.name) || "";
   const ext = (name.match(/\.[a-z0-9]+$/i) || [""])[0];
   let s = null;
   try{ s = await sniffAudioFormat(file, name); }catch(err){}
-  if(!s || !s.kind || extMatchesKind(ext, s.kind)) return name;
-  return (ext ? name.slice(0, -ext.length) : name) + s.ext;
+  const kind = s && s.kind ? s.ext.replace(/^\./, "") : "";
+  if(!kind || extMatchesKind(ext, s.kind)) return {name, kind};
+  return {name: (ext ? name.slice(0, -ext.length) : name) + s.ext, kind};
+}
+// A file coming into a track (an import, Replace): its name and kind.
+async function setTrackFile(track, file){
+  const f = await fileNameAndKind(file);
+  track.filename = f.name;
+  if(f.kind) track.fileType = f.kind; else delete track.fileType;
+}
+// Finds and records what kind of file a track's stored audio is (Check
+// library, Convert). True when the track changed.
+async function recordTrackKind(tr){
+  let rec = null;
+  try{ rec = await idbGet("audio", tr.id); }catch(err){}
+  if(!rec || !rec.blob || !rec.blob.size) return false;
+  let s = null;
+  try{ s = await sniffAudioFormat(rec.blob, tr.filename); }catch(err){}
+  const kind = s && s.kind ? s.ext.replace(/^\./, "") : "";
+  if(!kind || kind === tr.fileType) return false;
+  tr.fileType = kind;
+  return true;
 }
 const trackFileName = id=>{ const tr = findLibraryTrack(id); return tr && tr.filename || ""; };
 /* ===================== Playback engine (tracks + silences share one transport) ===================== */
@@ -37672,10 +37818,23 @@ function showAudioMissing(libraryId, why){
     return;
   }
   openModal(`<h3>${t("audioMissingTitle")}</h3><p id="audioMissingBody"></p>
+    <p class="settings-note"><a href="#" id="playbackHelpLink">${escapeHtmlText(t("playbackHelpLink"))}</a></p>
     <div class="modal-actions"><button class="btn ghost" id="openCleanup" type="button">${escapeHtmlText(t("settingsSecCleanup"))}</button>${tr ? `<button class="btn ghost" id="missingReplace" type="button">${escapeHtmlText(t("replaceMissingBtn"))}</button>` : ""}<button class="btn primary" data-close>${t("ok")}</button></div>`);
   document.getElementById("audioMissingBody").textContent = t("audioMissingBody", {name: tr ? tr.name : "?"});
   wireOpenCleanup();
   wireMissingReplace(tr);
+  const help = document.getElementById("playbackHelpLink");
+  if(help) help.addEventListener("click", (e)=>{ e.preventDefault(); closeModal(); openHelpTopic(PLAYBACK_HELP_ID); });
+}
+// Help, open at one topic (a dialog's link to it). Audio playback problems
+// (2.5.059): which kinds of file some devices can't play, and converting
+// them (Convert in Library → Table).
+const PLAYBACK_HELP_ID = "audio-playback-problems";
+function openHelpTopic(id){
+  if(settingsPageOpen()) closeSettingsPage();
+  closeHelpPage();
+  if(HELP_TOPICS.some(x=> x.id === id)) selectedHelpTopicId = id;
+  openHelpPage();
 }
 // Replace file in a can't-be-played dialog (2.5.053, kr37: finding the track
 // in Library cleanup's long list was hard): this track's file, at once
@@ -38596,7 +38755,7 @@ const HELP_TOPICS = [
   {
     "id": "itunes-music-app",
     "title": "iTunes / Music.app",
-    "bodyHtml": "\u003cp>How 37 Player works alongside Music.app on a Mac and iTunes on Windows: bringing a library in, taking one back out, and why standardizing matters there.\u003c/p>\n\u003ch3>Importing\u003c/h3>\n\u003cp>37 Player can bring in a whole Music.app or iTunes library in one go — the audio, and every playlist inside its playlist folders.\u003c/p>\n\u003cp>\u003cstrong>1. Export the library file.\u003c/strong> In Music.app (or iTunes), choose \u003cstrong>File → Library → Export Library…\u003c/strong> and save the file into the folder that holds your music:\u003c/p>\n\u003cul>\n\u003cli>\u003cstrong>Music.app:\u003c/strong> the \u003cstrong>Media\u003c/strong> folder, usually in your Music folder under \u003cstrong>Music → Media\u003c/strong>.\u003c/li>\n\u003cli>\u003cstrong>iTunes on Windows:\u003c/strong> the \u003cstrong>iTunes Media\u003c/strong> folder, usually in your Music folder under \u003cstrong>iTunes → iTunes Media\u003c/strong>.\u003c/li>\n\u003c/ul>\n\u003cp>Keep the name it suggests (Library.xml). That one file lists every playlist and where each of its tracks is.\u003c/p>\n\u003cp>\u003cstrong>2. Import the folder.\u003c/strong> In 37 Player, open 'Import / Export', choose \u003cstrong>Import a folder…\u003c/strong>, and pick that same folder. 37 Player reads the library file along with the audio, and the usual review appears: how many tracks are new, and which playlist entries couldn't be found. Choose \u003cstrong>Import\u003c/strong>, and the playlists appear in 'Edit Playlists' in the same folders they had in Music.app.\u003c/p>\n\u003cp>Good to know:\u003c/p>\n\u003cul>\n\u003cli>\u003cstrong>Everything in the folder is imported\u003c/strong>, not just the tracks your playlists use. To bring in less, pick a smaller folder (one artist, say) — playlists still come in, with anything outside that folder listed as missing.\u003c/li>\n\u003cli>\u003cstrong>Apple's own lists\u003c/strong> (Library, Music, Downloaded and the like) are left out. A smart playlist comes in as the tracks it held when you exported — it doesn't keep updating.\u003c/li>\n\u003cli>\u003cstrong>A track that can't be found\u003c/strong> — never downloaded (streamed from Apple Music, or left in the cloud), or outside the folder you picked — leaves a \u003cstrong>Stop\u003c/strong> in its place in the playlist, named \"MISSING TRACK: title — album\", so playback halts right there instead of quietly skipping it, and the playlist is flagged. Once the track is in the library, put it in where the Stop is, and remove the Stop.\u003c/li>\n\u003cli>\u003cstrong>AIFF files\u003c/strong> (.aif), common in older iTunes libraries, come in as WAV, since most browsers can't play AIFF. The sound is identical, and the name, artist, album and artwork come along.\u003c/li>\n\u003cli>\u003cstrong>Older iTunes Store purchases\u003c/strong> protected against copying (.m4p files) can't be played in a browser.\u003c/li>\n\u003cli>\u003cstrong>Files a browser can't play\u003c/strong> — Windows Media Audio (.wma), Apple Lossless (ALAC, inside an .m4a) outside Safari, compressed AIFF and a few others — are converted to MP3 as they come in, so they play everywhere and keep their place in the playlists. 37 Player then asks whether to keep the originals too, for a later export (a portable export takes the original), showing how much room they take; Settings → Library cleanup can discard them later. Converting needs 37 Player's converter, which it fetches by itself (about 26 MB, once) and keeps, so it works offline afterwards; it waits while anything is playing. Without the converter (no internet the first time, say), such files come in marked \"Can't be played\", with \u003cstrong>Convert them now\u003c/strong> for later. A file over 500 MB is never converted by itself, since converting needs about as much memory as the file's size: Settings → Library cleanup offers it, with a warning first.\u003c/li>\n\u003cli>\u003cstrong>Your music doesn't have to be organized the way Music.app keeps it.\u003c/strong> Tracks are found by their folder names and file name, and if a file has moved, by its name and size.\u003c/li>\n\u003cli>\u003cstrong>Single playlists\u003c/strong> work too: a playlist exported on its own (\u003cstrong>File → Library → Export Playlist…\u003c/strong>, as an .m3u file), or an .m3u, .m3u8 or .xspf (VLC) from another player. Put it in the music folder and import the folder. ('Importing playlists' explains where playlists end up.)\u003c/li>\n\u003c/ul>\n\u003ch3>Exporting\u003c/h3>\n\u003cp>To take a library from 37 Player into Music.app or iTunes, use 'Import / Export' → Export and choose \u003cstrong>Portable\u003c/strong>. It unpacks into a \u003cstrong>music\u003c/strong> folder (artist / album / tracks) and a \u003cstrong>playlists\u003c/strong> folder of .m3u8 files.\u003c/p>\n\u003cul>\n\u003cli>\u003cstrong>The audio:\u003c/strong> in Music.app, choose \u003cstrong>File → Import…\u003c/strong> and pick the \u003cstrong>music\u003c/strong> folder.\u003c/li>\n\u003cli>\u003cstrong>The playlists:\u003c/strong> choose \u003cstrong>File → Library → Import Playlist…\u003c/strong> and pick each .m3u8 file. Music.app doesn't recreate folders from these, so a playlist lands at the top level; drag it into a playlist folder afterwards if you want one.\u003c/li>\n\u003c/ul>\n\u003cp>Every track keeps its name, artist, album, track number and artwork, since 37 Player writes those into the files themselves.\u003c/p>\n\u003cp>Volume adjustments made in 37 Player, and its evening out, don't come along: they aren't written into the files as ReplayGain tags, so Music.app plays each file at its own level. Music.app's own \u003cstrong>Sound Check\u003c/strong> (in its Playback settings) evens tracks out in a similar way.\u003c/p>\n\u003ch3>Why standardize for Music.app and iTunes\u003c/h3>\n\u003cp>Music.app and iTunes play one track straight into the next — but only smoothly when the two are alike. When the next track is a different file type (MP3 after AAC), or has a different sample rate (44.1 kHz after 48 kHz, say) or a different number of channels (mono after stereo), the player has to reset its audio output between them, and you hear a click, dropout, short gap, or worse.\u003c/p>\n\u003cp>37 Player itself doesn't have this problem, so there's no need to change the library for it. Instead, when exporting with \u003cstrong>Portable\u003c/strong>, select \u003cstrong>Convert to the preferred format\u003c/strong>: every file in the export comes out alike, and the library stays as it is. For a stricter match, set the preferred format (Settings → \u003cstrong>File conversion\u003c/strong>) to \u003cstrong>Best for Apple\u003c/strong> (AAC, 44.1 kHz, stereo), or choose your own under Custom.\u003c/p>\n\u003ch3>The library's file format\u003c/h3>\n\u003cp>Settings → \u003cstrong>File conversion\u003c/strong> sets one \u003cstrong>preferred format\u003c/strong> for the library — Standard (MP3 192k, recommended), Best for Apple, Very small, Lossless (FLAC, not recommended: much larger, with no difference you can hear), or Custom — and which files are converted to it:\u003c/p>\n\u003cul>\n\u003cli>\u003cstrong>Don't touch my files:\u003c/strong> nothing is changed. A file this browser can't play still gets a playable copy, and its original is kept too.\u003c/li>\n\u003cli>\u003cstrong>Reduce uncompressed audio\u003c/strong> (recommended): WAV and AIFF files are converted as they come in.\u003c/li>\n\u003cli>\u003cstrong>Choose the rules:\u003c/strong> uncompressed audio, a bitrate above a limit, a sample rate or channel count other than the preferred format's, or less widely playable types (Opus, Ogg, WebM).\u003c/li>\n\u003c/ul>\n\u003cp>The page says what the settings would mean for the library as it is (\"12 tracks would be converted…\"). Converting them is in Settings → \u003cstrong>Library cleanup\u003c/strong> → Convert to the preferred format, with \u003cstrong>Convert them now\u003c/strong> and the list of those tracks (name, album, type, size, sample rate, bit rate, channels). In a shared library these settings belong to the library, so a change on one device applies on all of them, and a file about to be converted is never sent before its converted version is ready.\u003c/p>\n\u003cp>Videos (a recorded teaching, say) can come in too: 37 Player asks whether to take their sound as audio tracks. The video itself isn't kept.\u003c/p>"
+    "bodyHtml": "\u003cp>How 37 Player works alongside Music.app on a Mac and iTunes on Windows: bringing a library in, taking one back out, and why standardizing matters there.\u003c/p>\n\u003ch3>Importing\u003c/h3>\n\u003cp>37 Player can bring in a whole Music.app or iTunes library in one go — the audio, and every playlist inside its playlist folders.\u003c/p>\n\u003cp>\u003cstrong>1. Export the library file.\u003c/strong> In Music.app (or iTunes), choose \u003cstrong>File → Library → Export Library…\u003c/strong> and save the file into the folder that holds your music:\u003c/p>\n\u003cul>\n\u003cli>\u003cstrong>Music.app:\u003c/strong> the \u003cstrong>Media\u003c/strong> folder, usually in your Music folder under \u003cstrong>Music → Media\u003c/strong>.\u003c/li>\n\u003cli>\u003cstrong>iTunes on Windows:\u003c/strong> the \u003cstrong>iTunes Media\u003c/strong> folder, usually in your Music folder under \u003cstrong>iTunes → iTunes Media\u003c/strong>.\u003c/li>\n\u003c/ul>\n\u003cp>Keep the name it suggests (Library.xml). That one file lists every playlist and where each of its tracks is.\u003c/p>\n\u003cp>\u003cstrong>2. Import the folder.\u003c/strong> In 37 Player, open 'Import / Export', choose \u003cstrong>Import a folder…\u003c/strong>, and pick that same folder. 37 Player reads the library file along with the audio, and the usual review appears: how many tracks are new, and which playlist entries couldn't be found. Choose \u003cstrong>Import\u003c/strong>, and the playlists appear in 'Edit Playlists' in the same folders they had in Music.app.\u003c/p>\n\u003cp>Good to know:\u003c/p>\n\u003cul>\n\u003cli>\u003cstrong>Everything in the folder is imported\u003c/strong>, not just the tracks your playlists use. To bring in less, pick a smaller folder (one artist, say) — playlists still come in, with anything outside that folder listed as missing.\u003c/li>\n\u003cli>\u003cstrong>Apple's own lists\u003c/strong> (Library, Music, Downloaded and the like) are left out. A smart playlist comes in as the tracks it held when you exported — it doesn't keep updating.\u003c/li>\n\u003cli>\u003cstrong>A track that can't be found\u003c/strong> — never downloaded (streamed from Apple Music, or left in the cloud), or outside the folder you picked — leaves a \u003cstrong>Stop\u003c/strong> in its place in the playlist, named \"MISSING TRACK: title — album\", so playback halts right there instead of quietly skipping it, and the playlist is flagged. Once the track is in the library, put it in where the Stop is, and remove the Stop.\u003c/li>\n\u003cli>\u003cstrong>AIFF files\u003c/strong> (.aif), common in older iTunes libraries, come in as WAV, since most browsers can't play AIFF. The sound is identical, and the name, artist, album and artwork come along.\u003c/li>\n\u003cli>\u003cstrong>Older iTunes Store purchases\u003c/strong> protected against copying (.m4p files) can't be played in a browser.\u003c/li>\n\u003cli>\u003cstrong>Files a browser can't play\u003c/strong> — Windows Media Audio (.wma), Apple Lossless (ALAC, inside an .m4a) outside Safari, compressed AIFF and a few others — are converted to MP3 as they come in, so they play everywhere and keep their place in the playlists. 37 Player then asks whether to keep the originals too, for a later export (a portable export takes the original), showing how much room they take; Settings → Library cleanup can discard them later. Converting needs 37 Player's converter, which it fetches by itself (about 26 MB, once) and keeps, so it works offline afterwards; it waits while anything is playing. Without the converter (no internet the first time, say), such files come in marked \"Can't be played\", with \u003cstrong>Convert them now\u003c/strong> for later. A file over 500 MB is never converted by itself, since converting needs about as much memory as the file's size: Settings → Library cleanup offers it, with a warning first.\u003c/li>\n\u003cli>\u003cstrong>Your music doesn't have to be organized the way Music.app keeps it.\u003c/strong> Tracks are found by their folder names and file name, and if a file has moved, by its name and size.\u003c/li>\n\u003cli>\u003cstrong>Single playlists\u003c/strong> work too: a playlist exported on its own (\u003cstrong>File → Library → Export Playlist…\u003c/strong>, as an .m3u file), or an .m3u, .m3u8 or .xspf (VLC) from another player. Put it in the music folder and import the folder. ('Importing playlists' explains where playlists end up.)\u003c/li>\n\u003c/ul>\n\u003ch3>Exporting\u003c/h3>\n\u003cp>To take a library from 37 Player into Music.app or iTunes, use 'Import / Export' → Export and choose \u003cstrong>Portable\u003c/strong>. It unpacks into a \u003cstrong>music\u003c/strong> folder (artist / album / tracks) and a \u003cstrong>playlists\u003c/strong> folder of .m3u8 files.\u003c/p>\n\u003cul>\n\u003cli>\u003cstrong>The audio:\u003c/strong> in Music.app, choose \u003cstrong>File → Import…\u003c/strong> and pick the \u003cstrong>music\u003c/strong> folder.\u003c/li>\n\u003cli>\u003cstrong>The playlists:\u003c/strong> choose \u003cstrong>File → Library → Import Playlist…\u003c/strong> and pick each .m3u8 file. Music.app doesn't recreate folders from these, so a playlist lands at the top level; drag it into a playlist folder afterwards if you want one.\u003c/li>\n\u003c/ul>\n\u003cp>Every track keeps its name, artist, album, track number and artwork, since 37 Player writes those into the files themselves.\u003c/p>\n\u003cp>Volume adjustments made in 37 Player, and its evening out, don't come along: they aren't written into the files as ReplayGain tags, so Music.app plays each file at its own level. Music.app's own \u003cstrong>Sound Check\u003c/strong> (in its Playback settings) evens tracks out in a similar way.\u003c/p>\n\u003ch3>Why standardize for Music.app and iTunes\u003c/h3>\n\u003cp>Music.app and iTunes play one track straight into the next — but only smoothly when the two are alike. When the next track is a different file type (MP3 after AAC), or has a different sample rate (44.1 kHz after 48 kHz, say) or a different number of channels (mono after stereo), the player has to reset its audio output between them, and you hear a click, dropout, short gap, or worse.\u003c/p>\n\u003cp>37 Player itself doesn't have this problem, so there's no need to change the library for it. Instead, when exporting with \u003cstrong>Portable\u003c/strong>, select \u003cstrong>Convert to the preferred format\u003c/strong>: every file in the export comes out alike, and the library stays as it is. For a stricter match, set the preferred format (Settings → \u003cstrong>File conversion\u003c/strong>) to \u003cstrong>Best for Apple\u003c/strong> (AAC, 44.1 kHz, stereo), or choose your own under Custom.\u003c/p>\n\u003ch3>The library's file format\u003c/h3>\n\u003cp>Settings → \u003cstrong>File conversion\u003c/strong> sets one \u003cstrong>preferred format\u003c/strong> for the library — Standard (MP3 192k, recommended), Best for Apple, Very small, Lossless (FLAC, not recommended: much larger, with no difference you can hear), or Custom — and which files are converted to it:\u003c/p>\n\u003cul>\n\u003cli>\u003cstrong>Don't touch my files:\u003c/strong> nothing is changed. A file this browser can't play still gets a playable copy, and its original is kept too.\u003c/li>\n\u003cli>\u003cstrong>Reduce uncompressed audio\u003c/strong> (recommended): WAV and AIFF files are converted as they come in.\u003c/li>\n\u003cli>\u003cstrong>Choose the rules:\u003c/strong> uncompressed audio, a bitrate above a limit, a sample rate or channel count other than the preferred format's, or less widely playable types (Opus, Ogg, WebM).\u003c/li>\n\u003c/ul>\n\u003cp>The page says what the settings would mean for the library as it is (\"12 tracks would be converted…\"). Converting them is in Settings → \u003cstrong>Library cleanup\u003c/strong> → Convert to the preferred format, with \u003cstrong>Convert them now\u003c/strong> and the list of those tracks (name, album, type, size, sample rate, bit rate, channels). Any tracks can be converted too, whatever the settings: select them in 'Library' → Table and click \u003cstrong>Convert\u003c/strong> (see 'Audio playback problems'). In a shared library these settings belong to the library, so a change on one device applies on all of them, and a file about to be converted is never sent before its converted version is ready.\u003c/p>\n\u003cp>Videos (a recorded teaching, say) can come in too: 37 Player asks whether to take their sound as audio tracks. The video itself isn't kept.\u003c/p>"
   },
   {
     "id": "importing-playlists",
@@ -38627,6 +38786,11 @@ const HELP_TOPICS = [
     "id": "phones-and-tablets",
     "title": "Phones and tablets",
     "bodyHtml": "\u003ch3>iPad and iPhone: start from the Home Screen\u003c/h3>\n\u003cp>Safari on an iPad or iPhone erases a website's data after 7 days without a visit, and the library with it. A 37 Player added to the Home Screen keeps its library. It's a separate app with a library of its own, so do this \u003cstrong>before\u003c/strong> importing anything:\u003c/p>\n\u003col>\n\u003cli>In Safari, open 37 Player and tap the \u003cstrong>Share\u003c/strong> button (a square with an arrow pointing up), then \u003cstrong>View More\u003c/strong>. If Share isn't showing, tap \u003cstrong>•••\u003c/strong> first.\u003c/li>\n\u003cli>Choose \u003cstrong>Add to Home Screen\u003c/strong>. Leave \u003cstrong>Open as Web App\u003c/strong> turned on: turned off, the icon only opens the website in Safari, with Safari's library and its 7-day limit. Then tap \u003cstrong>Add\u003c/strong>.\u003c/li>\n\u003cli>Open \u003cstrong>37 Player\u003c/strong> from the Home Screen, and set it up there.\u003c/li>\n\u003c/ol>\n\u003cp>Already built a library in Safari? Use 'Import / Export' → Export there, then Import in the Home Screen app.\u003c/p>\n\u003ch3>Android: install it as an app\u003c/h3>\n\u003cp>In Chrome on Android, 37 Player offers to install itself when it first opens; otherwise use Chrome's ⋮ menu → \u003cstrong>Add to Home screen\u003c/strong> or \u003cstrong>Install app\u003c/strong>. The installed app and the website share one library, and Chrome keeps an installed app's data safe rather than clearing it when space runs low.\u003c/p>\n\u003ch3>Touch\u003c/h3>\n\u003cp>On a touch screen, 'Edit Playlists' and the 'Library' work by tapping and holding instead of clicking and dragging.\u003c/p>\n\u003ch3>Selecting\u003c/h3>\n\u003cul>\n\u003cli>\u003cstrong>Tap\u003c/strong> a track to select it. Its ✎ and ✕ show once it's selected.\u003c/li>\n\u003cli>\u003cstrong>Hold, then slide\u003c/strong> up or down to select a run of tracks.\u003c/li>\n\u003cli>\u003cstrong>Tap a folder\u003c/strong> to open or close it. Its Print, ✎ and ✕ show on the folder you tapped last.\u003c/li>\n\u003c/ul>\n\u003ch3>Moving\u003c/h3>\n\u003cul>\n\u003cli>\u003cstrong>Tracks:\u003c/strong> select them, then hold a selected track until it lifts (about half a second) and slide it to where it should go. From the right-hand column, this copies tracks into the playlist being edited.\u003c/li>\n\u003cli>\u003cstrong>Folders and playlists\u003c/strong> in the first column: hold one until it lifts, then slide it onto a folder to put it inside, or between two rows to move it there. The bar under the list moves it to the very end.\u003c/li>\n\u003cli>Near the top or bottom edge, the column scrolls by itself.\u003c/li>\n\u003c/ul>\n\u003cp>Copy and paste work too, from the bar above each list.\u003c/p>\n\u003ch3>Column widths\u003c/h3>\n\u003cp>On a tablet, drag the thin line between two columns to make a column wider, such as the right-hand one, so long titles can be read. Turning on \u003cstrong>Wrap\u003c/strong> in the bar along the top of 'Playing' (or 'Library' → Table) shows titles in full on every row.\u003c/p>\n\u003cp>On a phone, the screen slides sideways between the columns. Drag the thin line at a column's right-hand edge with a finger to make that column wider or narrower (up to nine tenths of the screen, so its line always shows); the columns to its right just move along. The widths are kept for next time, separately for holding the phone upright and on its side. To put every column back as it started, use \u003cstrong>Reset column widths\u003c/strong> at the bottom of Display settings (◐).\u003c/p>\n\u003ch3>Playing with the screen off\u003c/h3>\n\u003cp>A playlist keeps playing with the screen locked or while you use another app, and moves from track to track by itself. While the screen is off, 37 Player also plays a silent sound alongside the track. Without it, Android lets a track that starts with the screen off play for a couple of seconds and then silences it.\u003c/p>\n\u003cp>If playback ever goes quiet while the time keeps moving, open \u003cstrong>Settings → Playback → Playback log\u003c/strong> afterwards. It records when each track started, when the app left and came back to the screen, and whether the phone stopped or paused anything. \u003cstrong>Copy all\u003c/strong> puts the whole log on the clipboard, and \u003cstrong>Share…\u003c/strong> sends it as a text file (on a computer without sharing, \u003cstrong>Save as a file\u003c/strong> saves it): both start with this device's version, browser and storage, so whoever helps you can tell where it came from. That's easier and safer than selecting lines by hand, which can leave an older copy on the clipboard. Or use \u003cstrong>Send feedback…\u003c/strong> in Help to send the log to the author of 37 Player with a note of what happened.\u003c/p>\n\u003cp>At a stop, the lock screen keeps showing the stop's name with a ▶. Pressing it, there or on headphones, continues the session without unlocking. The same after pausing with the screen locked: the paused track stays on the lock screen, and ▶ carries on from where it was. For that, 37 Player plays silence while it waits: through a stop for as long as it lasts, after a pause for up to 30 minutes. That uses a little battery. To save battery, turn off \u003cstrong>Keep the lock screen ready at stops and pauses\u003c/strong> in Settings → Playback; then carry on from 37 Player itself.\u003c/p>"
+  },
+  {
+    "id": "audio-playback-problems",
+    "title": "Audio playback problems",
+    "bodyHtml": "\u003cp>Most recordings play everywhere: \u003cstrong>MP3\u003c/strong>, \u003cstrong>M4A\u003c/strong> (AAC) and \u003cstrong>WAV\u003c/strong> play in every browser and in the desktop app. A few other kinds of file play on some devices but not on others: \u003cstrong>WebM\u003c/strong> and \u003cstrong>Opus\u003c/strong> (common for recordings made in a browser or on an Android phone, and for many downloads from the web), \u003cstrong>Ogg\u003c/strong>, \u003cstrong>FLAC\u003c/strong>, \u003cstrong>AIFF\u003c/strong>, \u003cstrong>Apple Lossless\u003c/strong> (ALAC, outside Safari) and some rarer ones. An older Mac, an iPad or iPhone, and Safari are the likeliest to have trouble with them.\u003c/p>\n\u003ch3>What it looks like\u003c/h3>\n\u003cul>\n\u003cli>\u003cstrong>A track won't start\u003c/strong>, and 37 Player says it can't be played.\u003c/li>\n\u003cli>\u003cstrong>The time runs, but there's no sound.\u003c/strong>\u003c/li>\n\u003cli>\u003cstrong>The length is wrong\u003c/strong>, or moving to another point in the track doesn't land where it should.\u003c/li>\n\u003cli>\u003cstrong>The same track plays well on another device.\u003c/strong>\u003c/li>\n\u003c/ul>\n\u003ch3>What to do: convert it\u003c/h3>\n\u003cp>Converting makes the recording into the library's preferred format (Settings → \u003cstrong>File conversion\u003c/strong>: MP3, unless you've chosen another), which plays on every device. The converted file takes the place of the old one, so the track keeps its name, its details and its place in every playlist. In a shared library the converted file goes to every device.\u003c/p>\n\u003col>\n\u003cli>Open 'Library' → \u003cstrong>Table\u003c/strong>.\u003c/li>\n\u003cli>Click the \u003cstrong>Type\u003c/strong> heading to sort by it, so that tracks of the same kind are together.\u003c/li>\n\u003cli>Select the tracks that have trouble: click one, then Shift+click another to select everything between them.\u003c/li>\n\u003cli>Click \u003cstrong>Convert\u003c/strong> in the bar under the table. (In \u003cstrong>Browse\u003c/strong>, \u003cstrong>Convert\u003c/strong> is in the bar above the tracks.)\u003c/li>\n\u003c/ol>\n\u003cp>Converting needs 37 Player's converter, which it fetches the first time (about 26 MB) and then keeps, so it works offline afterwards. It waits while anything is playing, and shows how far it has got at the bottom of the window, with \u003cstrong>Stop\u003c/strong>. A track that is already in the preferred format is left as it is. Afterwards 37 Player asks whether to keep the originals too, for a later export (with \u003cstrong>Don't touch my files\u003c/strong> they are simply kept). A file over 500 MB gets a warning first, since converting needs about as much memory as the file's size.\u003c/p>\n\u003cp>Convert goes by your choice, whatever the settings on the File conversion page say. To have 37 Player convert such files by itself as they come in, choose \u003cstrong>Choose the rules\u003c/strong> there, with \u003cstrong>Less widely playable types\u003c/strong>.\u003c/p>\n\u003ch3>What Type shows\u003c/h3>\n\u003cp>Table's \u003cstrong>Type\u003c/strong> shows what kind of file a track really is, found from what's inside it, not only from its name: a file can be named .mp3 and be WebM inside. Tracks are recorded this way as they come in. For tracks that came in before 37 Player did this, Settings → Library cleanup → \u003cstrong>Check library\u003c/strong> finds out, and says how many were another kind than their names said.\u003c/p>\n\u003ch3>When converting doesn't help\u003c/h3>\n\u003cul>\n\u003cli>\u003cstrong>A track that can't be played on any device\u003c/strong> may have lost its file, or the file may be damaged. Settings → \u003cstrong>Library cleanup\u003c/strong> lists such tracks, with \u003cstrong>Find or replace…\u003c/strong> to give a track its file again.\u003c/li>\n\u003cli>\u003cstrong>Still no sound?\u003c/strong> Use \u003cstrong>Send feedback…\u003c/strong> in Help to tell the author of 37 Player, with a note of which track and what happened. The playback log goes with it, and says which kinds of file this device can play.\u003c/li>\n\u003c/ul>"
   },
   {
     "id": "keyboard-shortcuts",
@@ -40056,7 +40220,7 @@ async function recheckStoredAudio(ids, onStep){
           const name = (tr.filename || tr.name || "track").replace(/\.(aiff?|aifc)$/i, "") + ".wav";
           blob = new File([wav], name, {type: "audio/wav", lastModified: Date.now()});
           await idbPut("audio", {id, blob});
-          tr.filename = name; tr.fileSize = blob.size; tr.fileModified = blob.lastModified;
+          tr.filename = name; tr.fileType = "wav"; tr.fileSize = blob.size; tr.fileModified = blob.lastModified;
           tr.fileTags = librarySnapshot({}, null); // the WAV has no tags yet — the library's are written into it
           convertedFromAiff = true;
         }
@@ -40113,7 +40277,10 @@ async function whyNoWaveform(blob, a){
 //   2. every stored file is checked for damage (Safari's doubled files);
 //   3. tracks that look wrong (no length, no waveform, no loudness, no
 //      sample rate, or marked as unplayable) are read again with today's
-//      decoders (recheckStoredAudio).
+//      decoders (recheckStoredAudio);
+//   4. tracks without a record of what kind of file they are have it found
+//      inside them (track.fileType, 2.5.059), as an import does now: Table's
+//      Type and the format rules go by it, not by the name.
 // Add new checks at the end. Progress in the status bar, with Stop.
 let checkLibraryRunning = false;
 async function checkLibrary(){
@@ -40122,7 +40289,7 @@ async function checkLibrary(){
   let stopped = false;
   const stop = ()=>{ stopped = true; };
   const step = (text)=>{ if(stopped) throw {stopped: true}; setActiveOperationProgress(text, stop); };
-  const out = {dated: 0, damaged: 0, fixed: 0, left: 0, noWave: 0, noWaveList: []};
+  const out = {dated: 0, damaged: 0, fixed: 0, left: 0, noWave: 0, noWaveList: [], typed: 0, mistyped: 0};
   try{
     const btn = document.getElementById("chkLibraryBtn"); if(btn) btn.disabled = true;
     step(t("chkStepDates"));
@@ -40140,6 +40307,17 @@ async function checkLibrary(){
       const r = await recheckStoredAudio(look, (d, n)=> step(t("chkStepTracks", {done: Math.min(d + 1, n), total: n})));
       out.fixed = r.fixed; out.left = r.left; out.noWave = r.noWave; out.noWaveList = r.noWaveList;
     }
+    const kindOf = e=> EXT_AUDIO_KIND[e] || e;
+    const unkinded = root.library.filter(tr=> !tr.fileType && !damagedAudio.ids.has(tr.id) && !(typeof sharedTrackMissing === "function" && sharedTrackMissing(tr.id)));
+    for(let i = 0; i < unkinded.length; i++){
+      step(t("chkStepTypes", {done: i + 1, total: unkinded.length}));
+      const tr = unkinded[i];
+      if(!(await recordTrackKind(tr))) continue;
+      out.typed++;
+      if(kindOf(fileExt(tr.filename)) !== kindOf(tr.fileType)) out.mistyped++;
+      if(out.typed % 25 === 0) await saveState();
+    }
+    if(out.typed) await saveState();
     await idbPut("state", {key: "checkLibrary", value: {at: Date.now(), version: 1}}).catch(()=>{});
   }catch(err){
     if(err && err.stopped){ if(settingsPageOpen() && settingsSection === "cleanup") renderSettingsSection(); return; } // Stop: no summary
@@ -40155,6 +40333,7 @@ async function checkLibrary(){
   if(out.damaged) lines.push(t("chkDamaged", {n: out.damaged}));
   if(out.fixed || out.left) lines.push(t("chkFixed", {fixed: out.fixed, left: out.left}));
   if(out.noWave) lines.push(t("chkNoWave", {n: out.noWave}));
+  if(out.mistyped) lines.push(t("chkMistyped", {n: out.mistyped}));
   if(!lines.length) lines.push(t("chkNothing"));
   // The tracks still without a waveform, by name, with their format, length
   // and why (1.4.108), and a way to find them.
@@ -41095,7 +41274,7 @@ function renderDuplicatesPage(){
     const mark = s.marks[tr.id], isMain = tr.id === s.mainId;
     const card = document.createElement("div");
     card.className = "dup-card mark-" + mark + (isMain ? " main" : "");
-    const ext = ((tr.filename||"").match(/\.([a-z0-9]+)$/i) || [,""])[1].toUpperCase();
+    const ext = trackExt(tr).toUpperCase();
     const facts = [fmtTime(tr.duration), ext, tr.fileSize ? fmtBytes(tr.fileSize) : "", t("dupUsed", {n: countUsage(tr.id)})].filter(Boolean).join(" · ");
     const badge = isMain ? t("dupBadgeMain") : mark === "keep" ? t("dupBadgeKeep") : mark === "delete" ? t("dupBadgeDelete") : t("dupBadgeIgnore");
     card.innerHTML = `
@@ -45056,7 +45235,7 @@ function gatherPlaylistsForZip(scope){
 // format, for an export where every file should be alike.
 function exportNeedsConvert(track, srcName, target){
   const kind = FORMAT_KINDS[target.format];
-  if(("." + fileExt(srcName)) !== kind.ext) return true;
+  if(("." + (track.fileType || fileExt(srcName))) !== kind.ext) return true;
   if(target.rate && track.sampleRate && track.sampleRate !== target.rate) return true;
   if(target.channels && track.channels && track.channels !== target.channels) return true;
   const kbps = track.fileSize && track.duration ? track.fileSize * 8 / track.duration / 1000 : null;
@@ -46129,7 +46308,7 @@ function fmtEffectList(list, pick){
   const kbpsOf = tr=> tr.fileSize && tr.duration ? tr.fileSize * 8 / tr.duration / 1000 : null;
   const cols = [
     {key: "name", label: t("fmtListName"), text: true, val: tr=> tr.name || tr.filename || ""},
-    {key: "type", label: t("fmtListType"), val: tr=> fileExt(tr.filename).toUpperCase()},
+    {key: "type", label: t("fmtListType"), val: tr=> trackExt(tr).toUpperCase()},
     {key: "size", label: t("fmtListSize"), num: true, val: tr=> tr.fileSize || 0, show: tr=> tr.fileSize ? fmtBytes(tr.fileSize) : "—"},
     {key: "rate", label: t("fmtListRate"), num: true, val: tr=> tr.sampleRate || 0, show: tr=> tr.sampleRate ? (tr.sampleRate / 1000).toLocaleString(undefined, {maximumFractionDigits: 2}) + " kHz" : "—"},
     {key: "kbps", label: t("fmtListKbps"), num: true, val: tr=> kbpsOf(tr) || 0, show: tr=> kbpsOf(tr) ? Math.round(kbpsOf(tr)) + " kbps" : "—"},
@@ -46185,7 +46364,7 @@ function fmtEffectList(list, pick){
       // same throughout), so it comes first.
       const sub = [tr.album, tr.artist].filter(Boolean).join(" · ");
       if(sub){ const a = document.createElement("div"); a.className = "fmt-album"; a.textContent = sub; name.appendChild(a); }
-      row.insertCell().textContent = fileExt(tr.filename).toUpperCase() || "—";
+      row.insertCell().textContent = trackExt(tr).toUpperCase() || "—";
       cols.slice(2).forEach(c=>{ const td = row.insertCell(); td.className = "num"; td.textContent = c.show(tr); });
     });
   };
@@ -46523,7 +46702,9 @@ const SYNC_DOC_FORMAT = 1;
 // Kept on this device only: waveforms (fetched separately, per audio file)
 // and Standardize's own bookkeeping.
 const SYNC_LOCAL_TRACK_FIELDS = ["peaks", "peaksTried", "analysisCrashed", "standardizeAttempts", "standardizeLastError", "nativeRateChecked", "original"];
-const SYNC_AUDIO_FIELDS = ["audioRev", "audioFrom", "filename", "fileSize", "fileModified", "sampleRate", "channels", "duration", "loudness", "fileTags", "needsConvert"];
+// fileType (2.5.059): what kind of file was found inside, so it travels with
+// the file it describes.
+const SYNC_AUDIO_FIELDS = ["audioRev", "audioFrom", "filename", "fileType", "fileSize", "fileModified", "sampleRate", "channels", "duration", "loudness", "fileTags", "needsConvert"];
 const SYNC_ART_FIELDS = ["artRev", "hasArtwork"];
 function syncStable(v){
   if(v === undefined) return "u";
@@ -46556,7 +46737,7 @@ function syncEq(a, b){ return syncStable(a) === syncStable(b); }
 // without their order numbers. The same in sync.php (meaning_track,
 // meaning_node). Records made this way carry f: 2; older ones are treated
 // as not recorded, so Build list from history redoes them.
-const SYNC_MEANING_TRACK_SKIP = ["audioFrom", "loudness", "duration", "fileTags", "needsConvert", "fileModified", "sampleRate", "channels", "filename", "fileSize", "addedAt", "changedAt"];
+const SYNC_MEANING_TRACK_SKIP = ["audioFrom", "loudness", "duration", "fileTags", "needsConvert", "fileModified", "sampleRate", "channels", "filename", "fileType", "fileSize", "addedAt", "changedAt"];
 const SYNC_CHANGES_FORMAT = 2;
 function syncMeaningTrack(t){
   if(!t) return t;

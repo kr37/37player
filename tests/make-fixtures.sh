@@ -31,6 +31,8 @@ ffmpeg -loglevel error -y -f lavfi -i "sine=frequency=350:duration=10" -ac 2 -c:
 ffmpeg -loglevel error -y -f lavfi -i "testsrc=duration=6:size=320x240:rate=15" -f lavfi -i "sine=frequency=440:duration=6" -c:v mpeg4 -c:a aac -b:a 128k -shortest conv/teaching.mp4
 ffmpeg -loglevel error -y -f lavfi -i "testsrc=duration=5:size=320x240:rate=15" -f lavfi -i "sine=frequency=550:duration=5" -c:v mpeg4 -c:a libvorbis -shortest conv/clip.mkv
 ffmpeg -loglevel error -y -f lavfi -i "testsrc=duration=3:size=160x120:rate=10" -c:v mpeg4 conv/silent.mp4
+# WebM (Opus) named .mp3, like kr37's festival recording (convask.js)
+ffmpeg -loglevel error -y -f lavfi -i "sine=frequency=460:duration=4" -ac 2 -c:a libopus -b:a 64k -f webm conv/festival.mp3
 # A folder of albums with no playlist files, for "Make a playlist of each folder" (folderpl.js).
 # Track numbers deliberately disagree with the file names' order.
 rm -rf folderpl && mkdir -p "folderpl/Pujas/Heruka" "folderpl/Pujas/Tara" "folderpl/Pujas/Teachings/Day 1"
