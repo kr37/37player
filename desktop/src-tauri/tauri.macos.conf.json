@@ -1,0 +1,14 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "bundle": {
+    "fileAssociations": [
+      {
+        "ext": ["mp3", "m4a", "m4b", "aac", "wav", "aif", "aiff", "aifc", "flac", "ogg", "oga", "opus", "webm", "weba", "mka", "wma", "alac", "caf"],
+        "contentTypes": ["public.audio"],
+        "name": "Audio",
+        "role": "Viewer",
+        "rank": "Alternate"
+      }
+    ]
+  }
+}
