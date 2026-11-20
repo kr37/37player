@@ -43,3 +43,9 @@ tauri-plugin-updater = "2"
 
 [dev-dependencies]
 minisign = "0.7"
+
+# wry, patched: custom-protocol answers go to WebKit on the main thread (shell
+# 2.5.8; see ../vendor/wry/PATCHED-FOR-37-PLAYER.md). Same version as the
+# registry's, so nothing else moves.
+[patch.crates-io]
+wry = { path = "../vendor/wry" }
