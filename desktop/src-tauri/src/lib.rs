@@ -20,7 +20,7 @@
 //    (CCleaner) loses nothing a person would miss.
 //  - What the page can't see for itself (watch.rs): the window not
 //    answering for over 2 s, and how the session before ended.
-//  - Audio files opened with 37 Player (shell 2.5.9): listed for them
+//  - Audio files opened with 37 Player (shell 2.6.0): listed for them
 //    (tauri.macos.conf.json), handed over by macOS as an Apple Event
 //    (RunEvent::Opened) or on the command line (Windows, Linux, and the
 //    single-instance hand-over), and kept for the page (p37_opened_take).
@@ -109,7 +109,7 @@ fn p37_shell_info(app: tauri::AppHandle) -> ShellInfo {
         append_range: true,
         // typed_path: a recording's address may end in "/.p37type.<ext>", taken off before the file is found (files::strip_type_suffix, shell 2.5.6).
         typed_path: true,
-        // opened: files opened with 37 Player wait for p37_opened_take, with "p37-files-opened" when more come (shell 2.5.9).
+        // opened: files opened with 37 Player wait for p37_opened_take, with "p37-files-opened" when more come (shell 2.6.0).
         opened: true,
         // files_http: where recordings are also served, on Linux (fileserver.rs, shell 2.5.0).
         files_http: app.try_state::<fileserver::FileServer>().map(|f| f.base.clone()) }

@@ -61,7 +61,7 @@ pub fn resolve(root: &Path, rel: &str) -> Result<PathBuf, String> {
 
 // ---- Roots
 // Besides the list (roots.json), files opened with 37 Player (Finder's
-// Open with, a double-click, the command line; shell 2.5.9): each one is a
+// Open with, a double-click, the command line; shell 2.6.0): each one is a
 // root of its own for this run only, "open-<n>", never saved or listed,
 // through which only that one file can be read (`get_read`), and nothing
 // written, listed or removed (`get` doesn't know them).
