@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.5.056">
+<meta name="app-version" content="2.5.057">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -4356,6 +4356,10 @@ function desktopHttpUrlFor(blob){
 }
 // (Such an address names the file's place, which a rename changes: not kept between plays.)
 function isDesktopHttpUrl(url){ const base = desktopFilesHttp(); return !!base && typeof url === "string" && url.startsWith(base + "/"); }
+// A recording's address from the desktop app's file server, p37lib (Mac:
+// p37lib://localhost/…, Windows: http://p37lib.localhost/…): another origin
+// than the page's, as the Linux app's http address is (2.5.057).
+function isP37libUrl(url){ return typeof url === "string" && (url.startsWith("p37lib://") || /^https?:\/\/p37lib\.localhost\//.test(url)); }
 // WebKit on the Mac chooses its player from an address's extension, before
 // any answer arrives: a WebM named ".mp3" (Standardize's, before 2.5.048)
 // went to Apple's player, which can't play WebM, though shell 2.5.5 served
@@ -35954,7 +35958,13 @@ function applyLevel(el, trackId, atStart){
   // marked tracks played wrongly; those tracks had come from memory, not
   // from this address at all. In a bare WebKitGTK window a marked track
   // plays right, through Web Audio too.)
-  if(atStart && isDesktopHttpUrl(el.src) && el.crossOrigin !== "anonymous" && levelCtx && levelCtx.state === "running"
+  // The same for the desktop app's p37lib address on a Mac or Windows (2.5.057):
+  // unmarked, the SKBC Mac mini (macOS 12) played a quiet WebM turned up
+  // through Web Audio in silence, its time running (report
+  // 2026-11-20-054746). The shell answers with Access-Control-Allow-Origin,
+  // so the marked load passes. The mark stays on the element, so every
+  // later track it loads is fetched the same way.
+  if(atStart && (isDesktopHttpUrl(el.src) || isP37libUrl(el.src)) && el.crossOrigin !== "anonymous" && levelCtx && levelCtx.state === "running"
       && Math.pow(10, trackLevel(findLibraryTrack(trackId)).db / 20) * (el === audioEl ? mainVolumeGain() : 1) > 1.001){ const u = el.src; el.crossOrigin = "anonymous"; el.src = u; }
   el._levelTrack = trackId;
   const base = el === audioEl ? mainVolumeGain() : 1;
