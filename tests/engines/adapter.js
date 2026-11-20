@@ -97,7 +97,20 @@ class Page {
       };
       Object.defineProperty(Navigator.prototype, 'maxTouchPoints', {get: ()=> 5, configurable: true});
       if(!('ontouchstart' in window)) window.ontouchstart = null;
+      // The page looks for touch events on the document too ("ontouchend" in
+      // document: useSilenceClock, since 2.5.046). Without them an "iPad"
+      // counted as a computer here and got no silent loop, so bridge3,
+      // stoplock, ph, noloop and awk2 failed in WebKit and Firefox (19 Nov 2026).
+      for(const t of ['ontouchstart', 'ontouchend', 'ontouchmove', 'ontouchcancel']){
+        if(!(t in window)) window[t] = null;
+        if(!(t in document)) document[t] = null;
+      }
     });
+  }
+  // Puppeteer's file chooser (missreplace.js): Playwright's, with accept().
+  async waitForFileChooser(opts){
+    const fc = await this.p.waitForEvent('filechooser', {timeout: (opts && opts.timeout) || 30000});
+    return {accept: (files)=> fc.setFiles(files), cancel: async ()=>{}, isMultiple: ()=> fc.isMultiple()};
   }
   // Puppeteer's request interception, on Playwright's routes.
   async setRequestInterception(on){

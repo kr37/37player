@@ -26,10 +26,13 @@ let fails=0; const ok=(c,m)=>{ console.log((c?'ok   ':'FAIL ')+m); if(!c) fails+
   let s = await p.evaluate(()=> window.__st()); console.log(JSON.stringify(s));
   ok(s.paused && !s.pauseHold && !s.ka, 'paused off screen: no silent loop');
   await p.evaluate(()=> window.__ah.play()); await sleep(800);
+  for(let i = 0; i < 50 && !(await p.evaluate(()=> isFinite(document.getElementById('audioEl').duration) && document.getElementById('audioEl').duration > 1)); i++) await sleep(100);
   await p.evaluate(()=>{ const a=document.getElementById('audioEl'); a.currentTime = a.duration - 0.5; });
   const t0 = Date.now(); let reachedB = 0;
   for(let i = 0; i < 80; i++){ await sleep(100); s = await p.evaluate(()=> window.__st()); if(s.cur === 'b' && !s.paused){ reachedB = Date.now() - t0; break; } }
   ok(reachedB > 1500 && reachedB < 5000, 'track → 2 s silence → track, hidden: on time without the loop (' + reachedB + ' ms)');
+  // Seek only once the player knows the track's length: since 2.5.052 the page reads a file's first bytes before handing it over, so the track loads a moment later, and a seek before then did nothing in WebKit (19 Nov 2026).
+  for(let i = 0; i < 50 && !(await p.evaluate(()=> isFinite(document.getElementById('audioEl').duration) && document.getElementById('audioEl').duration > 1)); i++) await sleep(100);
   await p.evaluate(()=>{ const a=document.getElementById('audioEl'); a.currentTime = a.duration - 0.5; }); await sleep(2500);
   s = await p.evaluate(()=> window.__st()); console.log(JSON.stringify(s));
   ok(s.cur === 's' && !s.stopHold && !s.ka, 'at a stop, hidden: no silent loop');
