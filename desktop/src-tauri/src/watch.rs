@@ -99,13 +99,20 @@ pub fn start(app: &tauri::AppHandle) -> Arc<Watch> {
     });
     w.write();
     let _ = WATCH.set(w.clone());
-    // A panic aborts the app: its message is kept for the next start.
+    // A panic aborts the app: its message is kept for the next start. The
+    // first is kept, and a later one added after it (shell 2.5.7): a panic
+    // where it can't unwind ends in a second, "panic in a function that
+    // cannot unwind", which had replaced the first, the one that says why.
     let prev = std::panic::take_hook();
     std::panic::set_hook(Box::new(move |info| {
         if let Some(w) = get() {
             let loc = info.location().map(|l| format!(" ({}:{})", l.file(), l.line())).unwrap_or_default();
             let msg = info.payload().downcast_ref::<&str>().map(|s| s.to_string()).or_else(|| info.payload().downcast_ref::<String>().cloned()).unwrap_or_else(|| "panic".into());
-            if let Ok(mut me) = w.me.try_lock() { me.panic = Some(format!("{}{}", msg, loc)); me.alive = now_ms(); }
+            if let Ok(mut me) = w.me.try_lock() {
+                let this = format!("{}{}", msg, loc);
+                me.panic = Some(match me.panic.take() { Some(first) if first.len() < 2000 => format!("{}; then: {}", first, this), Some(first) => first, None => this });
+                me.alive = now_ms();
+            }
             w.write();
         }
         prev(info);
