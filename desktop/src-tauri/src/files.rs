@@ -60,8 +60,13 @@ pub fn resolve(root: &Path, rel: &str) -> Result<PathBuf, String> {
 }
 
 // ---- Roots
+// Besides the list (roots.json), files opened with 37 Player (Finder's
+// Open with, a double-click, the command line; shell 2.5.9): each one is a
+// root of its own for this run only, "open-<n>", never saved or listed,
+// through which only that one file can be read (`get_read`), and nothing
+// written, listed or removed (`get` doesn't know them).
 #[derive(Default)]
-pub struct Roots { map: Mutex<BTreeMap<String, PathBuf>>, file: Mutex<Option<PathBuf>> }
+pub struct Roots { map: Mutex<BTreeMap<String, PathBuf>>, file: Mutex<Option<PathBuf>>, opened: Mutex<BTreeMap<String, PathBuf>> }
 
 impl Roots {
     pub fn load(file: PathBuf) -> Roots {
@@ -69,7 +74,7 @@ impl Roots {
             .and_then(|s| serde_json::from_str::<BTreeMap<String, String>>(&s).ok())
             .map(|m| m.into_iter().map(|(k, v)| (k, PathBuf::from(v))).collect())
             .unwrap_or_default();
-        Roots { map: Mutex::new(map), file: Mutex::new(Some(file)) }
+        Roots { map: Mutex::new(map), file: Mutex::new(Some(file)), opened: Mutex::new(BTreeMap::new()) }
     }
     fn save(&self) -> Result<(), String> {
         let file = self.file.lock().unwrap().clone();
@@ -89,6 +94,33 @@ impl Roots {
     }
     pub fn list(&self) -> BTreeMap<String, String> {
         self.map.lock().unwrap().iter().map(|(k, v)| (k.clone(), v.to_string_lossy().into_owned())).collect()
+    }
+    // A file opened with 37 Player: its root and the path to give with it
+    // (its name). The same file opened again keeps its root. None for
+    // anything that isn't a file, or whose name isn't a plain name.
+    pub fn open_file(&self, file: &Path) -> Option<(String, String)> {
+        let file = fs::canonicalize(file).ok()?;
+        if !file.is_file() { return None; }
+        let name = file.file_name()?.to_str()?.to_string();
+        safe_rel(&name).ok()?;
+        if name.contains('/') { return None; }
+        let mut m = self.opened.lock().unwrap();
+        if let Some((id, _)) = m.iter().find(|(_, p)| **p == file) { return Some((id.clone(), name)); }
+        let id = format!("open-{}", m.len() + 1);
+        m.insert(id.clone(), file);
+        Some((id, name))
+    }
+    // The folder to read `rel` from: any root on the list, or an opened
+    // file's folder when `rel` is that file's own name (and nothing else).
+    pub fn get_read(&self, id: &str, rel: &str) -> Result<PathBuf, String> {
+        if let Some(f) = self.opened.lock().unwrap().get(id) {
+            let ok = f.file_name().and_then(|n| n.to_str()) == Some(rel);
+            return match (ok, f.parent()) {
+                (true, Some(dir)) => Ok(dir.to_path_buf()),
+                _ => Err(format!("only the opened file can be read through {:?}", id)),
+            };
+        }
+        self.get(id)
     }
 }
 
@@ -607,11 +639,11 @@ pub fn fs_root_forget(app: tauri::AppHandle, id: String) -> Result<(), String> {
 pub fn fs_list(app: tauri::AppHandle, root: String, path: String) -> Result<Vec<Entry>, String> { list(&roots(&app).get(&root)?, &path) }
 
 #[tauri::command(async)]
-pub fn fs_stat(app: tauri::AppHandle, root: String, path: String) -> Result<Option<Entry>, String> { stat(&roots(&app).get(&root)?, &path) }
+pub fn fs_stat(app: tauri::AppHandle, root: String, path: String) -> Result<Option<Entry>, String> { stat(&roots(&app).get_read(&root, &path)?, &path) }
 
 #[tauri::command(async)]
 pub fn fs_read(app: tauri::AppHandle, root: String, path: String, start: Option<u64>, end: Option<u64>) -> Result<tauri::ipc::Response, String> {
-    Ok(tauri::ipc::Response::new(read(&roots(&app).get(&root)?, &path, start.unwrap_or(0), end)?))
+    Ok(tauri::ipc::Response::new(read(&roots(&app).get_read(&root, &path)?, &path, start.unwrap_or(0), end)?))
 }
 
 // The bytes come as the request's body (no JSON); the root and path in the
@@ -631,13 +663,13 @@ pub fn fs_write(app: tauri::AppHandle, request: tauri::ipc::Request<'_>) -> Resu
 #[tauri::command(async)]
 pub fn fs_copy(app: tauri::AppHandle, root: String, from: String, to_root: Option<String>, to: String, replace: Option<bool>) -> Result<(), String> {
     let r = roots(&app);
-    copy(&r.get(&root)?, &from, &r.get(to_root.as_deref().unwrap_or(&root))?, &to, replace.unwrap_or(false))
+    copy(&r.get_read(&root, &from)?, &from, &r.get(to_root.as_deref().unwrap_or(&root))?, &to, replace.unwrap_or(false))
 }
 
 #[tauri::command(async)]
 pub fn fs_append_range(app: tauri::AppHandle, root: String, from: String, start: u64, end: u64, to_root: Option<String>, to: String) -> Result<(), String> {
     let r = roots(&app);
-    append_range(&r.get(&root)?, &from, start, end, &r.get(to_root.as_deref().unwrap_or(&root))?, &to)
+    append_range(&r.get_read(&root, &from)?, &from, start, end, &r.get(to_root.as_deref().unwrap_or(&root))?, &to)
 }
 
 #[tauri::command(async)]
@@ -691,7 +723,7 @@ pub fn parse_range(h: &str, len: u64) -> Option<(u64, u64)> {
 // The file for "<root>/<path>", by the same roots and checks as p37lib
 // (fileserver.rs: recordings over http://127.0.0.1 on Linux).
 pub fn file_for(app: &tauri::AppHandle, root: &str, rel: &str) -> Result<PathBuf, String> {
-    let base = roots(app).get(root)?;
+    let base = roots(app).get_read(root, rel)?;
     resolve(&base, rel)
 }
 
@@ -716,7 +748,7 @@ pub fn serve(app: &tauri::AppHandle, req: &tauri::http::Request<Vec<u8>>) -> tau
     let path = percent_decode(req.uri().path().trim_start_matches('/'));
     let Some((root, rel)) = path.split_once('/') else { return fail(StatusCode::NOT_FOUND, "no root".into()) };
     let rel = strip_type_suffix(rel);
-    let base = match roots(app).get(root) { Ok(b) => b, Err(e) => return fail(StatusCode::NOT_FOUND, e) };
+    let base = match roots(app).get_read(root, rel) { Ok(b) => b, Err(e) => return fail(StatusCode::NOT_FOUND, e) };
     let full = match resolve(&base, rel) { Ok(p) => p, Err(e) => return fail(StatusCode::FORBIDDEN, e) };
     let len = match fs::metadata(&full) { Ok(m) if m.is_file() => m.len(), _ => return fail(StatusCode::NOT_FOUND, "not there".into()) };
     let mime = mime_for_file(&full, rel);
@@ -799,6 +831,25 @@ pub fn mime_for(rel: &str) -> &'static str {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn an_opened_file_is_its_own_root_for_reading_only() {
+        let d = tmp("opened");
+        fs::write(d.join("Talk.mp3"), b"ID3\x03\0\0\0\0\0\0").unwrap();
+        fs::write(d.join("Other.mp3"), b"x").unwrap();
+        let r = Roots::default();
+        let (id, name) = r.open_file(&d.join("Talk.mp3")).unwrap();
+        assert_eq!(name, "Talk.mp3");
+        assert!(id.starts_with("open-"));
+        assert_eq!(r.open_file(&d.join("Talk.mp3")).unwrap().0, id); // the same file keeps its root
+        let base = r.get_read(&id, "Talk.mp3").unwrap();
+        assert_eq!(read(&base, "Talk.mp3", 0, Some(3)).unwrap(), b"ID3");
+        assert!(r.get_read(&id, "Other.mp3").is_err()); // nothing else in its folder
+        assert!(r.get_read(&id, "").is_err());
+        assert!(r.get(&id).is_err()); // so no writing, listing or removing through it
+        assert!(r.list().is_empty()); // and it isn't on the list, or saved
+        assert!(r.open_file(&d).is_none()); // a folder isn't a file
+        assert!(r.open_file(&d.join("gone.mp3")).is_none());
+    }
     fn tmp(name: &str) -> PathBuf {
         let d = std::env::temp_dir().join(format!("p37-files-test-{}-{}", name, std::process::id()));
         let _ = fs::remove_dir_all(&d);

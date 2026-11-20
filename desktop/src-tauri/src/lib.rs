@@ -20,6 +20,10 @@
 //    (CCleaner) loses nothing a person would miss.
 //  - What the page can't see for itself (watch.rs): the window not
 //    answering for over 2 s, and how the session before ended.
+//  - Audio files opened with 37 Player (shell 2.5.9): listed for them
+//    (tauri.macos.conf.json), handed over by macOS as an Apple Event
+//    (RunEvent::Opened) or on the command line (Windows, Linux, and the
+//    single-instance hand-over), and kept for the page (p37_opened_take).
 mod device;
 mod files;
 mod oauth;
@@ -32,6 +36,46 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use tauri::{Emitter, Manager, RunEvent, WindowEvent};
 
 struct Quitting(AtomicBool);
+
+// Files opened with 37 Player that the page hasn't taken yet: what it reads
+// each one through (a root of its own, files::Roots::open_file), its name,
+// size and time. `early` holds paths that came before the roots were loaded
+// (macOS can send its Apple Event as the app starts).
+#[derive(serde::Serialize, Clone)]
+struct OpenedFile { root: String, path: String, size: u64, modified: f64 }
+#[derive(Default)]
+struct Opened { waiting: std::sync::Mutex<Vec<OpenedFile>>, early: std::sync::Mutex<Vec<std::path::PathBuf>> }
+
+// The paths handed over: each file gets its root and waits for the page,
+// which is told ("p37-files-opened"); folders and anything gone are passed by.
+fn take_opened(app: &tauri::AppHandle, paths: Vec<std::path::PathBuf>) {
+    if paths.is_empty() { return; }
+    let opened = app.state::<Opened>();
+    let Some(roots) = app.try_state::<files::Roots>() else { opened.early.lock().unwrap().extend(paths); return };
+    let mut got = Vec::new();
+    for p in paths {
+        let Some((root, path)) = roots.open_file(&p) else { continue };
+        let md = std::fs::metadata(&p).ok();
+        let modified = md.as_ref().and_then(|m| m.modified().ok()).and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok()).map(|d| d.as_millis() as f64).unwrap_or(0.0);
+        got.push(OpenedFile { root, path, size: md.map(|m| m.len()).unwrap_or(0), modified });
+    }
+    if got.is_empty() { return; }
+    opened.waiting.lock().unwrap().extend(got);
+    let _ = app.emit("p37-files-opened", ());
+    if let Some(w) = app.get_webview_window("main") { let _ = w.unminimize(); let _ = w.show(); let _ = w.set_focus(); }
+}
+
+// Files on a command line: everything after the program that is a file
+// (Windows' Open with and Linux's file managers give the path; options,
+// which start with "-", and anything else are passed by).
+fn files_in_args<I: IntoIterator<Item = String>>(args: I) -> Vec<std::path::PathBuf> {
+    args.into_iter().skip(1).filter(|a| !a.starts_with('-')).map(std::path::PathBuf::from).filter(|p| p.is_file()).collect()
+}
+
+#[tauri::command]
+fn p37_opened_take(opened: tauri::State<'_, Opened>) -> Vec<OpenedFile> {
+    std::mem::take(&mut *opened.waiting.lock().unwrap())
+}
 
 // What this shell can do for the page (see the page's DESKTOP_BRIDGE_NEEDED).
 // Raise it when the page may start relying on something new here:
@@ -48,7 +92,7 @@ struct Quitting(AtomicBool);
 const BRIDGE: u32 = 2;
 
 #[derive(serde::Serialize)]
-struct ShellInfo { version: String, bridge: u32, pages: bool, device: bool, updates: bool, zoom: bool, trash: bool, watch: bool, append_range: bool, typed_path: bool, files_http: Option<String> }
+struct ShellInfo { version: String, bridge: u32, pages: bool, device: bool, updates: bool, zoom: bool, trash: bool, watch: bool, append_range: bool, typed_path: bool, opened: bool, files_http: Option<String> }
 
 // The shell's version is the page's version as of the shell's own last
 // change (tauri.conf.json "version"), like sync.php's.
@@ -65,6 +109,8 @@ fn p37_shell_info(app: tauri::AppHandle) -> ShellInfo {
         append_range: true,
         // typed_path: a recording's address may end in "/.p37type.<ext>", taken off before the file is found (files::strip_type_suffix, shell 2.5.6).
         typed_path: true,
+        // opened: files opened with 37 Player wait for p37_opened_take, with "p37-files-opened" when more come (shell 2.5.9).
+        opened: true,
         // files_http: where recordings are also served, on Linux (fileserver.rs, shell 2.5.0).
         files_http: app.try_state::<fileserver::FileServer>().map(|f| f.base.clone()) }
 }
@@ -214,12 +260,18 @@ pub fn run() {
     #[cfg(desktop)]
     {
         // Registered first, as the plugin asks.
-        builder = builder.plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+        // A second launch with files (Open with on Windows and Linux while
+        // 37 Player runs) hands them to this one. Relative paths are the
+        // second launch's, so they're taken from its folder.
+        builder = builder.plugin(tauri_plugin_single_instance::init(|app, args, cwd| {
             if let Some(w) = app.get_webview_window("main") {
                 let _ = w.unminimize();
                 let _ = w.show();
                 let _ = w.set_focus();
             }
+            let cwd = std::path::PathBuf::from(cwd);
+            let args: Vec<String> = args.into_iter().enumerate().map(|(i, a)| if i > 0 && !a.starts_with('-') && std::path::Path::new(&a).is_relative() { cwd.join(&a).to_string_lossy().into_owned() } else { a }).collect();
+            take_opened(app, files_in_args(args));
         }));
     }
     #[cfg(target_os = "macos")]
@@ -260,6 +312,7 @@ pub fn run() {
     }
     builder
         .manage(Quitting(AtomicBool::new(false)))
+        .manage(Opened::default())
         .manage(pages.clone())
         .manage(device.clone())
         .plugin(tauri::plugin::Builder::<tauri::Wry, ()>::new("p37device").js_init_script(device_script).build())
@@ -288,6 +341,10 @@ pub fn run() {
         .setup(move |app| {
             let roots_file = app.path().app_data_dir().map(|d| d.join("roots.json")).unwrap_or_else(|_| std::path::PathBuf::from("roots.json"));
             app.manage(files::Roots::load(roots_file));
+            // Files the app was started with: on the command line (Windows,
+            // Linux), or an Apple Event that came before the roots were loaded.
+            let early = std::mem::take(&mut *app.state::<Opened>().early.lock().unwrap());
+            take_opened(app.handle(), early.into_iter().chain(files_in_args(std::env::args())).collect());
             watch::start(app.handle());
             // Linux's webview can't play recordings any other way (fileserver.rs).
             #[cfg(target_os = "linux")]
@@ -300,7 +357,7 @@ pub fn run() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![p37_quit, p37_shell_info, p37_zoom,
-            p37_page_info, p37_page_check, p37_page_ok, p37_page_switch, p37_device_get, p37_device_put,
+            p37_page_info, p37_page_check, p37_page_ok, p37_page_switch, p37_device_get, p37_device_put, p37_opened_take,
             files::fs_roots, files::fs_root_default, files::fs_root_choose, files::fs_root_forget,
             files::fs_place, files::fs_place_default, files::fs_root_info, files::fs_root_rename, files::fs_root_show, files::fs_root_trash, files::fs_places_restore, files::fs_remove_if_empty,
             oauth::p37_google_signin, oauth::p37_open_url, files::fs_find_libraries, files::fs_root_choose_library, files::fs_root_use_found,
@@ -318,6 +375,13 @@ pub fn run() {
         .build(context)
         .expect("error while building the app")
         .run(|app, event| {
+            // Finder's Open with, a double-click, a file dropped on the Dock
+            // icon: macOS sends these as an Apple Event, at the start and
+            // while running, never on the command line.
+            #[cfg(any(target_os = "macos", target_os = "ios"))]
+            if let RunEvent::Opened { urls } = &event {
+                take_opened(app, urls.iter().filter_map(|u| u.to_file_path().ok()).collect());
+            }
             // A normal end: the next start won't say it didn't close normally.
             if let RunEvent::Exit = event { if let Some(w) = watch::get() { w.closing(); } }
             // Cmd-Q, or the system asking the app to quit: the page decides too.
@@ -333,6 +397,16 @@ pub fn run() {
 #[cfg(test)]
 mod tests {
     use super::fit_window;
+    #[test]
+    fn files_on_the_command_line() {
+        let d = std::env::temp_dir().join(format!("p37-args-{}", std::process::id()));
+        std::fs::create_dir_all(&d).unwrap();
+        let f = d.join("Talk.mp3"); std::fs::write(&f, b"x").unwrap();
+        let s = |p: &std::path::Path| p.to_string_lossy().into_owned();
+        let got = super::files_in_args(vec![s(&d.join("37 Player")), "--flag".into(), s(&f), s(&d), s(&d.join("gone.mp3"))]);
+        assert_eq!(got, vec![f.clone()]);
+        assert!(super::files_in_args(vec![s(&f)]).is_empty()); // the first is the program itself
+    }
     #[test]
     fn fits_as_it_is() {
         assert_eq!(fit_window((1300, 900), (0, 28), (0, 25, 1920, 1030), 12), None);
