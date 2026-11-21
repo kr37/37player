@@ -16,7 +16,7 @@ Converting makes the recording into the library's preferred format (Settings →
 1. Open 'Library' → **Table**.
 2. Click the **Type** heading to sort by it, so that tracks of the same kind are together.
 3. Select the tracks that have trouble: click one, then Shift+click another to select everything between them.
-4. Click **Convert** in the bar under the table. (In **Browse**, **Convert** is in the bar above the tracks.)
+4. Click **Convert** in the bar above the table. (In **Browse**, it's in the bar above the tracks.)
 
 Converting needs 37 Player's converter, which it fetches the first time (about 26 MB) and then keeps, so it works offline afterwards. It waits while anything is playing, and shows how far it has got at the bottom of the window, with **Stop**. A track that is already in the preferred format is left as it is. Afterwards 37 Player asks whether to keep the originals too, for a later export (with **Don't touch my files** they are simply kept). A file over 500 MB gets a warning first, since converting needs about as much memory as the file's size.
 
