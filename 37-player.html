@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.6.008">
+<meta name="app-version" content="2.6.009">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -53923,6 +53923,15 @@ if(IN_DESKTOP_APP && window.__TAURI__ && window.__TAURI__.event && window.__TAUR
     openFolders.add(folderId);
   }
   if(!libraryUnreadable && !libraryNotLoaded) fetchStarterTrack(); // in the background; tries again next time if it couldn't
+  // The desktop app starts the sound engine as it opens (2.6.009, kr37:
+  // "build the fix in the desktop app - engine starting at launch"): its
+  // webview lets sound start without a click (wry's autoplay, on by default:
+  // WKWebView's mediaTypesRequiringUserActionForPlayback none, WebKitGTK's
+  // autoplay policy, WebView2's flag), so evening out never waits for one.
+  // Started before the session is put back, so Playing's track is hooked in
+  // as it loads (or, if the engine starts a moment later, as it does:
+  // hookInLoadedPlayers). In a browser the first click still starts it.
+  if((IN_DESKTOP_APP || window.__engineAtStart) && !libraryNotLoaded) ensureLevelCtx();
   await restoreSession();
   initEditorDropTargets();
   initResizableColumns();

@@ -32,7 +32,7 @@ async function open(b){
   await p.evaluate(()=> document.getElementById('audioEl').pause()); await sleep(300);
   // A reload: Playing puts the track back, paused, where it was (as on the Mac mini).
   await p.evaluate(async()=>{ await window.__dbg.saveState(); }); await sleep(300);
-  await p.reload({waitUntil:'networkidle0'}); await sleep(2000);
+  await p.reload({waitUntil:'load'}); await sleep(3000);
   const pos = (await p.evaluate(()=> window.__st())).t;
   let L = await p.evaluate(()=> window.__lvl());
   ok(!L.ctx && !L.routed, 'before any click: no engine, Playing not hooked in');
@@ -67,8 +67,19 @@ async function open(b){
   await p.evaluate(()=>{ window.__noLevelStart = false; }); await p.mouse.click(640, 5); await sleep(300);
   await p.evaluate(()=> window.__play('it')); await sleep(1500);
   ok((await p.evaluate(()=> window.__lvl())).routed && !(await p.evaluate(()=> window.__st().paused)), 'after a click, Play plays it turned up');
-  // 4. A track that needs no boost isn't hooked in.
   await p.close();
+  // 5. The desktop app: the engine starts as it opens, with no click, and the
+  // put-back track is hooked in (__engineAtStart stands for the desktop app;
+  // its webview lets sound start without a click, as Chrome does here).
+  p = await open(b);
+  await p.evaluate(()=>{ window.__dbg.setMode('playing'); window.__play('it'); }); await sleep(1500);
+  await p.evaluate(async()=>{ document.getElementById('audioEl').pause(); await window.__dbg.saveState(); }); await sleep(300);
+  await p.evaluateOnNewDocument(()=>{ window.__engineAtStart = true; });
+  await p.reload({waitUntil:'load'}); await sleep(3500);
+  const d5 = await p.evaluate(()=>{ const l = window.__lvl(); return {state: l.ctx && l.ctx.state, routed: l.routed, paused: window.__st().paused}; });
+  ok(d5.state === 'running' && d5.routed && d5.paused, 'desktop app: the engine runs from the start, with no click, and the put-back track (paused) is hooked in: ' + JSON.stringify(d5));
+  await p.close();
+  // 4. A track that needs no boost isn't hooked in.
   p = await open(b);
   await p.evaluate(async()=>{ window.__dbg.getRoot().library[0].volumeDb = -6; await window.__dbg.saveState(); window.__dbg.setMode('playing'); window.__play('it'); }); await sleep(1500);
   await p.evaluate(()=> document.getElementById('audioEl').pause());
