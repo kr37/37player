@@ -23,7 +23,7 @@
   'use strict';
   if (window.__p37p2p) { window.__p37p2p.show(); return; }
 
-  var VERSION = 'p2p-test 5';
+  var VERSION = 'p2p-test 6';
   var SRC = (document.currentScript && document.currentScript.src) || location.href;
   var BASE = new URL('.', SRC).href;
   var MAILBOX = BASE + 'p2p-test.php';
@@ -157,7 +157,10 @@
     root.appendChild(ui.status);
     ui.again = btn('Connect again', function () { if (role === 'b') sendHello(); else L('Press Connect again on the device that joined.', 'warn'); });
     ui.again.disabled = true;
-    root.appendChild(ui.again);
+    var r2c = el('div', { class: 'row' });
+    r2c.appendChild(ui.again);
+    r2c.appendChild(btn('Start over (pair with another device)', startOver));
+    root.appendChild(r2c);
 
     root.appendChild(el('h2', null, '3. Tests (once connected)'));
     var r3 = el('div', { class: 'row' });
@@ -361,6 +364,18 @@
       await sleep(dc && dc.readyState === 'open' ? 2000 : 700);
     }
     polling = false;
+  }
+
+  function startOver() {
+    attempt++;                       // any pending attempt timer now does nothing
+    var was = room; room = null; role = null; inboxAfter = 0;
+    stopHeartbeat();
+    if (pc) { try { pc.close(); } catch (e) {} }
+    pc = null; dc = null; rx = null; busy = false; peer = {}; lastHeard = 0;
+    ui.start.disabled = false; ui.join.disabled = false; ui.again.disabled = true; ui.code.value = '';
+    setConnectedUI(false); setStatus('Not connected');
+    ui.received.textContent = '';
+    L('— Started over' + (was ? ' (left room ' + was + ')' : '') + ' —');
   }
 
   async function startRoom() {
