@@ -492,7 +492,7 @@ function flat_tree($tree, $parent, &$out) {
 // and its "needs attention" mark, its entries in order without their order
 // numbers. Records made so carry "f": 2.
 function meaning_track($t) {
-    foreach (['id', 'audioFrom', 'loudness', 'duration', 'fileTags', 'needsConvert', 'fileModified', 'sampleRate', 'channels', 'filename', 'fileSize', 'addedAt', 'changedAt'] as $k) unset($t[$k]);
+    foreach (['id', 'audioFrom', 'loudness', 'duration', 'fileTags', 'needsConvert', 'fileModified', 'sampleRate', 'channels', 'filename', 'fileType', 'fileSize', 'addedAt', 'changedAt'] as $k) unset($t[$k]);
     return $t;
 }
 function meaning_node($n) {

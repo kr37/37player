@@ -1,5 +1,5 @@
 // The library's format settings (Settings → File conversion): a WAV imported
-// under the default "Reduce uncompressed audio" becomes an MP3; under "Don't
+// under the default "Make every file playable everywhere" becomes an MP3; under "Don't
 // touch my files" it stays, while a WMA is still converted and its original
 // kept without asking; "Choose the rules" with a custom AAC format shows what
 // it would convert and converts it on request; FLAC asks first; and the
@@ -38,7 +38,7 @@ const closeSettings = p=> p.evaluate(()=> document.querySelector('#settingsClose
   const disp = await A.evaluate(()=>{ const st = window.__dbg.getRoot().settings; return {mc: st.moreContrast, scale: st.uiScale}; });
   ok(disp.mc === true && disp.scale === 1.3, 'a fresh install starts with More contrast and the second-largest text');
   const pol0 = await A.evaluate(()=> window.__conv.policy());
-  ok(pol0.preset === 'standard' && pol0.when === 'reduce', 'by default: Standard (MP3 192k), Reduce uncompressed audio');
+  ok(pol0.preset === 'standard' && pol0.when === 'reduce', 'by default: Standard (MP3 192k), every file playable everywhere');
 
   // The default: a WAV becomes an MP3 as it comes in.
   await import_(A, ['tone.wav']);
@@ -50,7 +50,7 @@ const closeSettings = p=> p.evaluate(()=> document.querySelector('#settingsClose
   // The page, and "Don't touch my files".
   await openFormat(A);
   const page = await A.evaluate(()=> document.getElementById('settingsContent')?.innerText || '');
-  ok(/Preferred format/.test(page) && /Don't touch my files/.test(page) && /Reduce uncompressed audio/.test(page) && /Choose the rules/.test(page), 'the File conversion page has the preferred format and the three choices');
+  ok(/Preferred format/.test(page) && /Don't touch my files/.test(page) && /Make every file playable everywhere/.test(page) && /Choose the rules/.test(page), 'the File conversion page has the preferred format and the three choices');
   ok(/shared library/.test(page), 'it says the settings belong to the shared library');
   await A.evaluate(()=>{ const r = document.querySelector('input[name=fmtWhen][value=untouched]'); r.checked = true; r.dispatchEvent(new Event('change', {bubbles:true})); }); await sleep(500);
   ok((await A.evaluate(()=> window.__conv.policy())).when === 'untouched', 'Don\'t touch my files is saved');
@@ -60,17 +60,14 @@ const closeSettings = p=> p.evaluate(()=> document.querySelector('#settingsClose
   await sleep(500);
   const t2 = await tracks(A);
   console.log('A:', JSON.stringify(t2));
-  ok(t2.some(t=> t.file === 'tone2.wav'), 'under Don\'t touch my files the WAV stays a WAV');
+  ok(t2.some(t=> t.file === 'tone2.mp3' && t.orig === 'tone2.wav'), 'in a shared library even Don\'t touch my files converts a WAV (2.5.060: only MP3 and M4A go to every device), its original kept');
   ok(t2.some(t=> t.file === 'talk.mp3' && t.orig === 'talk.wma'), 'the WMA is still converted, its original kept');
   ok(!/Keep the originals\?/.test(await A.evaluate(()=> document.querySelector('.modal')?.innerText || '')), 'without asking about the original');
 
-  // FLAC asks first; Cancel keeps things as they were.
+  // FLAC isn't offered any more (2.5.060).
   await openFormat(A);
-  await A.evaluate(()=>{ const s = document.getElementById('fmtPreset'); s.value = 'lossless'; s.dispatchEvent(new Event('change', {bubbles:true})); }); await sleep(500);
-  const flac = await A.evaluate(()=> document.querySelector('.modal')?.innerText || '');
-  ok(/Not recommended/.test(flac) && /Use FLAC/.test(flac), 'choosing FLAC asks first: "Not recommended"');
-  await clickText(A, '.modal button', '^Cancel$'); await sleep(600);
-  ok((await A.evaluate(()=> window.__conv.policy())).preset === 'standard', 'Cancel leaves the preferred format as it was');
+  ok(await A.evaluate(()=> ![...document.getElementById('fmtPreset').options].some(o=> o.value === 'lossless') && ![...document.getElementById('fmtFormat').options].some(o=> o.value === 'flac')), 'FLAC isn\'t offered, as a preset or a custom format');
+  ok((await A.evaluate(()=> window.__conv.policy())).preset === 'standard', 'the preferred format is as it was');
 
   // Choose the rules, with a custom AAC format: what it would do, and doing it.
   await openFormat(A);
@@ -80,47 +77,52 @@ const closeSettings = p=> p.evaluate(()=> document.querySelector('#settingsClose
     const f = document.getElementById('fmtFormat'); f.value = 'aac'; fire(f);
     const r = document.querySelector('input[name=fmtWhen][value=rules]'); r.checked = true; fire(r);
   }); await sleep(800);
+  // (The page was drawn again for AAC: MP3 isn't the preferred format's kind now.) Untick MP3 in the kinds kept.
+  await A.evaluate(()=>{ const c = document.querySelector('[data-keep="mp3"]'); if(c.checked) c.click(); }); await sleep(800);
   const pol = await A.evaluate(()=> window.__conv.policy());
   console.log('policy:', JSON.stringify(pol));
   ok(pol.preset === 'custom' && pol.custom.format === 'aac' && pol.when === 'rules', 'custom AAC and Choose the rules are saved');
   await A.screenshot({path: 'shots/conv5-format.png'});
   const effect = await A.evaluate(()=> document.getElementById('fmtEffect')?.innerText || '');
   console.log('effect:', JSON.stringify(effect));
-  ok(/1 tracks already in the library would be converted \(/.test(effect) && !/AAC 192k/.test(effect) && /Review in Library cleanup/.test(effect) && !/Convert them now/.test(effect), 'File conversion says how many, without repeating the format, and points to Library cleanup');
+  ok(/3 tracks already in the library would be converted \(/.test(effect) && !/AAC 192k/.test(effect) && /Review in Library cleanup/.test(effect) && !/Convert them now/.test(effect), 'File conversion says how many, without repeating the format, and points to Library cleanup');
   await clickText(A, '#fmtEffect button', '^Review in Library cleanup$'); await sleep(800);
   ok(await A.evaluate(()=> document.querySelector('#settingsNav .active')?.textContent) === 'Library cleanup', 'which opens Library cleanup');
   const conv = await A.evaluate(()=> document.getElementById('cleanupConvertNote')?.innerText || '');
   console.log('cleanup:', JSON.stringify(conv));
-  ok(/1 tracks already in the library would be converted to AAC 192k/.test(conv) && /Change the preferred format/.test(conv), 'there: the whole sentence, and a way back to the format');
-  ok(/Show the 1 tracks/.test(conv) && await A.evaluate(()=> !document.querySelector('#cleanupConvertNote details').open), 'with the tracks themselves folded away beneath');
+  ok(/3 tracks already in the library would be converted to AAC 192k/.test(conv) && /Change the preferred format/.test(conv), 'there: the whole sentence, and a way back to the format');
+  ok(/Show the 3 tracks/.test(conv) && await A.evaluate(()=> !document.querySelector('#cleanupConvertNote details').open), 'with the tracks themselves folded away beneath');
   await A.evaluate(()=> document.querySelector('#cleanupConvertNote details summary').click()); await sleep(300);
   const rows = await A.evaluate(()=> [...document.querySelectorAll('#cleanupConvertNote table tr')].map(r=> [...r.cells].map(c=> c.innerText.trim())));
   console.log('list:', JSON.stringify(rows));
-  ok(rows.length === 2 && rows[0].join('|') === 'Track|Type|Size|Sample rate|Bit rate|Channels' && rows[1][1] === 'WAV' && /(KB|MB)$/.test(rows[1][2]) && /kHz$/.test(rows[1][3]) && /kbps$/.test(rows[1][4]) && /^(mono|stereo)$/.test(rows[1][5]), 'opened: name (with a box to tick), type, size, sample rate, bit rate and channels of each');
+  ok(rows.length === 4 && rows[0].join('|') === 'Track|Type|Size|Sample rate|Bit rate|Channels' && rows[1][1] === 'MP3' && /(KB|MB)$/.test(rows[1][2]) && /kHz$/.test(rows[1][3]) && /kbps$/.test(rows[1][4]) && /^(mono|stereo)$/.test(rows[1][5]), 'opened: name (with a box to tick), type, size, sample rate, bit rate and channels of each');
   // Convert selected (2.2.015): nothing ticked, it's off; ticking one turns it on with the count.
   const pickState = ()=> A.evaluate(()=>{ const b = document.getElementById('cleanupConvertSelected'); return b ? b.textContent + (b.disabled ? ' off' : ' on') : null; });
   ok(await pickState() === 'Convert selected (0) off', 'Convert selected is off while nothing is ticked (' + await pickState() + ')');
   await A.evaluate(()=> document.querySelector('#cleanupConvertNote td input.fmt-pick').click()); await sleep(150);
-  ok(await pickState() === 'Convert selected (1) on' && await A.evaluate(()=> document.getElementById('fmtPickAll').checked), 'ticking a track turns it on, with the count (' + await pickState() + ')');
+  ok(await pickState() === 'Convert selected (1) on', 'ticking a track turns it on, with the count (' + await pickState() + ')');
   await A.evaluate(()=> document.getElementById('fmtPickAll').click()); await sleep(150);
-  ok(await pickState() === 'Convert selected (0) off', 'the heading\'s box unticks them all');
+  const allState = await pickState();
+  await A.evaluate(()=> document.getElementById('fmtPickAll').click()); await sleep(150);
+  if(allState !== 'Convert selected (3) on'){ await A.evaluate(()=> document.getElementById('fmtPickAll').click()); await sleep(150); }
+  ok(await pickState() === 'Convert selected (0) off', 'the heading\'s box ticks them all (' + allState + ') and unticks them all');
   await A.evaluate(()=> document.getElementById('cleanupConvert').scrollIntoView({block: 'start'})); await sleep(200);
   await A.screenshot({path: 'shots/conv5-format-list.png'});
   await A.evaluate(()=> [...document.querySelectorAll('#cleanupConvertNote th')].find(th=> th.textContent === 'Size').click()); await sleep(200);
   ok(await A.evaluate(()=> document.querySelector('#cleanupConvertNote th[data-sorted]')?.textContent) === 'Size', 'a click on a column sorts by it');
   // the converter crashes on the first try (as ffmpeg.wasm did on the 39th of 40 WAVs): tried again with a fresh one
   await A.evaluate(()=>{ window.__crashNext(); document.getElementById('missingAudioNote').__mark = 1; });
-  await clickText(A, '#cleanupConvertNote button', '^Convert all 1$'); await sleep(500);
+  await clickText(A, '#cleanupConvertNote button', '^Convert all 3$'); await sleep(500);
   await clickText(A, '.modal button', '^Convert them now$');
   let during = '';
   for(let k = 0; k < 40 && !during; k++){ const x = await A.evaluate(()=> document.getElementById('cleanupConvertNote')?.innerText || ''); if(/Converting now/.test(x)) during = x; else await sleep(150); }
-  ok(/Converting now: \d of 1 done/.test(during) && !/already matches/.test(during), 'while converting, Library cleanup says so: ' + during.split('\n')[0]);
+  ok(/Converting now: \d of 3 done/.test(during) && !/already matches/.test(during), 'while converting, Library cleanup says so: ' + during.split('\n')[0]);
   ok(await waitFor(A, ()=> /Keep the originals\?/.test(document.querySelector('.modal')?.innerText || ''), 60000), 'they\'re converted (a crash is tried again), and the originals question asked');
   const keep = await A.evaluate(()=> document.querySelector('.modal')?.innerText || '');
-  ok(/1 file was converted/.test(keep) && /Keep the original as well/.test(keep) && !/couldn't be converted/.test(keep) && !/\(s\)/.test(keep), 'in plain words, with no failure: ' + keep.split('\n').slice(0, 2).join(' / '));
+  ok(/3 files were converted/.test(keep) && /Keep the originals as well/.test(keep) && !/couldn't be converted/.test(keep) && !/\(s\)/.test(keep), 'in plain words, with no failure: ' + keep.split('\n').slice(0, 2).join(' / '));
   ok(await A.evaluate(()=> document.getElementById('missingAudioNote')?.__mark === 1), 'and the rest of Library cleanup wasn\'t redrawn meanwhile (missing audio checked once)');
   await clickText(A, '.modal button', '^Discard$'); await sleep(300);
-  ok((await tracks(A)).some(t=> t.file === 'tone2.m4a'), 'tone2.wav is tone2.m4a now');
+  ok((await tracks(A)).some(t=> t.file === 'tone2.m4a'), 'tone2.mp3 is tone2.m4a now');
 
   // B gets the settings through the shared library.
   await A.evaluate(()=>window.__dbg3.sync()); await waitIdle(A); await sleep(1500); await waitIdle(A);

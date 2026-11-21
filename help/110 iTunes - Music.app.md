@@ -45,12 +45,18 @@ Music.app and iTunes play one track straight into the next — but only smoothly
 
 ### The library's file format
 
-Settings → **File conversion** sets one **preferred format** for the library — Standard (MP3 192k, recommended), Best for Apple, Very small, Lossless (FLAC, not recommended: much larger, with no difference you can hear), or Custom — and which files are converted to it:
+Settings → **File conversion** sets one **preferred format** for the library — Standard (MP3 192k, recommended), Best for Apple (AAC 192k), Very small, or Custom — and which files are converted to it. Only MP3 and M4A (AAC) play on every device, so:
 
-- **Don't touch my files:** nothing is changed. A file this browser can't play still gets a playable copy, and its original is kept too.
-- **Reduce uncompressed audio** (recommended): WAV and AIFF files are converted as they come in.
-- **Choose the rules:** uncompressed audio, a bitrate above a limit, a sample rate or channel count other than the preferred format's, or less widely playable types (Opus, Ogg, WebM).
+- **Make every file playable everywhere** (recommended): anything but MP3 and M4A is converted as it comes in — WAV, AIFF, FLAC, WebM, Opus, Ogg, WMA and the rest.
+- **Don't touch my files:** nothing is changed by itself. A file this browser can't play still gets a playable copy, and its original is kept too. After an import that brings in kinds some devices can't play, 37 Player asks whether to convert them this once (or from now on); **Don't ask again in this library** stops the question.
+- **Choose the rules:** tick the kinds of file left as they are (the rest are converted; the preferred format's own kind is always kept), plus a bitrate above a limit, or a sample rate or channel count other than the preferred format's.
 
-The page says what the settings would mean for the library as it is ("12 tracks would be converted…"). Converting them is in Settings → **Library cleanup** → Convert to the preferred format, with **Convert them now** and the list of those tracks (name, album, type, size, sample rate, bit rate, channels). In a shared library these settings belong to the library, so a change on one device applies on all of them, and a file about to be converted is never sent before its converted version is ready.
+**Lossless files at the highest quality** (off unless ticked): WAV, AIFF, FLAC and Apple Lossless files are converted to MP3 320k (AAC 256k) instead of the preferred format's bitrate, for the few who'd hear a difference. FLAC itself is no longer offered as a preferred format, since it doesn't play on every device; a library that chose it before keeps it.
+
+**A shared library holds only files every device can play:** whatever the settings, files of other kinds are converted as they come in (or are copied in from another library), to Standard if the library had chosen FLAC. When a library starts sharing, 37 Player offers to convert its tracks of other kinds first (**Convert, then share**), so each file goes up once, already converted.
+
+A converted track's original can be kept, for a later export (37 Player asks after converting; Library → Show → **Kept originals** lists them). It stays on that device only. In a library kept in a folder (the desktop app), originals are in the folder's **originals** folder, named like the tracks in **music**.
+
+The page says what the settings would mean for the library as it is ("12 tracks would be converted…"). Converting them is in Settings → **Library cleanup** → Convert to the preferred format, with **Convert them now** and the list of those tracks (name, album, type, size, sample rate, bit rate, channels). Any tracks can be converted too, whatever the settings: select them in 'Library' → Table and click **Convert** (see 'Audio playback problems'). In a shared library these settings belong to the library, so a change on one device applies on all of them, and a file about to be converted is never sent before its converted version is ready.
 
 Videos (a recorded teaching, say) can come in too: 37 Player asks whether to take their sound as audio tracks. The video itself isn't kept.
