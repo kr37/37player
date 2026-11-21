@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.6.005">
+<meta name="app-version" content="2.6.006">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -42059,7 +42059,7 @@ function openFeedbackDialog(){
     const box = document.getElementById("fbOtherLogs");
     if(!box || !others.length) return;
     box.innerHTML = `<p class="settings-note" style="margin:8px 0 2px;">${escapeHtmlText(t("fbSharedLogsNote"))}</p>`
-      + `<div class="settings-row" style="gap:8px; flex-wrap:wrap; margin:2px 0 4px;"><button class="btn ghost" data-fb-others="all" type="button">${escapeHtmlText(t("fbOtherLogsAll"))}</button><button class="btn ghost" data-fb-others="none" type="button">${escapeHtmlText(t("fbOtherLogsNone"))}</button></div>`
+      + `<div class="settings-row" style="gap:8px; flex-wrap:wrap; margin:2px 0 4px;"><button class="btn outline" data-fb-others="all" type="button">${escapeHtmlText(t("fbOtherLogsAll"))}</button><button class="btn outline" data-fb-others="none" type="button">${escapeHtmlText(t("fbOtherLogsNone"))}</button></div>`
       + others.map((o, i)=> `<label class="join-partial" style="font-weight:normal;"><input type="checkbox" data-fb-other="${i}"> <span></span></label>`).join("");
     box.querySelectorAll("[data-fb-other]").forEach(cb=>{ const o = others[+cb.dataset.fbOther]; cb.nextElementSibling.textContent = t("fbSharedLog", {device: o.device, kind: t(o.kind === "play" ? "fbKindPlay" : "fbKindSync"), when: fmtWhenShort(o.time)}); cb._log = o; });
     box.querySelectorAll("[data-fb-others]").forEach(b=> b.addEventListener("click", ()=>{
