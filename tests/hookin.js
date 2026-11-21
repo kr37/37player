@@ -4,11 +4,12 @@
 // click on Play started the engine too late for it, so it played without
 // its boost until it was loaded again). Here: a track turned up 6 dB is in
 // Playing, paused, with no engine; the first click starts the engine and
-// hooks Playing in, the track keeping its place. One already heard without
-// its boost (playing before any click) keeps its level until it's replaced,
-// even after a pause: never a jump part-way through (kr37, earbuds turned
-// up); the next track is hooked in. And every player follows Playing's
-// slider (the Library's player too).
+// hooks Playing in, the track keeping its place. A play with no engine (a
+// media key, not a click) is held a moment while the engine starts, then
+// plays turned up; if the engine can't start, the track stays paused and a
+// note asks for a click (2.6.008, kr37: "If loudness is on, then we need to
+// play according to loudness… Not willy nilly."). And every player follows
+// Playing's slider (the Library's player too).
 //   node hookin.js
 const puppeteer = require('puppeteer-core'); const sleep = ms=>new Promise(r=>setTimeout(r,ms));
 let fails = 0; const ok=(c,m)=>{ console.log((c?'ok   ':'FAIL ')+m); if(!c) fails++; };
@@ -49,19 +50,23 @@ async function open(b){
   await p.evaluate(()=> window.__vol.set(1)); await sleep(200);
   ok(Math.abs(await p.evaluate(()=> document.getElementById('libPreviewAudio').volume) - 1) < 0.01, '… and moves with it');
   await p.close();
-  // 3. Heard without its boost before the engine started: kept so until replaced.
+  // 3. A play with no engine yet (as from a media key, not a click): held a
+  // moment, the engine started, hooked in, then played: never unboosted.
   p = await open(b);
   await p.evaluate(()=>{ window.__dbg.setMode('playing'); window.__play('it'); }); await sleep(2000);
-  ok(!(await p.evaluate(()=> window.__st().paused)), 'playing, with no engine yet');
-  await p.mouse.click(640, 5); await sleep(600);
   L = await p.evaluate(()=> window.__lvl());
-  ok(L.ctx && !L.routed && L.heardUnboosted, 'the click starts the engine; the playing track, heard without its boost, isn\'t hooked in');
-  await p.evaluate(()=> document.getElementById('audioEl').pause()); await sleep(300);
-  await p.mouse.click(640, 5); await sleep(400);
-  await p.evaluate(()=> document.getElementById('audioEl').play()); await sleep(600);
-  ok(!(await p.evaluate(()=> window.__lvl())).routed, 'paused, a click, played again: still not hooked in (no jump part-way)');
-  await p.evaluate(()=> window.__play('it2')); await sleep(1200);
-  ok((await p.evaluate(()=> window.__lvl())).routed, 'the next track is hooked in as it loads');
+  ok(L.ctx && L.routed && !(await p.evaluate(()=> window.__st().paused)), 'a play with no engine: the engine is started, Playing hooked in, and it plays');
+  await p.close();
+  // 3b. The engine can't start (a browser that wants a click): it waits, and says so.
+  p = await open(b);
+  await p.evaluate(()=>{ window.__noLevelStart = true; window.__dbg.setMode('playing'); window.__play('it'); }); await sleep(2500);
+  L = await p.evaluate(()=> window.__lvl());
+  const st3 = await p.evaluate(()=> window.__st().paused);
+  ok(!L.routed && st3, 'no engine to be had: the quiet track stays paused rather than play unboosted (routed ' + L.routed + ', paused ' + st3 + ')');
+  ok(/needs one click in 37 Player's window/.test(await p.evaluate(()=> document.getElementById('toast')?.textContent || '')), 'and says one click in the window is needed');
+  await p.evaluate(()=>{ window.__noLevelStart = false; }); await p.mouse.click(640, 5); await sleep(300);
+  await p.evaluate(()=> window.__play('it')); await sleep(1500);
+  ok((await p.evaluate(()=> window.__lvl())).routed && !(await p.evaluate(()=> window.__st().paused)), 'after a click, Play plays it turned up');
   // 4. A track that needs no boost isn't hooked in.
   await p.close();
   p = await open(b);
