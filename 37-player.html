@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.6.000">
+<meta name="app-version" content="2.6.001">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -36673,8 +36673,20 @@ function recordingNameOpts(){
       const p = recordingPathFor(tr);
       return orig ? p.replace(/^music\//, "originals/") : p;
     },
-    canMove: (tid)=> !trackHeldByAPlayer(tid),
+    canMove: (tid)=> !trackHeldByAPlayer(tid) && !trackFileReaders.has(tid) && !convertQueue.includes(tid),
   };
+}
+// Tracks whose stored file is being read through by something other than a
+// player (2.6.001): a file being sent to the shared library; the converter
+// is known by its queue. Like a player's file, it isn't moved to a new name
+// or removed as replaced meanwhile (the rename copies it, and the old name
+// waits its day). The Mac mini, 20 Nov 2026: a WebM just imported was
+// moved from its first name to its readable one while the converter read
+// it, and the conversion failed with "reading the file: HTTP 404".
+const trackFileReaders = new Map();
+function trackFileReading(id, on){
+  const n = (trackFileReaders.get(id) || 0) + (on ? 1 : -1);
+  if(n > 0) trackFileReaders.set(id, n); else trackFileReaders.delete(id);
 }
 function trackHeldByAPlayer(tid){
   const ctx = typeof findPlayingContext === "function" ? findPlayingContext() : null;
@@ -49417,7 +49429,9 @@ async function sharedUploadFiles(cfg, doc){
   const worker = async ()=>{
     while(!failed && !stop && next < jobs.length){
       const j = jobs[next++];
+      trackFileReading(j.id, true);
       try{ await sendOne(j); }catch(err){ if(!failed) failed = err; }
+      finally{ trackFileReading(j.id, false); }
     }
   };
   await Promise.all(Array.from({length: Math.min(SHARED_UPLOADS_AT_ONCE, jobs.length)}, worker));
