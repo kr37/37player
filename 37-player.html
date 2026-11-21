@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.6.003">
+<meta name="app-version" content="2.6.004">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -41020,7 +41020,7 @@ async function renderSettingsSection(fromTimer){
       ${cfgShared ? `<p class="settings-note">${escapeHtmlText(t("fmtSharedNote", {name: cfgShared.libraryName || ""}))}</p>` : ""}
       <h3 class="settings-h3">${t("fmtWhenTitle")} <span class="settings-saved" id="fmtSaved2"></span></h3>
       ${cfgShared ? `<p class="settings-note">${escapeHtmlText(t("fmtSharedUniversal"))}</p>` : ""}
-      ${radio("untouched")}${radio("reduce")}${radio("rules")}
+      ${radio("reduce")}${radio("untouched")}${radio("rules")}
       <div id="fmtRules" style="margin:4px 0 0 28px; ${pol.when==="rules"?"":"display:none;"}">
         <div class="settings-note" style="margin:2px 0 4px;">${escapeHtmlText(t("fmtKeepTitle"))}</div>
         <div style="display:flex; flex-wrap:wrap; gap:4px 16px; margin:0 0 8px;">${FILE_KINDS.map(([id, , label])=>{
