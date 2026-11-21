@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.6.004">
+<meta name="app-version" content="2.6.005">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -36333,6 +36333,7 @@ function ensureLevelCtx(){
     levelCtx.addEventListener("statechange", ()=>{
       playLog("Web Audio " + levelCtx.state + (document.hidden ? ", not on screen" : ""));
       if(levelCtx.state !== "running" && levelCtx.state !== "closed" && levelRoutedPlaying()) levelCtx.resume().catch(()=>{});
+      if(levelCtx.state === "running") hookInLoadedPlayers(false);
     });
   }catch(err){ console.warn("No audio context for turning tracks up:", err); levelCtx = null; }
 }
@@ -36350,12 +36351,51 @@ setInterval(()=>{
   if(!levelWatchSaid){ levelWatchSaid = true; playLog("Web Audio was " + levelCtx.state + " while a track played: started again"); }
   levelCtx.resume().catch(()=>{});
 }, 1000);
-document.addEventListener("pointerdown", ensureLevelCtx, true);
-document.addEventListener("keydown", ensureLevelCtx, true);
+// The engine starts at a click or key press, and a player already holding
+// a track that needs turning up is hooked in there and then (2.6.005), not
+// only when its next track loads. kr37's Mac mini, 20 Nov 2026: after a
+// reload, the Italian translation (-41.5 LUFS) was put back in Playing at
+// 8:42:47; the click on Play at 8:42:50 started the engine, but the track
+// was loaded already, so it played without its boost until it was loaded
+// again at 8:43:27. The same click now hooks Playing in before its play.
+document.addEventListener("pointerdown", ()=>{ ensureLevelCtx(); hookInLoadedPlayers(true); }, true);
+document.addEventListener("keydown", ()=>{ ensureLevelCtx(); hookInLoadedPlayers(true); }, true);
+// Whether a player may be hooked into the engine now: it runs, or (gesture)
+// it's just been asked to start by this click, which the browser honours.
+function levelCtxReady(gesture){ return !!levelCtx && (levelCtx.state === "running" || (!!gesture && levelCtx.state === "suspended")); }
+// Players holding a track that needs turning up, not hooked in yet: hooked
+// in now. A paused one at once: one whose address needs the cross-origin
+// mark is loaded again for it, and put back at the same spot (unless the
+// person moves it meanwhile). A playing one at its next pause, to make no
+// click in the sound (its next track would be hooked in anyway).
+function hookInLoadedPlayers(gesture){
+  if(!levelCtxReady(gesture)) return;
+  for(const el of [audioEl, ...levelPreviewEls()]){
+    if(!el || levelGains.has(el) || !el._levelTrack || !el.getAttribute("src") || el.ended) continue;
+    if(levelGainWanted(el, el._levelTrack) <= 1.001) continue;
+    if(!el.paused){
+      if(!el._hookOnPause){ el._hookOnPause = true; el.addEventListener("pause", ()=>{ el._hookOnPause = false; hookInLoadedPlayers(false); }, {once: true}); }
+      continue;
+    }
+    const pos = el.currentTime, co = el.crossOrigin;
+    applyLevel(el, el._levelTrack, true, gesture);
+    if(el.crossOrigin !== co && pos > 0){ // loaded again for the mark
+      const u = el.src;
+      let moved = false; const mark = ()=>{ moved = true; };
+      el.addEventListener("seeking", mark, {once: true});
+      // (Not if another track has been loaded meanwhile.)
+      el.addEventListener("loadedmetadata", ()=>{ el.removeEventListener("seeking", mark); if(!moved && el.src === u){ try{ el.currentTime = pos; }catch(err){} } }, {once: true});
+    }
+    if(levelGains.has(el) && el === audioEl) playLog("player hooked in to turn “" + ((findLibraryTrack(el._levelTrack) || {}).name || "?") + "” up, as the engine started");
+  }
+}
+// The gain a player's track wants: its level, and Playing's slider (every
+// player follows the slider, 2.6.005).
+function levelGainWanted(el, trackId){ return Math.pow(10, trackLevel(findLibraryTrack(trackId)).db / 20) * mainVolumeGain(); }
 function levelPreviewEls(){ return ["libPreviewAudio", "edPreviewAudio", "dupAudio"].map(id=> document.getElementById(id)).filter(Boolean); }
 // Sets an element's level for a track. atStart: the track is just being
 // loaded (the only moment a route through Web Audio may be made).
-function applyLevel(el, trackId, atStart){
+function applyLevel(el, trackId, atStart, gesture){
   if(!el) return;
   // A recording from the Linux app's own address (desktopFilesHttp) is from
   // another origin: without this mark a route through Web Audio would be
@@ -36370,13 +36410,16 @@ function applyLevel(el, trackId, atStart){
   // 2026-11-20-054746). The shell answers with Access-Control-Allow-Origin,
   // so the marked load passes. The mark stays on the element, so every
   // later track it loads is fetched the same way.
-  if(atStart && (isDesktopHttpUrl(el.src) || isP37libUrl(el.src)) && el.crossOrigin !== "anonymous" && levelCtx && levelCtx.state === "running"
-      && Math.pow(10, trackLevel(findLibraryTrack(trackId)).db / 20) * (el === audioEl ? mainVolumeGain() : 1) > 1.001){ const u = el.src; el.crossOrigin = "anonymous"; el.src = u; }
+  if(atStart && (isDesktopHttpUrl(el.src) || isP37libUrl(el.src)) && el.crossOrigin !== "anonymous" && levelCtxReady(gesture)
+      && levelGainWanted(el, trackId) > 1.001){ const u = el.src; el.crossOrigin = "anonymous"; el.src = u; }
   el._levelTrack = trackId;
-  const base = el === audioEl ? mainVolumeGain() : 1;
+  // Playing's slider sets every player's volume (2.6.005, kr37: "why
+  // wouldn't they all follow the same?"): before, the others played as if
+  // it were at the top.
+  const base = mainVolumeGain();
   const g = Math.pow(10, trackLevel(findLibraryTrack(trackId)).db / 20);
   let gain = levelGains.get(el);
-  if(!gain && g * base > 1.001 && atStart && levelCtx && levelCtx.state === "running"){
+  if(!gain && g * base > 1.001 && atStart && levelCtxReady(gesture)){
     try{
       const src = levelCtx.createMediaElementSource(el);
       gain = levelCtx.createGain();
@@ -36441,6 +36484,7 @@ function setMainVolume(v){
   mainVolume = Math.min(1, Math.max(0, v));
   if(audioEl._levelTrack) applyLevel(audioEl, audioEl._levelTrack, false);
   else audioEl.volume = mainVolumeGain();
+  levelPreviewEls().forEach(el=>{ if(el._levelTrack) applyLevel(el, el._levelTrack, false); else el.volume = mainVolumeGain(); });
   // Kept for this device a moment after the slider stops (mainVolume, above).
   if(root && root.settings) root.settings.volume = mainVolume;
   clearTimeout(volumeSaveTimer);
