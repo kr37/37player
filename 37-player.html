@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.5.061">
+<meta name="app-version" content="2.6.008">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -6376,6 +6376,8 @@ const STRINGS = {
     "fbKindPlay": "playback log",
     "fbKindSync": "sync log",
     "fbSharedLogsNote": "Other devices' logs, from the shared library:",
+    "fbOtherLogsAll": "Select all",
+    "fbOtherLogsNone": "Select none",
     "settingsSecLibrary": "Library",
     "infoAllLibraries": "All libraries",
     "infoAllLibrariesNote": "On this device: {n}. Open, make, rename or delete them here.",
@@ -6537,6 +6539,7 @@ const STRINGS = {
     "ctxLevelTrack": "By track",
     "ctxLevelTrackTip": "Even out loudness track by track",
     "ctxLevelGroup": "Even out loudness",
+    "levelNeedsClick": "Evening out needs one click in 37 Player's window before it can turn this track up. Click there, then press Play.",
     "showPlayLoudTip": "Show how much each track is turned up or down (dB)",
     "playLoudEvenTip": "Evening out ({kind}): {db} dB",
     "playLoudOffTip": "Evening out is off: 0 dB",
@@ -8506,6 +8509,8 @@ const STRINGS = {
     "fbKindPlay": "registro de reproducción",
     "fbKindSync": "registro de sincronización",
     "fbSharedLogsNote": "Registros de otros dispositivos, de la biblioteca compartida:",
+    "fbOtherLogsAll": "Seleccionar todos",
+    "fbOtherLogsNone": "No seleccionar ninguno",
     "settingsSecLibrary": "Biblioteca",
     "infoAllLibraries": "Todas las bibliotecas",
     "infoAllLibrariesNote": "En este dispositivo: {n}. Ábrelas, créalas, renómbralas o bórralas aquí.",
@@ -8666,6 +8671,7 @@ const STRINGS = {
     "ctxLevelTrack": "Por pista",
     "ctxLevelTrackTip": "Igualar el volumen pista por pista",
     "ctxLevelGroup": "Igualar el volumen",
+    "levelNeedsClick": "Igualar el volumen necesita un clic en la ventana de 37 Player antes de poder subir esta pista. Haz clic allí y luego pulsa Reproducir.",
     "showPlayLoudTip": "Mostrar cuánto se sube o baja cada pista (dB)",
     "playLoudEvenTip": "Igualado ({kind}): {db} dB",
     "playLoudOffTip": "El igualado está desactivado: 0 dB",
@@ -10635,6 +10641,8 @@ const STRINGS = {
     "fbKindPlay": "journal de lecture",
     "fbKindSync": "journal de synchronisation",
     "fbSharedLogsNote": "Journaux des autres appareils, depuis la bibliothèque partagée :",
+    "fbOtherLogsAll": "Tout sélectionner",
+    "fbOtherLogsNone": "Ne rien sélectionner",
     "settingsSecLibrary": "Bibliothèque",
     "infoAllLibraries": "Toutes les bibliothèques",
     "infoAllLibrariesNote": "Sur cet appareil : {n}. Ouvrez-les, créez-en, renommez-les ou supprimez-les ici.",
@@ -10795,6 +10803,7 @@ const STRINGS = {
     "ctxLevelTrack": "Par piste",
     "ctxLevelTrackTip": "Égaliser le volume piste par piste",
     "ctxLevelGroup": "Égaliser le volume",
+    "levelNeedsClick": "L'égalisation du volume a besoin d'un clic dans la fenêtre de 37 Player avant de pouvoir monter cette piste. Cliquez-y, puis appuyez sur Lecture.",
     "showPlayLoudTip": "Montrer de combien chaque piste est montée ou baissée (dB)",
     "playLoudEvenTip": "Égalisation ({kind}) : {db} dB",
     "playLoudOffTip": "L'égalisation est désactivée : 0 dB",
@@ -12764,6 +12773,8 @@ const STRINGS = {
     "fbKindPlay": "registo de reprodução",
     "fbKindSync": "registo de sincronização",
     "fbSharedLogsNote": "Registos de outros dispositivos, da biblioteca compartilhada:",
+    "fbOtherLogsAll": "Selecionar todos",
+    "fbOtherLogsNone": "Não selecionar nenhum",
     "settingsSecLibrary": "Biblioteca",
     "infoAllLibraries": "Todas as bibliotecas",
     "infoAllLibrariesNote": "Neste dispositivo: {n}. Abra, crie, renomeie ou apague-as aqui.",
@@ -12924,6 +12935,7 @@ const STRINGS = {
     "ctxLevelTrack": "Por faixa",
     "ctxLevelTrackTip": "Igualar o volume faixa a faixa",
     "ctxLevelGroup": "Igualar o volume",
+    "levelNeedsClick": "Igualar o volume precisa de um clique na janela do 37 Player antes de poder aumentar esta faixa. Clique lá e depois aperte Reproduzir.",
     "showPlayLoudTip": "Mostrar quanto cada faixa é aumentada ou baixada (dB)",
     "playLoudEvenTip": "Igualação ({kind}): {db} dB",
     "playLoudOffTip": "A igualação está desligada: 0 dB",
@@ -14893,6 +14905,8 @@ const STRINGS = {
     "fbKindPlay": "Wiedergabe-Protokoll",
     "fbKindSync": "Sync-Protokoll",
     "fbSharedLogsNote": "Protokolle anderer Geräte, aus der gemeinsamen Bibliothek:",
+    "fbOtherLogsAll": "Alle auswählen",
+    "fbOtherLogsNone": "Keine auswählen",
     "settingsSecLibrary": "Bibliothek",
     "infoAllLibraries": "Alle Bibliotheken",
     "infoAllLibrariesNote": "Auf diesem Gerät: {n}. Hier öffnen, anlegen, umbenennen oder löschen.",
@@ -15053,6 +15067,7 @@ const STRINGS = {
     "ctxLevelTrack": "Pro Titel",
     "ctxLevelTrackTip": "Lautstärke titelweise angleichen",
     "ctxLevelGroup": "Lautstärke angleichen",
+    "levelNeedsClick": "Die Lautstärkeangleichung braucht einen Klick in das Fenster von 37 Player, bevor sie diesen Titel lauter machen kann. Klicke dort und drücke dann auf Abspielen.",
     "showPlayLoudTip": "Zeigen, wie weit jeder Titel lauter oder leiser gestellt wird (dB)",
     "playLoudEvenTip": "Angleichen ({kind}): {db} dB",
     "playLoudOffTip": "Angleichen ist aus: 0 dB",
@@ -17022,6 +17037,8 @@ const STRINGS = {
     "fbKindPlay": "播放日志",
     "fbKindSync": "同步日志",
     "fbSharedLogsNote": "来自共享曲库的其他设备日志：",
+    "fbOtherLogsAll": "全选",
+    "fbOtherLogsNone": "全不选",
     "settingsSecLibrary": "曲库",
     "infoAllLibraries": "所有曲库",
     "infoAllLibrariesNote": "本设备上：{n} 个。在这里打开、新建、重命名或删除。",
@@ -17182,6 +17199,7 @@ const STRINGS = {
     "ctxLevelTrack": "按曲目",
     "ctxLevelTrackTip": "按曲目平衡响度",
     "ctxLevelGroup": "平衡响度",
+    "levelNeedsClick": "响度均衡需要先在 37 Player 窗口中点击一次，才能调高这首曲目。请在那里点击，然后按播放。",
     "showPlayLoudTip": "显示每首曲目调高或调低多少（dB）",
     "playLoudEvenTip": "平衡（{kind}）：{db} dB",
     "playLoudOffTip": "平衡已关闭：0 dB",
@@ -19151,6 +19169,8 @@ const STRINGS = {
     "fbKindPlay": "nhật ký phát",
     "fbKindSync": "nhật ký đồng bộ",
     "fbSharedLogsNote": "Nhật ký của các thiết bị khác, từ thư viện chung:",
+    "fbOtherLogsAll": "Chọn tất cả",
+    "fbOtherLogsNone": "Bỏ chọn tất cả",
     "settingsSecLibrary": "Thư viện",
     "infoAllLibraries": "Tất cả thư viện",
     "infoAllLibrariesNote": "Trên thiết bị này: {n}. Mở, tạo, đổi tên hoặc xóa chúng ở đây.",
@@ -19311,6 +19331,7 @@ const STRINGS = {
     "ctxLevelTrack": "Theo bài",
     "ctxLevelTrackTip": "Cân bằng độ lớn theo từng bài",
     "ctxLevelGroup": "Cân bằng độ lớn",
+    "levelNeedsClick": "Cân bằng âm lượng cần một cú nhấp trong cửa sổ 37 Player trước khi có thể tăng âm lượng bài này. Hãy nhấp vào đó, rồi bấm Phát.",
     "showPlayLoudTip": "Hiện mỗi bài được tăng hay giảm bao nhiêu (dB)",
     "playLoudEvenTip": "Cân bằng ({kind}): {db} dB",
     "playLoudOffTip": "Cân bằng đang tắt: 0 dB",
@@ -21280,6 +21301,8 @@ const STRINGS = {
     "fbKindPlay": "αρχείο αναπαραγωγής",
     "fbKindSync": "αρχείο συγχρονισμού",
     "fbSharedLogsNote": "Αρχεία άλλων συσκευών, από την κοινή βιβλιοθήκη:",
+    "fbOtherLogsAll": "Επιλογή όλων",
+    "fbOtherLogsNone": "Καμία επιλογή",
     "settingsSecLibrary": "Βιβλιοθήκη",
     "infoAllLibraries": "Όλες οι βιβλιοθήκες",
     "infoAllLibrariesNote": "Σε αυτή τη συσκευή: {n}. Ανοίξτε, φτιάξτε, μετονομάστε ή διαγράψτε τες εδώ.",
@@ -21440,6 +21463,7 @@ const STRINGS = {
     "ctxLevelTrack": "Ανά κομμάτι",
     "ctxLevelTrackTip": "Εξίσωση έντασης ανά κομμάτι",
     "ctxLevelGroup": "Εξίσωση έντασης",
+    "levelNeedsClick": "Η εξισορρόπηση της έντασης χρειάζεται ένα κλικ στο παράθυρο του 37 Player πριν δυναμώσει αυτό το κομμάτι. Κάντε κλικ εκεί και πατήστε Αναπαραγωγή.",
     "showPlayLoudTip": "Δείχνει πόσο δυναμώνει ή χαμηλώνει κάθε κομμάτι (dB)",
     "playLoudEvenTip": "Εξίσωση ({kind}): {db} dB",
     "playLoudOffTip": "Η εξίσωση είναι ανενεργή: 0 dB",
@@ -23409,6 +23433,8 @@ const STRINGS = {
     "fbKindPlay": "registro di riproduzione",
     "fbKindSync": "registro di sincronizzazione",
     "fbSharedLogsNote": "Registri di altri dispositivi, dalla libreria condivisa:",
+    "fbOtherLogsAll": "Seleziona tutti",
+    "fbOtherLogsNone": "Non selezionare nessuno",
     "settingsSecLibrary": "Libreria",
     "infoAllLibraries": "Tutte le librerie",
     "infoAllLibrariesNote": "Su questo dispositivo: {n}. Aprile, creale, rinominale o eliminale qui.",
@@ -23569,6 +23595,7 @@ const STRINGS = {
     "ctxLevelTrack": "Per brano",
     "ctxLevelTrackTip": "Uniformare il volume brano per brano",
     "ctxLevelGroup": "Uniformare il volume",
+    "levelNeedsClick": "L'uniformazione del volume ha bisogno di un clic nella finestra di 37 Player prima di poter alzare questa traccia. Fai clic lì, poi premi Riproduci.",
     "showPlayLoudTip": "Mostra di quanto ogni brano è alzato o abbassato (dB)",
     "playLoudEvenTip": "Uniformazione ({kind}): {db} dB",
     "playLoudOffTip": "L'uniformazione è disattivata: 0 dB",
@@ -36315,6 +36342,7 @@ function ensureLevelCtx(){
     levelCtx.addEventListener("statechange", ()=>{
       playLog("Web Audio " + levelCtx.state + (document.hidden ? ", not on screen" : ""));
       if(levelCtx.state !== "running" && levelCtx.state !== "closed" && levelRoutedPlaying()) levelCtx.resume().catch(()=>{});
+      if(levelCtx.state === "running") hookInLoadedPlayers(false);
     });
   }catch(err){ console.warn("No audio context for turning tracks up:", err); levelCtx = null; }
 }
@@ -36332,12 +36360,108 @@ setInterval(()=>{
   if(!levelWatchSaid){ levelWatchSaid = true; playLog("Web Audio was " + levelCtx.state + " while a track played: started again"); }
   levelCtx.resume().catch(()=>{});
 }, 1000);
-document.addEventListener("pointerdown", ensureLevelCtx, true);
-document.addEventListener("keydown", ensureLevelCtx, true);
+// The engine starts at a click or key press, and a player already holding
+// a track that needs turning up is hooked in there and then (2.6.005), not
+// only when its next track loads. kr37's Mac mini, 20 Nov 2026: after a
+// reload, the Italian translation (-41.5 LUFS) was put back in Playing at
+// 8:42:47; the click on Play at 8:42:50 started the engine, but the track
+// was loaded already, so it played without its boost until it was loaded
+// again at 8:43:27. The same click now hooks Playing in before its play.
+document.addEventListener("pointerdown", ()=>{ ensureLevelCtx(); hookInLoadedPlayers(true); }, true);
+document.addEventListener("keydown", ()=>{ ensureLevelCtx(); hookInLoadedPlayers(true); }, true);
+// Whether a player may be hooked into the engine now: it runs, or (gesture)
+// it's just been asked to start by this click, which the browser honours.
+function levelCtxReady(gesture){
+  if(window.__noLevelStart) return false; // tests: an engine the browser won't start
+  return !!levelCtx && (levelCtx.state === "running" || (!!gesture && levelCtx.state === "suspended"));
+}
+// Players holding a track that needs turning up, not hooked in yet, and not
+// yet heard without it: hooked in now (one whose address needs the
+// cross-origin mark is loaded again for it, and put back at the same spot,
+// unless the person moves it meanwhile). A track already heard without its
+// boost (started by a media key, the headphones, macOS's Now Playing, which
+// aren't clicks in the window) keeps its level until it's replaced: never a
+// jump of up to 18 dB part-way through (kr37: "imagine I start listening to
+// this Italian track with my earbuds. I'm going to crank up the volume. Then
+// I pause and continue, and now loudness has been applied?"). The next
+// track is hooked in as it loads, as evening out always works.
+function hookInLoadedPlayers(gesture){
+  if(!levelCtxReady(gesture)) return;
+  for(const el of [audioEl, ...levelPreviewEls()]){
+    if(!el || levelGains.has(el) || !el._levelTrack || !el.getAttribute("src") || el.ended) continue;
+    if(levelGainWanted(el, el._levelTrack) <= 1.001) continue;
+    if(el._heardUnboosted || !el.paused) continue;
+    const pos = el.currentTime, co = el.crossOrigin;
+    applyLevel(el, el._levelTrack, true, gesture);
+    if(el.crossOrigin !== co && pos > 0){ // loaded again for the mark
+      const u = el.src;
+      let moved = false; const mark = ()=>{ moved = true; };
+      el.addEventListener("seeking", mark, {once: true});
+      // (Not if another track has been loaded meanwhile.)
+      el.addEventListener("loadedmetadata", ()=>{ el.removeEventListener("seeking", mark); if(!moved && el.src === u){ try{ el.currentTime = pos; }catch(err){} } }, {once: true});
+    }
+    if(levelGains.has(el) && el === audioEl) playLog("player hooked in to turn “" + ((findLibraryTrack(el._levelTrack) || {}).name || "?") + "” up, as the engine started");
+  }
+}
+// Evening out is followed every time, never by chance (2.6.008, kr37: "If
+// loudness is on, then we need to play according to loudness, and if it's
+// off we don't. Not willy nilly."). Turning a track down needs nothing;
+// turning one up needs its player hooked into Web Audio, and that needs the
+// engine running, which browsers allow only after a click or key press in
+// the window. So a player about to play a track that wants turning up, and
+// isn't hooked in, is held (paused before any sound): the engine is asked
+// to start (a play from outside the window, a media key or Now Playing, may
+// be enough for the browser), and once it runs the player is hooked in and
+// plays, from the same spot. If it isn't running within a moment and a
+// half, the player stays paused and says one click in the window is
+// needed: a quiet track is never played at the wrong level. (If hooking in
+// itself fails, which shouldn't happen, the track plays as it is and the
+// playback log says so, rather than never playing.)
+const levelHeld = new WeakSet();
+function guardLevelOnPlay(el){
+  if(!el || el._levelGuard) return;
+  el._levelGuard = true;
+  el.addEventListener("play", ()=>{
+    if(levelHeld.has(el) || levelGains.has(el) || !el._levelTrack || el._levelGiveUp === el._levelTrack) return;
+    if(levelGainWanted(el, el._levelTrack) <= 1.001) return;
+    levelHeld.add(el);
+    if(el === audioEl) pauseMain(); else el.pause();
+    ensureLevelCtx();
+    const track = el._levelTrack, name = (findLibraryTrack(track) || {}).name || "?", started = Date.now();
+    const wait = ()=>{
+      if(el._levelTrack !== track){ levelHeld.delete(el); return; } // another track meanwhile
+      if(levelCtxReady(false)){
+        const pos = el.currentTime, co = el.crossOrigin;
+        applyLevel(el, track, true);
+        const go = ()=>{
+          if(!levelGains.has(el)){ el._levelGiveUp = track; if(el === audioEl) playLog("couldn't hook the player in to turn “" + name + "” up: it plays as it is"); }
+          else if(el === audioEl) playLog("held “" + name + "” a moment to start the sound engine: it plays turned up");
+          levelHeld.delete(el);
+          el.play().catch(()=>{});
+        };
+        if(el.crossOrigin !== co) el.addEventListener("loadedmetadata", ()=>{ try{ el.currentTime = pos; }catch(err){} go(); }, {once: true});
+        else go();
+        return;
+      }
+      if(Date.now() - started > 1500){
+        levelHeld.delete(el);
+        if(el === audioEl) playLog("“" + name + "” waits for a click in the window: evening out needs the sound engine, which hasn't started");
+        showToast(t("levelNeedsClick"));
+        return;
+      }
+      setTimeout(wait, 100);
+    };
+    wait();
+  });
+}
+setTimeout(()=>{ guardLevelOnPlay(audioEl); ["libPreviewAudio", "edPreviewAudio"].forEach(id=> guardLevelOnPlay(document.getElementById(id))); }, 0);
+// The gain a player's track wants: its level, and Playing's slider (every
+// player follows the slider, 2.6.005).
+function levelGainWanted(el, trackId){ return Math.pow(10, trackLevel(findLibraryTrack(trackId)).db / 20) * mainVolumeGain(); }
 function levelPreviewEls(){ return ["libPreviewAudio", "edPreviewAudio", "dupAudio"].map(id=> document.getElementById(id)).filter(Boolean); }
 // Sets an element's level for a track. atStart: the track is just being
 // loaded (the only moment a route through Web Audio may be made).
-function applyLevel(el, trackId, atStart){
+function applyLevel(el, trackId, atStart, gesture){
   if(!el) return;
   // A recording from the Linux app's own address (desktopFilesHttp) is from
   // another origin: without this mark a route through Web Audio would be
@@ -36352,13 +36476,23 @@ function applyLevel(el, trackId, atStart){
   // 2026-11-20-054746). The shell answers with Access-Control-Allow-Origin,
   // so the marked load passes. The mark stays on the element, so every
   // later track it loads is fetched the same way.
-  if(atStart && (isDesktopHttpUrl(el.src) || isP37libUrl(el.src)) && el.crossOrigin !== "anonymous" && levelCtx && levelCtx.state === "running"
-      && Math.pow(10, trackLevel(findLibraryTrack(trackId)).db / 20) * (el === audioEl ? mainVolumeGain() : 1) > 1.001){ const u = el.src; el.crossOrigin = "anonymous"; el.src = u; }
+  if(atStart && (isDesktopHttpUrl(el.src) || isP37libUrl(el.src)) && el.crossOrigin !== "anonymous" && levelCtxReady(gesture)
+      && levelGainWanted(el, trackId) > 1.001){ const u = el.src; el.crossOrigin = "anonymous"; el.src = u; }
   el._levelTrack = trackId;
-  const base = el === audioEl ? mainVolumeGain() : 1;
+  // Whether this track is heard without the boost it wants (not hooked in):
+  // then it's never hooked in part-way (hookInLoadedPlayers).
+  if(atStart) el._heardUnboosted = false;
+  if(!el._unboostWatch){
+    el._unboostWatch = true;
+    el.addEventListener("playing", ()=>{ if(!levelGains.has(el) && el._levelTrack && levelGainWanted(el, el._levelTrack) > 1.001) el._heardUnboosted = true; });
+  }
+  // Playing's slider sets every player's volume (2.6.005, kr37: "why
+  // wouldn't they all follow the same?"): before, the others played as if
+  // it were at the top.
+  const base = mainVolumeGain();
   const g = Math.pow(10, trackLevel(findLibraryTrack(trackId)).db / 20);
   let gain = levelGains.get(el);
-  if(!gain && g * base > 1.001 && atStart && levelCtx && levelCtx.state === "running"){
+  if(!gain && g * base > 1.001 && atStart && levelCtxReady(gesture)){
     try{
       const src = levelCtx.createMediaElementSource(el);
       gain = levelCtx.createGain();
@@ -36423,6 +36557,7 @@ function setMainVolume(v){
   mainVolume = Math.min(1, Math.max(0, v));
   if(audioEl._levelTrack) applyLevel(audioEl, audioEl._levelTrack, false);
   else audioEl.volume = mainVolumeGain();
+  levelPreviewEls().forEach(el=>{ if(el._levelTrack) applyLevel(el, el._levelTrack, false); else el.volume = mainVolumeGain(); });
   // Kept for this device a moment after the slider stops (mainVolume, above).
   if(root && root.settings) root.settings.volume = mainVolume;
   clearTimeout(volumeSaveTimer);
@@ -36655,8 +36790,20 @@ function recordingNameOpts(){
       const p = recordingPathFor(tr);
       return orig ? p.replace(/^music\//, "originals/") : p;
     },
-    canMove: (tid)=> !trackHeldByAPlayer(tid),
+    canMove: (tid)=> !trackHeldByAPlayer(tid) && !trackFileReaders.has(tid) && !convertQueue.includes(tid),
   };
+}
+// Tracks whose stored file is being read through by something other than a
+// player (2.6.001): a file being sent to the shared library; the converter
+// is known by its queue. Like a player's file, it isn't moved to a new name
+// or removed as replaced meanwhile (the rename copies it, and the old name
+// waits its day). The Mac mini, 20 Nov 2026: a WebM just imported was
+// moved from its first name to its readable one while the converter read
+// it, and the conversion failed with "reading the file: HTTP 404".
+const trackFileReaders = new Map();
+function trackFileReading(id, on){
+  const n = (trackFileReaders.get(id) || 0) + (on ? 1 : -1);
+  if(n > 0) trackFileReaders.set(id, n); else trackFileReaders.delete(id);
 }
 function trackHeldByAPlayer(tid){
   const ctx = typeof findPlayingContext === "function" ? findPlayingContext() : null;
@@ -38479,8 +38626,25 @@ if("mediaSession" in navigator){
     if(document.hidden) startPlayBridge("continuing after a stop");
     continueAfterStop();
   };
+  // A computer's "play" on waking (2.6.000; kr37's MacBook, report
+  // 2026-11-20-153553: twice, 37 Player started playing when he opened the
+  // lid, though it had been paused). The log showed the pattern each time:
+  // as the lid closed, macOS sent "pause" while 37 Player was already
+  // paused (ignored), and when it opened, hours later, "play", which was
+  // obeyed. So on a computer, a "play" that comes over a minute after a
+  // pause that found 37 Player already paused, with nothing played since,
+  // is taken as the system's and ignored. A second press of the play key
+  // plays (the first one used the guard up). Phones and tablets keep every
+  // "play": their lock screen is how people use it.
+  let pausedPauseAt = 0;
+  const WAKE_PLAY_AFTER_MS = 60000;
+  audioEl.addEventListener("play", ()=>{ pausedPauseAt = 0; });
   navigator.mediaSession.setActionHandler("play", ()=>{
+    ensureLevelCtx(); // a play from outside the window may let the sound engine start (guardLevelOnPlay)
     if(stopHold){ continueFromLockScreen("play"); return; }
+    const wakePlay = useSilenceClock() && pausedPauseAt && Date.now() - pausedPauseAt > WAKE_PLAY_AFTER_MS && !mainPlaying();
+    pausedPauseAt = 0;
+    if(wakePlay){ playLog("lock screen / phone: play, ignored: the computer's own, on waking (it was already paused when the computer said pause)"); return; }
     playLog("lock screen / phone: play" + (mainPlaying() ? " (already playing: ignored)" : ""));
     if(awakeOnly()){
       // Syncing after a pause: play picks the session up again (syncing
@@ -38494,6 +38658,7 @@ if("mediaSession" in navigator){
     if(stopHold){ continueFromLockScreen("pause"); return; }
     if(pauseHold && audioEl.paused){ playLog("lock screen / phone: pause while paused: resuming"); togglePlay(); return; }
     playLog("lock screen / phone: pause" + (mainPlaying() ? "" : " (already paused: ignored)"));
+    pausedPauseAt = mainPlaying() ? 0 : Date.now();
     if(awakeOnly()){
       // Some lock screens show a pause button while the silent loop plays:
       // with a track paused part-way, it's the only way back to it.
@@ -39067,7 +39232,7 @@ const HELP_TOPICS = [
   {
     "id": "audio-playback-problems",
     "title": "Audio playback problems",
-    "bodyHtml": "\u003cp>Most recordings play everywhere: \u003cstrong>MP3\u003c/strong> and \u003cstrong>M4A\u003c/strong> (AAC) play in every browser and in the desktop app, and so does \u003cstrong>WAV\u003c/strong>, though it's very large. A few other kinds of file play on some devices but not on others: \u003cstrong>WebM\u003c/strong> and \u003cstrong>Opus\u003c/strong> (common for recordings made in a browser or on an Android phone, and for many downloads from the web), \u003cstrong>Ogg\u003c/strong>, \u003cstrong>FLAC\u003c/strong>, \u003cstrong>AIFF\u003c/strong>, \u003cstrong>Apple Lossless\u003c/strong> (ALAC, outside Safari) and some rarer ones. An older Mac, an iPad or iPhone, and Safari are the likeliest to have trouble with them.\u003c/p>\n\u003ch3>What it looks like\u003c/h3>\n\u003cul>\n\u003cli>\u003cstrong>A track won't start\u003c/strong>, and 37 Player says it can't be played.\u003c/li>\n\u003cli>\u003cstrong>The time runs, but there's no sound.\u003c/strong>\u003c/li>\n\u003cli>\u003cstrong>The length is wrong\u003c/strong>, or moving to another point in the track doesn't land where it should.\u003c/li>\n\u003cli>\u003cstrong>The same track plays well on another device.\u003c/strong>\u003c/li>\n\u003c/ul>\n\u003ch3>What to do: convert it\u003c/h3>\n\u003cp>Converting makes the recording into the library's preferred format (Settings → \u003cstrong>File conversion\u003c/strong>: MP3, unless you've chosen another), which plays on every device. The converted file takes the place of the old one, so the track keeps its name, its details and its place in every playlist. In a shared library the converted file goes to every device.\u003c/p>\n\u003col>\n\u003cli>Open 'Library' → \u003cstrong>Table\u003c/strong>.\u003c/li>\n\u003cli>Click the \u003cstrong>Type\u003c/strong> heading to sort by it, so that tracks of the same kind are together.\u003c/li>\n\u003cli>Select the tracks that have trouble: click one, then Shift+click another to select everything between them.\u003c/li>\n\u003cli>Click \u003cstrong>Convert\u003c/strong> in the bar under the table. (In \u003cstrong>Browse\u003c/strong>, \u003cstrong>Convert\u003c/strong> is in the bar above the tracks.)\u003c/li>\n\u003c/ol>\n\u003cp>Converting needs 37 Player's converter, which it fetches the first time (about 26 MB) and then keeps, so it works offline afterwards. It waits while anything is playing, and shows how far it has got at the bottom of the window, with \u003cstrong>Stop\u003c/strong>. A track that is already in the preferred format is left as it is. Afterwards 37 Player asks whether to keep the originals too, for a later export (with \u003cstrong>Don't touch my files\u003c/strong> they are simply kept). A file over 500 MB gets a warning first, since converting needs about as much memory as the file's size.\u003c/p>\n\u003cp>Convert goes by your choice, whatever the settings on the File conversion page say. With the recommended setting there (\u003cstrong>Make every file playable everywhere\u003c/strong>), 37 Player converts such files by itself as they come in, and a shared library always does.\u003c/p>\n\u003ch3>What Type shows\u003c/h3>\n\u003cp>Table's \u003cstrong>Type\u003c/strong> shows what kind of file a track really is, found from what's inside it, not only from its name: a file can be named .mp3 and be WebM inside. Tracks are recorded this way as they come in. For tracks that came in before 37 Player did this, Settings → Library cleanup → \u003cstrong>Check library\u003c/strong> finds out, and says how many were another kind than their names said.\u003c/p>\n\u003ch3>When converting doesn't help\u003c/h3>\n\u003cul>\n\u003cli>\u003cstrong>A track that can't be played on any device\u003c/strong> may have lost its file, or the file may be damaged. Settings → \u003cstrong>Library cleanup\u003c/strong> lists such tracks, with \u003cstrong>Find or replace…\u003c/strong> to give a track its file again.\u003c/li>\n\u003cli>\u003cstrong>Still no sound?\u003c/strong> Use \u003cstrong>Send feedback…\u003c/strong> in Help to tell the author of 37 Player, with a note of which track and what happened. The playback log goes with it, and says which kinds of file this device can play.\u003c/li>\n\u003c/ul>"
+    "bodyHtml": "\u003cp>Most recordings play everywhere: \u003cstrong>MP3\u003c/strong> and \u003cstrong>M4A\u003c/strong> (AAC) play in every browser and in the desktop app, and so does \u003cstrong>WAV\u003c/strong>, though it's very large. A few other kinds of file play on some devices but not on others: \u003cstrong>WebM\u003c/strong> and \u003cstrong>Opus\u003c/strong> (common for recordings made in a browser or on an Android phone, and for many downloads from the web), \u003cstrong>Ogg\u003c/strong>, \u003cstrong>FLAC\u003c/strong>, \u003cstrong>AIFF\u003c/strong>, \u003cstrong>Apple Lossless\u003c/strong> (ALAC, outside Safari) and some rarer ones. An older Mac, an iPad or iPhone, and Safari are the likeliest to have trouble with them.\u003c/p>\n\u003ch3>What it looks like\u003c/h3>\n\u003cul>\n\u003cli>\u003cstrong>A track won't start\u003c/strong>, and 37 Player says it can't be played.\u003c/li>\n\u003cli>\u003cstrong>The time runs, but there's no sound.\u003c/strong>\u003c/li>\n\u003cli>\u003cstrong>The length is wrong\u003c/strong>, or moving to another point in the track doesn't land where it should.\u003c/li>\n\u003cli>\u003cstrong>The same track plays well on another device.\u003c/strong>\u003c/li>\n\u003c/ul>\n\u003ch3>What to do: convert it\u003c/h3>\n\u003cp>Converting makes the recording into the library's preferred format (Settings → \u003cstrong>File conversion\u003c/strong>: MP3, unless you've chosen another), which plays on every device. The converted file takes the place of the old one, so the track keeps its name, its details and its place in every playlist. In a shared library the converted file goes to every device.\u003c/p>\n\u003col>\n\u003cli>Open 'Library' → \u003cstrong>Table\u003c/strong>.\u003c/li>\n\u003cli>Click the \u003cstrong>Type\u003c/strong> heading to sort by it, so that tracks of the same kind are together.\u003c/li>\n\u003cli>Select the tracks that have trouble: click one, then Shift+click another to select everything between them.\u003c/li>\n\u003cli>Click \u003cstrong>Convert\u003c/strong> on the toolbar.\u003c/li>\n\u003c/ol>\n\u003cp>Converting needs 37 Player's converter, which it fetches the first time (about 26 MB) and then keeps, so it works offline afterwards. It waits while anything is playing, and shows how far it has got at the bottom of the window, with \u003cstrong>Stop\u003c/strong>. A track that is already in the preferred format is left as it is. Afterwards 37 Player asks whether to keep the originals too, for a later export (with \u003cstrong>Don't touch my files\u003c/strong> they are simply kept). A file over 500 MB gets a warning first, since converting needs about as much memory as the file's size.\u003c/p>\n\u003cp>Convert goes by your choice, whatever the settings on the File conversion page say. With the recommended setting there (\u003cstrong>Make every file playable everywhere\u003c/strong>), 37 Player converts such files by itself as they come in, and a shared library always does.\u003c/p>\n\u003ch3>What Type shows\u003c/h3>\n\u003cp>Table's \u003cstrong>Type\u003c/strong> shows what kind of file a track really is, found from what's inside it, not only from its name: a file can be named .mp3 and be WebM inside. Tracks are recorded this way as they come in. For tracks that came in before 37 Player did this, Settings → Library cleanup → \u003cstrong>Check library\u003c/strong> finds out, and says how many were another kind than their names said.\u003c/p>\n\u003ch3>When converting doesn't help\u003c/h3>\n\u003cul>\n\u003cli>\u003cstrong>A track that can't be played on any device\u003c/strong> may have lost its file, or the file may be damaged. Settings → \u003cstrong>Library cleanup\u003c/strong> lists such tracks, with \u003cstrong>Find or replace…\u003c/strong> to give a track its file again.\u003c/li>\n\u003cli>\u003cstrong>Still no sound?\u003c/strong> Use \u003cstrong>Send feedback…\u003c/strong> in Help to tell the author of 37 Player, with a note of which track and what happened. The playback log goes with it, and says which kinds of file this device can play.\u003c/li>\n\u003c/ul>"
   },
   {
     "id": "keyboard-shortcuts",
@@ -40973,7 +41138,7 @@ async function renderSettingsSection(fromTimer){
       ${cfgShared ? `<p class="settings-note">${escapeHtmlText(t("fmtSharedNote", {name: cfgShared.libraryName || ""}))}</p>` : ""}
       <h3 class="settings-h3">${t("fmtWhenTitle")} <span class="settings-saved" id="fmtSaved2"></span></h3>
       ${cfgShared ? `<p class="settings-note">${escapeHtmlText(t("fmtSharedUniversal"))}</p>` : ""}
-      ${radio("untouched")}${radio("reduce")}${radio("rules")}
+      ${radio("reduce")}${radio("untouched")}${radio("rules")}
       <div id="fmtRules" style="margin:4px 0 0 28px; ${pol.when==="rules"?"":"display:none;"}">
         <div class="settings-note" style="margin:2px 0 4px;">${escapeHtmlText(t("fmtKeepTitle"))}</div>
         <div style="display:flex; flex-wrap:wrap; gap:4px 16px; margin:0 0 8px;">${FILE_KINDS.map(([id, , label])=>{
@@ -41960,12 +42125,21 @@ function openFeedbackDialog(){
   const list = document.getElementById("fbSentList");
   if(list) sent.slice().reverse().forEach(x=>{ const li = document.createElement("li"); li.textContent = new Date(x.at).toLocaleString() + " · " + x.first; list.appendChild(li); });
   msgEl.focus();
-  // Other devices' logs, from the shared library: ticked when from the last three days.
+  // Other devices' logs, from the shared library: none chosen to begin with,
+  // and Select all / Select none above them (2.6.000; kr37, report
+  // 2026-11-20-153553: about 20 listed, the recent ones (last three days)
+  // chosen, and he took them off one by one every time).
   sharedOtherLogs().then(others=>{
     const box = document.getElementById("fbOtherLogs");
     if(!box || !others.length) return;
-    box.innerHTML = `<p class="settings-note" style="margin:8px 0 2px;">${escapeHtmlText(t("fbSharedLogsNote"))}</p>` + others.map((o, i)=> `<label class="join-partial" style="font-weight:normal;"><input type="checkbox" data-fb-other="${i}" ${Date.now() - o.time < 3 * 86400000 ? "checked" : ""}> <span></span></label>`).join("");
+    box.innerHTML = `<p class="settings-note" style="margin:8px 0 2px;">${escapeHtmlText(t("fbSharedLogsNote"))}</p>`
+      + `<div class="settings-row" style="gap:8px; flex-wrap:wrap; margin:2px 0 4px;"><button class="btn outline" data-fb-others="all" type="button">${escapeHtmlText(t("fbOtherLogsAll"))}</button><button class="btn outline" data-fb-others="none" type="button">${escapeHtmlText(t("fbOtherLogsNone"))}</button></div>`
+      + others.map((o, i)=> `<label class="join-partial" style="font-weight:normal;"><input type="checkbox" data-fb-other="${i}"> <span></span></label>`).join("");
     box.querySelectorAll("[data-fb-other]").forEach(cb=>{ const o = others[+cb.dataset.fbOther]; cb.nextElementSibling.textContent = t("fbSharedLog", {device: o.device, kind: t(o.kind === "play" ? "fbKindPlay" : "fbKindSync"), when: fmtWhenShort(o.time)}); cb._log = o; });
+    box.querySelectorAll("[data-fb-others]").forEach(b=> b.addEventListener("click", ()=>{
+      const on = b.dataset.fbOthers === "all";
+      box.querySelectorAll("[data-fb-other]").forEach(cb=>{ cb.checked = on; });
+    }));
   });
   go.addEventListener("click", async ()=>{
     const message = msgEl.value.trim();
@@ -47772,7 +47946,7 @@ async function logExportText(kind){
    round, at most every half hour, this device sends its playback and sync
    logs there (sync.php op=log, or a "logs" folder on Drive), replacing its
    last copy, so a problem on the iPad can be read from the laptop: Send
-   feedback lists the other devices' logs, ticked when recent. Named by the
+   feedback lists the other devices' logs, none chosen until asked. Named by the
    device, "<device>-<hash>-<kind>.txt" (the hash keeps two devices whose
    names differ only in letters a file name can't carry apart). */
 const LOGS_SENT_KEY = "37player.logsSentAt", LOGS_EVERY_MS = 30 * 60 * 1000;
@@ -49373,7 +49547,9 @@ async function sharedUploadFiles(cfg, doc){
   const worker = async ()=>{
     while(!failed && !stop && next < jobs.length){
       const j = jobs[next++];
+      trackFileReading(j.id, true);
       try{ await sendOne(j); }catch(err){ if(!failed) failed = err; }
+      finally{ trackFileReading(j.id, false); }
     }
   };
   await Promise.all(Array.from({length: Math.min(SHARED_UPLOADS_AT_ONCE, jobs.length)}, worker));
@@ -53504,6 +53680,32 @@ async function takeSharedFiles(){
   }catch(err){ console.warn("Shared files couldn't be read:", err); }
   takeOpenedFiles(files);
 }
+// The desktop app (shell 2.6.0, `opened`; kr37's MacBook, report
+// 2026-11-20-153553: Finder → Open with → 37 Player opened the app and
+// nothing more). macOS hands an opened file over as an Apple Event, Windows
+// and Linux on the command line (and, with 37 Player already running,
+// through the single-instance hand-over); the shell gives each one a root
+// of its own for this run only, through which only that file can be read,
+// keeps them until the page asks (p37_opened_take), and says
+// "p37-files-opened" when more arrive. Each is read where it lies, as a
+// folder used in place is (DesktopFileHandle: a DiskBlob when big), and goes
+// to the same question as the browser's Open with.
+async function desktopTakeOpenedFiles(){
+  let list = [];
+  try{ list = await window.__TAURI_INTERNALS__.invoke("p37_opened_take") || []; }catch(err){ console.warn("p37_opened_take:", err); return; }
+  const files = [];
+  for(const o of list){
+    try{ files.push(await new DesktopFileHandle(o.root, o.path).getFile()); }
+    catch(err){ console.warn("An opened file couldn't be read:", o.path, err); }
+  }
+  if(files.length) playLog("opened with 37 Player: " + files.map(f=> f.name).join(", "));
+  takeOpenedFiles(files);
+}
+function desktopOpenedFilesStart(){
+  if(!(window.__TAURI__ && window.__TAURI__.event)) return;
+  window.__TAURI__.event.listen("p37-files-opened", ()=> desktopTakeOpenedFiles());
+  desktopTakeOpenedFiles(); // any the app was opened with
+}
 async function openWithFiles(files){
   // A backup double-clicked (.37p, claimed by the installed app): restore it.
   const backups = files.filter(f=> /\.37p$/i.test(f.name));
@@ -53531,7 +53733,10 @@ async function openWithFiles(files){
 function openFilePlayer(files){
   if(isAnythingPlaying()) togglePlay();
   const lib = document.getElementById("libPreviewAudio"); if(lib && !lib.paused) lib.pause();
-  const urls = files.map(f=> URL.createObjectURL(f));
+  // Each file's address when it's first played: a file the desktop app
+  // opened is read where it lies (a DiskBlob, served by the shell), which an
+  // object URL can't hold (2.6.000).
+  const urls = [];
   const list = files.length > 1 ? `<div class="open-list">${files.map((f, i)=> `<button class="btn ghost open-item" data-i="${i}" type="button">${escapeHtmlText(f.name)}</button>`).join("")}</div>` : "";
   openModal(`<h3 id="openPlayingName"></h3>${list}
     <audio id="openedAudio" controls autoplay style="width:100%; margin:8px 0;"></audio>
@@ -53539,10 +53744,13 @@ function openFilePlayer(files){
     <div class="modal-actions"><button class="btn ghost" id="openedImport" type="button">${t("openImportBtn")}</button><button class="btn primary" data-close type="button">${t("closeBtn")}</button></div>`);
   const el = document.getElementById("openedAudio"), name = document.getElementById("openPlayingName"), problem = document.getElementById("openedProblem");
   let at = 0;
-  const playAt = (i)=>{
+  const playAt = async (i)=>{
     at = i; problem.style.display = "none";
     name.textContent = files[i].name;
     document.querySelectorAll(".open-item").forEach(b=> b.classList.toggle("active", +b.dataset.i === i));
+    try{ if(!urls[i]) urls[i] = await audioObjectUrl(files[i], files[i].name); }
+    catch(err){ problem.textContent = t("openCantPlay"); problem.style.display = ""; return; }
+    if(at !== i) return; // another was chosen meanwhile
     el.src = urls[i]; el.play().catch(()=>{});
   };
   el.addEventListener("ended", ()=>{ if(at + 1 < files.length) playAt(at + 1); });
@@ -53585,7 +53793,7 @@ if(IN_DESKTOP_APP){
   window.addEventListener("resize", fitHeight);
 }
 const DESKTOP_BRIDGE_NEEDED = +((document.querySelector('meta[name="desktop-bridge"]') || {}).content || 1);
-let desktopShell = null; // {version, bridge, pages, device, updates, zoom, trash (2.5.2), watch (2.5.3), append_range (2.5.3), files_http}
+let desktopShell = null; // {version, bridge, pages, device, updates, zoom, trash (2.5.2), watch (2.5.3), append_range (2.5.3), files_http, typed_path (2.5.6), opened (2.6.0)}
 async function desktopShellCheck(){
   if(!IN_DESKTOP_APP || !window.__TAURI__ || !window.__TAURI__.core) return;
   try{ desktopShell = await window.__TAURI__.core.invoke("p37_shell_info"); }catch(err){ desktopShell = {version: "?", bridge: 0}; }
@@ -53594,6 +53802,7 @@ async function desktopShellCheck(){
   try{ applyDisplaySettings(); }catch(err){}
   try{ desktopPlayerDiagnostics(); }catch(err){}
   if(desktopShell.watch) desktopWatchPoll();
+  if(desktopShell.opened) desktopOpenedFilesStart();
   // Which tracks are used in place, read ahead of the first Play (placeAwarePlay).
   setTimeout(()=>{ try{ if(STORAGE_KIND === "desktop" && libStore && libStore.placeRefs) libStore.placeRefs().catch(()=>{}); }catch(err){} }, 2500);
   if((desktopShell.bridge || 0) < DESKTOP_BRIDGE_NEEDED)
