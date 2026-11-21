@@ -4,9 +4,11 @@
 // click on Play started the engine too late for it, so it played without
 // its boost until it was loaded again). Here: a track turned up 6 dB is in
 // Playing, paused, with no engine; the first click starts the engine and
-// hooks Playing in, the track keeping its place. One playing when the
-// engine starts is hooked in at its next pause, not mid-sound. And every
-// player follows Playing's slider (the Library's player too).
+// hooks Playing in, the track keeping its place. One already heard without
+// its boost (playing before any click) keeps its level until it's replaced,
+// even after a pause: never a jump part-way through (kr37, earbuds turned
+// up); the next track is hooked in. And every player follows Playing's
+// slider (the Library's player too).
 //   node hookin.js
 const puppeteer = require('puppeteer-core'); const sleep = ms=>new Promise(r=>setTimeout(r,ms));
 let fails = 0; const ok=(c,m)=>{ console.log((c?'ok   ':'FAIL ')+m); if(!c) fails++; };
@@ -18,7 +20,7 @@ async function open(b){
   // (The welcome is clicked through with element clicks, which make no pointerdown.)
   for(const x of ['^English$','^Start a library on this device$','^No, just start$','^Skip for now$','^Finish$']){ await clickText(p,'.modal button',x); await sleep(300); }
   await p.evaluate(()=> document.querySelectorAll('.modal [data-close]').forEach(b=> b.click()));
-  await p.evaluate(async()=>{ const r=window.__dbg.getRoot(); const blob = await (await fetch('ten.mp3')).blob(); r.library = [{id:'tk', name:'Quiet', duration:600, volumeDb: 6, peaks:Array.from({length:720},(_, i)=>i%5/5)}, {id:'t2', name:'Plain', duration:600, peaks:Array.from({length:720},(_, i)=>i%5/5)}]; await window.__dbg3.put('audio',{id:'tk', blob}); await window.__dbg3.put('audio',{id:'t2', blob}); r.tree = [{id:'pl', kind:'playlist', name:'P', items:[{id:'it', kind:'track', refId:'tk', order:0}]}]; r.settings.levelMode = 'off'; await window.__dbg.saveState(); });
+  await p.evaluate(async()=>{ const r=window.__dbg.getRoot(); const blob = await (await fetch('ten.mp3')).blob(); r.library = [{id:'tk', name:'Quiet', duration:600, volumeDb: 6, peaks:Array.from({length:720},(_, i)=>i%5/5)}, {id:'t2', name:'Plain', duration:600, peaks:Array.from({length:720},(_, i)=>i%5/5)}]; await window.__dbg3.put('audio',{id:'tk', blob}); await window.__dbg3.put('audio',{id:'t2', blob}); r.tree = [{id:'pl', kind:'playlist', name:'P', items:[{id:'it', kind:'track', refId:'tk', order:0}, {id:'it2', kind:'track', refId:'tk', order:1}]}]; r.settings.levelMode = 'off'; await window.__dbg.saveState(); });
   return p;
 }
 (async()=>{
@@ -27,6 +29,9 @@ async function open(b){
   let p = await open(b);
   await p.evaluate(()=>{ window.__dbg.setMode('playing'); window.__play('it'); }); await sleep(2500);
   await p.evaluate(()=> document.getElementById('audioEl').pause()); await sleep(300);
+  // A reload: Playing puts the track back, paused, where it was (as on the Mac mini).
+  await p.evaluate(async()=>{ await window.__dbg.saveState(); }); await sleep(300);
+  await p.reload({waitUntil:'networkidle0'}); await sleep(2000);
   const pos = (await p.evaluate(()=> window.__st())).t;
   let L = await p.evaluate(()=> window.__lvl());
   ok(!L.ctx && !L.routed, 'before any click: no engine, Playing not hooked in');
@@ -44,15 +49,19 @@ async function open(b){
   await p.evaluate(()=> window.__vol.set(1)); await sleep(200);
   ok(Math.abs(await p.evaluate(()=> document.getElementById('libPreviewAudio').volume) - 1) < 0.01, '… and moves with it');
   await p.close();
-  // 3. Playing when the engine starts: hooked in at the next pause.
+  // 3. Heard without its boost before the engine started: kept so until replaced.
   p = await open(b);
   await p.evaluate(()=>{ window.__dbg.setMode('playing'); window.__play('it'); }); await sleep(2000);
   ok(!(await p.evaluate(()=> window.__st().paused)), 'playing, with no engine yet');
   await p.mouse.click(640, 5); await sleep(600);
   L = await p.evaluate(()=> window.__lvl());
-  ok(L.ctx && !L.routed && L.hookOnPause, 'the click starts the engine; the playing track waits for its next pause');
-  await p.evaluate(()=> document.getElementById('audioEl').pause()); await sleep(600);
-  ok((await p.evaluate(()=> window.__lvl())).routed, 'paused: hooked in');
+  ok(L.ctx && !L.routed && L.heardUnboosted, 'the click starts the engine; the playing track, heard without its boost, isn\'t hooked in');
+  await p.evaluate(()=> document.getElementById('audioEl').pause()); await sleep(300);
+  await p.mouse.click(640, 5); await sleep(400);
+  await p.evaluate(()=> document.getElementById('audioEl').play()); await sleep(600);
+  ok(!(await p.evaluate(()=> window.__lvl())).routed, 'paused, a click, played again: still not hooked in (no jump part-way)');
+  await p.evaluate(()=> window.__play('it2')); await sleep(1200);
+  ok((await p.evaluate(()=> window.__lvl())).routed, 'the next track is hooked in as it loads');
   // 4. A track that needs no boost isn't hooked in.
   await p.close();
   p = await open(b);

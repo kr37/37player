@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.6.006">
+<meta name="app-version" content="2.6.007">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -36363,20 +36363,22 @@ document.addEventListener("keydown", ()=>{ ensureLevelCtx(); hookInLoadedPlayers
 // Whether a player may be hooked into the engine now: it runs, or (gesture)
 // it's just been asked to start by this click, which the browser honours.
 function levelCtxReady(gesture){ return !!levelCtx && (levelCtx.state === "running" || (!!gesture && levelCtx.state === "suspended")); }
-// Players holding a track that needs turning up, not hooked in yet: hooked
-// in now. A paused one at once: one whose address needs the cross-origin
-// mark is loaded again for it, and put back at the same spot (unless the
-// person moves it meanwhile). A playing one at its next pause, to make no
-// click in the sound (its next track would be hooked in anyway).
+// Players holding a track that needs turning up, not hooked in yet, and not
+// yet heard without it: hooked in now (one whose address needs the
+// cross-origin mark is loaded again for it, and put back at the same spot,
+// unless the person moves it meanwhile). A track already heard without its
+// boost (started by a media key, the headphones, macOS's Now Playing, which
+// aren't clicks in the window) keeps its level until it's replaced: never a
+// jump of up to 18 dB part-way through (kr37: "imagine I start listening to
+// this Italian track with my earbuds. I'm going to crank up the volume. Then
+// I pause and continue, and now loudness has been applied?"). The next
+// track is hooked in as it loads, as evening out always works.
 function hookInLoadedPlayers(gesture){
   if(!levelCtxReady(gesture)) return;
   for(const el of [audioEl, ...levelPreviewEls()]){
     if(!el || levelGains.has(el) || !el._levelTrack || !el.getAttribute("src") || el.ended) continue;
     if(levelGainWanted(el, el._levelTrack) <= 1.001) continue;
-    if(!el.paused){
-      if(!el._hookOnPause){ el._hookOnPause = true; el.addEventListener("pause", ()=>{ el._hookOnPause = false; hookInLoadedPlayers(false); }, {once: true}); }
-      continue;
-    }
+    if(el._heardUnboosted || !el.paused) continue;
     const pos = el.currentTime, co = el.crossOrigin;
     applyLevel(el, el._levelTrack, true, gesture);
     if(el.crossOrigin !== co && pos > 0){ // loaded again for the mark
@@ -36413,6 +36415,13 @@ function applyLevel(el, trackId, atStart, gesture){
   if(atStart && (isDesktopHttpUrl(el.src) || isP37libUrl(el.src)) && el.crossOrigin !== "anonymous" && levelCtxReady(gesture)
       && levelGainWanted(el, trackId) > 1.001){ const u = el.src; el.crossOrigin = "anonymous"; el.src = u; }
   el._levelTrack = trackId;
+  // Whether this track is heard without the boost it wants (not hooked in):
+  // then it's never hooked in part-way (hookInLoadedPlayers).
+  if(atStart) el._heardUnboosted = false;
+  if(!el._unboostWatch){
+    el._unboostWatch = true;
+    el.addEventListener("playing", ()=>{ if(!levelGains.has(el) && el._levelTrack && levelGainWanted(el, el._levelTrack) > 1.001) el._heardUnboosted = true; });
+  }
   // Playing's slider sets every player's volume (2.6.005, kr37: "why
   // wouldn't they all follow the same?"): before, the others played as if
   // it were at the top.
