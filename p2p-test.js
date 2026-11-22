@@ -23,7 +23,7 @@
   'use strict';
   if (window.__p37p2p) { window.__p37p2p.show(); return; }
 
-  var VERSION = 'p2p-test 6';
+  var VERSION = 'p2p-test 7';
   var SRC = (document.currentScript && document.currentScript.src) || location.href;
   var BASE = new URL('.', SRC).href;
   var MAILBOX = BASE + 'p2p-test.php';
@@ -153,6 +153,15 @@
     var lab = el('label', { for: 'p37p2p-mic' }, ' Use real local addresses (asks for the microphone; only if connecting fails)');
     r2b.appendChild(ui.mic); r2b.appendChild(lab);
     root.appendChild(r2b);
+    // The desktop app can't ask for the microphone, so it can't show its real
+    // address; a finished version would get it from the shell. For the test,
+    // type it here: the .local names this device offers are replaced by it.
+    var r2d = el('div', { class: 'row' });
+    r2d.appendChild(el('span', null, 'This device\'s real address (optional):'));
+    ui.addr = el('input', { type: 'text', placeholder: 'e.g. 10.1.10.5' });
+    ui.addr.style.width = '9em';
+    r2d.appendChild(ui.addr);
+    root.appendChild(r2d);
     ui.status = el('div', { class: 'big' }, 'Not connected');
     root.appendChild(ui.status);
     ui.again = btn('Connect again', function () { if (role === 'b') sendHello(); else L('Press Connect again on the device that joined.', 'warn'); });
@@ -197,7 +206,7 @@
     if (!IN_APP) {
       root.appendChild(el('h2', null, 'For the desktop app'));
       root.appendChild(el('div', { class: 'muted' }, 'In 37 Player (the app): right-click → Inspect Element → Console, paste this line, press Return:'));
-      var line = "var s=document.createElement('script');s.src='" + BASE + "p2p-test.js?'+Date.now();document.body.append(s)";
+      var line = "var o=document.getElementById('p37p2p');if(o)o.remove();window.__p37p2p=null;var s=document.createElement('script');s.src='" + BASE + "p2p-test.js?'+Date.now();document.body.append(s)";
       var c = el('code', null, line);
       root.appendChild(c);
       root.appendChild(btn('Copy that line', function () { copyText(line); L('Copied the line for the app.'); }));
@@ -445,7 +454,7 @@
       setupChannel(d, p);
       await p.setLocalDescription(await p.createOffer());
       await waitGather(p, m.stun ? 8000 : 4000);
-      await post('b', { t: 'offer', attempt: m.attempt, stun: !!m.stun, sdp: p.localDescription.sdp, name: ui.name.value, where: where() });
+      await post('b', { t: 'offer', attempt: m.attempt, stun: !!m.stun, sdp: exposeAddr(p.localDescription.sdp), name: ui.name.value, where: where() });
       L('Sent the offer (' + countCands(p.localDescription.sdp) + ').');
     } else if (m.t === 'offer' && role === 'b') {
       if (m.attempt !== attempt) return;
@@ -456,13 +465,22 @@
       await q.setRemoteDescription({ type: 'offer', sdp: m.sdp });
       await q.setLocalDescription(await q.createAnswer());
       await waitGather(q, 6000);
-      await post('a', { t: 'answer', attempt: m.attempt, sdp: q.localDescription.sdp });
+      await post('a', { t: 'answer', attempt: m.attempt, sdp: exposeAddr(q.localDescription.sdp) });
       L('Got the offer from “' + m.name + '” (' + countCands(m.sdp) + '); sent the answer (' + countCands(q.localDescription.sdp) + ').');
     } else if (m.t === 'answer' && role === 'a') {
       if (!pc || pc._attempt !== m.attempt) return;
       await pc.setRemoteDescription({ type: 'answer', sdp: m.sdp });
       L('Got the answer (' + countCands(m.sdp) + ').');
     }
+  }
+  // Offer the typed real address in place of this device's .local names.
+  function exposeAddr(sdp) {
+    var ip = (ui.addr && ui.addr.value || '').trim();
+    if (!/^[0-9.]+$|^[0-9a-fA-F:]+$/.test(ip)) return sdp;
+    var n = 0;
+    var out = sdp.replace(/^(a=candidate:\S+ \d+ \S+ \d+ )(\S+\.local)( .*)$/gm, function (_, a, h, b) { n++; return a + ip + b; });
+    if (n) L('Offering ' + ip + ' in place of ' + n + ' .local name(s).');
+    return out;
   }
   function countCands(sdp) {
     var c = (sdp.match(/^a=candidate:.*$/gm) || []).map(function (l) { return candInfo(l.slice(2)); });
