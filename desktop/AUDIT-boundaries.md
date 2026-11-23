@@ -174,7 +174,13 @@ the rest:
 
 **Fixes:**
 
-- **A. Notice the switch** (page, small). An `fs_write` error saying "must be the body" means the switch happened. Log it once, and ask to reload ("37 Player needs to restart its window; nothing is lost"). Risk: none to speak of.
+- **A. Keep working after the switch, and restart the window only when nothing plays** (shell and page, small).
+  - **kr37 (23 Nov):** if a playlist is playing and playback still works, don't interrupt it.
+  - Asking to reload at once was the first proposal. It would also have lost edits made since the switch, since those saves would have failed.
+  - **Shell:** `fs_write` also accepts the slower route's body (a JSON list of numbers), so saves keep working, slowly.
+  - **Page:** notices the switch (a write that came the slow way, or the "must be the body" error from an older shell), and logs it once.
+  - **When nothing is playing** (stopped, or at a stop item), offers "37 Player's window should restart. It takes a moment, and the playlist's place is kept." A reload brings the session's place back.
+  - **Risk:** low. Never seen yet; this is insurance.
 - **B. Make repeats harmless** (shell and page, medium).
   - `fs_write` with append carries the size the file should have before the append. The shell refuses a mismatch, and the page then starts that file again.
   - `fs_append_range` does the same.
@@ -267,9 +273,9 @@ How the page writes (`DesktopFileHandle.createWritable`):
 - **Owner:** ours.
 
 **Fix B** (1.1) covers the first: the page checks the `.p37part` size before
-the rename. A tidy step at library open could remove leftover `.p37part` and
-`.p37tmp-` files older than a day. kr37 dislikes one-time repair passes, but
-this is ongoing housekeeping, not a one-time repair: his call.
+the rename. A tidy step at library open removes leftover `.p37part` and
+`.p37tmp-` files older than a day. **kr37 (23 Nov):** agreed; this is general
+housekeeping, not one-time repair code.
 
 ### 1.5 p37lib: recordings played and read from the disk
 
@@ -352,11 +358,25 @@ Risk: low.
 - **The network:** a 120 s limit per file and a 40 MB size limit. Good.
 - **Owner:** ours.
 
-**Fix G** (shell and page, small):
+**Fix G** (shell and page, small). Revised after kr37's questions (23 Nov), so this is a proposal:
 
-- Count a page as started when its script first runs (a new, early `p37_page_alive`), so a slow library load doesn't count against it.
-- Or keep the rule, but give it 3 minutes when the stall watch saw the window held up in that time.
-- **Risk:** a page that runs but fails at loading the library would then be kept. The bundled page is always there to go back to by hand (About), and the library-loaded signal can stay as a second, later check that only logs.
+**The first two ideas, and why each falls short:**
+
+- **Counting a page as started when its script first runs:** weaker. A new page's bug is as likely to be in loading the library (a new storage format, a change at start) as anywhere, and that's exactly what the check should catch.
+- **A fixed 3 minutes:** still wrong for a giant library on a slow Mac. And a person would usually have quit or restarted long before.
+
+**Proposed: time from progress, not from the start:**
+
+- While the library loads, the page tells the shell it's still making progress (`p37_page_progress`, at each step and every few seconds while reading).
+- The page is set aside only when **60 s pass with no progress at all**, or when it doesn't reach "library loaded" within **10 minutes** in all.
+- A giant library loading steadily is never set aside; a page stuck at one step still is.
+
+**Unchanged:**
+
+- Quitting before the library loads counts as an unconfirmed start (`choose()`), and **two such starts set the page aside**. So a person who gives up on a page that doesn't work is covered too.
+- The page can always be set aside by hand in About.
+
+**Risk:** low.
 
 ### 1.10 The shell updating itself (`updates.rs`)
 
@@ -409,13 +429,25 @@ Nothing to fix now.
 - **The page's main thread, the media process, the converter:** nothing at all. The 18 Nov freeze left no stall.
 - **The page's process ending and being reloaded by Tauri** (1.14).
 
-**Fix I** (shell and page, medium; a page watch that only records):
+**Fix I** (shell only, small; it notes the time, using what already runs):
 
-- Every 5 s the shell sends the page an event; the page answers with `p37_alive`.
-- No answer for 15 s while the shell itself is fine → the shell notes "the page didn't answer from 14:02:10 for 40 s" in running.json, and the page logs it at its next start (or at once, when it comes back).
-- It records only. Reloading a frozen page by itself was considered in "Cleanup 2" and kr37 decided against a page watch then; whether it ever acts is his decision, after seeing what it records.
-- Also note in running.json, every 30 s, whether the stall watch's last tick reached the main thread, so a hang that never ended leaves "the window stopped answering at 14:02:10" rather than only "didn't close normally".
-- **Risk:** low. A page busy for 15 s on a slow Mac (a big import) would be recorded as not answering, which is also worth knowing.
+**Why it was declined before:** kr37 declined a page watch on 18 Nov ("37 Player freeze troubleshooting"). It would only log, not prevent anything, and he was hesitant to add more background processes. Both reasons still hold for the version first proposed here: a new timer in the shell, and a new answer from the page every 5 s.
+
+**What was missed then:** the page already calls `p37_watch` every 20 s (`desktopWatchPoll`), and the shell already has a thread running (the stall watch). So:
+
+- **The shell keeps the time of the page's last `p37_watch`.**
+- **The stall watch's existing check** sees when that is over 60 s old while the window is on screen, and notes "the page stopped answering at 14:02:10" in running.json.
+  - A hidden or minimised window's timers are slowed by the system, so it allows 5 minutes then.
+- **Every 30 s, it notes whether its own last check reached the main thread.** A hang of the shell that never ended then leaves its start time too, not only "didn't close normally".
+
+**What this changes:**
+
+- No new thread, no new timer and no new page code.
+- It still prevents nothing, but it gives a freeze its start time and connects it to the playback log.
+- **Fix F can use it:** if the page has been silent, a close offers "Quit anyway?" at once, instead of after a wait.
+- Whether it should ever *act* (reload a frozen page) stays kr37's decision, after seeing what it records.
+
+**Risk:** low. A page busy for over a minute (a big import on a slow Mac) would be noted, which is worth knowing.
 
 ### 1.14 The page's process ending
 
@@ -721,18 +753,18 @@ safety for the least risk:
 |---|---|---|---|---|---|
 | 1 | **E** — file commands and folder choosers on `spawn_blocking` | shell | small | low | 1.3 |
 | 2 | **D** — disk work off the main thread (`p37_device_put`, pages, roots.json, Open With); pages read before taking the lock | shell | small | low | 1.2, 1.9 |
-| 3 | **A** — notice Tauri's switch to postMessage; ask to reload | page | small | none | 1.1 |
+| 3 | **A** — keep saving after Tauri's switch; restart the window only when nothing plays | shell + page | small | low | 1.1 |
 | 4 | **F** — closing when the page doesn't answer; the page's save before quitting limited to 10 s | shell + page | small | low | 1.8 |
 | 5 | **P** — a save that runs long is said, amber then red | page | small | low | 3.3 |
 | 6 | **R** — converter: stop and go on after 2 min without progress | page | small | low | 3.2 |
 | 7 | **K** — the start's watch covers the shell steps too | page | small | none | 1.16 |
 | 8 | **J** — the page's process ending: logged, reloaded, no loop | shell | small | low | 1.14 |
-| 9 | **I** — the page watch that records; a hang that never ended is named | shell + page | medium | low | 1.13, 2.1, 2.5 |
+| 9 | **I** — note when the page's regular `p37_watch` stops, in the stall watch's existing check; a shell hang that never ended is named | shell | small | low | 1.13, 2.1, 2.5 |
 | 10 | **Measurements** (above) | Mac mini, iPad | — | none | 1.1, 2.1, 2.4 |
 | 11 | **L** — silences from the disk on computers | page | small | low | 2.1 |
 | 12 | **B** — appends that can't land twice; `.p37part` size checked before the rename | shell + page | medium | low | 1.1, 1.4 |
 | 13 | **S** — time limits on sync and Drive requests | page | small | low | 3.4 |
-| 14 | **G** — the 60 s rule counts from the page's first sign of life | shell + page | small | low | 1.9 |
+| 14 | **G** — a downloaded page is set aside after 60 s *without progress* (10 min at most), not 60 s from its start | shell + page | small | low | 1.9 |
 | 15 | **H** — the shell's update download: time limit, progress, Cancel | shell + page | small | low | 1.10 |
 | 16 | **O** — Web Audio's state logged, resumed after an interruption | page | small | low | 2.2 |
 | 17 | **C** — wry reads request bodies in 64 KB pieces (if 10 shows it matters) | wry patch | small | low | 1.1 |
@@ -746,6 +778,13 @@ threads with the same results. A new command the page relies on (fixes 4, 9
 and 14) would make bridge 3 by kr37's rule of 7 Nov, unless the page treats
 each as optional (it checks the shell's `p37_shell_info` flags, as for
 `opened`). Optional is the gentler path: an older app keeps working as now.
+
+## Afterwards: keeping these checks going
+
+**kr37 (23 Nov):** once this audit's fixes are done, work out a way to make
+sure these checks are run for future features and fixes. To discuss then.
+The Wi-Fi share work (WebRTC between devices) is an example of a new kind of
+crossing that would want the same questions asked.
 
 ## Checked and found sound
 
