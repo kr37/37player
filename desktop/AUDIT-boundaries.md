@@ -449,6 +449,14 @@ Nothing to fix now.
 
 **Risk:** low. A page busy for over a minute (a big import on a slow Mac) would be noted, which is worth knowing.
 
+**Decided (kr37, 23 Nov):** this version, recording only, linked to fix F, and early in the order.
+
+- **Records only:** the shell keeps the time of the last `p37_watch`. The stall watch's existing loop notes when that is over 1 minute old with the window on screen, or 5 minutes when it's hidden. The page shows the new kind of entry in the log it already writes from `p37_watch` (a line or two of page code).
+- **Linked to F:** a close or Quit while the page is silent offers "Quit anyway?" at once.
+- **No automatic recovery.** For the freeze seen on 18 Nov, a reload would very likely not help: the stuck media process belongs to the app, not the page, so a reloaded page would likely meet the same stuck process at its first sound (inferred, not tested). Only restarting the whole app clears it, and doing that by itself, perhaps mid-puja on a false alarm, is worse than a frozen window someone can see and act on.
+- **Reconsider only with evidence:** if records show freezes recurring in a way a restart reliably cures.
+- **Why early:** the record gives each freeze its real start time. On 18 Nov the log's last line (2:02, "silent loop off") was about ten minutes before the page actually froze; that was only worked out from samples taken by chance. Later decisions (fixes M and N) should rest on what real freezes look like.
+
 ### 1.14 The page's process ending
 
 **What happens today:**
@@ -759,7 +767,7 @@ safety for the least risk:
 | 6 | **R** — converter: stop and go on after 2 min without progress | page | small | low | 3.2 |
 | 7 | **K** — the start's watch covers the shell steps too | page | small | none | 1.16 |
 | 8 | **J** — the page's process ending: logged, reloaded, no loop | shell | small | low | 1.14 |
-| 9 | **I** — note when the page's regular `p37_watch` stops, in the stall watch's existing check; a shell hang that never ended is named | shell | small | low | 1.13, 2.1, 2.5 |
+| 9 | **I** — note when the page's regular `p37_watch` stops, in the stall watch's existing check; a shell hang that never ended is named. **Decided: record only, linked to F, early** | shell (+ a line of page) | small | low | 1.13, 2.1, 2.5 |
 | 10 | **Measurements** (above) | Mac mini, iPad | — | none | 1.1, 2.1, 2.4 |
 | 11 | **L** — silences from the disk on computers | page | small | low | 2.1 |
 | 12 | **B** — appends that can't land twice; `.p37part` size checked before the rename | shell + page | medium | low | 1.1, 1.4 |
