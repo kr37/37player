@@ -55,7 +55,7 @@
     }
     for(const k of ['toRoot', 'to_root']) if(args[k] != null && opened[args[k]] != null) throw new Error('no folder called ' + args[k] + ' on the list');
     switch(cmd){
-      case 'p37_shell_info': return {version: '2.0.000', bridge: 2, pages: false, device: true, updates: !!window.__fakeShellUpdates, zoom: !!window.__fakeShellZoom, trash: window.__fakeShellTrash !== false, watch: true, append_range: !window.__fakeNoAppendRange, typed_path: !!window.__fakeShellTypedPath, opened: !!window.__fakeShellOpened, slow_route: !!window.__fakeShellSlowRoute, files_http: window.__fakeFilesHttp || null};
+      case 'p37_shell_info': return {version: '2.0.000', bridge: 2, pages: false, device: true, updates: !!window.__fakeShellUpdates, zoom: !!window.__fakeShellZoom, trash: window.__fakeShellTrash !== false, watch: true, append_range: !window.__fakeNoAppendRange, typed_path: !!window.__fakeShellTypedPath, opened: !!window.__fakeShellOpened, slow_route: !!window.__fakeShellSlowRoute, close_seen: !!window.__fakeShellCloseSeen, files_http: window.__fakeFilesHttp || null};
       case 'p37_opened_take': { if(!window.__fakeShellOpened) throw new Error('unknown command'); await openedAtStart; const w = openedWaiting; openedWaiting = []; return w; }
       // The Size setting, by the shell (2.4.000): what it was asked for is kept for the test.
       case 'p37_zoom': if(!window.__fakeShellZoom) throw new Error('unknown command'); (window.__fakeZooms = window.__fakeZooms || []).push(args.scale); return null;
@@ -65,7 +65,10 @@
       case 'p37_device_get': return JSON.parse(localStorage.getItem('__fakeDevice') || '{}');
       case 'p37_device_put': localStorage.setItem('__fakeDevice', JSON.stringify(args.values || {})); return null;
       case 'p37_page_info': return {running: '', bundled: '', ready: null, reverted: null, channel: 'test', enabled: false};
-      case 'p37_page_ok': case 'p37_quit': return null;
+      case 'p37_page_ok': return null;
+      case 'p37_quit': window.__fakeQuits = (window.__fakeQuits || 0) + 1; return null;
+      // closeseen.js: the page answering a close (shell 2.7.1), with the dialog's words.
+      case 'p37_close_seen': if(!window.__fakeShellCloseSeen) throw new Error('unknown command'); (window.__fakeCloseSeen = window.__fakeCloseSeen || []).push(args && args.texts); return null;
       case 'fs_roots': return readRoots();
       case 'fs_root_default': {
         const r = await readRoots(), base = (r.place || DEFAULT_PLACE) + '/' + folderName(args.name);
@@ -170,7 +173,9 @@
       // Tauri's slower route (slowroute.js): window.__fakeSlowRoute set, the
       // bytes come as a list of numbers; a shell with slow_route answers
       // "slow", an older one refuses. Reads answer a plain list of numbers.
-      case 'fs_write': if(window.__fakeSlowRoute){ if(!window.__fakeShellSlowRoute) throw "the file's bytes must be the body"; args = new Uint8Array(Array.from(args)); }
+      // closeseen.js: writes held until window.__fakeWriteHold is cleared.
+      case 'fs_write': while(window.__fakeWriteHold) await new Promise(r=> setTimeout(r, 100));
+        if(window.__fakeSlowRoute){ if(!window.__fakeShellSlowRoute) throw "the file's bytes must be the body"; args = new Uint8Array(Array.from(args)); }
       { const root = decodeURIComponent(opts.headers['p37-root']), path = decodeURIComponent(opts.headers['p37-path']); checkRel(path); await writeFile(root, path, args, opts.headers['p37-append'] === '1'); window.__fakeShellWrites = (window.__fakeShellWrites || 0) + 1; window.__fakeShellWriteBytes = (window.__fakeShellWriteBytes || 0) + (args.byteLength || args.length || 0); window.__fakeShellBiggestWrite = Math.max(window.__fakeShellBiggestWrite || 0, args.byteLength || args.length || 0); return window.__fakeSlowRoute ? 'slow' : null; }
       case 'fs_stat': return statOf(args.root, args.path);
       case 'fs_mkdir': await dirOf(args.root, args.path, true); return null;
@@ -198,6 +203,7 @@
   };
   window.__TAURI_INTERNALS__ = {invoke};
   const listeners = {};
+  window.__fakeEmit = (name, payload)=>{ for(const fn of listeners[name] || []) fn({payload}); };
   window.__TAURI__ = {core: {invoke, convertFileSrc: (path, scheme)=> scheme + '://localhost/' + path}, event: {listen: async (name, fn)=>{ (listeners[name] = listeners[name] || []).push(fn); return ()=>{}; }}};
   window.__fakeOpen = async (...paths)=>{
     for(const at of paths){
