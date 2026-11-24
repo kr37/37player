@@ -9,7 +9,9 @@
 //
 // Commands (all named fs_*): roots (list, default, choose, forget), and
 // list, stat, read (a range), write (to a temporary file, then swapped in, so
-// a reader never sees half a file), copy, rename, remove, mkdir.
+// a reader never sees half a file), copy, rename, remove, mkdir. Every one
+// that may wait for a disk does its work on a thread of its own, never the
+// main thread or Tauri's shared pool (crate::blocking, shell 2.6.1).
 // Recordings are also served at p37lib://localhost/<root>/<path> (on
 // Windows http://p37lib.localhost/…), with Range, so the page can play and
 // read a big file in pieces instead of holding it in memory.
@@ -76,12 +78,16 @@ impl Roots {
             .unwrap_or_default();
         Roots { map: Mutex::new(map), file: Mutex::new(Some(file)), opened: Mutex::new(BTreeMap::new()) }
     }
+    // One save at a time, each writing the list as it is when its turn
+    // comes (shell 2.6.1): with the commands that change the list on threads
+    // of their own, two saves at once could otherwise end with the older
+    // list on disk.
     fn save(&self) -> Result<(), String> {
-        let file = self.file.lock().unwrap().clone();
-        let Some(file) = file else { return Ok(()) };
+        let file = self.file.lock().unwrap();
+        let Some(file) = file.as_ref() else { return Ok(()) };
         let m: BTreeMap<String, String> = self.map.lock().unwrap().iter().map(|(k, v)| (k.clone(), v.to_string_lossy().into_owned())).collect();
         if let Some(dir) = file.parent() { fs::create_dir_all(dir).map_err(|e| e.to_string())?; }
-        write_replacing(&file, serde_json::to_string_pretty(&m).unwrap().as_bytes())
+        write_replacing(file, serde_json::to_string_pretty(&m).unwrap().as_bytes())
     }
     pub fn set(&self, id: &str, path: PathBuf) -> Result<(), String> {
         if id.is_empty() || id.contains('/') { return Err("a root's name can't be empty or have \"/\"".into()); }
@@ -299,17 +305,20 @@ pub fn other_drive(p: &Path) -> bool {
     s.starts_with("/Volumes/") || s.starts_with("/media/") || s.starts_with("/run/media/") || s.starts_with("/mnt/")
 }
 
-#[tauri::command(async)]
-pub fn fs_root_info(app: tauri::AppHandle, id: String) -> Result<RootInfo, String> {
-    let p = roots(&app).get(&id)?;
-    Ok(RootInfo { present: p.is_dir(), other_drive: other_drive(&p), path: p.to_string_lossy().into_owned() })
+#[tauri::command]
+pub async fn fs_root_info(app: tauri::AppHandle, id: String) -> Result<RootInfo, String> {
+    crate::blocking(move || {
+        let p = roots(&app).get(&id)?;
+        Ok(RootInfo { present: p.is_dir(), other_drive: other_drive(&p), path: p.to_string_lossy().into_owned() })
+    }).await
 }
 
 // Opens one of the folders on the list in Finder, Explorer or the like
 // (Settings → Library → Library folder → Show).
-#[tauri::command(async)]
-pub fn fs_root_show(app: tauri::AppHandle, id: String) -> Result<(), String> {
-    let p = roots(&app).get(&id)?;
+#[tauri::command]
+pub async fn fs_root_show(app: tauri::AppHandle, id: String) -> Result<(), String> { crate::blocking(move || root_show(&app, &id)).await }
+fn root_show(app: &tauri::AppHandle, id: &str) -> Result<(), String> {
+    let p = roots(app).get(id)?;
     if !p.is_dir() { return Err("the folder isn't there".into()); }
     #[cfg(target_os = "macos")]
     let r = std::process::Command::new("open").arg(&p).spawn();
@@ -342,11 +351,12 @@ pub fn places_to_restore(lib: &Path, lib_id: &str) -> Vec<(String, PathBuf)> {
     out
 }
 
-#[tauri::command(async)]
-pub fn fs_places_restore(app: tauri::AppHandle, id: String) -> Result<u32, String> {
+#[tauri::command]
+pub async fn fs_places_restore(app: tauri::AppHandle, id: String) -> Result<u32, String> { crate::blocking(move || places_restore(&app, &id)).await }
+fn places_restore(app: &tauri::AppHandle, id: &str) -> Result<u32, String> {
     let Some(lib_id) = id.strip_prefix("lib-") else { return Err("only a library's folder".into()) };
-    let r = roots(&app);
-    let lib = r.get(&id)?;
+    let r = roots(app);
+    let lib = r.get(id)?;
     let mut n = 0;
     for (root, p) in places_to_restore(&lib, lib_id) {
         if r.get(&root).map(|q| q.is_dir()).unwrap_or(false) { continue; }
@@ -370,14 +380,16 @@ pub fn only_empty(p: &Path) -> bool {
 }
 
 // Is it empty (dry), or remove it if it is; and forget it.
-#[tauri::command(async)]
-pub fn fs_remove_if_empty(app: tauri::AppHandle, id: String, dry: bool) -> Result<bool, String> {
-    if !id.starts_with("in-") { return Err("only a folder used in place".into()); }
-    let r = roots(&app);
-    let p = r.get(&id)?;
-    if !only_empty(&p) { return Ok(false); }
-    if !dry { fs::remove_dir_all(&p).map_err(|e| e.to_string())?; r.forget(&id)?; }
-    Ok(true)
+#[tauri::command]
+pub async fn fs_remove_if_empty(app: tauri::AppHandle, id: String, dry: bool) -> Result<bool, String> {
+    crate::blocking(move || {
+        if !id.starts_with("in-") { return Err("only a folder used in place".into()); }
+        let r = roots(&app);
+        let p = r.get(&id)?;
+        if !only_empty(&p) { return Ok(false); }
+        if !dry { fs::remove_dir_all(&p).map_err(|e| e.to_string())?; r.forget(&id)?; }
+        Ok(true)
+    }).await
 }
 
 // ---- A library's folder to the Trash (shell 2.5.2; kr37, 16 Nov 2026:
@@ -409,11 +421,12 @@ pub fn may_trash(p: &Path, home: Option<&Path>) -> bool {
     if let Some(h) = home { if p == h || h.starts_with(p) { return false; } }
     true
 }
-#[tauri::command(async)]
-pub fn fs_root_trash(app: tauri::AppHandle, id: String, dry: bool) -> Result<TrashInfo, String> {
+#[tauri::command]
+pub async fn fs_root_trash(app: tauri::AppHandle, id: String, dry: bool) -> Result<TrashInfo, String> { crate::blocking(move || root_trash(&app, &id, dry)).await }
+fn root_trash(app: &tauri::AppHandle, id: &str, dry: bool) -> Result<TrashInfo, String> {
     if !id.starts_with("lib-") { return Err("only a library's own folder".into()); }
-    let r = roots(&app);
-    let p = r.get(&id)?;
+    let r = roots(app);
+    let p = r.get(id)?;
     if !p.is_dir() { return Ok(TrashInfo { present: false, bytes: 0, files: 0 }); }
     let home = app.path().home_dir().ok();
     if !may_trash(&p, home.as_deref()) { return Err("not a library's folder".into()); }
@@ -424,7 +437,7 @@ pub fn fs_root_trash(app: tauri::AppHandle, id: String, dry: bool) -> Result<Tra
         #[cfg(target_os = "macos")]
         { use trash::macos::{DeleteMethod, TrashContextExtMacos}; ctx.set_delete_method(DeleteMethod::NsFileManager); }
         ctx.delete(&p).map_err(|e| e.to_string())?;
-        r.forget(&id)?;
+        r.forget(id)?;
     }
     Ok(TrashInfo { present: true, bytes, files })
 }
@@ -457,15 +470,16 @@ pub fn name_held_by_copy(cur: &Path, name: &str, lib_id: &str) -> bool {
     matches!(read_marker(&other), Some((id, _)) if id == lib_id)
 }
 
-#[tauri::command(async)]
-pub fn fs_root_rename(app: tauri::AppHandle, id: String, name: String) -> Result<String, String> {
+#[tauri::command]
+pub async fn fs_root_rename(app: tauri::AppHandle, id: String, name: String) -> Result<String, String> { crate::blocking(move || root_rename(&app, &id, &name)).await }
+fn root_rename(app: &tauri::AppHandle, id: &str, name: &str) -> Result<String, String> {
     if !id.starts_with("lib-") { return Err("only a library's folder".into()); }
-    let r = roots(&app);
-    let cur = r.get(&id)?;
-    if name_held_by_copy(&cur, &name, &id["lib-".len()..]) { return Ok(cur.to_string_lossy().into_owned()); }
-    let Some(to) = renamed_path(&cur, &name) else { return Ok(cur.to_string_lossy().into_owned()) };
+    let r = roots(app);
+    let cur = r.get(id)?;
+    if name_held_by_copy(&cur, name, &id["lib-".len()..]) { return Ok(cur.to_string_lossy().into_owned()); }
+    let Some(to) = renamed_path(&cur, name) else { return Ok(cur.to_string_lossy().into_owned()) };
     fs::rename(&cur, &to).map_err(|e| e.to_string())?;
-    r.set(&id, to.clone())?;
+    r.set(id, to.clone())?;
     Ok(to.to_string_lossy().into_owned())
 }
 
@@ -554,20 +568,23 @@ pub fn fs_place(app: tauri::AppHandle) -> Result<Place, String> {
 
 // The person took the suggestion: Music/37 Player Libraries, made.
 #[tauri::command]
-pub fn fs_place_default(app: tauri::AppHandle) -> Result<String, String> {
-    let p = default_place(&app)?;
-    fs::create_dir_all(&p).map_err(|e| e.to_string())?;
-    roots(&app).set("place", p.clone())?;
-    Ok(p.to_string_lossy().into_owned())
+pub async fn fs_place_default(app: tauri::AppHandle) -> Result<String, String> {
+    crate::blocking(move || {
+        let p = default_place(&app)?;
+        fs::create_dir_all(&p).map_err(|e| e.to_string())?;
+        roots(&app).set("place", p.clone())?;
+        Ok(p.to_string_lossy().into_owned())
+    }).await
 }
 
 // The library folders in the libraries' place, each put on the list as
 // "lib-<id>" unless it's there already and its folder still is (the app's
 // own data folder lost or emptied, a folder moved within the place).
-#[tauri::command(async)]
-pub fn fs_find_libraries(app: tauri::AppHandle) -> Result<Vec<Found>, String> {
-    let found = find_libraries(&place(&app)?);
-    let r = roots(&app);
+#[tauri::command]
+pub async fn fs_find_libraries(app: tauri::AppHandle) -> Result<Vec<Found>, String> { crate::blocking(move || find_and_list(&app)).await }
+fn find_and_list(app: &tauri::AppHandle) -> Result<Vec<Found>, String> {
+    let found = find_libraries(&place(app)?);
+    let r = roots(app);
     let mut seen: Vec<&str> = vec![];
     for f in &found {
         if seen.contains(&f.id.as_str()) { continue; }
@@ -585,106 +602,140 @@ pub fn fs_find_libraries(app: tauri::AppHandle) -> Result<Vec<Found>, String> {
 // becomes the library's. Only a folder in the libraries' place that holds
 // that library.
 #[tauri::command]
-pub fn fs_root_use_found(app: tauri::AppHandle, id: String, path: String) -> Result<(), String> {
-    let p = PathBuf::from(&path);
-    let base = place(&app)?;
-    if p.parent() != Some(base.as_path()) { return Err("not a folder in the libraries' place".into()); }
-    match read_marker(&p) { Some((mid, _)) if mid == id => {}, _ => return Err("not that library's folder".into()) }
-    roots(&app).set(&format!("lib-{}", id), p)
+pub async fn fs_root_use_found(app: tauri::AppHandle, id: String, path: String) -> Result<(), String> {
+    crate::blocking(move || {
+        let p = PathBuf::from(&path);
+        let base = place(&app)?;
+        if p.parent() != Some(base.as_path()) { return Err("not a folder in the libraries' place".into()); }
+        match read_marker(&p) { Some((mid, _)) if mid == id => {}, _ => return Err("not that library's folder".into()) }
+        roots(&app).set(&format!("lib-{}", id), p)
+    }).await
 }
 
 // Find a library folder…: the person chooses a folder anywhere; if it's a
 // library's, it goes on the list as that library's. None if they cancel.
+// The folder choosers wait on a thread of their own for as long as the
+// dialog is open (shell 2.6.1): on the shared pool each held a thread.
 #[tauri::command]
 pub async fn fs_root_choose_library(app: tauri::AppHandle, title: String) -> Result<Option<Found>, String> {
-    use tauri_plugin_dialog::DialogExt;
-    let Some(p) = app.dialog().file().set_title(title).blocking_pick_folder() else { return Ok(None) };
-    let path = p.into_path().map_err(|e| e.to_string())?;
-    let Some(f) = found_at(&path) else { return Err("not a library folder".into()) };
-    roots(&app).set(&format!("lib-{}", f.id), path.clone())?;
-    Ok(Some(f))
+    crate::blocking(move || {
+        use tauri_plugin_dialog::DialogExt;
+        let Some(p) = app.dialog().file().set_title(title).blocking_pick_folder() else { return Ok(None) };
+        let path = p.into_path().map_err(|e| e.to_string())?;
+        let Some(f) = found_at(&path) else { return Err("not a library folder".into()) };
+        roots(&app).set(&format!("lib-{}", f.id), path.clone())?;
+        Ok(Some(f))
+    }).await
 }
 
 // A new library's folder in the libraries' place (see above),
 // <place>/<name> (" (2)" and so on when that's taken), made and put on the
 // list as `id`. Returns its path.
+// One at a time (shell 2.6.1): on the main thread two couldn't overlap, and
+// two at once could take the same free name.
+static MAKING: Mutex<()> = Mutex::new(());
 #[tauri::command]
-pub fn fs_root_default(app: tauri::AppHandle, id: String, name: String) -> Result<String, String> {
-    let base = place(&app)?;
-    let name = folder_name(&name);
-    let mut dir = base.join(&name);
-    let mut n = 2;
-    while dir.exists() { dir = base.join(format!("{} ({})", name, n)); n += 1; }
-    fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
-    roots(&app).set(&id, dir.clone())?;
-    Ok(dir.to_string_lossy().into_owned())
+pub async fn fs_root_default(app: tauri::AppHandle, id: String, name: String) -> Result<String, String> {
+    crate::blocking(move || {
+        let _one_at_a_time = MAKING.lock().unwrap_or_else(|e| e.into_inner());
+        let base = place(&app)?;
+        let name = folder_name(&name);
+        let mut dir = base.join(&name);
+        let mut n = 2;
+        while dir.exists() { dir = base.join(format!("{} ({})", name, n)); n += 1; }
+        fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+        roots(&app).set(&id, dir.clone())?;
+        Ok(dir.to_string_lossy().into_owned())
+    }).await
 }
 
 // The person chooses a folder in the system's dialog; it goes on the list as
 // `id`. None if they cancel.
 #[tauri::command]
 pub async fn fs_root_choose(app: tauri::AppHandle, id: String, title: String) -> Result<Option<String>, String> {
-    use tauri_plugin_dialog::DialogExt;
-    let picked = app.dialog().file().set_title(title).blocking_pick_folder();
-    let Some(p) = picked else { return Ok(None) };
-    let path = p.into_path().map_err(|e| e.to_string())?;
-    roots(&app).set(&id, path.clone())?;
-    Ok(Some(path.to_string_lossy().into_owned()))
+    crate::blocking(move || {
+        use tauri_plugin_dialog::DialogExt;
+        let picked = app.dialog().file().set_title(title).blocking_pick_folder();
+        let Some(p) = picked else { return Ok(None) };
+        let path = p.into_path().map_err(|e| e.to_string())?;
+        roots(&app).set(&id, path.clone())?;
+        Ok(Some(path.to_string_lossy().into_owned()))
+    }).await
 }
 
 #[tauri::command]
-pub fn fs_root_forget(app: tauri::AppHandle, id: String) -> Result<(), String> { roots(&app).forget(&id) }
+pub async fn fs_root_forget(app: tauri::AppHandle, id: String) -> Result<(), String> { crate::blocking(move || roots(&app).forget(&id)).await }
 
-#[tauri::command(async)]
-pub fn fs_list(app: tauri::AppHandle, root: String, path: String) -> Result<Vec<Entry>, String> { list(&roots(&app).get(&root)?, &path) }
+// Every file command below: its body on a thread of its own (see
+// crate::blocking; shell 2.6.1, the audit's fix E). Each still reads at most
+// one piece, so more running at once costs little.
+#[tauri::command]
+pub async fn fs_list(app: tauri::AppHandle, root: String, path: String) -> Result<Vec<Entry>, String> {
+    crate::blocking(move || list(&roots(&app).get(&root)?, &path)).await
+}
 
-#[tauri::command(async)]
-pub fn fs_stat(app: tauri::AppHandle, root: String, path: String) -> Result<Option<Entry>, String> { stat(&roots(&app).get_read(&root, &path)?, &path) }
+#[tauri::command]
+pub async fn fs_stat(app: tauri::AppHandle, root: String, path: String) -> Result<Option<Entry>, String> {
+    crate::blocking(move || stat(&roots(&app).get_read(&root, &path)?, &path)).await
+}
 
-#[tauri::command(async)]
-pub fn fs_read(app: tauri::AppHandle, root: String, path: String, start: Option<u64>, end: Option<u64>) -> Result<tauri::ipc::Response, String> {
-    Ok(tauri::ipc::Response::new(read(&roots(&app).get_read(&root, &path)?, &path, start.unwrap_or(0), end)?))
+#[tauri::command]
+pub async fn fs_read(app: tauri::AppHandle, root: String, path: String, start: Option<u64>, end: Option<u64>) -> Result<tauri::ipc::Response, String> {
+    crate::blocking(move || Ok(tauri::ipc::Response::new(read(&roots(&app).get_read(&root, &path)?, &path, start.unwrap_or(0), end)?))).await
 }
 
 // The bytes come as the request's body (no JSON); the root and path in the
 // headers "p37-root" and "p37-path", URI-encoded (headers are ASCII). With
 // "p37-append: 1" the bytes go on the end of the file (append), else they
 // replace it whole.
-#[tauri::command(async)]
-pub fn fs_write(app: tauri::AppHandle, request: tauri::ipc::Request<'_>) -> Result<(), String> {
+// The body is copied for its thread (Tauri lends it only for the call): a
+// piece is at most 8 MB, a moment's copy.
+#[tauri::command]
+pub async fn fs_write(app: tauri::AppHandle, request: tauri::ipc::Request<'_>) -> Result<(), String> {
     let h = |k: &str| request.headers().get(k).and_then(|v| v.to_str().ok()).map(percent_decode).ok_or_else(|| format!("no {} header", k));
     let (root, path) = (h("p37-root")?, h("p37-path")?);
     let adding = h("p37-append").map(|v| v == "1").unwrap_or(false);
     let tauri::ipc::InvokeBody::Raw(bytes) = request.body() else { return Err("the file's bytes must be the body".into()) };
-    let r = roots(&app).get(&root)?;
-    if adding { append(&r, &path, bytes) } else { write(&r, &path, bytes) }
+    let bytes = bytes.clone();
+    crate::blocking(move || {
+        let r = roots(&app).get(&root)?;
+        if adding { append(&r, &path, &bytes) } else { write(&r, &path, &bytes) }
+    }).await
 }
 
-#[tauri::command(async)]
-pub fn fs_copy(app: tauri::AppHandle, root: String, from: String, to_root: Option<String>, to: String, replace: Option<bool>) -> Result<(), String> {
-    let r = roots(&app);
-    copy(&r.get_read(&root, &from)?, &from, &r.get(to_root.as_deref().unwrap_or(&root))?, &to, replace.unwrap_or(false))
+#[tauri::command]
+pub async fn fs_copy(app: tauri::AppHandle, root: String, from: String, to_root: Option<String>, to: String, replace: Option<bool>) -> Result<(), String> {
+    crate::blocking(move || {
+        let r = roots(&app);
+        copy(&r.get_read(&root, &from)?, &from, &r.get(to_root.as_deref().unwrap_or(&root))?, &to, replace.unwrap_or(false))
+    }).await
 }
 
-#[tauri::command(async)]
-pub fn fs_append_range(app: tauri::AppHandle, root: String, from: String, start: u64, end: u64, to_root: Option<String>, to: String) -> Result<(), String> {
-    let r = roots(&app);
-    append_range(&r.get_read(&root, &from)?, &from, start, end, &r.get(to_root.as_deref().unwrap_or(&root))?, &to)
+#[tauri::command]
+pub async fn fs_append_range(app: tauri::AppHandle, root: String, from: String, start: u64, end: u64, to_root: Option<String>, to: String) -> Result<(), String> {
+    crate::blocking(move || {
+        let r = roots(&app);
+        append_range(&r.get_read(&root, &from)?, &from, start, end, &r.get(to_root.as_deref().unwrap_or(&root))?, &to)
+    }).await
 }
 
-#[tauri::command(async)]
-pub fn fs_rename(app: tauri::AppHandle, root: String, from: String, to_root: Option<String>, to: String, replace: Option<bool>) -> Result<(), String> {
-    let r = roots(&app);
-    rename(&r.get(&root)?, &from, &r.get(to_root.as_deref().unwrap_or(&root))?, &to, replace.unwrap_or(false))
+#[tauri::command]
+pub async fn fs_rename(app: tauri::AppHandle, root: String, from: String, to_root: Option<String>, to: String, replace: Option<bool>) -> Result<(), String> {
+    crate::blocking(move || {
+        let r = roots(&app);
+        rename(&r.get(&root)?, &from, &r.get(to_root.as_deref().unwrap_or(&root))?, &to, replace.unwrap_or(false))
+    }).await
 }
 
-#[tauri::command(async)]
-pub fn fs_remove(app: tauri::AppHandle, root: String, path: String, recursive: Option<bool>) -> Result<bool, String> {
-    remove(&roots(&app).get(&root)?, &path, recursive.unwrap_or(false))
+#[tauri::command]
+pub async fn fs_remove(app: tauri::AppHandle, root: String, path: String, recursive: Option<bool>) -> Result<bool, String> {
+    crate::blocking(move || remove(&roots(&app).get(&root)?, &path, recursive.unwrap_or(false))).await
 }
 
-#[tauri::command(async)]
-pub fn fs_mkdir(app: tauri::AppHandle, root: String, path: String) -> Result<(), String> { mkdir(&roots(&app).get(&root)?, &path) }
+#[tauri::command]
+pub async fn fs_mkdir(app: tauri::AppHandle, root: String, path: String) -> Result<(), String> {
+    crate::blocking(move || mkdir(&roots(&app).get(&root)?, &path)).await
+}
 
 pub fn percent_decode(s: &str) -> String {
     let b = s.as_bytes();

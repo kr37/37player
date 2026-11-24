@@ -24,6 +24,9 @@
 //    (tauri.macos.conf.json), handed over by macOS as an Apple Event
 //    (RunEvent::Opened) or on the command line (Windows, Linux, and the
 //    single-instance hand-over), and kept for the page (p37_opened_take).
+//  - Nothing that waits for a disk runs on the main thread or holds Tauri's
+//    shared pool (shell 2.6.1; desktop/AUDIT-boundaries.md, fixes D and E):
+//    see `blocking` below.
 mod device;
 mod files;
 mod oauth;
@@ -37,6 +40,23 @@ use tauri::{Emitter, Manager, RunEvent, WindowEvent};
 
 struct Quitting(AtomicBool);
 
+// A command's work that may wait for a disk, on a thread of its own (shell
+// 2.6.1; desktop/AUDIT-boundaries.md, 1.2 and 1.3). Two places it mustn't be:
+//  - The main thread, which draws the window and takes in every message
+//    from the page: a command not marked async runs there, so a slow disk
+//    (busy with a big copy, an external drive waking up, a network share)
+//    froze the window for as long (fix D).
+//  - Tauri's shared pool, where async commands run: as many threads as the
+//    computer has cores (4 on the Mac mini). A few slow commands there (a
+//    2 GB copy, reads from a sleeping drive, an open folder chooser, which
+//    holds its thread until it closes) and every other command waited
+//    behind them, saves and the device's settings included (fix E).
+// Tauri's pool for blocking work grows as needed (up to 512 threads), so one
+// slow call never holds up another. The answers are the same as before.
+pub(crate) async fn blocking<T: Send + 'static>(work: impl FnOnce() -> Result<T, String> + Send + 'static) -> Result<T, String> {
+    tauri::async_runtime::spawn_blocking(work).await.map_err(|e| e.to_string())?
+}
+
 // Files opened with 37 Player that the page hasn't taken yet: what it reads
 // each one through (a root of its own, files::Roots::open_file), its name,
 // size and time. `early` holds paths that came before the roots were loaded
@@ -48,7 +68,26 @@ struct Opened { waiting: std::sync::Mutex<Vec<OpenedFile>>, early: std::sync::Mu
 
 // The paths handed over: each file gets its root and waits for the page,
 // which is told ("p37-files-opened"); folders and anything gone are passed by.
+// Looking a file up (its real path, its size) waits for its disk, so that
+// happens on a short-lived thread of its own, not the main thread, where the
+// Apple Event and the hand-over arrive (shell 2.6.1; the audit's fix D: a
+// file on a network share that had gone quiet froze the window). Paths that
+// come before the roots are loaded are put aside here, on the main thread,
+// as setup is, so none can slip between the two.
+// (Only macOS sends files this way, so elsewhere nothing calls it.)
+#[cfg_attr(not(any(target_os = "macos", target_os = "ios")), allow(dead_code))]
 fn take_opened(app: &tauri::AppHandle, paths: Vec<std::path::PathBuf>) {
+    if paths.is_empty() { return; }
+    if app.try_state::<files::Roots>().is_none() { app.state::<Opened>().early.lock().unwrap().extend(paths); return; }
+    take_opened_soon(app, move || paths);
+}
+// `paths` is worked out on that thread too (a command line's paths are
+// looked at to see which are files).
+fn take_opened_soon(app: &tauri::AppHandle, paths: impl FnOnce() -> Vec<std::path::PathBuf> + Send + 'static) {
+    let app = app.clone();
+    std::thread::spawn(move || take_opened_now(&app, paths()));
+}
+fn take_opened_now(app: &tauri::AppHandle, paths: Vec<std::path::PathBuf>) {
     if paths.is_empty() { return; }
     let opened = app.state::<Opened>();
     let Some(roots) = app.try_state::<files::Roots>() else { opened.early.lock().unwrap().extend(paths); return };
@@ -125,11 +164,22 @@ fn p37_zoom(window: tauri::WebviewWindow, scale: f64) -> Result<(), String> {
     window.set_zoom(zoom_within(scale)).map_err(|e| e.to_string())
 }
 
-// The device's own settings (device.rs): read back, and kept.
+// The device's own settings (device.rs): read back, and kept. Off the main
+// thread (shell 2.6.1): p37_device_put is the most frequent command that
+// writes, about a second after each playback log line. Each put takes its
+// turn as it comes in, so one held up by a slow disk can't land after a
+// newer one (device::Device::ticket).
 #[tauri::command]
-fn p37_device_get(device: tauri::State<'_, Arc<device::Device>>) -> serde_json::Map<String, serde_json::Value> { device.read() }
+async fn p37_device_get(device: tauri::State<'_, Arc<device::Device>>) -> Result<serde_json::Map<String, serde_json::Value>, String> {
+    let d = device.inner().clone();
+    blocking(move || Ok(d.read())).await
+}
 #[tauri::command]
-fn p37_device_put(device: tauri::State<'_, Arc<device::Device>>, values: serde_json::Map<String, serde_json::Value>) -> Result<(), String> { device.write(&values) }
+async fn p37_device_put(device: tauri::State<'_, Arc<device::Device>>, values: serde_json::Map<String, serde_json::Value>) -> Result<(), String> {
+    let d = device.inner().clone();
+    let turn = d.ticket();
+    blocking(move || d.write_as(turn, &values)).await
+}
 
 // Page updates: where they come from. The public key is Gen's (`tauri signer
 // generate`; the private one is in GitHub's secrets); "none" turns them off.
@@ -137,8 +187,14 @@ fn p37_device_put(device: tauri::State<'_, Arc<device::Device>>, values: serde_j
 const PAGE_KEY: &str = include_str!("../page-key.pub");
 const PAGE_CHANNEL: &str = match option_env!("P37_PAGE_CHANNEL") { Some(c) => c, None => "latest" };
 
+// p37_page_info, p37_page_ok and p37_page_switch read and check kept pages
+// (megabytes each, and their signatures) or write the pages' state: off the
+// main thread (shell 2.6.1, the audit's fix D).
 #[tauri::command]
-fn p37_page_info(pages: tauri::State<'_, Arc<pages::Pages>>) -> pages::Info { pages.info() }
+async fn p37_page_info(pages: tauri::State<'_, Arc<pages::Pages>>) -> Result<pages::Info, String> {
+    let p = pages.inner().clone();
+    blocking(move || Ok(p.info())).await
+}
 
 #[tauri::command]
 async fn p37_page_check(pages: tauri::State<'_, Arc<pages::Pages>>) -> Result<pages::Check, String> {
@@ -148,16 +204,20 @@ async fn p37_page_check(pages: tauri::State<'_, Arc<pages::Pages>>) -> Result<pa
 
 // The page started (its library loaded): it's a good one.
 #[tauri::command]
-fn p37_page_ok(pages: tauri::State<'_, Arc<pages::Pages>>, version: String) {
-    if pages.running() == version { pages.confirm(); }
+async fn p37_page_ok(pages: tauri::State<'_, Arc<pages::Pages>>, version: String) -> Result<(), String> {
+    let p = pages.inner().clone();
+    blocking(move || { if p.running() == version { p.confirm(); } Ok(()) }).await
 }
 
 // Update now: the newest page is chosen, and the page reloads into it.
 #[tauri::command]
-fn p37_page_switch(app: tauri::AppHandle, pages: tauri::State<'_, Arc<pages::Pages>>) -> String {
-    let v = pages.choose();
-    watch_page(&app, pages.inner().clone(), v.clone());
-    v
+async fn p37_page_switch(app: tauri::AppHandle, pages: tauri::State<'_, Arc<pages::Pages>>) -> Result<String, String> {
+    let p = pages.inner().clone();
+    blocking(move || {
+        let v = p.choose();
+        watch_page(&app, p, v.clone());
+        Ok(v)
+    }).await
 }
 
 // A downloaded page has a minute to say it started; if it doesn't, it's put
@@ -271,7 +331,7 @@ pub fn run() {
             }
             let cwd = std::path::PathBuf::from(cwd);
             let args: Vec<String> = args.into_iter().enumerate().map(|(i, a)| if i > 0 && !a.starts_with('-') && std::path::Path::new(&a).is_relative() { cwd.join(&a).to_string_lossy().into_owned() } else { a }).collect();
-            take_opened(app, files_in_args(args));
+            take_opened_soon(app, move || files_in_args(args));
         }));
     }
     #[cfg(target_os = "macos")]
@@ -344,7 +404,7 @@ pub fn run() {
             // Files the app was started with: on the command line (Windows,
             // Linux), or an Apple Event that came before the roots were loaded.
             let early = std::mem::take(&mut *app.state::<Opened>().early.lock().unwrap());
-            take_opened(app.handle(), early.into_iter().chain(files_in_args(std::env::args())).collect());
+            take_opened_soon(app.handle(), move || early.into_iter().chain(files_in_args(std::env::args())).collect());
             watch::start(app.handle());
             // Linux's webview can't play recordings any other way (fileserver.rs).
             #[cfg(target_os = "linux")]

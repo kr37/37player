@@ -15,6 +15,7 @@
 use serde_json::{Map, Value};
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
+use std::sync::atomic::{AtomicU64, Ordering};
 
 /// Keys the page may keep here (others are left out, so device.json stays
 /// what it says it is). "37player.install" from shell 2.5.4: the page has
@@ -27,10 +28,23 @@ pub const KEYS: [&str; 8] = [
 /// Large enough for a long playback log; a page sending more is refused.
 const MAX_BYTES: usize = 4 * 1024 * 1024;
 
-pub struct Device { file: PathBuf, lock: Mutex<()> }
+// `lock` holds the turn of the last write that landed. Each put takes a turn
+// as it comes in (`ticket`) and writes only if no later one has already
+// landed (shell 2.6.1). On the main thread puts ran one after another in the
+// order they came; on threads of their own (the audit's fix D), one held up
+// by a slow disk could otherwise land after a newer one and put back older
+// values. Each put is the whole set, so one passed over loses nothing.
+pub struct Device { file: PathBuf, lock: Mutex<u64>, turns: AtomicU64 }
 
 impl Device {
-    pub fn new(file: PathBuf) -> Device { Device { file, lock: Mutex::new(()) } }
+    pub fn new(file: PathBuf) -> Device { Device { file, lock: Mutex::new(0), turns: AtomicU64::new(0) } }
+
+    /// A put's turn, taken as it comes in.
+    pub fn ticket(&self) -> u64 { self.turns.fetch_add(1, Ordering::SeqCst) + 1 }
+
+    /// Replaces what's stored (see write_as), in its turn now.
+    #[cfg(test)]
+    pub fn write(&self, values: &Map<String, Value>) -> Result<(), String> { self.write_as(self.ticket(), values) }
 
     /// What's stored: {key: value}, values as the page's localStorage strings.
     pub fn read(&self) -> Map<String, Value> {
@@ -41,18 +55,23 @@ impl Device {
     /// Replaces what's stored with these values: known keys with strings.
     /// Anything else is left out, not refused, so a newer page's new key
     /// doesn't stop the rest being kept (as shell 2.5.3 did for "37player.install").
-    pub fn write(&self, values: &Map<String, Value>) -> Result<(), String> {
+    /// `turn` is the put's ticket: if a later one has already landed, this
+    /// one is passed over (Ok: what's stored is newer).
+    pub fn write_as(&self, turn: u64, values: &Map<String, Value>) -> Result<(), String> {
         let out: Map<String, Value> = values.iter()
             .filter(|(k, v)| KEYS.contains(&k.as_str()) && v.is_string())
             .map(|(k, v)| (k.clone(), v.clone())).collect();
         let bytes = serde_json::to_vec_pretty(&Value::Object(out)).map_err(|e| e.to_string())?;
         if bytes.len() > MAX_BYTES { return Err("too big".into()); }
-        let _g = self.lock.lock().unwrap();
+        let mut landed = self.lock.lock().unwrap();
+        if turn < *landed { return Ok(()); }
         if let Some(dir) = self.file.parent() { std::fs::create_dir_all(dir).map_err(|e| e.to_string())?; }
         let tmp = self.file.with_extension("json.tmp");
         std::fs::write(&tmp, &bytes).map_err(|e| e.to_string())?;
         if self.file.exists() { let _ = std::fs::copy(&self.file, bak(&self.file)); }
-        std::fs::rename(&tmp, &self.file).map_err(|e| e.to_string())
+        std::fs::rename(&tmp, &self.file).map_err(|e| e.to_string())?;
+        *landed = turn;
+        Ok(())
     }
 
     /// The script that hands the stored values to the page before it runs.
@@ -113,6 +132,27 @@ mod tests {
         d.write(&map(&[("37player.device", "second")])).unwrap();
         std::fs::write(&f, b"{ not json").unwrap();
         assert_eq!(d.read()["37player.device"], "first", "device.json.bak");
+    }
+
+    #[test]
+    fn a_put_held_up_never_lands_after_a_newer_one() {
+        let d = Device::new(tmp("turns"));
+        let (older, newer) = (d.ticket(), d.ticket());
+        d.write_as(newer, &map(&[("37player.device", "newer")])).unwrap();
+        d.write_as(older, &map(&[("37player.device", "older")])).unwrap();
+        assert_eq!(d.read()["37player.device"], "newer");
+        d.write(&map(&[("37player.device", "later still")])).unwrap();
+        assert_eq!(d.read()["37player.device"], "later still");
+    }
+
+    #[test]
+    fn puts_from_many_threads_end_with_the_last_one_taken() {
+        let d = std::sync::Arc::new(Device::new(tmp("threads")));
+        let turns: Vec<u64> = (0..16).map(|_| d.ticket()).collect();
+        std::thread::scope(|sc| {
+            for &t in turns.iter().rev() { let d = d.clone(); sc.spawn(move || d.write_as(t, &map(&[("37player.device", &t.to_string())])).unwrap()); }
+        });
+        assert_eq!(d.read()["37player.device"], turns.last().unwrap().to_string());
     }
 
     #[test]

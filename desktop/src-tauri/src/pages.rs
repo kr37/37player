@@ -144,6 +144,12 @@ pub struct Pages {
     /// index.html.sig (15 Nov 2026), refused it at every start and Update
     /// now, while Update now went on being offered.
     checking: Mutex<()>,
+    /// One choice at a time (choose()). `state` is held only for moments:
+    /// never while a page is read and checked (shell 2.6.1, the audit's fix D).
+    /// The hourly check held it while reading kept pages (megabytes each,
+    /// and their signatures), and About's p37_page_info, then on the main
+    /// thread, waited for it with the window frozen.
+    choosing: Mutex<()>,
 }
 
 fn now() -> u64 { std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0) }
@@ -157,6 +163,7 @@ impl Pages {
             chosen: RwLock::new(Chosen { version: bundled.to_string(), files: HashMap::new() }),
             state: Mutex::new(state),
             checking: Mutex::new(()),
+            choosing: Mutex::new(()),
         }
     }
 
@@ -211,35 +218,41 @@ impl Pages {
     }
 
     /// A kept page that would really be used: all its files there and good,
-    /// not put aside. What "ready" may name (it's what choose() would take).
-    fn usable(&self, version: &str, st: &State) -> bool {
-        !st.bad.iter().any(|b| b == version) && self.load_kept(version).is_ok()
+    /// not put aside (`bad`, a copy of the state's list). What "ready" may
+    /// name (it's what choose() would take). It reads the page: never call it
+    /// holding `state`.
+    fn usable(&self, version: &str, bad: &[String]) -> bool {
+        !bad.iter().any(|b| b == version) && self.load_kept(version).is_ok()
     }
+    fn bad_now(&self) -> Vec<String> { self.state.lock().unwrap().bad.clone() }
 
     /// Picks the page to use: the newest kept one that's newer than the
     /// bundled page, not put aside, and passes its checks; else the bundled
     /// page. Counts a start for a downloaded page. At start, and for Update
     /// now.
     pub fn choose(&self) -> String {
-        let mut st = self.state.lock().unwrap();
-        let mut skipped: Option<String> = None;
+        let _one_at_a_time = self.choosing.lock().unwrap_or_else(|e| e.into_inner());
+        // What the state says, then the pages read and checked without it.
+        let (bad, unconfirmed) = { let st = self.state.lock().unwrap(); (st.bad.clone(), st.unconfirmed.clone()) };
+        let mut set_aside: Vec<String> = vec![];
         let mut pick: Option<(String, HashMap<String, Vec<u8>>)> = None;
         if self.verifier.has_key() {
             for v in self.kept() {
                 if version_cmp(&v, &self.bundled) != Ordering::Greater { break; }
-                if st.bad.contains(&v) { continue; }
-                if st.unconfirmed.get(&v).copied().unwrap_or(0) >= MAX_UNCONFIRMED {
-                    st.bad.push(v.clone());
-                    st.unconfirmed.remove(&v);
-                    skipped.get_or_insert(v);
-                    continue;
-                }
+                if bad.contains(&v) { continue; }
+                if unconfirmed.get(&v).copied().unwrap_or(0) >= MAX_UNCONFIRMED { set_aside.push(v); continue; }
                 match self.load_kept(&v) {
                     Ok(files) => { pick = Some((v, files)); break; }
                     Err(e) => { eprintln!("37 Player: page {v} not used: {e}"); }
                 }
             }
         }
+        let mut st = self.state.lock().unwrap();
+        for v in &set_aside {
+            if !st.bad.contains(v) { st.bad.push(v.clone()); }
+            st.unconfirmed.remove(v);
+        }
+        let skipped = set_aside.into_iter().next();
         let version = match pick {
             Some((v, files)) => {
                 *st.unconfirmed.entry(v.clone()).or_insert(0) += 1;
@@ -291,11 +304,12 @@ impl Pages {
 
     pub fn info(&self) -> Info {
         let running = self.running();
-        let mut st = self.state.lock().unwrap();
         let ready = if self.verifier.has_key() {
+            let bad = self.bad_now();
             self.kept().into_iter().find(|v| version_cmp(v, &running) == Ordering::Greater
-                && version_cmp(v, &self.bundled) == Ordering::Greater && self.usable(v, &st))
+                && version_cmp(v, &self.bundled) == Ordering::Greater && self.usable(v, &bad))
         } else { None };
+        let mut st = self.state.lock().unwrap();
         let reverted = st.reverted.take();
         if reverted.is_some() { self.save(&st); }
         Info { running, bundled: self.bundled.clone(), ready, reverted, channel: self.channel.clone(), enabled: self.enabled() }
@@ -335,12 +349,12 @@ impl Pages {
         }
         let newest_here = std::iter::once(self.running()).chain(std::iter::once(self.bundled.clone()))
             .chain(self.kept()).max_by(|a, b| version_cmp(a, b)).unwrap();
-        let bad = self.state.lock().unwrap().bad.contains(&version);
-        if version_cmp(&version, &newest_here) != Ordering::Greater || bad {
+        let bad = self.bad_now();
+        if version_cmp(&version, &newest_here) != Ordering::Greater || bad.contains(&version) {
             // Already here and waiting: say so.
             let running = self.running();
             if version_cmp(&newest_here, &running) == Ordering::Greater && self.kept().contains(&newest_here)
-                && self.usable(&newest_here, &self.state.lock().unwrap()) {
+                && self.usable(&newest_here, &bad) {
                 return Check::Ready { version: newest_here };
             }
             return Check::Current { version: running };
@@ -617,6 +631,32 @@ mod tests {
         let names: Vec<String> = std::fs::read_dir(d.join("1.4.190")).unwrap().flatten().map(|e| e.file_name().into_string().unwrap()).collect();
         assert_eq!(names.len(), 4, "{names:?}");
         assert_eq!(pages(&d, &k, "1.4.181", 1).choose(), "1.4.190");
+    }
+
+    #[test]
+    fn checks_choices_and_questions_at_once_agree() {
+        // From threads of their own since shell 2.6.1: About's question, Update
+        // now's choice, the hourly check and the page's "started" together.
+        let (k, d) = (keys(), tmpdir("atonce"));
+        let src = Source::new(&k, "1.4.190", None);
+        let p = std::sync::Arc::new(pages(&d, &k, "1.4.181", 1));
+        p.choose();
+        p.check(&src.fetch());
+        std::thread::scope(|sc| {
+            for i in 0..8 {
+                let (p, src) = (p.clone(), &src);
+                sc.spawn(move || match i % 4 {
+                    // Ready while 1.4.181 runs, Current once a choice has taken 1.4.190.
+                    0 => { let c = p.check(&src.fetch()); assert!(c == Check::Ready { version: "1.4.190".into() } || c == Check::Current { version: "1.4.190".into() }, "{c:?}"); }
+                    1 => { let r = p.info().ready; assert!(r.is_none() || r.as_deref() == Some("1.4.190"), "{r:?}"); }
+                    2 => { assert_eq!(p.choose(), "1.4.190"); }
+                    _ => { p.confirm(); }
+                });
+            }
+        });
+        assert_eq!(p.running(), "1.4.190");
+        p.confirm();
+        assert_eq!(pages(&d, &k, "1.4.181", 1).choose(), "1.4.190", "a good page, kept");
     }
 
     #[test]
