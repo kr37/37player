@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.6.010">
+<meta name="app-version" content="2.7.000">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -4099,9 +4099,60 @@ function desktopChangedRoots(cmd, args, options){
 function desktopInvoke(cmd, args, options){
   const roots = desktopChangedRoots(cmd, args, options);
   if(roots && roots.some(id=> typeof id !== "string" || !id || id.startsWith("in-"))) return Promise.reject(new Error("37 Player doesn't change a folder used in place (" + cmd + ")."));
-  return window.__TAURI_INTERNALS__.invoke(cmd, args, options);
+  return desktopNoteRoute(cmd, window.__TAURI_INTERNALS__.invoke(cmd, args, options));
 }
-function desktopInvokeMoving(cmd, args){ return window.__TAURI_INTERNALS__.invoke(cmd, args); }
+function desktopInvokeMoving(cmd, args){ return desktopNoteRoute(cmd, window.__TAURI_INTERNALS__.invoke(cmd, args)); }
+/* Tauri's switch to its slower route (2.7.000, shell 2.7.0;
+   desktop/AUDIT-boundaries.md 1.1, fix 3, A). Every call above goes to the
+   shell as a request on Tauri's own route (a fetch to
+   ipc://localhost/<command>). If one such request fails, Tauri sends it again
+   by the webview's message route, and every later call in this page goes
+   that way too, until the window reloads (its ipc-protocol.js). There a
+   write's bytes travel as a list of numbers: a shell from 2.7.0 takes them,
+   slowly, and answers "slow" (`slow_route`); an older one refuses ("the
+   file's bytes must be the body"), so saves fail. And on a Mac a read's
+   answer comes back as a plain list of numbers, made bytes again here: put
+   in a File as it is (getFile), it would have been the text "82,73,70,…".
+   Never seen yet; this is insurance. Once noticed it's logged once, and when
+   nothing would stop (nothing playing, or at a stop; nothing being sent or
+   copied) the window offers to restart: a reload, which keeps the playlist's
+   place. Playback that still works is never interrupted for it (kr37,
+   23 Nov 2026). */
+function desktopNoteRoute(cmd, p){
+  return p.then(r=>{
+    if(cmd === "fs_write" && r === "slow") desktopIpcSwitched(cmd);
+    else if(cmd === "fs_read" && Array.isArray(r)){ desktopIpcSwitched(cmd); return new Uint8Array(r).buffer; }
+    return r;
+  }, err=>{
+    if(cmd === "fs_write" && /must be the body/.test(String((err && err.message) || err))) desktopIpcSwitched(cmd);
+    throw err;
+  });
+}
+let desktopIpcSwitch = null; // {at, cmd, askedAt}, once noticed
+const DESKTOP_IPC_ASK_AGAIN_MS = 10 * 60 * 1000;
+let desktopIpcAsking = false;
+function desktopIpcCanSave(){ try{ return !!(desktopShell && desktopShell.slow_route); }catch(err){ return false; } }
+function desktopIpcSwitched(cmd){
+  if(desktopIpcSwitch) return;
+  desktopIpcSwitch = {at: Date.now(), cmd, askedAt: 0};
+  let v = "?"; try{ v = (desktopShell && desktopShell.version) || "?"; }catch(err){}
+  playLog("the app's messages now go by Tauri's slower route (noticed on " + cmd + ")" + (desktopIpcCanSave() ? ": saves go on, more slowly, until the window restarts" : ": this app (" + v + ") can't save that way, so saves fail until the window restarts"));
+  setInterval(desktopIpcOfferRestart, 5000);
+}
+async function desktopIpcOfferRestart(){
+  const s = desktopIpcSwitch;
+  if(!s || desktopIpcAsking || Date.now() - s.askedAt < DESKTOP_IPC_ASK_AGAIN_MS) return;
+  if(closingWouldStop().length || backdrop.classList.contains("show")) return;
+  desktopIpcAsking = true; s.askedAt = Date.now();
+  const c = await askChoice(t("ipcSwitchTitle"), `<p>${escapeHtmlText(t("ipcSwitchBody"))}</p>` + (desktopIpcCanSave() ? "" : `<p>${escapeHtmlText(t("ipcSwitchBodyOld"))}</p>`),
+    [{label: t("ipcSwitchRestart"), value: "go", kind: "primary"}, {label: t("notNowBtn"), value: null}]);
+  desktopIpcAsking = false;
+  if(c !== "go"){ playLog("the window's restart was put off (asked again in 10 minutes, when nothing is playing)"); return; }
+  if(closingWouldStop().length){ s.askedAt = Date.now() - DESKTOP_IPC_ASK_AGAIN_MS + 60000; return; } // something started meanwhile: asked again in a minute
+  playLog("the window restarts, to leave Tauri's slower route");
+  await Promise.race([saveState().catch(()=>{}), new Promise(r=> setTimeout(r, 10000))]);
+  location.reload();
+}
 function desktopNotFound(what){ return new DOMException("Not there: " + what, "NotFoundError"); }
 class DesktopDirHandle {
   constructor(root, path){ this.root = root; this.path = path; this.kind = "directory"; this.name = path.split("/").pop() || root; }
@@ -4731,6 +4782,10 @@ const STRINGS = {
     "bgReplaceFailed": "Replacing the recording didn't finish: {error}",
     "closeStopsSaving": "saving your last change",
     "closeAppKeep": "Keep it open",
+    "ipcSwitchTitle": "37 Player's window should restart",
+    "ipcSwitchBody": "It takes a moment, and the playlist's place is kept.",
+    "ipcSwitchBodyOld": "Until it does, changes can't be saved.",
+    "ipcSwitchRestart": "Restart now",
     "closeAppQuit": "Close anyway",
     "interruptedTitle": "A restore didn't finish",
     "interruptedRestoreBody": "A restore was cut off before it finished, so this library is empty now. Restore the backup again.",
@@ -6873,6 +6928,10 @@ const STRINGS = {
     "bgReplaceFailed": "No se terminó de reemplazar la grabación: {error}",
     "closeStopsSaving": "el guardado de tu último cambio",
     "closeAppKeep": "Mantenerlo abierto",
+    "ipcSwitchTitle": "La ventana de 37 Player debería reiniciarse",
+    "ipcSwitchBody": "Tarda un momento y se conserva el punto de la lista de reproducción.",
+    "ipcSwitchBodyOld": "Hasta entonces, los cambios no se pueden guardar.",
+    "ipcSwitchRestart": "Reiniciar ahora",
     "closeAppQuit": "Cerrar de todos modos",
     "interruptedTitle": "Una restauración no terminó",
     "interruptedRestoreBody": "Una restauración se interrumpió antes de terminar, así que esta biblioteca está vacía ahora. Restaure otra vez la copia de seguridad.",
@@ -9005,6 +9064,10 @@ const STRINGS = {
     "bgReplaceFailed": "Le remplacement de l'enregistrement n'a pas abouti : {error}",
     "closeStopsSaving": "l'enregistrement de votre dernière modification",
     "closeAppKeep": "Le garder ouvert",
+    "ipcSwitchTitle": "La fenêtre de 37 Player devrait redémarrer",
+    "ipcSwitchBody": "Cela prend un instant, et l'endroit où en est la playlist est conservé.",
+    "ipcSwitchBodyOld": "D'ici là, les modifications ne peuvent pas être enregistrées.",
+    "ipcSwitchRestart": "Redémarrer maintenant",
     "closeAppQuit": "Fermer quand même",
     "interruptedTitle": "Une restauration n'a pas abouti",
     "interruptedRestoreBody": "Une restauration a été interrompue avant la fin : cette bibliothèque est donc vide maintenant. Restaurez à nouveau la sauvegarde.",
@@ -11137,6 +11200,10 @@ const STRINGS = {
     "bgReplaceFailed": "Não terminou de substituir a gravação: {error}",
     "closeStopsSaving": "o salvamento da sua última alteração",
     "closeAppKeep": "Manter aberto",
+    "ipcSwitchTitle": "A janela do 37 Player deve reiniciar",
+    "ipcSwitchBody": "Demora um momento, e o ponto da playlist é mantido.",
+    "ipcSwitchBodyOld": "Até lá, as alterações não podem ser guardadas.",
+    "ipcSwitchRestart": "Reiniciar agora",
     "closeAppQuit": "Fechar mesmo assim",
     "interruptedTitle": "Uma restauração não terminou",
     "interruptedRestoreBody": "Uma restauração foi interrompida antes de terminar, por isso esta biblioteca está vazia agora. Restaure o backup outra vez.",
@@ -13269,6 +13336,10 @@ const STRINGS = {
     "bgReplaceFailed": "Das Ersetzen der Aufnahme wurde nicht fertig: {error}",
     "closeStopsSaving": "das Speichern deiner letzten Änderung",
     "closeAppKeep": "Geöffnet lassen",
+    "ipcSwitchTitle": "Das Fenster von 37 Player sollte neu starten",
+    "ipcSwitchBody": "Das dauert einen Moment, und die Stelle in der Playlist bleibt erhalten.",
+    "ipcSwitchBodyOld": "Bis dahin können Änderungen nicht gespeichert werden.",
+    "ipcSwitchRestart": "Jetzt neu starten",
     "closeAppQuit": "Trotzdem schließen",
     "interruptedTitle": "Eine Wiederherstellung wurde nicht fertig",
     "interruptedRestoreBody": "Eine Wiederherstellung wurde vor dem Ende unterbrochen, daher ist diese Bibliothek jetzt leer. Stellen Sie die Sicherung noch einmal wieder her.",
@@ -15401,6 +15472,10 @@ const STRINGS = {
     "bgReplaceFailed": "替换录音未能完成：{error}",
     "closeStopsSaving": "保存你最后的更改",
     "closeAppKeep": "保持打开",
+    "ipcSwitchTitle": "37 Player 的窗口需要重新启动",
+    "ipcSwitchBody": "只需片刻，播放列表的位置会保留。",
+    "ipcSwitchBodyOld": "在此之前，更改无法保存。",
+    "ipcSwitchRestart": "立即重新启动",
     "closeAppQuit": "仍然关闭",
     "interruptedTitle": "恢复没有完成",
     "interruptedRestoreBody": "一次恢复在完成前被中断，所以这个曲库现在是空的。请再恢复一次备份。",
@@ -17533,6 +17608,10 @@ const STRINGS = {
     "bgReplaceFailed": "Chưa thay xong bản ghi: {error}",
     "closeStopsSaving": "việc lưu thay đổi gần nhất của bạn",
     "closeAppKeep": "Giữ mở",
+    "ipcSwitchTitle": "Cửa sổ của 37 Player nên khởi động lại",
+    "ipcSwitchBody": "Chỉ mất một lát, và vị trí trong danh sách phát được giữ nguyên.",
+    "ipcSwitchBodyOld": "Cho đến lúc đó, các thay đổi không thể lưu.",
+    "ipcSwitchRestart": "Khởi động lại ngay",
     "closeAppQuit": "Vẫn đóng",
     "interruptedTitle": "Việc khôi phục chưa xong",
     "interruptedRestoreBody": "Một lần khôi phục bị gián đoạn trước khi xong, nên thư viện này giờ đang trống. Hãy khôi phục lại bản sao lưu.",
@@ -19665,6 +19744,10 @@ const STRINGS = {
     "bgReplaceFailed": "Η αντικατάσταση της ηχογράφησης δεν ολοκληρώθηκε: {error}",
     "closeStopsSaving": "την αποθήκευση της τελευταίας σας αλλαγής",
     "closeAppKeep": "Να μείνει ανοιχτό",
+    "ipcSwitchTitle": "Το παράθυρο του 37 Player πρέπει να ξεκινήσει ξανά",
+    "ipcSwitchBody": "Παίρνει μια στιγμή, και η θέση στη λίστα αναπαραγωγής διατηρείται.",
+    "ipcSwitchBodyOld": "Μέχρι τότε, οι αλλαγές δεν μπορούν να αποθηκευτούν.",
+    "ipcSwitchRestart": "Επανεκκίνηση τώρα",
     "closeAppQuit": "Κλείσιμο έτσι κι αλλιώς",
     "interruptedTitle": "Μια επαναφορά δεν ολοκληρώθηκε",
     "interruptedRestoreBody": "Μια επαναφορά διακόπηκε πριν τελειώσει, γι' αυτό αυτή η βιβλιοθήκη είναι τώρα άδεια. Κάντε ξανά επαναφορά του αντιγράφου ασφαλείας.",
@@ -21797,6 +21880,10 @@ const STRINGS = {
     "bgReplaceFailed": "La sostituzione della registrazione non è terminata: {error}",
     "closeStopsSaving": "il salvataggio della tua ultima modifica",
     "closeAppKeep": "Tienilo aperto",
+    "ipcSwitchTitle": "La finestra di 37 Player dovrebbe riavviarsi",
+    "ipcSwitchBody": "Ci vuole un attimo, e il punto della playlist viene mantenuto.",
+    "ipcSwitchBodyOld": "Fino ad allora, le modifiche non si possono salvare.",
+    "ipcSwitchRestart": "Riavvia ora",
     "closeAppQuit": "Chiudi comunque",
     "interruptedTitle": "Un ripristino non è terminato",
     "interruptedRestoreBody": "Un ripristino si è interrotto prima della fine, quindi ora questa libreria è vuota. Ripristina di nuovo il backup.",
@@ -53793,7 +53880,7 @@ if(IN_DESKTOP_APP){
   window.addEventListener("resize", fitHeight);
 }
 const DESKTOP_BRIDGE_NEEDED = +((document.querySelector('meta[name="desktop-bridge"]') || {}).content || 1);
-let desktopShell = null; // {version, bridge, pages, device, updates, zoom, trash (2.5.2), watch (2.5.3), append_range (2.5.3), files_http, typed_path (2.5.6), opened (2.6.0)}
+let desktopShell = null; // {version, bridge, pages, device, updates, zoom, trash (2.5.2), watch (2.5.3), append_range (2.5.3), files_http, typed_path (2.5.6), opened (2.6.0), slow_route (2.7.0)}
 async function desktopShellCheck(){
   if(!IN_DESKTOP_APP || !window.__TAURI__ || !window.__TAURI__.core) return;
   try{ desktopShell = await window.__TAURI__.core.invoke("p37_shell_info"); }catch(err){ desktopShell = {version: "?", bridge: 0}; }

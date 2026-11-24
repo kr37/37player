@@ -43,6 +43,7 @@ window.__st = ()=>({src: audioEl.src, paused: audioEl.paused, t: audioEl.current
   title: navigator.mediaSession && navigator.mediaSession.metadata && navigator.mediaSession.metadata.title,
   artist: navigator.mediaSession && navigator.mediaSession.metadata && navigator.mediaSession.metadata.artist});
 window.__log = ()=>playLogLines.slice();
+window.__dbgIpcAskSoon = ()=>{ if(desktopIpcSwitch) desktopIpcSwitch.askedAt = 0; }; // slowroute.js: the 10 minutes before asking again, cut short
 window.__editStop = (it)=> openEditStopItem(it);
 // screen-off syncing
 window.__aw = ()=> !!sharedAwake;
