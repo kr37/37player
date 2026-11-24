@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.7.011">
+<meta name="app-version" content="2.7.012">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -36897,7 +36897,9 @@ function ensureLevelCtx(){
     if(levelCtx.state === "suspended") levelCtx.resume().catch(()=>{});
     levelCtx.addEventListener("statechange", ()=>{
       playLog("Web Audio " + levelCtx.state + (document.hidden ? ", not on screen" : ""));
-      if(levelCtx.state !== "running" && levelCtx.state !== "closed" && levelRoutedPlaying()) levelCtx.resume().catch(()=>{});
+      if(levelCtx.state === "interrupted") levelInterruptionBegan();
+      else if(levelCtx.state === "running" && levelInterrupted) levelInterruptionEnded();
+      if(levelCtx.state !== "running" && levelCtx.state !== "closed" && levelCtx.state !== "interrupted" && levelRoutedPlaying()) levelCtx.resume().catch(()=>{});
       if(levelCtx.state === "running") hookInLoadedPlayers(false);
     });
   }catch(err){ console.warn("No audio context for turning tracks up:", err); levelCtx = null; }
@@ -36909,9 +36911,44 @@ function ensureLevelCtx(){
 // "interrupted", which the handler above didn't answer. So while such a
 // track plays, the context is checked every second and started again.
 function levelRoutedPlaying(){ return [audioEl, ...levelPreviewEls()].some(el=> el && levelGains.has(el) && !el.paused); }
+/* An audio interruption: a call, Siri, an alarm (2.7.012;
+   desktop/AUDIT-boundaries.md 2.2, the audit's fix 16, O). WebKit puts the
+   sound engine in "interrupted", and a player routed through it plays on in
+   silence with its time moving. Now Playing pauses there, keeping its place,
+   so no chant passes unheard, and carries on by itself once the engine runs
+   again (kr37, 23 Nov 2026; his case: his phone in the car, hands-free). It
+   can't cut into a call: the system holds 37 Player's sound for the whole
+   of it, and the engine runs again only when the interruption has ended
+   (asked every 2 s meanwhile). If the system won't let a page start its
+   sound by itself (an iPhone locked, to check), Playing stays paused with
+   its place kept, and the lock screen's play resumes it. */
+let levelInterrupted = null; // {at, item} while Playing is paused for an interruption
+const levelPlayingMain = ()=> !audioEl.paused || silenceState.active;
+function levelInterruptionBegan(){
+  if(levelInterrupted || !levelPlayingMain()) return;
+  levelInterrupted = {at: Date.now(), item: currentItemId};
+  playLog("sound interrupted (a call, Siri or the like): Playing paused, keeping its place");
+  togglePlay();
+  const ask = ()=> setTimeout(async ()=>{
+    if(!levelInterrupted || !levelCtx) return;
+    try{ await levelCtx.resume(); }catch(err){}
+    if(levelCtx.state === "running") levelInterruptionEnded(); else ask();
+  }, 2000);
+  ask();
+}
+function levelInterruptionEnded(){
+  const s = levelInterrupted; levelInterrupted = null;
+  if(!s) return;
+  const secs = Math.round((Date.now() - s.at) / 1000);
+  if(currentItemId !== s.item || levelPlayingMain()){ playLog("sound back after the interruption (" + secs + " s); not carried on: " + (levelPlayingMain() ? "already playing" : "something else was chosen")); return; }
+  playLog("sound back after the interruption (" + secs + " s): carrying on");
+  togglePlay();
+  setTimeout(()=>{ if(!levelPlayingMain() && currentItemId === s.item) playLog("it couldn't carry on by itself: paused, its place kept (play resumes it)"); }, 1500);
+}
 let levelWatchSaid = false;
 setInterval(()=>{
   if(!levelCtx || levelCtx.state === "running" || levelCtx.state === "closed"){ levelWatchSaid = false; return; }
+  if(levelCtx.state === "interrupted"){ levelInterruptionBegan(); return; }
   if(!levelRoutedPlaying()) return;
   if(!levelWatchSaid){ levelWatchSaid = true; playLog("Web Audio was " + levelCtx.state + " while a track played: started again"); }
   levelCtx.resume().catch(()=>{});
