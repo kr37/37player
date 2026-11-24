@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.7.001">
+<meta name="app-version" content="2.7.002">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -4118,7 +4118,13 @@ function desktopInvokeMoving(cmd, args){ return desktopNoteRoute(cmd, window.__T
    copied) the window offers to restart: a reload, which keeps the playlist's
    place. Playback that still works is never interrupted for it (kr37,
    23 Nov 2026). */
+// The app's calls not yet answered, for a save running long (saveWaitingOn).
+const desktopCallsUnderWay = new Set();
 function desktopNoteRoute(cmd, p){
+  const call = {cmd, at: Date.now()};
+  desktopCallsUnderWay.add(call);
+  const settled = ()=> desktopCallsUnderWay.delete(call);
+  p.then(settled, settled);
   return p.then(r=>{
     if(cmd === "fs_write" && r === "slow") desktopIpcSwitched(cmd);
     else if(cmd === "fs_read" && Array.isArray(r)){ desktopIpcSwitched(cmd); return new Uint8Array(r).buffer; }
@@ -4794,6 +4800,9 @@ const STRINGS = {
     "quitSaveSlowBody": "37 Player is still saving before it quits. Quitting now may lose your latest changes.",
     "quitSaveSlowWait": "Wait",
     "quitSaveSlowQuit": "Quit anyway",
+    "saveSlowShort": "Still saving",
+    "saveSlowTooltip": "Saving is taking longer than usual. Tap for more.",
+    "saveSlowBody": "37 Player has been saving since {time}. Your changes are kept in this window meanwhile: leave it open until saving has finished.",
     "closeAppQuit": "Close anyway",
     "interruptedTitle": "A restore didn't finish",
     "interruptedRestoreBody": "A restore was cut off before it finished, so this library is empty now. Restore the backup again.",
@@ -6948,6 +6957,9 @@ const STRINGS = {
     "quitSaveSlowBody": "37 Player todavía está guardando antes de cerrarse. Si sale ahora, podría perder sus últimos cambios.",
     "quitSaveSlowWait": "Esperar",
     "quitSaveSlowQuit": "Salir de todos modos",
+    "saveSlowShort": "Todavía guardando",
+    "saveSlowTooltip": "Guardar está tardando más de lo normal. Toque para ver más.",
+    "saveSlowBody": "37 Player está guardando desde las {time}. Mientras tanto, sus cambios se conservan en esta ventana: déjela abierta hasta que termine de guardar.",
     "closeAppQuit": "Cerrar de todos modos",
     "interruptedTitle": "Una restauración no terminó",
     "interruptedRestoreBody": "Una restauración se interrumpió antes de terminar, así que esta biblioteca está vacía ahora. Restaure otra vez la copia de seguridad.",
@@ -9092,6 +9104,9 @@ const STRINGS = {
     "quitSaveSlowBody": "37 Player enregistre encore avant de se fermer. Quitter maintenant pourrait faire perdre vos dernières modifications.",
     "quitSaveSlowWait": "Attendre",
     "quitSaveSlowQuit": "Quitter quand même",
+    "saveSlowShort": "Enregistrement en cours",
+    "saveSlowTooltip": "L'enregistrement prend plus de temps que d'habitude. Touchez pour en savoir plus.",
+    "saveSlowBody": "37 Player enregistre depuis {time}. Vos modifications sont gardées dans cette fenêtre en attendant : laissez-la ouverte jusqu'à la fin de l'enregistrement.",
     "closeAppQuit": "Fermer quand même",
     "interruptedTitle": "Une restauration n'a pas abouti",
     "interruptedRestoreBody": "Une restauration a été interrompue avant la fin : cette bibliothèque est donc vide maintenant. Restaurez à nouveau la sauvegarde.",
@@ -11236,6 +11251,9 @@ const STRINGS = {
     "quitSaveSlowBody": "O 37 Player ainda está a guardar antes de fechar. Sair agora pode perder as suas últimas alterações.",
     "quitSaveSlowWait": "Esperar",
     "quitSaveSlowQuit": "Sair mesmo assim",
+    "saveSlowShort": "Ainda a guardar",
+    "saveSlowTooltip": "Guardar está a demorar mais do que o habitual. Toque para saber mais.",
+    "saveSlowBody": "O 37 Player está a guardar desde as {time}. Entretanto, as suas alterações ficam nesta janela: deixe-a aberta até terminar de guardar.",
     "closeAppQuit": "Fechar mesmo assim",
     "interruptedTitle": "Uma restauração não terminou",
     "interruptedRestoreBody": "Uma restauração foi interrompida antes de terminar, por isso esta biblioteca está vazia agora. Restaure o backup outra vez.",
@@ -13380,6 +13398,9 @@ const STRINGS = {
     "quitSaveSlowBody": "37 Player speichert noch, bevor es sich beendet. Wenn Sie jetzt beenden, können Ihre letzten Änderungen verloren gehen.",
     "quitSaveSlowWait": "Warten",
     "quitSaveSlowQuit": "Trotzdem beenden",
+    "saveSlowShort": "Speichert noch",
+    "saveSlowTooltip": "Das Speichern dauert länger als sonst. Tippen für mehr.",
+    "saveSlowBody": "37 Player speichert seit {time}. Ihre Änderungen bleiben so lange in diesem Fenster erhalten: Lassen Sie es offen, bis das Speichern fertig ist.",
     "closeAppQuit": "Trotzdem schließen",
     "interruptedTitle": "Eine Wiederherstellung wurde nicht fertig",
     "interruptedRestoreBody": "Eine Wiederherstellung wurde vor dem Ende unterbrochen, daher ist diese Bibliothek jetzt leer. Stellen Sie die Sicherung noch einmal wieder her.",
@@ -15524,6 +15545,9 @@ const STRINGS = {
     "quitSaveSlowBody": "37 Player 在退出前仍在保存。现在退出可能会丢失您最近的更改。",
     "quitSaveSlowWait": "等待",
     "quitSaveSlowQuit": "仍要退出",
+    "saveSlowShort": "仍在保存",
+    "saveSlowTooltip": "保存所需时间比平时长。点按了解详情。",
+    "saveSlowBody": "37 Player 从 {time} 起一直在保存。在此期间，您的更改保留在此窗口中：请在保存完成前不要关闭它。",
     "closeAppQuit": "仍然关闭",
     "interruptedTitle": "恢复没有完成",
     "interruptedRestoreBody": "一次恢复在完成前被中断，所以这个曲库现在是空的。请再恢复一次备份。",
@@ -17668,6 +17692,9 @@ const STRINGS = {
     "quitSaveSlowBody": "37 Player vẫn đang lưu trước khi thoát. Thoát bây giờ có thể làm mất những thay đổi gần nhất của bạn.",
     "quitSaveSlowWait": "Chờ",
     "quitSaveSlowQuit": "Vẫn thoát",
+    "saveSlowShort": "Vẫn đang lưu",
+    "saveSlowTooltip": "Việc lưu đang lâu hơn thường lệ. Chạm để xem thêm.",
+    "saveSlowBody": "37 Player đã lưu từ {time}. Trong lúc đó, các thay đổi của bạn được giữ trong cửa sổ này: hãy để nó mở cho đến khi lưu xong.",
     "closeAppQuit": "Vẫn đóng",
     "interruptedTitle": "Việc khôi phục chưa xong",
     "interruptedRestoreBody": "Một lần khôi phục bị gián đoạn trước khi xong, nên thư viện này giờ đang trống. Hãy khôi phục lại bản sao lưu.",
@@ -19812,6 +19839,9 @@ const STRINGS = {
     "quitSaveSlowBody": "Το 37 Player αποθηκεύει ακόμη πριν κλείσει. Αν βγείτε τώρα, ίσως χαθούν οι τελευταίες αλλαγές σας.",
     "quitSaveSlowWait": "Αναμονή",
     "quitSaveSlowQuit": "Έξοδος ούτως ή άλλως",
+    "saveSlowShort": "Αποθηκεύεται ακόμη",
+    "saveSlowTooltip": "Η αποθήκευση αργεί περισσότερο από ό,τι συνήθως. Πατήστε για περισσότερα.",
+    "saveSlowBody": "Το 37 Player αποθηκεύει από τις {time}. Στο μεταξύ οι αλλαγές σας διατηρούνται σε αυτό το παράθυρο: αφήστε το ανοιχτό μέχρι να τελειώσει η αποθήκευση.",
     "closeAppQuit": "Κλείσιμο έτσι κι αλλιώς",
     "interruptedTitle": "Μια επαναφορά δεν ολοκληρώθηκε",
     "interruptedRestoreBody": "Μια επαναφορά διακόπηκε πριν τελειώσει, γι' αυτό αυτή η βιβλιοθήκη είναι τώρα άδεια. Κάντε ξανά επαναφορά του αντιγράφου ασφαλείας.",
@@ -21956,6 +21986,9 @@ const STRINGS = {
     "quitSaveSlowBody": "37 Player sta ancora salvando prima di chiudersi. Uscendo ora potresti perdere le ultime modifiche.",
     "quitSaveSlowWait": "Attendi",
     "quitSaveSlowQuit": "Esci comunque",
+    "saveSlowShort": "Salvataggio in corso",
+    "saveSlowTooltip": "Il salvataggio sta richiedendo più del solito. Tocca per saperne di più.",
+    "saveSlowBody": "37 Player sta salvando dalle {time}. Nel frattempo le modifiche restano in questa finestra: lasciala aperta finché il salvataggio non è finito.",
     "closeAppQuit": "Chiudi comunque",
     "interruptedTitle": "Un ripristino non è terminato",
     "interruptedRestoreBody": "Un ripristino si è interrotto prima della fine, quindi ora questa libreria è vuota. Ripristina di nuovo il backup.",
@@ -24379,10 +24412,61 @@ async function loadState(){
   else setTimeout(()=>{ if(!lastSpareWriteAt && !libraryUnreadable) writeSpareLibrary({...libraryPartOf(root), modifiedAt: root.modifiedAt}, libraryRev); }, 20000);
 }
 function saveState(){
-  const p = saveChain.then(doSaveState, doSaveState);
+  saveAsked.push(Date.now());
+  if(!saveSlowTimer) saveSlowTimer = setInterval(saveSlowCheck, 5000);
+  const run = ()=> doSaveState().finally(()=>{ saveStep = ""; });
+  const p = saveChain.then(run, run);
   p.then(noteSaveWorked, noteSaveFailed);
+  const done = ()=>{ saveAsked.shift(); saveSlowCheck(); };
+  p.then(done, done);
   saveChain = p.catch(err=> console.error("Save failed:", err));
   return p;
+}
+/* ---- A save that runs long (2.7.002; desktop/AUDIT-boundaries.md 3.3,
+   the audit's fix 5, P) ----
+   A save that fails turns the top bar red and is tried again (noteSaveFailed),
+   but one that never finished held up every later save in silence: a shell
+   call, a storage request or a disk that didn't answer, and edits looked fine
+   on screen while nothing was kept. Now, counted from when the oldest save
+   not yet finished was asked for (saves run in order, so that's the one
+   running, or its turn behind the one before), at 30 s the playback log says
+   "saving has taken 30 s so far (waiting on …)" and the top bar shows
+   "Still saving" in amber, red at 2 minutes. It isn't given up: a write that
+   may still land is never treated as failed. Closing asks first meanwhile
+   (closingWouldStop, beforeunload). When it's done the log says how long. */
+const saveAsked = [];   // when each save not yet finished was asked for, oldest first
+let saveStep = "";      // what the running save is doing (saveWaitingOn)
+let saveSlow = null;    // {since, level: 1 amber (30 s), 2 red (2 minutes)} while saving runs long
+let saveSlowTimer = null;
+const SAVE_SLOW_MS = 30000, SAVE_VERY_SLOW_MS = 120000;
+function saveWaitingOn(){
+  let what = saveStep || "its turn";
+  try{
+    let oldest = null;
+    for(const c of desktopCallsUnderWay) if(!oldest || c.at < oldest.at) oldest = c;
+    if(oldest) what += "; the app's " + oldest.cmd + " for " + Math.round((Date.now() - oldest.at) / 1000) + " s";
+  }catch(err){}
+  return what;
+}
+function saveSlowCheck(){
+  if(!saveAsked.length){ clearInterval(saveSlowTimer); saveSlowTimer = null; }
+  const age = saveAsked.length ? Date.now() - saveAsked[0] : 0;
+  const level = age >= SAVE_VERY_SLOW_MS ? 2 : age >= SAVE_SLOW_MS ? 1 : 0;
+  if(!level){
+    if(saveSlow){ playLog("saving caught up, " + Math.round((Date.now() - saveSlow.since) / 1000) + " s after the save that ran long was asked for"); saveSlow = null; updateNotSavingIndicator(); }
+    return;
+  }
+  if(!saveSlow) saveSlow = {since: saveAsked[0], level: 0};
+  if(level > saveSlow.level){
+    saveSlow.level = level;
+    playLog("saving has taken " + (level === 2 ? "2 minutes" : "30 s") + " so far (waiting on " + saveWaitingOn() + ")");
+    updateNotSavingIndicator();
+  }
+}
+function openSaveSlowDialog(){
+  if(!saveSlow) return;
+  const time = new Date(saveSlow.since).toLocaleTimeString([], {hour: "numeric", minute: "2-digit"});
+  askChoice(t("quitSaveSlowTitle"), `<p>${escapeHtmlText(t("saveSlowBody", {time}))}</p>`, [{label: t("ok"), value: null, kind: "primary"}]);
 }
 /* ---- A dialog closes first, then does its work (2.5.031; kr37, 16 Nov 2026) ----
    "When someone presses Save, can the dialog disappear before any of the
@@ -24437,7 +24521,7 @@ function afterDialogFailed(failKey, err){
   if(saveFailing) return; // the top bar's "Not saving" already says so, and saving is tried again
   showWhenFree(t("bgFailedTitle"), ()=> askChoice(t("bgFailedTitle"), `<p>${escapeHtmlText(t(failKey, {error: errText(err)}))}</p>`, [{label: t("ok"), value: null, kind: "primary"}]));
 }
-window.addEventListener("beforeunload", (e)=>{ if(afterDialogPending && !leavingOnPurpose){ e.preventDefault(); e.returnValue = ""; } });
+window.addEventListener("beforeunload", (e)=>{ if((afterDialogPending || saveSlow) && !leavingOnPurpose){ e.preventDefault(); e.returnValue = ""; } });
 /* ---- When saving fails ----
    A full device makes every write fail (as an aborted transaction), and
    until 1.4.060 that went only to the console: a renamed playlist looked
@@ -24492,10 +24576,13 @@ function noteSaveWorked(){
 function updateNotSavingIndicator(){
   const btn = document.getElementById("btnNotSaving");
   if(!btn) return;
-  if(!saveFailing){ btn.style.display = "none"; return; }
+  // Failing comes first (red, "Not saving"); a save running long is amber,
+  // red after 2 minutes ("Still saving", saveSlowCheck).
+  if(!saveFailing && !saveSlow){ btn.style.display = "none"; return; }
   btn.style.display = "";
-  btn.textContent = t(saveFailing.full ? "notSavingFullShort" : "notSavingShort");
-  btn.title = t("notSavingTooltip");
+  btn.className = "backup-indicator " + (saveFailing || saveSlow.level >= 2 ? "urgent" : "warn");
+  btn.textContent = saveFailing ? t(saveFailing.full ? "notSavingFullShort" : "notSavingShort") : t("saveSlowShort");
+  btn.title = t(saveFailing ? "notSavingTooltip" : "saveSlowTooltip");
 }
 function openNotSavingDialog(){
   if(!saveFailing) return;
@@ -24518,12 +24605,13 @@ function openNotSavingDialog(){
     try{ await saveState(); }catch(err){ const s2 = document.getElementById("notSavingStatus"); if(s2) s2.textContent = t("notSavingStill"); }
   });
 }
-document.getElementById("btnNotSaving").addEventListener("click", ()=> openNotSavingDialog());
+document.getElementById("btnNotSaving").addEventListener("click", ()=> saveFailing ? openNotSavingDialog() : openSaveSlowDialog());
 document.addEventListener("visibilitychange", ()=>{ if(!document.hidden && saveFailing) saveState(); });
 async function doSaveState(){
   if(libraryNotLoaded) return; // nothing is written until it loads
   snapshotPlayingOrder();
   try{ refreshAllLevels(); }catch(err){ console.warn(err); }
+  saveStep = "writing the settings and the playback place";
   await idbPut("state", {key:"view", value:{settings: root.settings, session: root.session||{}}});
   saveDeviceSettings(root.settings);
   const settingsHash = hashString(JSON.stringify(root.settings||{}));
@@ -24536,6 +24624,7 @@ async function doSaveState(){
   // the hash above, so stamping it can never trigger a write by itself.
   root.modifiedAt = Date.now();
   const value = {...libraryPartOf(root), modifiedAt: root.modifiedAt};
+  saveStep = "writing the library";
   const res = await idbWriteLibraryIfCurrent(value, libraryRev);
   if(!res.ok && res.unreadable){ libraryUnreadable = libraryUnreadable || new Error("unreadable"); openLibraryRecovery(); return; }
   if(!res.ok){ await reloadLibraryFromStorage(); alert(t("windowWasStale")); return; }
@@ -53988,7 +54077,7 @@ function closingWouldStop(){
   if(playingHere()) out.push(t("closeStopsPlaying"));
   if(sharedUploading && sharedStatus.transfer && sharedStatus.transfer.kind === "up") out.push(t("closeStopsSending"));
   if(copyRunning) out.push(t("closeStopsCopy"));
-  if(afterDialogPending) out.push(t("closeStopsSaving"));
+  if(afterDialogPending || saveSlow) out.push(t("closeStopsSaving"));
   return out;
 }
 /* The page updates itself (1.4.182; desktop/PAGE-UPDATES.md). A shell
@@ -54055,13 +54144,15 @@ if(IN_DESKTOP_APP && window.__TAURI__ && window.__TAURI__.event && window.__TAUR
     if(closeAsking) return;
     closeAsking = true;
     try{
-      const what = closingWouldStop();
+      const what = closingWouldStop(), savingLong = !!saveSlow;
       if(what.length){
         const c = await askChoice(t("closeAppTitle"), `<p>${escapeHtmlText(t("closeAppBody"))}</p><ul>${what.map(w=> `<li>${escapeHtmlText(w)}</li>`).join("")}</ul>`,
           [{label: t("closeAppKeep"), value: null, kind: "primary"}, {label: t("closeAppQuit"), value: "quit", kind: "danger"}]);
         if(c !== "quit") return;
       }
-      if(!(await desktopSaveBeforeQuit())) return;
+      // Asked already, with a save running long on the list (2.7.002): not asked again.
+      if(savingLong) playLog("quitting without waiting for the save, which had run long");
+      else if(!(await desktopSaveBeforeQuit())) return;
     }finally{ closeAsking = false; }
     window.__TAURI__.core.invoke("p37_quit");
   });
