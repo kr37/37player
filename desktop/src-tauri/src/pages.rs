@@ -11,10 +11,17 @@
 //  - only if the signature is good (a page can reach the library folders),
 //    the version is newer than the bundled one, and the bridge it needs is
 //    one this shell has;
-//  - a page that doesn't say it started (p37_page_ok) within a minute, or
-//    over two starts, is put aside for good and the one before it is used,
-//    as the website's service worker does. The bundled page is never
-//    replaced, so there's always one to go back to.
+//  - a page that doesn't say it started (p37_page_ok), or over two starts,
+//    is put aside for good and the one before it is used, as the website's
+//    service worker does. The bundled page is never replaced, so there's
+//    always one to go back to. "Doesn't say it started" (shell 2.7.6; the
+//    audit's fix 14, G, decided by kr37 on 23 Nov 2026): a minute with no
+//    progress at all (p37_page_progress, sent as its start gets on), or ten
+//    minutes in all; it had been a minute from its start, and on a swapping
+//    Mac mini a start of over a minute set a good page aside for good
+//    (11 Nov 2026). A giant library loading steadily is never set aside; a
+//    page stuck at one step still is. A page from before 2.7.010 sends no
+//    progress, so for it the minute still counts from its start.
 use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
 use std::cmp::Ordering;
@@ -23,6 +30,7 @@ use std::path::PathBuf;
 #[cfg(test)]
 use std::path::Path;
 use std::sync::{Mutex, RwLock};
+use std::sync::atomic::{AtomicU64, Ordering as AtomicOrdering};
 
 /// The files a page is made of, as the app serves them.
 pub const FILES: [&str; 2] = ["index.html", "help.json"];
@@ -35,6 +43,14 @@ const MIN_PAGE_BYTES: usize = 200_000;
 const MAX_FILE_BYTES: u64 = 40 * 1024 * 1024;
 /// Checked by itself at most this often (seconds).
 pub const CHECK_EVERY: u64 = 20 * 3600;
+/// A downloaded page's start: set aside after this long with no progress, or this long in all (ms).
+pub const START_QUIET_MS: u64 = 60_000;
+pub const START_TOTAL_MS: u64 = 600_000;
+/// Whether a page that started at `started`, whose last progress was at `progress`, is given up on at `now`.
+pub fn start_given_up(started: u64, progress: u64, now: u64) -> bool {
+    now.saturating_sub(progress.max(started)) >= START_QUIET_MS || now.saturating_sub(started) >= START_TOTAL_MS
+}
+pub fn now_ms() -> u64 { std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_millis() as u64).unwrap_or(0) }
 
 /// Versions compared as numbers, part by part ("1.4.99" < "1.4.100" < "2.0.000").
 pub fn version_cmp(a: &str, b: &str) -> Ordering {
@@ -150,6 +166,8 @@ pub struct Pages {
     /// and their signatures), and About's p37_page_info, then on the main
     /// thread, waited for it with the window frozen.
     choosing: Mutex<()>,
+    /// When the running page last said its start was getting on (ms).
+    progress_at: AtomicU64,
 }
 
 fn now() -> u64 { std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0) }
@@ -164,10 +182,16 @@ impl Pages {
             state: Mutex::new(state),
             checking: Mutex::new(()),
             choosing: Mutex::new(()),
+            progress_at: AtomicU64::new(0),
         }
     }
 
     pub fn enabled(&self) -> bool { self.verifier.has_key() && self.base_url.is_some() }
+    /// The running page's start is getting on (p37_page_progress).
+    pub fn note_progress(&self) { self.progress_at.store(now_ms(), AtomicOrdering::SeqCst); }
+    pub fn progress_at(&self) -> u64 { self.progress_at.load(AtomicOrdering::SeqCst) }
+    /// A downloaded page that hasn't said it started yet.
+    pub fn is_unconfirmed(&self, version: &str) -> bool { self.state.lock().unwrap().unconfirmed.contains_key(version) }
     pub fn running(&self) -> String { self.chosen.read().unwrap().version.clone() }
     pub fn running_is_downloaded(&self) -> bool { !self.chosen.read().unwrap().files.is_empty() }
 
@@ -256,6 +280,7 @@ impl Pages {
         let version = match pick {
             Some((v, files)) => {
                 *st.unconfirmed.entry(v.clone()).or_insert(0) += 1;
+                self.note_progress();
                 *self.chosen.write().unwrap() = Chosen { version: v.clone(), files };
                 v
             }
@@ -659,6 +684,26 @@ mod tests {
         assert_eq!(pages(&d, &k, "1.4.181", 1).choose(), "1.4.190", "a good page, kept");
     }
 
+    #[test]
+    fn a_start_is_given_up_after_a_quiet_minute_or_ten_minutes_in_all() {
+        let t0 = 1_000_000;
+        assert!(!start_given_up(t0, 0, t0 + START_QUIET_MS - 1), "no progress said yet: a minute from its start (a page before 2.7.010)");
+        assert!(start_given_up(t0, 0, t0 + START_QUIET_MS));
+        assert!(!start_given_up(t0, t0 + 300_000, t0 + 330_000), "five minutes in, still getting on: kept");
+        assert!(start_given_up(t0, t0 + 300_000, t0 + 300_000 + START_QUIET_MS), "then a quiet minute: given up");
+        assert!(start_given_up(t0, t0 + START_TOTAL_MS - 1000, t0 + START_TOTAL_MS), "ten minutes in all, however it's getting on");
+    }
+    #[test]
+    fn progress_is_noted_when_a_page_is_chosen() {
+        let (k, d) = (keys(), tmpdir("progress"));
+        let p = pages(&d, &k, "1.4.181", 1);
+        p.check(&Source::new(&k, "1.4.190", None).fetch());
+        assert_eq!(p.progress_at(), 0);
+        assert_eq!(p.choose(), "1.4.190");
+        assert!(p.progress_at() > 0 && p.is_unconfirmed("1.4.190"));
+        p.confirm();
+        assert!(!p.is_unconfirmed("1.4.190"));
+    }
     #[test]
     fn only_the_newest_two_are_kept() {
         let (k, d) = (keys(), tmpdir("keep"));

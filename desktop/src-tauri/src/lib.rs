@@ -133,7 +133,7 @@ fn p37_opened_take(opened: tauri::State<'_, Opened>) -> Vec<OpenedFile> {
 const BRIDGE: u32 = 2;
 
 #[derive(serde::Serialize)]
-struct ShellInfo { version: String, bridge: u32, pages: bool, device: bool, updates: bool, zoom: bool, trash: bool, watch: bool, append_range: bool, typed_path: bool, opened: bool, slow_route: bool, close_seen: bool, silence: bool, append_at: bool, files_http: Option<String> }
+struct ShellInfo { version: String, bridge: u32, pages: bool, device: bool, updates: bool, zoom: bool, trash: bool, watch: bool, append_range: bool, typed_path: bool, opened: bool, slow_route: bool, close_seen: bool, silence: bool, append_at: bool, page_progress: bool, files_http: Option<String> }
 
 // The shell's version is the page's version as of the shell's own last
 // change (tauri.conf.json "version"), like sync.php's.
@@ -160,6 +160,8 @@ fn p37_shell_info(app: tauri::AppHandle) -> ShellInfo {
         silence: true,
         // append_at: appends refused when the file isn't the size they say ("p37-at", fs_append_range's at), and fs_tidy_leftovers (files::append_at, shell 2.7.5).
         append_at: true,
+        // page_progress: a downloaded page's start is given up after a minute with no progress (p37_page_progress) or ten in all, not a minute from its start (pages.rs, shell 2.7.6).
+        page_progress: true,
         // files_http: where recordings are also served, on Linux (fileserver.rs, shell 2.5.0).
         files_http: app.try_state::<fileserver::FileServer>().map(|f| f.base.clone()) }
 }
@@ -230,18 +232,29 @@ async fn p37_page_switch(app: tauri::AppHandle, pages: tauri::State<'_, Arc<page
     }).await
 }
 
-// A downloaded page has a minute to say it started; if it doesn't, it's put
-// aside and the window reloads into the one before it.
+// A downloaded page has to say it started: given a minute with no progress
+// at all, or ten minutes in all (pages::start_given_up, shell 2.7.6), it's
+// put aside and the window reloads into the one before it. Looked at every
+// 5 s; the watch ends once the page has said it started, or another runs.
 fn watch_page(app: &tauri::AppHandle, pages: Arc<pages::Pages>, version: String) {
     if !pages.running_is_downloaded() { return; }
-    let app = app.clone();
-    std::thread::spawn(move || {
-        std::thread::sleep(std::time::Duration::from_secs(60));
-        if pages.give_up_on(&version) {
-            if let Some(w) = app.get_webview_window("main") { let _ = w.eval("location.reload()"); }
+    let (app, started) = (app.clone(), pages::now_ms());
+    std::thread::spawn(move || loop {
+        std::thread::sleep(std::time::Duration::from_secs(5));
+        if pages.running() != version || !pages.is_unconfirmed(&version) { return; }
+        if pages::start_given_up(started, pages.progress_at(), pages::now_ms()) {
+            if pages.give_up_on(&version) {
+                if let Some(w) = app.get_webview_window("main") { let _ = w.eval("location.reload()"); }
+            }
+            return;
         }
     });
 }
+
+// The page's start is getting on (shell 2.7.6): at each step until its
+// library has loaded. No disk: on the main thread.
+#[tauri::command]
+fn p37_page_progress(pages: tauri::State<'_, Arc<pages::Pages>>) { pages.note_progress(); }
 
 // Once a day (a minute after starting, then hourly to see if a day has
 // passed), quietly: a newer page is downloaded and the page told.
@@ -500,7 +513,7 @@ pub fn run() {
             files::fs_place, files::fs_place_default, files::fs_root_info, files::fs_root_rename, files::fs_root_show, files::fs_root_trash, files::fs_places_restore, files::fs_remove_if_empty,
             oauth::p37_google_signin, oauth::p37_open_url, files::fs_find_libraries, files::fs_root_choose_library, files::fs_root_use_found,
             files::fs_list, files::fs_stat, files::fs_read, files::fs_write, files::fs_copy, files::fs_append_range, files::fs_rename, files::fs_remove, files::fs_mkdir, files::fs_tidy_leftovers,
-            updates::p37_shell_update_check, updates::p37_shell_update_install, watch::p37_watch, p37_close_seen])
+            updates::p37_shell_update_check, updates::p37_shell_update_install, watch::p37_watch, p37_close_seen, p37_page_progress])
         .on_window_event(|window, event| {
             if let WindowEvent::Focused(f) = event { if let Some(w) = watch::get() { w.focused.store(*f, Ordering::SeqCst); } }
             if let WindowEvent::CloseRequested { api, .. } = event {
