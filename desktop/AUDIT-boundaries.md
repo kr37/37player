@@ -343,6 +343,11 @@ Risk: low.
 - In the shell: if a close was asked for and nothing came back within 5 s, the next close or Quit shows the system's own dialog: "37 Player isn't responding. Quit anyway?" (Quit / Wait).
 - A system log-out gets the same after 10 s.
 - **Risk:** low. The page's own question still comes first whenever the page is alive. A page too old to answer behaves as today, since the shell only offers the dialog when the page has said it can answer.
+- **Decided (kr37, 23 Nov):** when the save before quitting takes over 10 s, ask "Saving is taking longer than usual" with **Wait / Quit anyway**, rather than quitting by itself.
+- **What that save writes:**
+  - always the small "view" record (settings, and where playback is);
+  - the library's own file (root.json: the tracks list and playlists, not the waveforms) only if something changed since the last save. That's rarely the case at quit, since edits are saved as they're made.
+  - A long wait is usually its turn in the queue, behind sync or earlier saves (a minute on the SKBC Mac mini, report 2026-11-15-213154), not the writing itself.
 
 ### 1.9 Page updates (`pages.rs`)
 
@@ -376,7 +381,7 @@ Risk: low.
 - Quitting before the library loads counts as an unconfirmed start (`choose()`), and **two such starts set the page aside**. So a person who gives up on a page that doesn't work is covered too.
 - The page can always be set aside by hand in About.
 
-**Risk:** low.
+**Risk:** low. **Decided (kr37, 23 Nov):** yes, this version.
 
 ### 1.10 The shell updating itself (`updates.rs`)
 
@@ -595,6 +600,13 @@ How it's used:
 
 **Fix O** (page, small): log the Web Audio engine's state changes (`onstatechange`), and resume it when it's "interrupted" and something is playing. Risk: low.
 
+**Decided (kr37, 23 Nov): carry on by itself once the interruption ends.**
+
+- **The case he has in mind:** not a Center's puja, but his phone in the car, hands-free.
+- **It can't cut into a call:** the system holds 37 Player's sound for the whole of a call (or Siri, or an alarm), and the page only starts again when it hears the interruption has ended.
+- **Until then nothing advances:** the player pauses at the interruption, keeping its place, so no chant passes unheard.
+- **To check on an iPhone:** whether iOS lets a web page start its sound again by itself after a call, with the screen locked. If it doesn't, the fallback is the paused player with its place kept, and the lock screen's play button (which the silent loop keeps working) resumes it.
+
 ### 2.3 Storage and the Networking process
 
 - **Desktop app:** libraries are in folders now, but localStorage, and anything not yet moved out of the browser's storage, is still in WebKit's.
@@ -727,6 +739,7 @@ The fixes are in 3.2 to 3.4: time limits where the waits are.
 - If the worker reports no progress for 2 minutes, stop it (`converterStop`), log the file's name, mark the file as not converted ("couldn't be converted: it stopped answering"), and go on with the queue.
 - Give the worker's requests a time limit (`x.timeout` works in a worker).
 - **Risk:** low. A very slow machine converting a huge file still reports progress, so it isn't cut off.
+- **Decided (kr37, 23 Nov):** a file whose conversion stopped answering is tried once more at the next start before it's marked "couldn't be converted".
 
 ### 3.3 Saves
 
@@ -809,9 +822,9 @@ safety for the least risk:
 | 1 | **E** — file commands and folder choosers on `spawn_blocking` | shell | small | low | 1.3 |
 | 2 | **D** — disk work off the main thread (`p37_device_put`, pages, roots.json, Open With); pages read before taking the lock | shell | small | low | 1.2, 1.9 |
 | 3 | **A** — keep saving after Tauri's switch; restart the window only when nothing plays | shell + page | small | low | 1.1 |
-| 4 | **F** — closing when the page doesn't answer; the page's save before quitting limited to 10 s | shell + page | small | low | 1.8 |
+| 4 | **F** — closing when the page doesn't answer; a save before quitting that takes over 10 s asks Wait / Quit anyway | shell + page | small | low | 1.8 |
 | 5 | **P** — a save that runs long is said, amber then red | page | small | low | 3.3 |
-| 6 | **R** — converter: stop and go on after 2 min without progress | page | small | low | 3.2 |
+| 6 | **R** — converter: stop and go on after 2 min without progress; that file tried once more at the next start | page | small | low | 3.2 |
 | 7 | **K** — the start's watch covers the shell steps too | page | small | none | 1.16 |
 | 8 | **J** — the page's process ending: logged, reloaded, no loop | shell | small | low | 1.14 |
 | 9 | **I** — note when the page's regular `p37_watch` stops, in the stall watch's existing check; a shell hang that never ended is named. **Decided: record only, linked to F, early** | shell (+ a line of page) | small | low | 1.13, 2.1, 2.5 |
@@ -821,19 +834,34 @@ safety for the least risk:
 | 13 | **S** — time limits on sync and Drive requests | page | small | low | 3.4 |
 | 14 | **G** — a downloaded page is set aside after 60 s *without progress* (10 min at most), not 60 s from its start | shell + page | small | low | 1.9 |
 | 15 | **H** — the shell's update download: time limit, progress, Cancel | shell + page | small | low | 1.10 |
-| 16 | **O** — Web Audio's state logged, resumed after an interruption | page | small | low | 2.2 |
+| 16 | **O** — Web Audio's state logged; playback pauses at an interruption and carries on by itself after it | page | small | low | 2.2 |
 | 17 | **C** — wry reads request bodies in 64 KB pieces (if 10 shows it matters) | wry patch | small | low | 1.1 |
 | 18 | **M** — one way of playing in the desktop app: every recording from p37lib, after the format check | page | small code, wide effect | medium | 2.1 |
 | 19 | p37lib: no whole-file answers; the file server's write limit and accept back-off | shell | small | low | 1.5, 1.6 |
 | 20 | **Q** — the iPad silent-loop test | testing | — | none | 2.7 |
 | 21 | **T** — an unexpected end noticed at the next start, with what it was doing (browsers) | page | small | low | 2.7 |
+| 22 | **The format check**, also as a Check library step; Check library's status names every stage and the track it's on | page | small | low | 2.1 (before M) |
 | — | **N** — playback in the shell | shell + page | large | high | 2.1 (for later) |
 
 Fixes 1 and 2 could go in one d build, since both only move work to other
-threads with the same results. A new command the page relies on (fixes 4, 9
-and 14) would make bridge 3 by kr37's rule of 7 Nov, unless the page treats
-each as optional (it checks the shell's `p37_shell_info` flags, as for
-`opened`). Optional is the gentler path: an older app keeps working as now.
+threads with the same results.
+
+**Decided (kr37, 23 Nov):**
+
+- **The order:** he trusts the order above.
+- **New calls are optional.** The page uses a new call (fixes A, F, G, I, L) only when `p37_shell_info` says the shell has it, and otherwise behaves as today. The bridge stays at 2.
+- **Why that matters:** pages reach the desktop app by themselves every day, but a new shell is only installed when someone says yes. It's offered 90 s after a start and in Check for updates, and a Center's Mac mini nobody touches may run an older shell for weeks. A new shell brings its own page, but a new page doesn't bring a shell.
+  - Raising the bridge would stop older shells from receiving any newer page at all until updated.
+  - Optional calls mean they keep getting page fixes, just without the new protections.
+- **Version numbers:** by kr37's rule of 13 Nov ("the minor version follows the shell"), the first page that can call a new shell feature still moves the minor version, together with the shell's (2.7.000 and 2.7.0).
+
+**The format check and Check library (kr37, 23 Nov):** the format check (fix M's first step) is part of this work.
+
+- It also becomes a step of Check library: what this device can play, then marking tracks of a kind it can't.
+- Check library's status line should name what it's doing at every stage. Today each of its four steps has a line (dates; stored files, N of M; looking again at tracks, N of M; what kind of file each track is, N of M). Where it can still look stuck:
+  - one long recording inside "looking again at 3 of 40", with no name or task shown;
+  - the saves between steps, which keep the previous line.
+- **Proposed:** "Looking again at 3 of 40: Long Life Prayer, measuring its loudness", and "Checking the library: saving…" between steps.
 
 ## Afterwards: keeping these checks going
 
