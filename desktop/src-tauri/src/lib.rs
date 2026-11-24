@@ -133,7 +133,7 @@ fn p37_opened_take(opened: tauri::State<'_, Opened>) -> Vec<OpenedFile> {
 const BRIDGE: u32 = 2;
 
 #[derive(serde::Serialize)]
-struct ShellInfo { version: String, bridge: u32, pages: bool, device: bool, updates: bool, zoom: bool, trash: bool, watch: bool, append_range: bool, typed_path: bool, opened: bool, slow_route: bool, close_seen: bool, silence: bool, append_at: bool, page_progress: bool, files_http: Option<String> }
+struct ShellInfo { version: String, bridge: u32, pages: bool, device: bool, updates: bool, zoom: bool, trash: bool, watch: bool, append_range: bool, typed_path: bool, opened: bool, slow_route: bool, close_seen: bool, silence: bool, append_at: bool, page_progress: bool, update_progress: bool, files_http: Option<String> }
 
 // The shell's version is the page's version as of the shell's own last
 // change (tauri.conf.json "version"), like sync.php's.
@@ -162,6 +162,8 @@ fn p37_shell_info(app: tauri::AppHandle) -> ShellInfo {
         append_at: true,
         // page_progress: a downloaded page's start is given up after a minute with no progress (p37_page_progress) or ten in all, not a minute from its start (pages.rs, shell 2.7.6).
         page_progress: true,
+        // update_progress: the shell's update download tells its progress ("p37-shell-update-progress"), can be cancelled (p37_shell_update_cancel) and gives up when it stalls (updates.rs, shell 2.7.7).
+        update_progress: true,
         // files_http: where recordings are also served, on Linux (fileserver.rs, shell 2.5.0).
         files_http: app.try_state::<fileserver::FileServer>().map(|f| f.base.clone()) }
 }
@@ -472,6 +474,7 @@ pub fn run() {
         // the key that signs the pages.
         .plugin(tauri_plugin_updater::Builder::new().pubkey(PAGE_KEY.trim()).build())
         .manage(updates::Pending::default())
+        .manage(updates::Downloading::default())
         .register_asynchronous_uri_scheme_protocol("p37lib", |ctx, req, responder| {
             let app = ctx.app_handle().clone();
             // The file is read here, off the main thread; the answer goes back
@@ -513,7 +516,7 @@ pub fn run() {
             files::fs_place, files::fs_place_default, files::fs_root_info, files::fs_root_rename, files::fs_root_show, files::fs_root_trash, files::fs_places_restore, files::fs_remove_if_empty,
             oauth::p37_google_signin, oauth::p37_open_url, files::fs_find_libraries, files::fs_root_choose_library, files::fs_root_use_found,
             files::fs_list, files::fs_stat, files::fs_read, files::fs_write, files::fs_copy, files::fs_append_range, files::fs_rename, files::fs_remove, files::fs_mkdir, files::fs_tidy_leftovers,
-            updates::p37_shell_update_check, updates::p37_shell_update_install, watch::p37_watch, p37_close_seen, p37_page_progress])
+            updates::p37_shell_update_check, updates::p37_shell_update_install, updates::p37_shell_update_cancel, watch::p37_watch, p37_close_seen, p37_page_progress])
         .on_window_event(|window, event| {
             if let WindowEvent::Focused(f) = event { if let Some(w) = watch::get() { w.focused.store(*f, Ordering::SeqCst); } }
             if let WindowEvent::CloseRequested { api, .. } = event {
