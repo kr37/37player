@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.7.006">
+<meta name="app-version" content="2.7.007">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -39322,6 +39322,21 @@ function silentWavBlob(seconds){
   bytes.fill(128, 44); // 8-bit samples: 128 is silence
   return new Blob([buf], {type: "audio/wav"});
 }
+/* In the desktop app the silent pieces come from the shell, made to length
+   (2.7.007, shell 2.7.4; desktop/AUDIT-boundaries.md 2.1, the audit's fix
+   11, L): no audio made by the page plays there at all, where the page's
+   own memory had held what the media process waited on (the arrangement of
+   the 18 Nov freeze). With an older shell, or once the shell's failed to
+   play, the page makes them as before. */
+let silenceFromShellFailed = false;
+function desktopSilenceUrl(seconds){
+  if(silenceFromShellFailed || !IN_DESKTOP_APP || !(desktopShell && desktopShell.silence)) return "";
+  const ms = String(Math.max(1, Math.round(seconds * 1000)));
+  const http = desktopFilesHttp();
+  if(http) return http + "/_silence/" + ms; // Linux: the file server
+  if(window.__p37FileUrl) return window.__p37FileUrl("_silence", ms); // the tests' stand-in shell
+  return window.__TAURI__.core.convertFileSrc("_silence/" + ms, "p37lib");
+}
 function runSilenceClock(){
   if(!silenceState.active || !useSilenceClock()) return;
   const left = silenceState.seconds - silenceState.elapsedMs / 1000;
@@ -39329,11 +39344,25 @@ function runSilenceClock(){
   if(!silenceClockEl){
     silenceClockEl = new Audio();
     silenceClockEl.addEventListener("ended", ()=>{ if(advanceSilence()) runSilenceClock(); });
+    silenceClockEl.addEventListener("error", ()=>{
+      if(!silenceClockEl.p37FromShell || silenceFromShellFailed) return;
+      silenceFromShellFailed = true;
+      playLog("the app's silence wouldn't play (" + ((silenceClockEl.error && silenceClockEl.error.code) || "?") + "): silences made here again");
+      runSilenceClock();
+    });
   }
   if(silenceClockUrl) URL.revokeObjectURL(silenceClockUrl);
-  silenceClockUrl = URL.createObjectURL(silentWavBlob(Math.min(left, 30)));
+  silenceClockUrl = null;
+  const piece = Math.min(left, 30), play = ()=> silenceClockEl.play().catch(err=> playLog("silence clock wouldn't start: " + (err && err.name)));
+  const fromShell = desktopSilenceUrl(piece);
+  silenceClockEl.p37FromShell = !!fromShell;
+  if(fromShell){
+    Promise.resolve(fromShell).then(u=>{ if(!silenceState.active) return; silenceClockEl.src = u; play(); }, ()=>{ silenceFromShellFailed = true; runSilenceClock(); });
+    return;
+  }
+  silenceClockUrl = URL.createObjectURL(silentWavBlob(piece));
   silenceClockEl.src = silenceClockUrl;
-  silenceClockEl.play().catch(err=> playLog("silence clock wouldn't start: " + (err && err.name)));
+  play();
 }
 function stopSilenceClock(){ if(silenceClockEl && !silenceClockEl.paused) silenceClockEl.pause(); }
 function stopSilenceKeepAlive(){
@@ -54273,7 +54302,7 @@ if(IN_DESKTOP_APP){
   window.addEventListener("resize", fitHeight);
 }
 const DESKTOP_BRIDGE_NEEDED = +((document.querySelector('meta[name="desktop-bridge"]') || {}).content || 1);
-let desktopShell = null; // {version, bridge, pages, device, updates, zoom, trash (2.5.2), watch (2.5.3), append_range (2.5.3), files_http, typed_path (2.5.6), opened (2.6.0), slow_route (2.7.0), close_seen (2.7.1)}
+let desktopShell = null; // {version, bridge, pages, device, updates, zoom, trash (2.5.2), watch (2.5.3), append_range (2.5.3), files_http, typed_path (2.5.6), opened (2.6.0), slow_route (2.7.0), close_seen (2.7.1), silence (2.7.4)}
 async function desktopShellCheck(){
   if(!IN_DESKTOP_APP || !window.__TAURI__ || !window.__TAURI__.core) return;
   try{ desktopShell = await window.__TAURI__.core.invoke("p37_shell_info"); }catch(err){ desktopShell = {version: "?", bridge: 0}; }
