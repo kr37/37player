@@ -64,6 +64,19 @@ pub fn answer(req: &Request, token: &str, find: &dyn Fn(&str, &str) -> Result<Pa
     let rest = crate::files::percent_decode(rest);
     let Some((root, rel)) = rest.split_once('/') else { return refuse(out, "404 Not Found") };
     let rel = crate::files::strip_type_suffix(rel);
+    // Silence made to length (shell 2.7.4, files::silence_wav), as p37lib serves it.
+    if let Some(ms) = crate::files::silence_asked(root, rel) {
+        let all = crate::files::silence_wav(ms);
+        let len = all.len() as u64;
+        let Ok((start, end, partial)) = crate::files::range_of(req.range.as_deref(), len) else {
+            return out.write_all(head("416 Range Not Satisfiable", &[("Content-Range", format!("bytes */{}", len)), ("Content-Length", "0".into())]).as_bytes());
+        };
+        let mut extra = vec![("Content-Type", "audio/wav".to_string()), ("Accept-Ranges", "bytes".to_string()), ("Content-Length", (end - start).to_string())];
+        if partial { extra.push(("Content-Range", format!("bytes {}-{}/{}", start, end - 1, len))); }
+        out.write_all(head(if partial { "206 Partial Content" } else { "200 OK" }, &extra).as_bytes())?;
+        if req.method == "HEAD" { return Ok(()); }
+        return out.write_all(&all[start as usize..end as usize]);
+    }
     let Ok(full) = find(root, rel) else { return refuse(out, "404 Not Found") };
     let len = match std::fs::metadata(&full) { Ok(m) if m.is_file() => m.len(), _ => return refuse(out, "404 Not Found") };
     let (start, end, partial) = match req.range.as_deref() {
@@ -163,6 +176,17 @@ mod tests {
         assert!(ask("PUT", p, None, &d).0.starts_with("HTTP/1.1 405"));
         assert!(ask("OPTIONS", p, None, &d).0.starts_with("HTTP/1.1 204"));
         let _ = std::fs::remove_dir_all(&d);
+    }
+    #[test]
+    fn serves_silence_made_to_length() {
+        let d = std::env::temp_dir();
+        let (h, b) = ask("GET", "/s3cret/_silence/2500", None, &d);
+        assert!(h.starts_with("HTTP/1.1 200") && h.contains("Content-Type: audio/wav") && h.contains(&format!("Content-Length: {}", 44 + 20_000)), "{}", h);
+        assert_eq!(b, crate::files::silence_wav(2500));
+        let (h, b) = ask("GET", "/s3cret/_silence/2500", Some("bytes=44-"), &d);
+        assert!(h.starts_with("HTTP/1.1 206") && h.contains("Content-Range: bytes 44-20043/20044"), "{}", h);
+        assert!(b.len() == 20_000 && b.iter().all(|&x| x == 128));
+        assert!(ask("GET", "/wrong/_silence/2500", None, &d).0.starts_with("HTTP/1.1 403"), "the secret still");
     }
     // By hand, against a real WebKitGTK window: P37_FS_DIR=<folder> cargo test --lib fileserver -- --ignored
     // serves that folder as root "lib-a" at http://127.0.0.1:8897/s3cret/lib-a/… for two minutes.

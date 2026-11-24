@@ -133,7 +133,7 @@ fn p37_opened_take(opened: tauri::State<'_, Opened>) -> Vec<OpenedFile> {
 const BRIDGE: u32 = 2;
 
 #[derive(serde::Serialize)]
-struct ShellInfo { version: String, bridge: u32, pages: bool, device: bool, updates: bool, zoom: bool, trash: bool, watch: bool, append_range: bool, typed_path: bool, opened: bool, slow_route: bool, close_seen: bool, files_http: Option<String> }
+struct ShellInfo { version: String, bridge: u32, pages: bool, device: bool, updates: bool, zoom: bool, trash: bool, watch: bool, append_range: bool, typed_path: bool, opened: bool, slow_route: bool, close_seen: bool, silence: bool, files_http: Option<String> }
 
 // The shell's version is the page's version as of the shell's own last
 // change (tauri.conf.json "version"), like sync.php's.
@@ -156,6 +156,8 @@ fn p37_shell_info(app: tauri::AppHandle) -> ShellInfo {
         slow_route: true,
         // close_seen: the page answers each close at once (p37_close_seen), and one that doesn't gets "isn't responding" (closing.rs, shell 2.7.1).
         close_seen: true,
+        // silence: silent WAVs made to length at p37lib://localhost/_silence/<ms> (Linux: the file server's /_silence/<ms>) (files::silence_wav, shell 2.7.4).
+        silence: true,
         // files_http: where recordings are also served, on Linux (fileserver.rs, shell 2.5.0).
         files_http: app.try_state::<fileserver::FileServer>().map(|f| f.base.clone()) }
 }

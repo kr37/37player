@@ -804,6 +804,40 @@ pub fn file_for(app: &tauri::AppHandle, root: &str, rel: &str) -> Result<PathBuf
 
 const SERVE_PIECE: u64 = 4 << 20; // an open-ended range gets at most this much at a time
 
+// ---- Silence made to length (shell 2.7.4; desktop/AUDIT-boundaries.md 2.1,
+// the audit's fix 11, L; kr37, 23 Nov 2026: "the shell's silence, made to
+// length"). A silence on a computer plays a silent recording exactly as long
+// as the time left, up to 30 s at a time, as a timer the system keeps on
+// time even for a covered window (its `ended`); the page made those WAVs
+// itself, and so its own memory held audio the media process waited on, the
+// arrangement of the 18 Nov freeze. Now the page asks for
+// p37lib://localhost/_silence/<ms> (Linux: the file server's /_silence/<ms>):
+// a WAV header and zeros, 8 kHz 8-bit mono as before, made on request.
+// No file is kept anywhere. "_silence" is never a root's name (roots are
+// "lib-…", "in-…", "place", "open-…").
+pub const SILENCE_ROOT: &str = "_silence";
+pub const SILENCE_MAX_MS: u64 = 120_000;
+pub fn silence_wav(ms: u64) -> Vec<u8> {
+    let n = ((ms.min(SILENCE_MAX_MS) * 8) as u32).max(1); // 8 samples a millisecond
+    let mut v = Vec::with_capacity(44 + n as usize);
+    v.extend_from_slice(b"RIFF"); v.extend_from_slice(&(36 + n).to_le_bytes()); v.extend_from_slice(b"WAVEfmt ");
+    v.extend_from_slice(&16u32.to_le_bytes()); v.extend_from_slice(&1u16.to_le_bytes()); v.extend_from_slice(&1u16.to_le_bytes());
+    v.extend_from_slice(&8000u32.to_le_bytes()); v.extend_from_slice(&8000u32.to_le_bytes()); v.extend_from_slice(&1u16.to_le_bytes()); v.extend_from_slice(&8u16.to_le_bytes());
+    v.extend_from_slice(b"data"); v.extend_from_slice(&n.to_le_bytes());
+    v.resize(44 + n as usize, 128); // 8-bit samples: 128 is silence
+    v
+}
+/// The length asked for at "_silence/<ms>", or None for anything else.
+pub fn silence_asked(root: &str, rel: &str) -> Option<u64> {
+    if root != SILENCE_ROOT { return None; }
+    let ms: u64 = rel.split('/').next()?.parse().ok()?;
+    (ms > 0).then_some(ms.min(SILENCE_MAX_MS))
+}
+/// Bytes start..end of `all` for a Range header (None: all of it), as (start, end, partial); Err for one that can't be served.
+pub fn range_of(range: Option<&str>, len: u64) -> Result<(u64, u64, bool), ()> {
+    match range { Some(h) => parse_range(h, len).map(|(s, e)| (s, e, true)).ok_or(()), None => Ok((0, len, false)) }
+}
+
 // The answer to a browser's "may I?" before a cross-origin request with a
 // Range header (shell 2.2.2): the page's converter worker reads a big file
 // a block at a time by its address (page 2.2.039), and WebKit may ask first.
@@ -823,6 +857,19 @@ pub fn serve(app: &tauri::AppHandle, req: &tauri::http::Request<Vec<u8>>) -> tau
     let path = percent_decode(req.uri().path().trim_start_matches('/'));
     let Some((root, rel)) = path.split_once('/') else { return fail(StatusCode::NOT_FOUND, "no root".into()) };
     let rel = strip_type_suffix(rel);
+    if let Some(ms) = silence_asked(root, rel) {
+        let all = silence_wav(ms);
+        let len = all.len() as u64;
+        let Ok((start, end, partial)) = range_of(req.headers().get("range").and_then(|v| v.to_str().ok()), len) else {
+            return Response::builder().status(StatusCode::RANGE_NOT_SATISFIABLE).header("Content-Range", format!("bytes */{}", len)).header("Access-Control-Allow-Origin", "*").body(vec![]).unwrap();
+        };
+        let body = all[start as usize..end as usize].to_vec();
+        let mut r = Response::builder()
+            .header("Content-Type", "audio/wav").header("Accept-Ranges", "bytes").header("Content-Length", body.len().to_string())
+            .header("Access-Control-Allow-Origin", "*").header("Access-Control-Allow-Headers", "Range").header("Access-Control-Expose-Headers", "Content-Range, Content-Length, Accept-Ranges");
+        r = if partial { r.status(StatusCode::PARTIAL_CONTENT).header("Content-Range", format!("bytes {}-{}/{}", start, end.saturating_sub(1), len)) } else { r.status(StatusCode::OK) };
+        return r.body(body).unwrap();
+    }
     let base = match roots(app).get_read(root, rel) { Ok(b) => b, Err(e) => return fail(StatusCode::NOT_FOUND, e) };
     let full = match resolve(&base, rel) { Ok(p) => p, Err(e) => return fail(StatusCode::FORBIDDEN, e) };
     let len = match fs::metadata(&full) { Ok(m) if m.is_file() => m.len(), _ => return fail(StatusCode::NOT_FOUND, "not there".into()) };
@@ -905,6 +952,24 @@ pub fn mime_for(rel: &str) -> &'static str {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn silence_made_to_length() {
+        let w = super::silence_wav(17_350);
+        assert_eq!(&w[0..4], b"RIFF"); assert_eq!(&w[8..16], b"WAVEfmt ");
+        let n = u32::from_le_bytes([w[40], w[41], w[42], w[43]]) as usize;
+        assert_eq!(n, 17_350 * 8, "8 kHz: 8 samples a millisecond");
+        assert_eq!(w.len(), 44 + n);
+        assert!(w[44..].iter().all(|&b| b == 128), "8-bit silence");
+        assert_eq!(u32::from_le_bytes([w[24], w[25], w[26], w[27]]), 8000);
+        assert_eq!(super::silence_asked("_silence", "30000"), Some(30_000));
+        assert_eq!(super::silence_asked("_silence", "999999"), Some(super::SILENCE_MAX_MS), "at most two minutes");
+        assert_eq!(super::silence_asked("_silence", "0"), None);
+        assert_eq!(super::silence_asked("_silence", "x"), None);
+        assert_eq!(super::silence_asked("lib-main", "30000"), None, "only its own name");
+        assert_eq!(super::range_of(Some("bytes=44-"), 100), Ok((44, 100, true)));
+        assert_eq!(super::range_of(None, 100), Ok((0, 100, false)));
+        assert!(super::range_of(Some("bytes=200-"), 100).is_err());
+    }
     #[test]
     fn bytes_by_either_route() {
         use tauri::ipc::InvokeBody;
