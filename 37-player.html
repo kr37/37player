@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.7.009">
+<meta name="app-version" content="2.7.010">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -4133,7 +4133,7 @@ const desktopCallsUnderWay = new Set();
 function desktopNoteRoute(cmd, p){
   const call = {cmd, at: Date.now()};
   desktopCallsUnderWay.add(call);
-  const settled = ()=> desktopCallsUnderWay.delete(call);
+  const settled = ()=>{ desktopCallsUnderWay.delete(call); desktopStartProgress(); };
   p.then(settled, settled);
   return p.then(r=>{
     if(cmd === "fs_write" && r === "slow") desktopIpcSwitched(cmd);
@@ -24446,9 +24446,12 @@ function signalAppUp(){
   }catch(err){}
 }
 function openStorageNotResponding(){
-  signalAppUp();
-  backdrop.dataset.busy = "1";
   const app = START_APP_STEPS.includes(startStep);
+  // Storage that doesn't answer isn't the page's fault, so it counts as
+  // started; waiting for the desktop app at one of its steps doesn't
+  // (2.7.010): a new page that hangs there is what the shell's watch is for.
+  if(!app) signalAppUp();
+  backdrop.dataset.busy = "1";
   openModal(`<h3>${escapeHtmlText(t(app ? "startStuckAppTitle" : "storageStuckTitle"))}</h3>
     <p id="storageStuckBody">${escapeHtmlText(app ? t("startStuckAppBody", {step: t(START_STEP_KEYS[startStep])}) : t("storageStuckBody"))}</p>
     <div class="modal-actions"><button class="btn primary" type="button" id="storageStuckTry">${escapeHtmlText(t("notLoadedTryAgain"))}</button></div>`);
@@ -24470,8 +24473,26 @@ const START_STEP_KEYS = {shell: "startStepShell", libraries: "startStepLibraries
 const START_APP_STEPS = ["shell", "libraries", "folder", "rename", "places"];
 const START_STUCK_MS = 8000;
 let startStep = "", startStepsSaid = new Set();
+/* A downloaded page's start, said as it gets on (2.7.010, shell 2.7.6;
+   desktop/AUDIT-boundaries.md 1.9, the audit's fix 14, G): the shell sets a
+   new page aside after a minute with no progress at all, or ten minutes in
+   all, where it had been a minute from its start. Progress is real
+   progress: each step of the start, and each call to the shell that comes
+   back meanwhile (desktopNoteRoute), at most every 2 s, until the library
+   has loaded (signalAppUp). A start stuck at one step says nothing. */
+let startProgressSaidAt = 0;
+function desktopStartProgress(){
+  try{
+    if(window.__37up || !IN_DESKTOP_APP || !(desktopShell && desktopShell.page_progress)) return;
+    const now = Date.now();
+    if(now - startProgressSaidAt < 2000) return;
+    startProgressSaidAt = now;
+    window.__TAURI__.core.invoke("p37_page_progress").catch(()=>{});
+  }catch(err){}
+}
 function startStepIs(step){
   startStep = step;
+  desktopStartProgress();
   const body = document.getElementById("storageStuckBody");
   if(body && START_APP_STEPS.includes(step)) body.textContent = t("startStuckAppBody", {step: t(START_STEP_KEYS[step])});
 }
@@ -54387,7 +54408,7 @@ if(IN_DESKTOP_APP){
   window.addEventListener("resize", fitHeight);
 }
 const DESKTOP_BRIDGE_NEEDED = +((document.querySelector('meta[name="desktop-bridge"]') || {}).content || 1);
-let desktopShell = null; // {version, bridge, pages, device, updates, zoom, trash (2.5.2), watch (2.5.3), append_range (2.5.3), files_http, typed_path (2.5.6), opened (2.6.0), slow_route (2.7.0), close_seen (2.7.1), silence (2.7.4), append_at (2.7.5)}
+let desktopShell = null; // {version, bridge, pages, device, updates, zoom, trash (2.5.2), watch (2.5.3), append_range (2.5.3), files_http, typed_path (2.5.6), opened (2.6.0), slow_route (2.7.0), close_seen (2.7.1), silence (2.7.4), append_at (2.7.5), page_progress (2.7.6)}
 async function desktopShellCheck(){
   if(!IN_DESKTOP_APP || !window.__TAURI__ || !window.__TAURI__.core) return;
   try{ desktopShell = await window.__TAURI__.core.invoke("p37_shell_info"); }catch(err){ desktopShell = {version: "?", bridge: 0}; }

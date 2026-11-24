@@ -57,7 +57,7 @@
     }
     for(const k of ['toRoot', 'to_root']) if(args[k] != null && opened[args[k]] != null) throw new Error('no folder called ' + args[k] + ' on the list');
     switch(cmd){
-      case 'p37_shell_info': return {version: '2.0.000', bridge: 2, pages: false, device: true, updates: !!window.__fakeShellUpdates, zoom: !!window.__fakeShellZoom, trash: window.__fakeShellTrash !== false, watch: true, append_range: !window.__fakeNoAppendRange, typed_path: !!window.__fakeShellTypedPath, opened: !!window.__fakeShellOpened, slow_route: !!window.__fakeShellSlowRoute, close_seen: !!window.__fakeShellCloseSeen, silence: !!window.__fakeShellSilence, append_at: !!window.__fakeShellAppendAt, files_http: window.__fakeFilesHttp || null};
+      case 'p37_shell_info': return {version: '2.0.000', bridge: 2, pages: !!window.__fakeShellPages, device: true, updates: !!window.__fakeShellUpdates, zoom: !!window.__fakeShellZoom, trash: window.__fakeShellTrash !== false, watch: true, append_range: !window.__fakeNoAppendRange, typed_path: !!window.__fakeShellTypedPath, opened: !!window.__fakeShellOpened, slow_route: !!window.__fakeShellSlowRoute, close_seen: !!window.__fakeShellCloseSeen, silence: !!window.__fakeShellSilence, append_at: !!window.__fakeShellAppendAt, page_progress: !!window.__fakeShellPageProgress, files_http: window.__fakeFilesHttp || null};
       case 'p37_opened_take': { if(!window.__fakeShellOpened) throw new Error('unknown command'); await openedAtStart; const w = openedWaiting; openedWaiting = []; return w; }
       // The Size setting, by the shell (2.4.000): what it was asked for is kept for the test.
       case 'p37_zoom': if(!window.__fakeShellZoom) throw new Error('unknown command'); (window.__fakeZooms = window.__fakeZooms || []).push(args.scale); return null;
@@ -67,7 +67,9 @@
       case 'p37_device_get': return JSON.parse(localStorage.getItem('__fakeDevice') || '{}');
       case 'p37_device_put': localStorage.setItem('__fakeDevice', JSON.stringify(args.values || {})); return null;
       case 'p37_page_info': return {running: '', bundled: '', ready: null, reverted: null, channel: 'test', enabled: false};
-      case 'p37_page_ok': return null;
+      case 'p37_page_ok': (window.__fakePageOk = window.__fakePageOk || []).push(Date.now()); return null;
+      // pageprogress.js: the page's start getting on (shell 2.7.6).
+      case 'p37_page_progress': if(!window.__fakeShellPageProgress) throw new Error('unknown command'); (window.__fakeProgress = window.__fakeProgress || []).push(Date.now()); return null;
       case 'p37_quit': window.__fakeQuits = (window.__fakeQuits || 0) + 1; return null;
       // closeseen.js: the page answering a close (shell 2.7.1), with the dialog's words.
       case 'p37_close_seen': if(!window.__fakeShellCloseSeen) throw new Error('unknown command'); (window.__fakeCloseSeen = window.__fakeCloseSeen || []).push(args && args.texts); return null;
