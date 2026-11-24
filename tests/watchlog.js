@@ -21,7 +21,7 @@ const log = (p)=> p.evaluate(()=> window.__log().join('\n'));
   await p.evaluateOnNewDocument((shell)=>{
     window.__noAutoConverter = true; window.__fakeShellNoPlace = true; window.__diskBlobMin = 1048576;
     if(!sessionStorage.getItem('watchOnce')){ sessionStorage.setItem('watchOnce', '1');
-      window.__fakeWatch = {stalls: [{at: Date.UTC(2026, 10, 16, 13, 22, 40), ms: 31200, focused: true}, {at: Date.UTC(2026, 10, 16, 13, 30, 0), ms: 4100, focused: false}],
+      window.__fakeWatch = {stalls: [{at: Date.UTC(2026, 10, 16, 13, 22, 40), ms: 31200, focused: true}, {at: Date.UTC(2026, 10, 16, 13, 30, 0), ms: 4100, focused: false}], page_ended: [Date.UTC(2026, 10, 16, 13, 31, 5)],
         last_session: {started: Date.UTC(2026, 10, 16, 11, 40), alive: Date.UTC(2026, 10, 16, 13, 23, 30), version: '2.5.3', panic: 'called `Option::unwrap()` on a `None` value (src/files.rs:88)'}}; }
     (0, eval)(shell);
   }, SHELL);
@@ -34,6 +34,7 @@ const log = (p)=> p.evaluate(()=> window.__log().join('\n'));
   let L = await log(p);
   ok(/37 Player didn't close normally last time \(app 2\.5\.3, last seen running at .+\); it stopped on an error: called `Option::unwrap\(\)` on a `None` value \(src\/files\.rs:88\)/.test(L), 'the last session ending unexpectedly, with the error, is in the playback log');
   ok(/the app's window didn't respond for 31 s, from \S+/.test(L) && /didn't respond for 4 s, from .+ \(in the background\)/.test(L), 'and each time the window didn\'t respond, in front or in the background');
+  ok(/the window's page stopped at .+? \(its process crashed or the system ended it, perhaps for memory\); the app reloaded it/.test(L), 'the page\'s process ending (shell 2.7.2) is in the playback log');
   ok(!/this start was a reload/.test(L), 'a fresh start isn\'t called a reload');
   // Asked again 20 s later: nothing new, so nothing more.
   const n1 = (L.match(/didn't respond/g) || []).length;

@@ -35,6 +35,7 @@ async function start(b, answers){
   let p = await start(b, true);
   let seen = await p.evaluate(()=> window.__fakeCloseSeen || []);
   ok(seen.length >= 1 && seen[0] && seen[0].title === "37 Player isn't responding" && seen[0].quit === 'Quit' && seen[0].wait === 'Wait' && /Quit anyway\?/.test(seen[0].body), 'at its start the page says it answers closes, with the dialog\'s words (' + JSON.stringify(seen[0]) + ')');
+  ok(seen[0] && seen[0].ended_title === "37 Player's window keeps stopping" && seen[0].reload === 'Reload' && /three times in two minutes/.test(seen[0].ended_body), 'and the words for "keeps stopping" (shell 2.7.2)');
   // A close: answered at once, saved, quit.
   const n0 = seen.length;
   await p.evaluate(()=> window.__fakeEmit('p37-close-requested'));
