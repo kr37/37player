@@ -545,9 +545,38 @@ any reason, the page freezes at its next such call. Theirs.
 
 **Fixes:**
 
-- **L** (page, small): on computers, play silences from a silent file the shell serves (p37lib), so no page-made audio plays there at all. Risk: low. The silence clock's timing stays as is; only where its bytes come from changes.
-- **M** (page, a decision for kr37): play recordings of 32 MB or less from p37lib too. Only if the sample in fix 10 shows that it takes the page's main thread out of the path. Risk: medium, since it touches every track. A d build for a few days of kr37's own use first.
-- **N** (big, a decision for later): in the desktop app, play audio in the shell, with the page only sending "play this from 2:13" and "pause" without waiting. Then neither the page nor WebKit's media process is in the path, and a hang in Apple's audio stays on a shell thread while the window carries on. Weeks of work, and the loudness and waveform code would need to follow. Listed so it's weighed, not proposed now.
+- **L** (shell and page, small): on computers, play silences from silent audio the shell supplies, so no page-made audio plays there at all.
+  - **Why a silence plays audio at all:** a silence plays audio only as a reliable timer (1.4.158). A covered window on a Mac gets few timer ticks, but a recording's `ended` still comes on time. Each piece is exactly as long as the time left (up to 30 s), so it ends by itself; a `pause()` happens only when someone skips or stops. A side benefit: the sound output stays active through a long silence, so a sleeping USB, Bluetooth or HDMI output can't clip the start of the next track.
+  - **kr37's idea (23 Nov):** silent MP3s of each length in a folder of the library (e.g. `My library/music/Silence/`).
+  - **Proposed instead:** the shell makes a silent WAV of exactly the length asked, on request, at an address of its own (e.g. `p37lib://localhost/_silence/17350`: a WAV header and zeros, 8 kHz 8-bit like today's). No files are kept anywhere.
+  - **Why not files in the library:**
+    - a silence's length is anything (17.35 s), and an MP3 can't be exact;
+    - a folder per library;
+    - it would be seen in Finder, and by backups, sync and Check library;
+    - every device of a shared library would need the same files.
+  - **Fallback:** the page uses it only when `p37_shell_info` says the shell has it; otherwise it makes the WAV itself, as today.
+  - **Risk:** low. The clock's timing is unchanged; only where the bytes come from changes.
+- **M** (page, a decision for kr37): play recordings of 32 MB or less from p37lib too.
+  - **kr37 (23 Nov):** one way of playing, not one for big files and one for small, seems simpler. It is, within the desktop app. The browsers keep playing from their own storage, so it's one way per kind of 37 Player.
+  - **A known cost, from the memory test of 20 Nov night** (report 2026-11-21-035158): when the Mac can't decode a file, playing it from memory says "can't be played", but playing it through p37lib runs the time in silence.
+  - **So with everything on p37lib, every unplayable file would fail silently on a Mac.** M should therefore follow the planned format check (NOTES, "The silent WebM, settled": a few tiny samples tried from memory at setup and after an app or system update), so a kind this device can't play gets the can't-be-played dialog before it's played.
+  - **Order:** the format check, then M as a d build for a few days of kr37's own use. The sample in fix 10 is no longer a condition, since simplicity is reason enough, but it's still worth taking.
+  - **Risk:** medium, since it touches every track.
+- **N** (big, a decision for later): in the desktop app, play audio in the shell, with the page only sending "play this from 2:13" and "pause" without waiting.
+  - **What it gives:** neither the page nor WebKit's media process is in the path, and a hang in Apple's audio stays on a shell thread while the window carries on. Also gone:
+    - turning the audio engine on after a click;
+    - Web Audio's quirks;
+    - p37lib's silent failures.
+  - **kr37 (23 Nov):** it was deferred because the browsers' 37 Player would then play quite differently from the desktop app's, much like keeping two programs.
+  - **The answer to that is a narrow seam:** one "player" with two makers behind it, the browser's audio element and the shell's player. Everything else (playlists, the library, the screens) stays shared. Through the seam:
+    - play from a time, pause, seek, volume;
+    - position and track-ended back.
+
+    That's maintainable, but real:
+    - loudness, previews, the Edit preview, Split's preview and Now Playing all go through it;
+    - the shell's player needs tests of its own;
+    - the iPad stays on the browser's player, so that one must stay good anyway.
+  - **Weeks of work.** Listed so it's weighed, not proposed now; fix I's records should decide it.
 - **I** (1.13) at least records a freeze if one happens.
 
 ### 2.2 Web Audio
@@ -561,7 +590,10 @@ How it's used:
   - a Mac waking from sleep.
 
   A routed player then plays in silence, with its time moving. Possible on all systems. Inferred.
-- **The Mac mini's silent festival WebM** (macOS 12): still open, and not Web Audio (2.5.058's log). The test of playing it from memory will tell p37lib's delivery from decoding.
+- **The Mac mini's silent festival WebM** (macOS 12): settled by the memory test of 20 Nov night (report 2026-11-21-035158).
+  - macOS 12's WebKit can't decode this WebM, though it says it can.
+  - Played from memory, it's reported as unplayable; through p37lib the time runs in silence.
+  - Delivery isn't the cause. Converting is the remedy, and the format check is proposed (see fix M).
 
 **Fix O** (page, small): log the Web Audio engine's state changes (`onstatechange`), and resume it when it's "interrupted" and something is playing. Risk: low.
 
@@ -614,12 +646,29 @@ No shell, so only the page, WebKit and iPadOS:
 
 - **The silent loop** is still used on phones and tablets, where it keeps the lock screen and playback going. Its `pause()` is the call that hung on the Mac. Whether iPadOS can deadlock the same way is unknown; the iPad's WebKit has the same page / media / Networking split. To check: a few hours of a playlist with silences and stops, the screen locked and unlocked many times. An iPad can't be sampled as a Mac can, but a freeze would show. Owner: ours to stop triggering, if it's real.
 - **Being put to sleep:** iPadOS pauses or ends a page in the background. A Home Screen app playing audio is kept awake, which is what the loop is for. If the page is ended, it opens again from storage at the next visit, and the session's place comes back. Inferred; nothing to fix unless seen.
-- **Memory:** iPadOS ends a page that uses too much, with no warning: the page reloads. Big imports on an iPad are the risk. Inferred.
+- **Memory:** iPadOS ends a page that uses too much, with no warning: the page reloads. Big imports on an iPad are the risk. Inferred. Today the reload says nothing about it (fix T).
 - **Audio interruptions:** a call or Siri suspends the Web Audio engine (fix O).
 - **Storage:** Safari's 7-day rule (not for Home Screen apps), and IndexedDB hangs (2.3). Covered by the Reliability help topic and the storage watch.
 
 **Fix Q** (testing, not code): the silent-loop test above, on the IKRC iPad's
 model or kr37's, before an iPad is relied on for a puja.
+
+**Fix T** (page, small; kr37's question, 23 Nov): notice an unexpected end at
+the next start, and say what it was doing. For every browser version (iPad,
+iPhone, Android, desktop browsers); the desktop app has the shell's watch and
+fix J.
+
+- **Keeping track:** the page keeps a small record in localStorage:
+  - "on screen, doing X" (playing, importing N files, converting, receiving from the shared library…), written when an activity starts or ends, and on the existing 5 s position timer while on screen (no new timer);
+  - "put away", written when the page is hidden (`visibilitychange`, `pagehide`).
+- **At the next start:** if the last record says on screen, with no "put away" after it, the page ended while in front of you without being closed or put away.
+  - On an iPad or iPhone that's almost always the system ending a page that used too much memory.
+  - Swiping 37 Player away, locking the screen and switching apps all hide the page first, so they don't count.
+- **What it says:** a dialog, logged too and so included in feedback, along the lines of: "37 Player closed unexpectedly at 8:14 PM while importing 240 files. On an iPad this usually means it ran short of memory; importing in smaller batches helps." If it was playing, the session's place is already kept.
+- **Limits:**
+  - No browser says *why* a page ended, so the wording says "usually".
+  - A battery going flat with the screen on would look the same: rare.
+- **Risk:** low. The activity named is also what tells us which work needs to be lighter on an iPad.
 
 ### 2.8 Windows
 
@@ -769,16 +818,17 @@ safety for the least risk:
 | 8 | **J** — the page's process ending: logged, reloaded, no loop | shell | small | low | 1.14 |
 | 9 | **I** — note when the page's regular `p37_watch` stops, in the stall watch's existing check; a shell hang that never ended is named. **Decided: record only, linked to F, early** | shell (+ a line of page) | small | low | 1.13, 2.1, 2.5 |
 | 10 | **Measurements** (above) | Mac mini, iPad | — | none | 1.1, 2.1, 2.4 |
-| 11 | **L** — silences from the disk on computers | page | small | low | 2.1 |
+| 11 | **L** — silences from silent audio the shell makes to length (not files) | shell + page | small | low | 2.1 |
 | 12 | **B** — appends that can't land twice; `.p37part` size checked before the rename | shell + page | medium | low | 1.1, 1.4 |
 | 13 | **S** — time limits on sync and Drive requests | page | small | low | 3.4 |
 | 14 | **G** — a downloaded page is set aside after 60 s *without progress* (10 min at most), not 60 s from its start | shell + page | small | low | 1.9 |
 | 15 | **H** — the shell's update download: time limit, progress, Cancel | shell + page | small | low | 1.10 |
 | 16 | **O** — Web Audio's state logged, resumed after an interruption | page | small | low | 2.2 |
 | 17 | **C** — wry reads request bodies in 64 KB pieces (if 10 shows it matters) | wry patch | small | low | 1.1 |
-| 18 | **M** — small recordings from p37lib (if 10 shows it helps) | page | small code, wide effect | medium | 2.1 |
+| 18 | **M** — one way of playing in the desktop app: every recording from p37lib, after the format check | page | small code, wide effect | medium | 2.1 |
 | 19 | p37lib: no whole-file answers; the file server's write limit and accept back-off | shell | small | low | 1.5, 1.6 |
 | 20 | **Q** — the iPad silent-loop test | testing | — | none | 2.7 |
+| 21 | **T** — an unexpected end noticed at the next start, with what it was doing (browsers) | page | small | low | 2.7 |
 | — | **N** — playback in the shell | shell + page | large | high | 2.1 (for later) |
 
 Fixes 1 and 2 could go in one d build, since both only move work to other
