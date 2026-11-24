@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.7.010">
+<meta name="app-version" content="2.7.011">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -4808,6 +4808,8 @@ const STRINGS = {
     "shellUpdateBody": "Version {version} of the 37 Player app is ready to install (this one is {current}). Installing it restarts 37 Player; your libraries and playlists stay as they are.",
     "shellUpdateBtn": "Update and restart",
     "shellUpdateBusy": "Downloading and installing the new version… 37 Player restarts by itself when it's done.",
+    "shellUpdateProgress": "{got} of {total}",
+    "shellUpdateInstalling": "Installing… 37 Player restarts by itself in a moment.",
     "shellUpdateFailed": "The app couldn't update itself ({error}). You can download the new version from 37player.com instead.",
     "driveNotInDesktop": "Google Drive isn't available in the desktop app yet. Use a shared library on the droplet, or Google Drive from 37player.com in a browser.",
     "driveSignInBrowser": "Signing in to Google in your browser: come back here when it says Done.",
@@ -6979,6 +6981,8 @@ const STRINGS = {
     "shellUpdateBody": "La versión {version} de la aplicación 37 Player está lista para instalarse (esta es la {current}). Al instalarla, 37 Player se reinicia; tus bibliotecas y listas siguen como están.",
     "shellUpdateBtn": "Actualizar y reiniciar",
     "shellUpdateBusy": "Descargando e instalando la nueva versión… 37 Player se reinicia solo al terminar.",
+    "shellUpdateProgress": "{got} de {total}",
+    "shellUpdateInstalling": "Instalando… 37 Player se reiniciará solo en un momento.",
     "shellUpdateFailed": "La aplicación no pudo actualizarse ({error}). Puedes descargar la nueva versión desde 37player.com.",
     "driveNotInDesktop": "Google Drive aún no está disponible en la aplicación de escritorio. Use una biblioteca compartida en el servidor, o Google Drive desde 37player.com en un navegador.",
     "driveSignInBrowser": "Iniciando sesión en Google en tu navegador: vuelve aquí cuando diga que ha terminado.",
@@ -9140,6 +9144,8 @@ const STRINGS = {
     "shellUpdateBody": "La version {version} de l'application 37 Player est prête à être installée (celle-ci est la {current}). L'installer redémarre 37 Player ; vos bibliothèques et listes restent telles quelles.",
     "shellUpdateBtn": "Mettre à jour et redémarrer",
     "shellUpdateBusy": "Téléchargement et installation de la nouvelle version… 37 Player redémarre tout seul une fois terminé.",
+    "shellUpdateProgress": "{got} sur {total}",
+    "shellUpdateInstalling": "Installation… 37 Player redémarre tout seul dans un instant.",
     "shellUpdateFailed": "L'application n'a pas pu se mettre à jour ({error}). Vous pouvez télécharger la nouvelle version sur 37player.com.",
     "driveNotInDesktop": "Google Drive n'est pas encore disponible dans l'application de bureau. Utilisez une bibliothèque partagée sur le serveur, ou Google Drive depuis 37player.com dans un navigateur.",
     "driveSignInBrowser": "Connexion à Google dans votre navigateur : revenez ici quand il indique que c'est fait.",
@@ -11301,6 +11307,8 @@ const STRINGS = {
     "shellUpdateBody": "A versão {version} do aplicativo 37 Player está pronta para instalar (esta é a {current}). Ao instalá-la, o 37 Player reinicia; suas bibliotecas e listas continuam como estão.",
     "shellUpdateBtn": "Atualizar e reiniciar",
     "shellUpdateBusy": "Baixando e instalando a nova versão… O 37 Player reinicia sozinho quando terminar.",
+    "shellUpdateProgress": "{got} de {total}",
+    "shellUpdateInstalling": "A instalar… O 37 Player reinicia sozinho daqui a pouco.",
     "shellUpdateFailed": "O aplicativo não conseguiu se atualizar ({error}). Você pode baixar a nova versão em 37player.com.",
     "driveNotInDesktop": "O Google Drive ainda não está disponível no aplicativo de computador. Use uma biblioteca compartilhada no servidor, ou o Google Drive a partir de 37player.com num navegador.",
     "driveSignInBrowser": "A iniciar sessão no Google no seu navegador: volte aqui quando disser que terminou.",
@@ -13462,6 +13470,8 @@ const STRINGS = {
     "shellUpdateBody": "Version {version} der 37-Player-App ist bereit zur Installation (diese ist {current}). Beim Installieren startet 37 Player neu; Ihre Bibliotheken und Playlists bleiben, wie sie sind.",
     "shellUpdateBtn": "Aktualisieren und neu starten",
     "shellUpdateBusy": "Die neue Version wird geladen und installiert… 37 Player startet danach von selbst neu.",
+    "shellUpdateProgress": "{got} von {total}",
+    "shellUpdateInstalling": "Wird installiert… 37 Player startet gleich von selbst neu.",
     "shellUpdateFailed": "Die App konnte sich nicht aktualisieren ({error}). Sie können die neue Version stattdessen von 37player.com laden.",
     "driveNotInDesktop": "Google Drive ist in der Desktop-App noch nicht verfügbar. Nutzen Sie eine gemeinsame Bibliothek auf dem Server oder Google Drive über 37player.com in einem Browser.",
     "driveSignInBrowser": "Anmeldung bei Google in Ihrem Browser: Kommen Sie hierher zurück, wenn dort „Fertig“ steht.",
@@ -15623,6 +15633,8 @@ const STRINGS = {
     "shellUpdateBody": "37 Player 应用的 {version} 版已可安装（当前为 {current}）。安装后 37 Player 会重新启动；您的音乐库和播放列表保持不变。",
     "shellUpdateBtn": "更新并重启",
     "shellUpdateBusy": "正在下载并安装新版本… 完成后 37 Player 会自动重启。",
+    "shellUpdateProgress": "{got} / {total}",
+    "shellUpdateInstalling": "正在安装… 37 Player 稍后会自动重启。",
     "shellUpdateFailed": "应用无法自行更新（{error}）。您可以改从 37player.com 下载新版本。",
     "driveNotInDesktop": "桌面应用中暂时还不能使用 Google Drive。请使用服务器上的共享曲库，或在浏览器中通过 37player.com 使用 Google Drive。",
     "driveSignInBrowser": "正在浏览器中登录 Google：显示完成后请回到这里。",
@@ -17784,6 +17796,8 @@ const STRINGS = {
     "shellUpdateBody": "Phiên bản {version} của ứng dụng 37 Player đã sẵn sàng để cài (bản này là {current}). Khi cài, 37 Player sẽ khởi động lại; thư viện và danh sách phát của bạn vẫn giữ nguyên.",
     "shellUpdateBtn": "Cập nhật và khởi động lại",
     "shellUpdateBusy": "Đang tải và cài phiên bản mới… 37 Player sẽ tự khởi động lại khi xong.",
+    "shellUpdateProgress": "{got} / {total}",
+    "shellUpdateInstalling": "Đang cài… 37 Player sẽ tự khởi động lại trong giây lát.",
     "shellUpdateFailed": "Ứng dụng không tự cập nhật được ({error}). Bạn có thể tải phiên bản mới từ 37player.com.",
     "driveNotInDesktop": "Ứng dụng máy tính chưa dùng được Google Drive. Hãy dùng thư viện dùng chung trên máy chủ, hoặc Google Drive từ 37player.com trong trình duyệt.",
     "driveSignInBrowser": "Đang đăng nhập Google trong trình duyệt của bạn: quay lại đây khi trang báo đã xong.",
@@ -19945,6 +19959,8 @@ const STRINGS = {
     "shellUpdateBody": "Η έκδοση {version} της εφαρμογής 37 Player είναι έτοιμη για εγκατάσταση (αυτή είναι η {current}). Η εγκατάσταση επανεκκινεί το 37 Player· οι βιβλιοθήκες και οι λίστες σας μένουν ως έχουν.",
     "shellUpdateBtn": "Ενημέρωση και επανεκκίνηση",
     "shellUpdateBusy": "Λήψη και εγκατάσταση της νέας έκδοσης… Το 37 Player επανεκκινείται μόνο του όταν τελειώσει.",
+    "shellUpdateProgress": "{got} από {total}",
+    "shellUpdateInstalling": "Εγκατάσταση… Το 37 Player θα ξεκινήσει ξανά μόνο του σε λίγο.",
     "shellUpdateFailed": "Η εφαρμογή δεν μπόρεσε να ενημερωθεί ({error}). Μπορείτε να κατεβάσετε τη νέα έκδοση από το 37player.com.",
     "driveNotInDesktop": "Το Google Drive δεν είναι ακόμη διαθέσιμο στην εφαρμογή υπολογιστή. Χρησιμοποιήστε κοινόχρηστη βιβλιοθήκη στον διακομιστή, ή το Google Drive από το 37player.com σε πρόγραμμα περιήγησης.",
     "driveSignInBrowser": "Σύνδεση στο Google στο πρόγραμμα περιήγησής σας: επιστρέψτε εδώ όταν γράψει ότι τελείωσε.",
@@ -22106,6 +22122,8 @@ const STRINGS = {
     "shellUpdateBody": "La versione {version} dell'app 37 Player è pronta da installare (questa è la {current}). L'installazione riavvia 37 Player; le tue librerie e playlist restano come sono.",
     "shellUpdateBtn": "Aggiorna e riavvia",
     "shellUpdateBusy": "Download e installazione della nuova versione… 37 Player si riavvia da solo al termine.",
+    "shellUpdateProgress": "{got} di {total}",
+    "shellUpdateInstalling": "Installazione… 37 Player si riavvia da solo tra un attimo.",
     "shellUpdateFailed": "L'app non è riuscita ad aggiornarsi ({error}). Puoi scaricare la nuova versione da 37player.com.",
     "driveNotInDesktop": "Google Drive non è ancora disponibile nell'app per computer. Usa una libreria condivisa sul server, o Google Drive da 37player.com in un browser.",
     "driveSignInBrowser": "Accesso a Google nel tuo browser: torna qui quando dice che è fatto.",
@@ -45358,16 +45376,36 @@ async function offerShellUpdate(u){
   const c = await askChoice(t("shellUpdateTitle"), `<p>${escapeHtmlText(t("shellUpdateBody", {version: u.version, current: u.current}))}</p>${what.length ? `<ul>${what.map(w=> `<li>${escapeHtmlText(w)}</li>`).join("")}</ul>` : ""}`,
     [{label: t("shellUpdateBtn"), value: "go", kind: "primary"}, {label: t("notNowBtn"), value: null}]);
   if(c !== "go") return;
-  openModal(`<h3>${t("shellUpdateTitle")}</h3><p id="shellUpdating">${escapeHtmlText(t("shellUpdateBusy"))}</p>`);
+  /* Its download, with progress and Cancel (2.7.011, shell 2.7.7;
+     desktop/AUDIT-boundaries.md 1.10, the audit's fix 15, H): one that
+     stopped had left "Updating…" up for good. The shell gives up after a
+     minute with nothing arriving; Cancel stops it here; once the download
+     is whole, installing can't be stopped and the button goes. */
+  const withProgress = !!desktopShell.update_progress;
+  openModal(`<h3>${t("shellUpdateTitle")}</h3><p id="shellUpdating">${escapeHtmlText(t("shellUpdateBusy"))}</p>` +
+    (withProgress ? `<p class="settings-note" id="shellUpdateProgress"></p><div class="modal-actions"><button class="btn ghost" type="button" id="shellUpdateCancel">${escapeHtmlText(t("cancel"))}</button></div>` : ""));
+  let unlisten = null, cancelled = false;
+  if(withProgress){
+    try{
+      unlisten = await window.__TAURI__.event.listen("p37-shell-update-progress", (e)=>{
+        const pr = (e && e.payload) || {}, el = document.getElementById("shellUpdateProgress");
+        if(!el) return;
+        el.textContent = pr.total ? t("shellUpdateProgress", {got: fmtBytes(pr.got || 0), total: fmtBytes(pr.total)}) : fmtBytes(pr.got || 0);
+        if(pr.total && pr.got >= pr.total){ const c = document.getElementById("shellUpdateCancel"); if(c) c.remove(); el.textContent = t("shellUpdateInstalling"); }
+      });
+    }catch(err){}
+    const c = document.getElementById("shellUpdateCancel");
+    if(c) c.addEventListener("click", ()=>{ cancelled = true; c.disabled = true; desktopCall("p37_shell_update_cancel").catch(()=>{}); });
+  }
   try{ await saveState(); }catch(err){}
   playLog("the desktop app is updating itself to " + u.version);
   try{ await desktopCall("p37_shell_update_install"); }
   catch(err){
     closeOwnModal("#shellUpdating");
     const msg = err && err.message || String(err);
-    playLog("the desktop app couldn't update itself: " + msg);
-    alert(t("shellUpdateFailed", {error: msg}));
-  }
+    if(cancelled && /cancelled/.test(msg)){ playLog("the desktop app's update was cancelled"); }
+    else { playLog("the desktop app couldn't update itself: " + msg); alert(t("shellUpdateFailed", {error: msg})); }
+  }finally{ try{ unlisten && unlisten(); }catch(err){} }
 }
 function shellUpdateLater(){
   if(!desktopShellUpdates()) return;
@@ -54408,7 +54446,7 @@ if(IN_DESKTOP_APP){
   window.addEventListener("resize", fitHeight);
 }
 const DESKTOP_BRIDGE_NEEDED = +((document.querySelector('meta[name="desktop-bridge"]') || {}).content || 1);
-let desktopShell = null; // {version, bridge, pages, device, updates, zoom, trash (2.5.2), watch (2.5.3), append_range (2.5.3), files_http, typed_path (2.5.6), opened (2.6.0), slow_route (2.7.0), close_seen (2.7.1), silence (2.7.4), append_at (2.7.5), page_progress (2.7.6)}
+let desktopShell = null; // {version, bridge, pages, device, updates, zoom, trash (2.5.2), watch (2.5.3), append_range (2.5.3), files_http, typed_path (2.5.6), opened (2.6.0), slow_route (2.7.0), close_seen (2.7.1), silence (2.7.4), append_at (2.7.5), page_progress (2.7.6), update_progress (2.7.7)}
 async function desktopShellCheck(){
   if(!IN_DESKTOP_APP || !window.__TAURI__ || !window.__TAURI__.core) return;
   try{ desktopShell = await window.__TAURI__.core.invoke("p37_shell_info"); }catch(err){ desktopShell = {version: "?", bridge: 0}; }

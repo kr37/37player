@@ -57,13 +57,25 @@
     }
     for(const k of ['toRoot', 'to_root']) if(args[k] != null && opened[args[k]] != null) throw new Error('no folder called ' + args[k] + ' on the list');
     switch(cmd){
-      case 'p37_shell_info': return {version: '2.0.000', bridge: 2, pages: !!window.__fakeShellPages, device: true, updates: !!window.__fakeShellUpdates, zoom: !!window.__fakeShellZoom, trash: window.__fakeShellTrash !== false, watch: true, append_range: !window.__fakeNoAppendRange, typed_path: !!window.__fakeShellTypedPath, opened: !!window.__fakeShellOpened, slow_route: !!window.__fakeShellSlowRoute, close_seen: !!window.__fakeShellCloseSeen, silence: !!window.__fakeShellSilence, append_at: !!window.__fakeShellAppendAt, page_progress: !!window.__fakeShellPageProgress, files_http: window.__fakeFilesHttp || null};
+      case 'p37_shell_info': return {version: '2.0.000', bridge: 2, pages: !!window.__fakeShellPages, device: true, updates: !!window.__fakeShellUpdates, zoom: !!window.__fakeShellZoom, trash: window.__fakeShellTrash !== false, watch: true, append_range: !window.__fakeNoAppendRange, typed_path: !!window.__fakeShellTypedPath, opened: !!window.__fakeShellOpened, slow_route: !!window.__fakeShellSlowRoute, close_seen: !!window.__fakeShellCloseSeen, silence: !!window.__fakeShellSilence, append_at: !!window.__fakeShellAppendAt, page_progress: !!window.__fakeShellPageProgress, update_progress: !!window.__fakeShellUpdateProgress, files_http: window.__fakeFilesHttp || null};
       case 'p37_opened_take': { if(!window.__fakeShellOpened) throw new Error('unknown command'); await openedAtStart; const w = openedWaiting; openedWaiting = []; return w; }
       // The Size setting, by the shell (2.4.000): what it was asked for is kept for the test.
       case 'p37_zoom': if(!window.__fakeShellZoom) throw new Error('unknown command'); (window.__fakeZooms = window.__fakeZooms || []).push(args.scale); return null;
       // The shell updating itself (shellupd.js): window.__fakeShellUpdates = {version, current} or null (none).
       case 'p37_shell_update_check': return window.__fakeShellUpdates ? (window.__fakeShellUpdates.version ? window.__fakeShellUpdates : null) : Promise.reject('not this shell');
-      case 'p37_shell_update_install': window.__fakeShellInstalled = (window.__fakeShellInstalled || 0) + 1; return null;
+      case 'p37_shell_update_install':
+        // shellupdprog.js: a download in pieces with progress (shell 2.7.7), cancelled by p37_shell_update_cancel, or stalling (__fakeUpdateStalls).
+        if(window.__fakeShellUpdateProgress){
+          const total = 6 * 1048576; window.__fakeUpdateCancel = false;
+          for(let got = 0; got < total; ){
+            await new Promise(r=> setTimeout(r, 300));
+            if(window.__fakeUpdateCancel) throw 'cancelled';
+            if(window.__fakeUpdateStalls){ if(got >= 2 * 1048576){ await new Promise(r=> setTimeout(r, 1500)); throw 'the download stopped: nothing arrived for 60 s'; } }
+            got += 1048576; for(const fn of listeners['p37-shell-update-progress'] || []) fn({payload: {got, total}});
+          }
+        }
+        window.__fakeShellInstalled = (window.__fakeShellInstalled || 0) + 1; return null;
+      case 'p37_shell_update_cancel': if(!window.__fakeShellUpdateProgress) throw new Error('unknown command'); window.__fakeUpdateCancel = true; return true;
       case 'p37_device_get': return JSON.parse(localStorage.getItem('__fakeDevice') || '{}');
       case 'p37_device_put': localStorage.setItem('__fakeDevice', JSON.stringify(args.values || {})); return null;
       case 'p37_page_info': return {running: '', bundled: '', ready: null, reverted: null, channel: 'test', enabled: false};
