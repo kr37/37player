@@ -549,11 +549,9 @@ any reason, the page freezes at its next such call. Theirs.
   - **Why a silence plays audio at all:** a silence plays audio only as a reliable timer (1.4.158). A covered window on a Mac gets few timer ticks, but a recording's `ended` still comes on time. Each piece is exactly as long as the time left (up to 30 s), so it ends by itself; a `pause()` happens only when someone skips or stops. A side benefit: the sound output stays active through a long silence, so a sleeping USB, Bluetooth or HDMI output can't clip the start of the next track.
   - **kr37's idea (23 Nov):** silent MP3s of each length in a folder of the library (e.g. `My library/music/Silence/`).
   - **Proposed instead:** the shell makes a silent WAV of exactly the length asked, on request, at an address of its own (e.g. `p37lib://localhost/_silence/17350`: a WAV header and zeros, 8 kHz 8-bit like today's). No files are kept anywhere.
-  - **Why not files in the library:**
-    - a silence's length is anything (17.35 s), and an MP3 can't be exact;
-    - a folder per library;
-    - it would be seen in Finder, and by backups, sync and Check library;
-    - every device of a shared library would need the same files.
+  - **Decided (kr37, 23 Nov):** the shell's silence, made to length. He doesn't mind how this is done.
+  - **His folder of silences** was also a way for the library to be fully visible to other software, should anyone want to "go the other way" and point another player at it. Kadampa Centers' libraries already hold silence files in that way. That's a separate idea (a library other players can read: playlists plus real silence files), not a priority, and not part of this fix.
+  - **(Corrected:** an MP3 can be as exact as needed. It's made of frames of 1152 samples (26 ms), but an encoder's gapless header says how much to trim at each end, and players that read it play the length to the sample.**)**
   - **Fallback:** the page uses it only when `p37_shell_info` says the shell has it; otherwise it makes the WAV itself, as today.
   - **Risk:** low. The clock's timing is unchanged; only where the bytes come from changes.
 - **M** (page, a decision for kr37): play recordings of 32 MB or less from p37lib too.
