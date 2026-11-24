@@ -217,6 +217,49 @@ pub fn append(root: &Path, rel: &str, bytes: &[u8]) -> Result<(), String> {
     f.write_all(bytes).map_err(|e| e.to_string())
 }
 
+// Appends that can't land twice (shell 2.7.5; desktop/AUDIT-boundaries.md
+// 1.1 and 1.4, the audit's fix 12, B). After Tauri's switch to its slower
+// route a request the shell already carried out can come again (fix 3), and
+// an append that lands twice makes a longer, wrong recording. So an append
+// may say how big the file should be before it (`at`): when it isn't, the
+// append is refused ("the file is N bytes, not M: a piece is missing or came
+// twice") and nothing is written; the page then looks at the file's size and
+// goes on (the piece was already in) or writes the file again from the start.
+// An append without `at` (an older page) is taken as before.
+pub fn size_is(p: &Path, at: Option<u64>) -> Result<(), String> {
+    let Some(at) = at else { return Ok(()) };
+    let size = match fs::metadata(p) { Ok(m) => m.len(), Err(e) if e.kind() == std::io::ErrorKind::NotFound => 0, Err(e) => return Err(e.to_string()) };
+    if size == at { Ok(()) } else { Err(format!("the file is {} bytes, not {}: a piece is missing or came twice", size, at)) }
+}
+pub fn append_at(root: &Path, rel: &str, bytes: &[u8], at: Option<u64>) -> Result<(), String> {
+    if rel.is_empty() { return Err("no file name".into()); }
+    size_is(&resolve(root, rel)?, at)?;
+    append(root, rel, bytes)
+}
+
+// Leftovers of writes cut short (shell 2.7.5; the audit's 1.4: kr37, 23 Nov
+// 2026, general housekeeping, not one-time repair): "<name>.p37part" (a big
+// file written in pieces) and fs_write's own "<name>.p37tmp-…" (hidden from
+// fs_list, so the page can't see them) stay behind when the page reloads or
+// the app stops mid-write. Removed from a library's own folder when more
+// than a day old: no write takes that long. Never a folder used in place.
+pub const LEFTOVER_AGE_SECS: u64 = 24 * 3600;
+pub fn is_leftover(name: &str) -> bool { name.ends_with(".p37part") || name.contains(".p37tmp-") }
+pub fn tidy_leftovers(dir: &Path, now: std::time::SystemTime) -> (u64, u64) {
+    let (mut n, mut bytes) = (0u64, 0u64);
+    let Ok(rd) = fs::read_dir(dir) else { return (0, 0) };
+    for e in rd.flatten() {
+        let Ok(ft) = e.file_type() else { continue };
+        if ft.is_symlink() { continue; }
+        if ft.is_dir() { let (a, b) = tidy_leftovers(&e.path(), now); n += a; bytes += b; continue; }
+        if !is_leftover(&e.file_name().to_string_lossy()) { continue; }
+        let Ok(md) = e.metadata() else { continue };
+        let old = md.modified().ok().and_then(|t| now.duration_since(t).ok()).map(|d| d.as_secs() > LEFTOVER_AGE_SECS).unwrap_or(false);
+        if old && fs::remove_file(e.path()).is_ok() { n += 1; bytes += md.len(); }
+    }
+    (n, bytes)
+}
+
 // Bytes start..end of one file put on the end of another (made if it isn't
 // there), on disk (2.5.3): the page writes new details into a recording as
 // its new first bytes followed by the rest of the old file, and the rest
@@ -719,10 +762,12 @@ pub async fn fs_write(app: tauri::AppHandle, request: tauri::ipc::Request<'_>) -
     let h = |k: &str| request.headers().get(k).and_then(|v| v.to_str().ok()).map(percent_decode).ok_or_else(|| format!("no {} header", k));
     let (root, path) = (h("p37-root")?, h("p37-path")?);
     let adding = h("p37-append").map(|v| v == "1").unwrap_or(false);
+    // "p37-at": the file's size before this piece (shell 2.7.5, append_at).
+    let at = h("p37-at").ok().and_then(|v| v.parse::<u64>().ok());
     let (bytes, slow) = body_bytes(request.body())?;
     crate::blocking(move || {
         let r = roots(&app).get(&root)?;
-        if adding { append(&r, &path, &bytes) } else { write(&r, &path, &bytes) }?;
+        if adding { append_at(&r, &path, &bytes, at) } else { write(&r, &path, &bytes) }?;
         Ok(slow.then_some("slow"))
     }).await
 }
@@ -735,11 +780,27 @@ pub async fn fs_copy(app: tauri::AppHandle, root: String, from: String, to_root:
     }).await
 }
 
+// `at`: the file's size before this stretch (shell 2.7.5, size_is).
 #[tauri::command]
-pub async fn fs_append_range(app: tauri::AppHandle, root: String, from: String, start: u64, end: u64, to_root: Option<String>, to: String) -> Result<(), String> {
+pub async fn fs_append_range(app: tauri::AppHandle, root: String, from: String, start: u64, end: u64, to_root: Option<String>, to: String, at: Option<u64>) -> Result<(), String> {
     crate::blocking(move || {
         let r = roots(&app);
-        append_range(&r.get_read(&root, &from)?, &from, start, end, &r.get(to_root.as_deref().unwrap_or(&root))?, &to)
+        let to_base = r.get(to_root.as_deref().unwrap_or(&root))?;
+        if !to.is_empty() { size_is(&resolve(&to_base, &to)?, at)?; }
+        append_range(&r.get_read(&root, &from)?, &from, start, end, &to_base, &to)
+    }).await
+}
+
+// Leftovers more than a day old, out of a library's own folder (tidy_leftovers).
+#[derive(serde::Serialize)]
+pub struct Tidied { files: u64, bytes: u64 }
+#[tauri::command]
+pub async fn fs_tidy_leftovers(app: tauri::AppHandle, root: String) -> Result<Tidied, String> {
+    crate::blocking(move || {
+        if !root.starts_with("lib-") { return Err("only a library's own folder".into()); }
+        let dir = roots(&app).get(&root)?;
+        let (files, bytes) = tidy_leftovers(&dir, std::time::SystemTime::now());
+        Ok(Tidied { files, bytes })
     }).await
 }
 
@@ -952,6 +1013,33 @@ pub fn mime_for(rel: &str) -> &'static str {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn an_append_that_came_twice_is_refused() {
+        let d = std::env::temp_dir().join(format!("p37-at-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&d); std::fs::create_dir_all(&d).unwrap();
+        super::append_at(&d, "a.p37part", b"abc", Some(0)).unwrap();
+        super::append_at(&d, "a.p37part", b"def", Some(3)).unwrap();
+        let e = super::append_at(&d, "a.p37part", b"def", Some(3)).unwrap_err(); // the same piece again
+        assert!(e.contains("the file is 6 bytes, not 3"), "{e}");
+        assert_eq!(std::fs::read(d.join("a.p37part")).unwrap(), b"abcdef", "nothing written");
+        super::append_at(&d, "a.p37part", b"g", None).unwrap(); // an older page: as before
+        assert_eq!(std::fs::read(d.join("a.p37part")).unwrap(), b"abcdefg");
+        assert!(super::size_is(&d.join("none.p37part"), Some(0)).is_ok(), "a file not there yet is 0 bytes");
+        let _ = std::fs::remove_dir_all(&d);
+    }
+    #[test]
+    fn leftovers_a_day_old_are_tidied() {
+        let d = std::env::temp_dir().join(format!("p37-left-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&d); std::fs::create_dir_all(d.join("music/A/B")).unwrap();
+        for f in ["music/A/B/01 x.mp3.p37part", "music/A/B/01 x.mp3", "music/A/B/02 y.mp3.p37tmp-123456", "37 Player library.json"] { std::fs::write(d.join(f), b"12345").unwrap(); }
+        let soon = std::time::SystemTime::now() + std::time::Duration::from_secs(3600);
+        assert_eq!(super::tidy_leftovers(&d, soon), (0, 0), "less than a day old: kept (a write may be under way)");
+        let later = std::time::SystemTime::now() + std::time::Duration::from_secs(super::LEFTOVER_AGE_SECS + 60);
+        assert_eq!(super::tidy_leftovers(&d, later), (2, 10));
+        assert!(d.join("music/A/B/01 x.mp3").is_file() && d.join("37 Player library.json").is_file(), "nothing else");
+        assert!(!d.join("music/A/B/01 x.mp3.p37part").exists() && !d.join("music/A/B/02 y.mp3.p37tmp-123456").exists());
+        let _ = std::fs::remove_dir_all(&d);
+    }
     #[test]
     fn silence_made_to_length() {
         let w = super::silence_wav(17_350);
