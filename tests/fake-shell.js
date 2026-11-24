@@ -57,7 +57,7 @@
     }
     for(const k of ['toRoot', 'to_root']) if(args[k] != null && opened[args[k]] != null) throw new Error('no folder called ' + args[k] + ' on the list');
     switch(cmd){
-      case 'p37_shell_info': return {version: '2.0.000', bridge: 2, pages: false, device: true, updates: !!window.__fakeShellUpdates, zoom: !!window.__fakeShellZoom, trash: window.__fakeShellTrash !== false, watch: true, append_range: !window.__fakeNoAppendRange, typed_path: !!window.__fakeShellTypedPath, opened: !!window.__fakeShellOpened, slow_route: !!window.__fakeShellSlowRoute, close_seen: !!window.__fakeShellCloseSeen, silence: !!window.__fakeShellSilence, files_http: window.__fakeFilesHttp || null};
+      case 'p37_shell_info': return {version: '2.0.000', bridge: 2, pages: false, device: true, updates: !!window.__fakeShellUpdates, zoom: !!window.__fakeShellZoom, trash: window.__fakeShellTrash !== false, watch: true, append_range: !window.__fakeNoAppendRange, typed_path: !!window.__fakeShellTypedPath, opened: !!window.__fakeShellOpened, slow_route: !!window.__fakeShellSlowRoute, close_seen: !!window.__fakeShellCloseSeen, silence: !!window.__fakeShellSilence, append_at: !!window.__fakeShellAppendAt, files_http: window.__fakeFilesHttp || null};
       case 'p37_opened_take': { if(!window.__fakeShellOpened) throw new Error('unknown command'); await openedAtStart; const w = openedWaiting; openedWaiting = []; return w; }
       // The Size setting, by the shell (2.4.000): what it was asked for is kept for the test.
       case 'p37_zoom': if(!window.__fakeShellZoom) throw new Error('unknown command'); (window.__fakeZooms = window.__fakeZooms || []).push(args.scale); return null;
@@ -178,11 +178,21 @@
       // closeseen.js: writes held until window.__fakeWriteHold is cleared.
       case 'fs_write': while(window.__fakeWriteHold) await new Promise(r=> setTimeout(r, 100));
         if(window.__fakeSlowRoute){ if(!window.__fakeShellSlowRoute) throw "the file's bytes must be the body"; args = new Uint8Array(Array.from(args)); }
-      { const root = decodeURIComponent(opts.headers['p37-root']), path = decodeURIComponent(opts.headers['p37-path']); checkRel(path); await writeFile(root, path, args, opts.headers['p37-append'] === '1'); window.__fakeShellWrites = (window.__fakeShellWrites || 0) + 1; window.__fakeShellWriteBytes = (window.__fakeShellWriteBytes || 0) + (args.byteLength || args.length || 0); window.__fakeShellBiggestWrite = Math.max(window.__fakeShellBiggestWrite || 0, args.byteLength || args.length || 0); return window.__fakeSlowRoute ? 'slow' : null; }
+      { const root = decodeURIComponent(opts.headers['p37-root']), path = decodeURIComponent(opts.headers['p37-path']); checkRel(path);
+        const adding = opts.headers['p37-append'] === '1', at = opts.headers['p37-at'];
+        // appendtwice.js: shell 2.7.5's "p37-at" (refused when the file isn't that size); a piece that lands and then comes again
+        // (__fakeLandTwice: landed, then the repeat refused), or an older shell that takes it twice (__fakeDoubleAppend).
+        const sizeNow = async ()=>{ const st = await statOf(root, path); return st ? st.size : 0; };
+        const refuse = async ()=>{ const n = await sizeNow(); throw 'the file is ' + n + ' bytes, not ' + at + ': a piece is missing or came twice'; };
+        if(adding && at != null && window.__fakeShellAppendAt && (await sizeNow()) !== +at) await refuse();
+        if(adding && window.__fakeDoubleAppend > 0){ window.__fakeDoubleAppend--; await writeFile(root, path, args, true); }
+        if(adding && at != null && window.__fakeShellAppendAt && window.__fakeLandTwice > 0){ window.__fakeLandTwice--; await writeFile(root, path, args, true); await refuse(); }
+        await writeFile(root, path, args, adding); window.__fakeShellWrites = (window.__fakeShellWrites || 0) + 1; window.__fakeShellWriteBytes = (window.__fakeShellWriteBytes || 0) + (args.byteLength || args.length || 0); window.__fakeShellBiggestWrite = Math.max(window.__fakeShellBiggestWrite || 0, args.byteLength || args.length || 0); return window.__fakeSlowRoute ? 'slow' : null; }
       case 'fs_stat': return statOf(args.root, args.path);
       case 'fs_mkdir': await dirOf(args.root, args.path, true); return null;
       case 'fs_list': { const d = await dirOf(args.root, args.path, false), out = []; for await (const [n] of d.entries()){ const st = await statOf(args.root, args.path ? args.path + '/' + n : n); if(st) out.push(st); } return out.sort((a, b)=> a.name < b.name ? -1 : 1); }
       case 'fs_read': { const f = await fileOf(args.root, args.path); const s = args.start || 0, e = args.end == null ? f.size : Math.min(args.end, f.size); window.__fakeShellReadBytes = (window.__fakeShellReadBytes || 0) + Math.max(0, e - s); const buf = await f.slice(s, e).arrayBuffer(); return window.__fakeSlowRoute ? Array.from(new Uint8Array(buf)) : buf; }
+      case 'fs_tidy_leftovers': if(!window.__fakeShellAppendAt) throw new Error('unknown command'); window.__fakeTidied = (window.__fakeTidied || 0) + 1; return {files: 0, bytes: 0};
       case 'fs_remove': { if(!(await statOf(args.root, args.path))) return false; const {dir, name} = split(args.path); await (await dirOf(args.root, dir, false)).removeEntry(name, {recursive: !!args.recursive}); return true; }
       // A stretch of one file on the end of another (shell 2.5.3), counted in __fakeRangeCopies.
       case 'fs_append_range': {
@@ -190,6 +200,7 @@
         if(toRoot === args.root && args.to === args.from) throw new Error("a file can't be added to itself");
         const f = await fileOf(args.root, args.from);
         if(args.end < args.start || args.end > f.size) throw new Error('bytes ' + args.start + '..' + args.end + ' of a file of ' + f.size + ': the file changed');
+        if(args.at != null && window.__fakeShellAppendAt){ const st = await statOf(toRoot, args.to), n = st ? st.size : 0; if(n !== args.at) throw 'the file is ' + n + ' bytes, not ' + args.at + ': a piece is missing or came twice'; }
         await writeFile(toRoot, args.to, f.slice(args.start, args.end), true);
         window.__fakeRangeCopies = (window.__fakeRangeCopies || 0) + 1; return null;
       }

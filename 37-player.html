@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.7.007">
+<meta name="app-version" content="2.7.008">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -2595,6 +2595,15 @@ class IdbLibraryStore {
 const FILES_GRACE_MS = 24*60*60*1000;
 const FILES_SUPERSEDED_MS = 60*1000;   // a recording replaced by a new version of it (noteSuperseded)
 const FILES_TIDY_EVERY_MS = 6*60*60*1000; // the tidy again while the library stays open (2.2.033)
+// Leftovers of writes cut short (2.7.008, shell 2.7.5; the audit's 1.4,
+// kr37: general housekeeping): ".p37part" and the shell's hidden ".p37tmp-"
+// files more than a day old, out of this library's folder, with the tidy.
+function desktopTidyLeftovers(){
+  try{
+    if(STORAGE_KIND !== "desktop" || !(desktopShell && desktopShell.append_at)) return;
+    desktopInvoke("fs_tidy_leftovers", {root: desktopRootOf(LIBRARY_ID)}).then(r=>{ if(r && r.files) playLog("tidied " + r.files + " leftover piece" + (r.files === 1 ? "" : "s") + " of writes cut short (" + fmtBytes(r.bytes || 0) + ")"); }).catch(err=> console.warn("Tidying leftovers:", err));
+  }catch(err){}
+}
 const OWN_FILES_FOLDER = "37 Player's own files";
 // One part of a recording's path (an artist, an album, a file name): what
 // Windows and the Mac refuse becomes "-" (as in the portable export,
@@ -2677,10 +2686,10 @@ class FolderLibraryStore {
       // 2026, report 2026-11-19-184915-2a6a08). It tidies itself when opened.
       if(!this.tidied && this.opts.tidies){
         this.tidied = true;
-        setTimeout(()=> this.tidy().then(()=> this.renameRecordings()).then(()=>{ if(this === libStore) return syncPlaylistFiles(); }).catch(err=> console.warn("Tidying the library's files:", err)), 20000);
+        setTimeout(()=> this.tidy().then(()=> this.renameRecordings()).then(()=>{ if(this === libStore){ desktopTidyLeftovers(); return syncPlaylistFiles(); } }).catch(err=> console.warn("Tidying the library's files:", err)), 20000);
         // And every few hours while it stays open: a window open for days
         // otherwise kept every file on the waiting list (2.2.033).
-        const again = setInterval(()=>{ if(this !== libStore){ clearInterval(again); return; } this.tidy().catch(err=> console.warn("Tidying the library's files:", err)); }, FILES_TIDY_EVERY_MS);
+        const again = setInterval(()=>{ if(this !== libStore){ clearInterval(again); return; } this.tidy().catch(err=> console.warn("Tidying the library's files:", err)); desktopTidyLeftovers(); }, FILES_TIDY_EVERY_MS);
       }
     }
     return this.dir;
@@ -4094,6 +4103,7 @@ function desktopChangedRoots(cmd, args, options){
   if(cmd === "fs_rename") return [a.root, a.toRoot || a.root];
   if(cmd === "fs_copy" || cmd === "fs_append_range") return [a.toRoot || a.root]; // where the bytes land; the source is only read
   if(cmd === "fs_remove_if_empty") return a.dry ? [] : [a.id];
+  if(cmd === "fs_tidy_leftovers") return [a.root];
   return null; // not a command that changes files
 }
 function desktopInvoke(cmd, args, options){
@@ -4475,32 +4485,59 @@ class DesktopFileHandle {
           }
         }
         const total = parts.reduce((n, p)=> n + p.size, 0);
-        const put = (path, bytes, adding)=> desktopInvoke("fs_write", bytes, {headers: Object.assign({"p37-root": encodeURIComponent(fh.root), "p37-path": encodeURIComponent(path)}, adding ? {"p37-append": "1"} : {})});
+        const put = (path, bytes, adding, at)=> desktopInvoke("fs_write", bytes, {headers: Object.assign({"p37-root": encodeURIComponent(fh.root), "p37-path": encodeURIComponent(path)}, adding ? {"p37-append": "1"} : {}, adding && at != null ? {"p37-at": String(at)} : {})});
         if(total <= DISK_READ_PIECE && !parts.some(isDiskBlob)){
           await put(fh.path, new Uint8Array(await new Blob(parts).arrayBuffer()));
           return;
         }
         const aside = fh.path + ".p37part";
-        let first = true, onDisk = 0;
+        let onDisk = 0;
         const t0 = Date.now();
         // A stretch of a file on the disk is copied there by the app (shell
         // 2.5.3, fs_append_range: a recording with new details, see
         // joinedFile); with an older app, through the page piece by piece.
         const ranges = !!(desktopShell && desktopShell.append_range);
-        try{
+        /* Appends that can't land twice (2.7.008, shell 2.7.5;
+           desktop/AUDIT-boundaries.md 1.1 and 1.4, the audit's fix 12, B).
+           After Tauri's switch to its slower route (2.7.000) a piece the shell
+           already took can come again, and one that lands twice made a
+           longer, wrong recording. Each append says the file's size before it
+           (p37-at, fs_append_range's at); a shell from 2.7.5 refuses one that
+           doesn't match. Refused, the file's size is looked at: the piece
+           already in (it was the repeat) and the writing goes on; anything
+           else, the file is written again from the start, once. And before
+           the rename the file's size must be the whole (any shell). */
+        const appendRefused = (err)=> /a piece is missing or came twice/.test(String((err && err.message) || err));
+        const asideSize = async ()=>{ const st = await desktopInvoke("fs_stat", {root: fh.root, path: aside}); return st ? st.size : 0; };
+        const settled = async (err, after)=>{ if(!appendRefused(err) || (await asideSize()) !== after) throw err; playLog("writing " + fh.path + ": a piece came twice; the first was kept"); };
+        const writeAside = async ()=>{
+          let first = true, at = 0;
+          onDisk = 0;
           for(const p of parts){
             if(ranges && isDiskBlob(p)){
               if(first){ await put(aside, new Uint8Array(0)); first = false; }
-              if(p.size) await desktopInvoke("fs_append_range", {root: p.p37root, from: p.p37path, start: p.start, end: p.start + p.size, toRoot: fh.root, to: aside});
-              onDisk += p.size;
+              if(p.size){ try{ await desktopInvoke("fs_append_range", {root: p.p37root, from: p.p37path, start: p.start, end: p.start + p.size, toRoot: fh.root, to: aside, at}); }catch(err){ await settled(err, at + p.size); } }
+              at += p.size; onDisk += p.size;
               continue;
             }
-            for(let at = 0; at < p.size; at += DISK_READ_PIECE){
-              await put(aside, new Uint8Array(await p.slice(at, Math.min(p.size, at + DISK_READ_PIECE)).arrayBuffer()), !first);
-              first = false;
+            for(let o = 0; o < p.size; o += DISK_READ_PIECE){
+              const bytes = new Uint8Array(await p.slice(o, Math.min(p.size, o + DISK_READ_PIECE)).arrayBuffer());
+              if(first){ await put(aside, bytes, false); first = false; }
+              else { try{ await put(aside, bytes, true, at); }catch(err){ await settled(err, at + bytes.byteLength); } }
+              at += bytes.byteLength;
             }
           }
           if(first) await put(aside, new Uint8Array(0));
+          const size = await asideSize();
+          if(size !== total){ const e = new Error("the file written is " + size + " bytes, not " + total + ": a piece is missing or came twice"); throw e; }
+        };
+        try{
+          try{ await writeAside(); }
+          catch(err){
+            if(!appendRefused(err)) throw err;
+            playLog("writing " + fh.path + ": " + ((err && err.message) || err) + "; written again from the start");
+            await writeAside();
+          }
           await desktopInvoke("fs_rename", {root: fh.root, from: aside, to: fh.path, replace: true});
           // (Not the library's own files, such as its 22 MB list of tracks
           // with their waveforms, written at every save: recordings only.)
@@ -50435,8 +50472,11 @@ async function sharedReceiveOnDisk(cfg, store, name, onTotal, at){
     const bytes = new Uint8Array(await res.arrayBuffer());
     if(offset === 0 && total == null && bytes.length < PIECE) return {blob: new Blob([bytes], {type})};
     if(!noted){ await idbPut("state", {key: metaKey, total, type}); noted = true; }
+    // Each piece says the file's size before it (2.7.008, shell 2.7.5): a
+    // piece that came twice is refused, and the download carries on later
+    // from the file's real size.
     for(let i = 0; i < bytes.length; i += DISK_READ_PIECE)
-      await desktopInvoke("fs_write", bytes.slice(i, i + DISK_READ_PIECE), {headers: {"p37-root": encodeURIComponent(at.root), "p37-path": encodeURIComponent(at.path), "p37-append": "1"}});
+      await desktopInvoke("fs_write", bytes.slice(i, i + DISK_READ_PIECE), {headers: {"p37-root": encodeURIComponent(at.root), "p37-path": encodeURIComponent(at.path), "p37-append": "1", "p37-at": String(offset + i)}});
     offset += bytes.length;
     if(bytes.length < PIECE) break;
   }
@@ -54302,7 +54342,7 @@ if(IN_DESKTOP_APP){
   window.addEventListener("resize", fitHeight);
 }
 const DESKTOP_BRIDGE_NEEDED = +((document.querySelector('meta[name="desktop-bridge"]') || {}).content || 1);
-let desktopShell = null; // {version, bridge, pages, device, updates, zoom, trash (2.5.2), watch (2.5.3), append_range (2.5.3), files_http, typed_path (2.5.6), opened (2.6.0), slow_route (2.7.0), close_seen (2.7.1), silence (2.7.4)}
+let desktopShell = null; // {version, bridge, pages, device, updates, zoom, trash (2.5.2), watch (2.5.3), append_range (2.5.3), files_http, typed_path (2.5.6), opened (2.6.0), slow_route (2.7.0), close_seen (2.7.1), silence (2.7.4), append_at (2.7.5)}
 async function desktopShellCheck(){
   if(!IN_DESKTOP_APP || !window.__TAURI__ || !window.__TAURI__.core) return;
   try{ desktopShell = await window.__TAURI__.core.invoke("p37_shell_info"); }catch(err){ desktopShell = {version: "?", bridge: 0}; }
