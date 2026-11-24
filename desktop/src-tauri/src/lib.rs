@@ -131,7 +131,7 @@ fn p37_opened_take(opened: tauri::State<'_, Opened>) -> Vec<OpenedFile> {
 const BRIDGE: u32 = 2;
 
 #[derive(serde::Serialize)]
-struct ShellInfo { version: String, bridge: u32, pages: bool, device: bool, updates: bool, zoom: bool, trash: bool, watch: bool, append_range: bool, typed_path: bool, opened: bool, files_http: Option<String> }
+struct ShellInfo { version: String, bridge: u32, pages: bool, device: bool, updates: bool, zoom: bool, trash: bool, watch: bool, append_range: bool, typed_path: bool, opened: bool, slow_route: bool, files_http: Option<String> }
 
 // The shell's version is the page's version as of the shell's own last
 // change (tauri.conf.json "version"), like sync.php's.
@@ -150,6 +150,8 @@ fn p37_shell_info(app: tauri::AppHandle) -> ShellInfo {
         typed_path: true,
         // opened: files opened with 37 Player wait for p37_opened_take, with "p37-files-opened" when more come (shell 2.6.0).
         opened: true,
+        // slow_route: fs_write takes its bytes by Tauri's slower route too, and says "slow" when they came that way (files::body_bytes, shell 2.7.0).
+        slow_route: true,
         // files_http: where recordings are also served, on Linux (fileserver.rs, shell 2.5.0).
         files_http: app.try_state::<fileserver::FileServer>().map(|f| f.base.clone()) }
 }

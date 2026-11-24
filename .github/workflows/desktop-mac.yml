@@ -16,6 +16,14 @@ on:
         type: choice
         options: [dev, main]
         default: dev
+      # A d build that carries a page from a branch of its own (the audit's
+      # fixes, 23 Nov 2026: a fix with a shell half and a page half is tried
+      # in one build before either is merged). Empty: main's or dev's page,
+      # by the channel. The pages it then updates to still follow the channel.
+      page_branch:
+        description: "Branch whose page the build carries (empty: main's or dev's, by the channel)"
+        type: string
+        default: ""
   push:
     branches: [desktop]   # called tauri-spike until 13 Nov 2026
     paths: ["desktop/**", "37-player.html", ".github/workflows/desktop-mac.yml"]
@@ -25,7 +33,7 @@ jobs:
   mac:
     runs-on: macos-latest
     # Test builds update their page from dev's (page-test; desktop/PAGE-UPDATES.md).
-    env: { P37_PAGE_CHANNEL: "${{ inputs.channel == 'main' && 'latest' || 'test' }}", P37_PAGE_BRANCH: "${{ inputs.channel == 'main' && 'main' || 'dev' }}" }
+    env: { P37_PAGE_CHANNEL: "${{ inputs.channel == 'main' && 'latest' || 'test' }}", P37_PAGE_BRANCH: "${{ inputs.page_branch || (inputs.channel == 'main' && 'main' || 'dev') }}" }
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -120,7 +128,7 @@ jobs:
         with: { name: mac, path: "37-Player-mac-test*" }
   windows:
     runs-on: windows-latest
-    env: { P37_PAGE_CHANNEL: "${{ inputs.channel == 'main' && 'latest' || 'test' }}", P37_PAGE_BRANCH: "${{ inputs.channel == 'main' && 'main' || 'dev' }}" }
+    env: { P37_PAGE_CHANNEL: "${{ inputs.channel == 'main' && 'latest' || 'test' }}", P37_PAGE_BRANCH: "${{ inputs.page_branch || (inputs.channel == 'main' && 'main' || 'dev') }}" }
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -148,7 +156,7 @@ jobs:
     # 22.04, the oldest Ubuntu with WebKitGTK 4.1 (Tauri 2's), so the .deb
     # needs no newer libraries than most current Linux computers have.
     runs-on: ubuntu-22.04
-    env: { P37_PAGE_CHANNEL: "${{ inputs.channel == 'main' && 'latest' || 'test' }}", P37_PAGE_BRANCH: "${{ inputs.channel == 'main' && 'main' || 'dev' }}" }
+    env: { P37_PAGE_CHANNEL: "${{ inputs.channel == 'main' && 'latest' || 'test' }}", P37_PAGE_BRANCH: "${{ inputs.page_branch || (inputs.channel == 'main' && 'main' || 'dev') }}" }
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

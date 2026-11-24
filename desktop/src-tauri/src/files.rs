@@ -688,18 +688,42 @@ pub async fn fs_read(app: tauri::AppHandle, root: String, path: String, start: O
 // headers "p37-root" and "p37-path", URI-encoded (headers are ASCII). With
 // "p37-append: 1" the bytes go on the end of the file (append), else they
 // replace it whole.
+// The file's bytes from a request's body (shell 2.7.0; the audit's fix A,
+// desktop/AUDIT-boundaries.md 1.1). On Tauri's own route they're the body
+// itself. When one request on that route fails (the fetch rejects), Tauri
+// sends it again by the webview's message route, and every later request in
+// that page goes that way too, until the page reloads (ipc-protocol.js):
+// there the bytes arrive as a JSON list of numbers. Refused before 2.7.0
+// ("the file's bytes must be the body"), so every save failed until a
+// reload; now taken, slowly, and the second value says which route it was.
+pub fn body_bytes(body: &tauri::ipc::InvokeBody) -> Result<(Vec<u8>, bool), String> {
+    match body {
+        tauri::ipc::InvokeBody::Raw(bytes) => Ok((bytes.clone(), false)),
+        tauri::ipc::InvokeBody::Json(serde_json::Value::Array(list)) => {
+            let mut out = Vec::with_capacity(list.len());
+            for v in list {
+                match v.as_u64() { Some(n) if n <= 255 => out.push(n as u8), _ => return Err("the file's bytes must be the body, or a list of bytes".into()) }
+            }
+            Ok((out, true))
+        }
+        _ => Err("the file's bytes must be the body, or a list of bytes".into()),
+    }
+}
+
 // The body is copied for its thread (Tauri lends it only for the call): a
-// piece is at most 8 MB, a moment's copy.
+// piece is at most 8 MB, a moment's copy. Answers "slow" when the bytes came
+// by Tauri's slower route (see body_bytes), so the page knows; else nothing,
+// as before.
 #[tauri::command]
-pub async fn fs_write(app: tauri::AppHandle, request: tauri::ipc::Request<'_>) -> Result<(), String> {
+pub async fn fs_write(app: tauri::AppHandle, request: tauri::ipc::Request<'_>) -> Result<Option<&'static str>, String> {
     let h = |k: &str| request.headers().get(k).and_then(|v| v.to_str().ok()).map(percent_decode).ok_or_else(|| format!("no {} header", k));
     let (root, path) = (h("p37-root")?, h("p37-path")?);
     let adding = h("p37-append").map(|v| v == "1").unwrap_or(false);
-    let tauri::ipc::InvokeBody::Raw(bytes) = request.body() else { return Err("the file's bytes must be the body".into()) };
-    let bytes = bytes.clone();
+    let (bytes, slow) = body_bytes(request.body())?;
     crate::blocking(move || {
         let r = roots(&app).get(&root)?;
-        if adding { append(&r, &path, &bytes) } else { write(&r, &path, &bytes) }
+        if adding { append(&r, &path, &bytes) } else { write(&r, &path, &bytes) }?;
+        Ok(slow.then_some("slow"))
     }).await
 }
 
@@ -881,6 +905,17 @@ pub fn mime_for(rel: &str) -> &'static str {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn bytes_by_either_route() {
+        use tauri::ipc::InvokeBody;
+        assert_eq!(super::body_bytes(&InvokeBody::Raw(vec![0, 7, 255])).unwrap(), (vec![0, 7, 255], false));
+        assert_eq!(super::body_bytes(&InvokeBody::Json(serde_json::json!([0, 7, 255]))).unwrap(), (vec![0, 7, 255], true), "the slower route's list of numbers");
+        assert_eq!(super::body_bytes(&InvokeBody::Json(serde_json::json!([]))).unwrap(), (vec![], true), "an empty piece");
+        assert!(super::body_bytes(&InvokeBody::Json(serde_json::json!([1, 256]))).is_err(), "not a byte");
+        assert!(super::body_bytes(&InvokeBody::Json(serde_json::json!([1, -1]))).is_err());
+        assert!(super::body_bytes(&InvokeBody::Json(serde_json::json!({"0": 1}))).is_err(), "not a list");
+    }
+
     use super::*;
     #[test]
     fn an_opened_file_is_its_own_root_for_reading_only() {
