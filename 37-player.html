@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.7.008">
+<meta name="app-version" content="2.7.009">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -48601,6 +48601,51 @@ function sharedUrl(cfg, params){
   const q = Object.entries(params).map(([k, v])=> encodeURIComponent(k) + "=" + encodeURIComponent(v)).join("&");
   return cfg.url + (cfg.url.includes("?") ? "&" : "?") + q;
 }
+/* Time limits on the shared library's requests (2.7.009;
+   desktop/AUDIT-boundaries.md 3.4, the audit's fix 13, S). sync.php's and
+   Google Drive's requests had none of their own: the browser's limits apply
+   (usually a minute or more of silence, longer on some systems), and a sync
+   holding its lock waited all that time while later syncs were skipped
+   (ifAvailable), so sync stopped until the request ended. Now:
+   - until the answer starts: 30 s for the small requests (the state, the
+     changes); a request that sends a body over 64 KB (an upload, or a piece
+     of one) 60 s plus its time at a crawl of 32 KB/s, as a fetch can't say
+     how its sending is going;
+   - the answer's body (a download, or a piece of one): given up only after
+     60 s with nothing more arriving, never for its total time.
+   A request given up fails as a network failure does ("Failed to fetch
+   (…)"; a body's reader may see only "Failed to fetch"), is said in the
+   shared library's log with why, and is tried again as any is. */
+const NET_SMALL_MS = window.__netSmallMs || 30000, NET_QUIET_MS = window.__netQuietMs || 60000, NET_UPLOAD_CRAWL = 32 * 1024, NET_UPLOAD_FROM = 65536;
+function netGivenUp(why){ const e = new TypeError("Failed to fetch (" + why + ")"); e.netGivenUp = true; return e; }
+async function fetchWithLimits(url, init){
+  init = Object.assign({}, init || {});
+  const b = init.body;
+  const size = b == null ? 0 : typeof b === "string" ? b.length : (b.size != null ? b.size : (b.byteLength || 0));
+  const ctl = new AbortController();
+  let given = null;
+  const said = (why)=>{ try{ sharedLog("a request was given up (" + why + "): " + String(url).replace(/[?#].*$/, "")); }catch(err){} };
+  const giveUp = (why)=>{ given = netGivenUp(why); said(why); try{ ctl.abort(given); }catch(err){ ctl.abort(); } };
+  init.signal = ctl.signal;
+  const firstMs = size > NET_UPLOAD_FROM ? NET_QUIET_MS + Math.ceil(size / NET_UPLOAD_CRAWL) * 1000 : NET_SMALL_MS;
+  const timer = setTimeout(()=> giveUp("no answer in " + Math.round(firstMs / 1000) + " s"), firstMs);
+  let res;
+  try{ res = await fetch(url, init); }
+  catch(err){ clearTimeout(timer); throw given || err; }
+  clearTimeout(timer);
+  if(!res.body || typeof TransformStream !== "function" || [101, 103, 204, 205, 304].includes(res.status)) return res; // (no body to watch)
+  let quiet = null, piped = null;
+  // The reader is told why first (else it sees only the network's "Failed to fetch"), then the request ends.
+  const wait = ()=>{ clearTimeout(quiet); quiet = setTimeout(()=>{ const why = "nothing more for " + Math.round(NET_QUIET_MS / 1000) + " s", e = netGivenUp(why); said(why); try{ piped && piped.error(e); }catch(err){} given = e; try{ ctl.abort(e); }catch(err){ ctl.abort(); } }, NET_QUIET_MS); };
+  wait();
+  const body = res.body.pipeThrough(new TransformStream({
+    start(c){ piped = c; },
+    transform(chunk, c){ wait(); c.enqueue(chunk); },
+    flush(){ clearTimeout(quiet); },
+  }));
+  // (An answer nobody reads is ended quietly after the same 60 s: harmless.)
+  return new Response(body, {status: res.status, statusText: res.statusText, headers: res.headers});
+}
 async function sharedFetch(cfg, params, init){
   // A file of the desktop app's read where it lies goes as real bytes (whole
   // files are sent only below 48 MB; bigger ones go in 16 MB pieces).
@@ -48613,7 +48658,7 @@ async function sharedFetch(cfg, params, init){
   // URL-encoded: a passphrase may use any language's letters, and headers carry only plain ASCII.
   init.headers = Object.assign({"X-Library": encodeURIComponent(cfg.code.trim())}, init.headers || {});
   init.cache = "no-store";
-  const res = await fetch(sharedUrl(cfg, params), init);
+  const res = await fetchWithLimits(sharedUrl(cfg, params), init);
   sharedServerVersion = res.headers.get("X-Sync-Version") || (sharedServerVersion || "old");
   if(res.status === 401 || res.status === 403){ const e = new Error("rejected"); e.rejected = true; throw e; }
   return res;
@@ -48685,7 +48730,7 @@ async function driveAccessToken(cfg, force){
   if(!force && c && c.until > Date.now() + 60000) return c.token;
   if(!cfg.refreshToken){ driveNeedsSignIn = true; const e = new Error("sign-in needed"); e.rejected = true; e.signin = true; throw e; }
   let res;
-  try{ res = await fetch(driveTokenUrl(cfg), {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({refresh_token: cfg.refreshToken}), cache: "no-store"}); }
+  try{ res = await fetchWithLimits(driveTokenUrl(cfg), {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({refresh_token: cfg.refreshToken}), cache: "no-store"}); }
   catch(err){ throw new Error("token.php unreachable"); }
   const j = await res.json().catch(()=> ({}));
   if(!res.ok || !j.access_token){
@@ -48704,7 +48749,7 @@ async function driveCall(cfg, path, init){
   for(let attempt = 0; attempt < 2; attempt++){
     const token = await driveAccessToken(cfg, attempt > 0);
     init.headers = Object.assign({}, init.headers || {}, {Authorization: "Bearer " + token});
-    const res = await fetch(/^https?:/.test(path) ? path : driveApi(cfg) + path, init);
+    const res = await fetchWithLimits(/^https?:/.test(path) ? path : driveApi(cfg) + path, init);
     if(res.status === 401 && attempt === 0) continue;
     if(res.status === 401){ driveNeedsSignIn = true; const e = new Error("rejected"); e.rejected = true; e.signin = true; throw e; }
     return res;
