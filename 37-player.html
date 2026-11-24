@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.7.005">
+<meta name="app-version" content="2.7.006">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -54299,7 +54299,11 @@ async function desktopWatchPoll(){
     const r = await window.__TAURI_INTERNALS__.invoke("p37_watch");
     const hm = ms=> new Date(ms).toLocaleTimeString();
     const last = r && r.last_session;
-    if(last) playLog("37 Player didn't close normally last time (app " + last.version + ", last seen running at " + new Date(last.alive).toLocaleString() + ")" + (last.panic ? "; it stopped on an error: " + last.panic : ""));
+    if(last) playLog("37 Player didn't close normally last time (app " + last.version + ", last seen running at " + new Date(last.alive).toLocaleString() + ")" + (last.panic ? "; it stopped on an error: " + last.panic : "")
+      // When it froze (shell 2.7.3; the audit's fix 9, I): the page had stopped answering the app, or the app's window was held up, since then.
+      + (last.page_silent_since ? "; its page had stopped answering the app since " + new Date(last.page_silent_since).toLocaleString() : "")
+      + (last.main_stalled_since ? "; its window had stopped answering since " + new Date(last.main_stalled_since).toLocaleString() : ""));
+    for(const s of (r && r.page_silences) || []) playLog("the page didn't answer the app for " + Math.round(s.ms / 1000) + " s, from " + hm(s.at));
     for(const s of (r && r.stalls) || []) playLog("the app's window didn't respond for " + Math.round(s.ms / 1000) + " s, from " + hm(s.at) + (s.focused ? "" : " (in the background)"));
     // The page's process ended and the window reloaded (shell 2.7.2; the audit's fix 8, J): WebKit's page process crashed, or macOS ended it for memory.
     for(const at of (r && r.page_ended) || []) playLog("the window's page stopped at " + hm(at) + " (its process crashed or the system ended it, perhaps for memory); the app reloaded it");
