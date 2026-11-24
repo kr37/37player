@@ -46,6 +46,8 @@
   window.__fakeShellCalls = []; window.__fakeShellPaths = [];
   const invoke = async (cmd, args, opts)=>{
     window.__fakeShellCalls.push(cmd);
+    // startwatch.js: a command that doesn't answer until window.__fakeHang no longer names it.
+    while(window.__fakeHang && window.__fakeHang.includes(cmd)) await new Promise(r=> setTimeout(r, 100));
     window.__fakeShellPaths.push(cmd + ' ' + ((args && (args.path || args.from)) || '')); // which file, for tests that count reads of one file
     args = args || {};
     // An opened file's root: that one file read, nothing else (files::Roots::get_read; get doesn't know it).

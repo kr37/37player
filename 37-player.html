@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.7.003">
+<meta name="app-version" content="2.7.004">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -6229,6 +6229,16 @@ const STRINGS = {
     "notLoadedEmptyYes": "Start empty",
     "storageStuckTitle": "This device's storage isn't responding",
     "storageStuckBody": "37 Player is waiting for this device's storage, where your library is kept. This usually means the device is full. Free up some space (on an iPad: Settings → General → iPad Storage), then tap Try again. Don't import or join a shared library until your library shows.",
+    "startStuckAppTitle": "37 Player is taking long to start",
+    "startStuckAppBody": "It's waiting for the desktop app: {step}. A drive that holds your library may be asleep, busy or disconnected. Try again restarts the window.",
+    "startStepShell": "asking the app what it can do",
+    "startStepLibraries": "finding the libraries",
+    "startStepFolder": "finding this library's folder",
+    "startStepRename": "naming this library's folder",
+    "startStepPlaces": "the folders this library uses in place",
+    "startStepPermission": "permission for the library's folder",
+    "startStepOpen": "opening the library",
+    "startStepRead": "reading the library",
     "exportWhileFullTitle": "Not enough room for the file",
     "exportWhileFullBody": "This device is full, so the exported file most likely can't be saved either, and you may not be told. Free up some space first (on an iPad: Settings → General → iPad Storage).",
     "exportWhileFullAnyway": "Try anyway",
@@ -8378,6 +8388,16 @@ const STRINGS = {
     "notLoadedEmptyYes": "Empezar vacía",
     "storageStuckTitle": "El almacenamiento de este dispositivo no responde",
     "storageStuckBody": "37 Player está esperando al almacenamiento de este dispositivo, donde se guarda tu biblioteca. Normalmente significa que el dispositivo está lleno. Libera algo de espacio (en un iPad: Ajustes → General → Almacenamiento del iPad) y toca Intentar de nuevo. No importes ni te unas a una biblioteca compartida hasta que aparezca tu biblioteca.",
+    "startStuckAppTitle": "37 Player está tardando en iniciarse",
+    "startStuckAppBody": "Está esperando a la aplicación de escritorio: {step}. Puede que una unidad con su biblioteca esté en reposo, ocupada o desconectada. «Intentar de nuevo» reinicia la ventana.",
+    "startStepShell": "preguntando a la aplicación qué puede hacer",
+    "startStepLibraries": "buscando las bibliotecas",
+    "startStepFolder": "buscando la carpeta de esta biblioteca",
+    "startStepRename": "poniendo nombre a la carpeta de esta biblioteca",
+    "startStepPlaces": "las carpetas que esta biblioteca usa en su sitio",
+    "startStepPermission": "permiso para la carpeta de la biblioteca",
+    "startStepOpen": "abriendo la biblioteca",
+    "startStepRead": "leyendo la biblioteca",
     "exportWhileFullTitle": "No hay sitio para el archivo",
     "exportWhileFullBody": "Este dispositivo está lleno, así que lo más probable es que el archivo exportado tampoco se pueda guardar, y puede que no se te avise. Libera algo de espacio primero (en un iPad: Ajustes → General → Almacenamiento del iPad).",
     "exportWhileFullAnyway": "Intentarlo igualmente",
@@ -10526,6 +10546,16 @@ const STRINGS = {
     "notLoadedEmptyYes": "Commencer vide",
     "storageStuckTitle": "Le stockage de cet appareil ne répond pas",
     "storageStuckBody": "37 Player attend le stockage de cet appareil, où votre bibliothèque est conservée. Cela signifie généralement que l'appareil est plein. Libérez un peu d'espace (sur un iPad : Réglages → Général → Stockage iPad), puis touchez Réessayer. N'importez rien et ne rejoignez pas de bibliothèque partagée avant que votre bibliothèque apparaisse.",
+    "startStuckAppTitle": "37 Player met du temps à démarrer",
+    "startStuckAppBody": "Il attend l'application de bureau : {step}. Un disque qui contient votre bibliothèque est peut-être en veille, occupé ou débranché. « Réessayer » redémarre la fenêtre.",
+    "startStepShell": "demander à l'application ce qu'elle sait faire",
+    "startStepLibraries": "chercher les bibliothèques",
+    "startStepFolder": "chercher le dossier de cette bibliothèque",
+    "startStepRename": "nommer le dossier de cette bibliothèque",
+    "startStepPlaces": "les dossiers que cette bibliothèque utilise sur place",
+    "startStepPermission": "l'autorisation pour le dossier de la bibliothèque",
+    "startStepOpen": "ouvrir la bibliothèque",
+    "startStepRead": "lire la bibliothèque",
     "exportWhileFullTitle": "Pas assez de place pour le fichier",
     "exportWhileFullBody": "Cet appareil est plein : le fichier exporté ne pourra très probablement pas être enregistré non plus, peut-être sans avertissement. Libérez d'abord un peu d'espace (sur un iPad : Réglages → Général → Stockage iPad).",
     "exportWhileFullAnyway": "Essayer quand même",
@@ -12674,6 +12704,16 @@ const STRINGS = {
     "notLoadedEmptyYes": "Começar vazia",
     "storageStuckTitle": "O armazenamento deste dispositivo não está respondendo",
     "storageStuckBody": "O 37 Player está esperando o armazenamento deste dispositivo, onde sua biblioteca fica guardada. Normalmente isso significa que o dispositivo está cheio. Libere algum espaço (no iPad: Ajustes → Geral → Armazenamento do iPad) e toque em Tentar de novo. Não importe nem entre em uma biblioteca compartilhada até sua biblioteca aparecer.",
+    "startStuckAppTitle": "O 37 Player está a demorar a iniciar",
+    "startStuckAppBody": "Está à espera da aplicação para computador: {step}. Uma unidade com a sua biblioteca pode estar em repouso, ocupada ou desligada. «Tentar de novo» reinicia a janela.",
+    "startStepShell": "a perguntar à aplicação o que consegue fazer",
+    "startStepLibraries": "a procurar as bibliotecas",
+    "startStepFolder": "a procurar a pasta desta biblioteca",
+    "startStepRename": "a dar nome à pasta desta biblioteca",
+    "startStepPlaces": "as pastas que esta biblioteca usa no lugar",
+    "startStepPermission": "a permissão para a pasta da biblioteca",
+    "startStepOpen": "a abrir a biblioteca",
+    "startStepRead": "a ler a biblioteca",
     "exportWhileFullTitle": "Não há espaço para o arquivo",
     "exportWhileFullBody": "Este dispositivo está cheio, então o arquivo exportado provavelmente também não poderá ser salvo, e talvez nenhum aviso apareça. Libere algum espaço primeiro (no iPad: Ajustes → Geral → Armazenamento do iPad).",
     "exportWhileFullAnyway": "Tentar mesmo assim",
@@ -14822,6 +14862,16 @@ const STRINGS = {
     "notLoadedEmptyYes": "Leer beginnen",
     "storageStuckTitle": "Der Speicher dieses Geräts antwortet nicht",
     "storageStuckBody": "37 Player wartet auf den Speicher dieses Geräts, in dem deine Bibliothek liegt. Meist ist das Gerät dann voll. Gib etwas Speicherplatz frei (auf einem iPad: Einstellungen → Allgemein → iPad-Speicher) und tippe dann auf Erneut versuchen. Importiere nichts und tritt keiner gemeinsamen Bibliothek bei, bis deine Bibliothek erscheint.",
+    "startStuckAppTitle": "37 Player braucht lange zum Starten",
+    "startStuckAppBody": "Es wartet auf die Desktop-App: {step}. Ein Laufwerk mit Ihrer Bibliothek schläft vielleicht, ist beschäftigt oder nicht verbunden. „Erneut versuchen“ startet das Fenster neu.",
+    "startStepShell": "die App fragen, was sie kann",
+    "startStepLibraries": "die Bibliotheken suchen",
+    "startStepFolder": "den Ordner dieser Bibliothek suchen",
+    "startStepRename": "den Ordner dieser Bibliothek benennen",
+    "startStepPlaces": "die Ordner, die diese Bibliothek an Ort und Stelle nutzt",
+    "startStepPermission": "die Erlaubnis für den Ordner der Bibliothek",
+    "startStepOpen": "die Bibliothek öffnen",
+    "startStepRead": "die Bibliothek lesen",
     "exportWhileFullTitle": "Kein Platz für die Datei",
     "exportWhileFullBody": "Dieses Gerät ist voll, daher kann die exportierte Datei höchstwahrscheinlich auch nicht gespeichert werden, womöglich ohne Hinweis. Gib zuerst etwas Speicherplatz frei (auf einem iPad: Einstellungen → Allgemein → iPad-Speicher).",
     "exportWhileFullAnyway": "Trotzdem versuchen",
@@ -16970,6 +17020,16 @@ const STRINGS = {
     "notLoadedEmptyYes": "从空曲库开始",
     "storageStuckTitle": "此设备的存储没有响应",
     "storageStuckBody": "37 Player 正在等待此设备的存储，你的曲库保存在那里。这通常表示设备已满。请释放一些空间（iPad 上：设置 → 通用 → iPad 储存空间），然后点按“重试”。在曲库出现之前，不要导入或加入共享曲库。",
+    "startStuckAppTitle": "37 Player 启动所需时间较长",
+    "startStuckAppBody": "它正在等待桌面应用：{step}。存放您曲库的磁盘可能处于休眠、繁忙或未连接状态。“重试”会重新启动窗口。",
+    "startStepShell": "询问应用能做什么",
+    "startStepLibraries": "查找曲库",
+    "startStepFolder": "查找此曲库的文件夹",
+    "startStepRename": "为此曲库的文件夹命名",
+    "startStepPlaces": "此曲库就地使用的文件夹",
+    "startStepPermission": "曲库文件夹的权限",
+    "startStepOpen": "打开曲库",
+    "startStepRead": "读取曲库",
     "exportWhileFullTitle": "空间不足，无法保存文件",
     "exportWhileFullBody": "此设备已满，导出的文件很可能也无法保存，而且可能不会有任何提示。请先释放一些空间（iPad 上：设置 → 通用 → iPad 储存空间）。",
     "exportWhileFullAnyway": "仍然尝试",
@@ -19118,6 +19178,16 @@ const STRINGS = {
     "notLoadedEmptyYes": "Bắt đầu trống",
     "storageStuckTitle": "Bộ nhớ của thiết bị này không phản hồi",
     "storageStuckBody": "37 Player đang chờ bộ nhớ của thiết bị này, nơi lưu thư viện của bạn. Điều này thường có nghĩa là thiết bị đã đầy. Hãy giải phóng bớt dung lượng (trên iPad: Cài đặt → Cài đặt chung → Dung lượng iPad), rồi chạm Thử lại. Đừng nhập tệp hay tham gia thư viện dùng chung cho đến khi thư viện của bạn hiện ra.",
+    "startStuckAppTitle": "37 Player đang khởi động lâu",
+    "startStuckAppBody": "Nó đang chờ ứng dụng máy tính: {step}. Một ổ đĩa chứa thư viện của bạn có thể đang ngủ, đang bận hoặc bị ngắt kết nối. “Thử lại” sẽ khởi động lại cửa sổ.",
+    "startStepShell": "hỏi ứng dụng xem nó làm được gì",
+    "startStepLibraries": "tìm các thư viện",
+    "startStepFolder": "tìm thư mục của thư viện này",
+    "startStepRename": "đặt tên thư mục của thư viện này",
+    "startStepPlaces": "các thư mục mà thư viện này dùng tại chỗ",
+    "startStepPermission": "quyền cho thư mục của thư viện",
+    "startStepOpen": "mở thư viện",
+    "startStepRead": "đọc thư viện",
     "exportWhileFullTitle": "Không đủ chỗ cho tệp",
     "exportWhileFullBody": "Thiết bị này đã đầy, nên tệp xuất ra nhiều khả năng cũng không lưu được, và có thể không có thông báo nào. Hãy giải phóng bớt dung lượng trước (trên iPad: Cài đặt → Cài đặt chung → Dung lượng iPad).",
     "exportWhileFullAnyway": "Vẫn thử",
@@ -21266,6 +21336,16 @@ const STRINGS = {
     "notLoadedEmptyYes": "Κενή έναρξη",
     "storageStuckTitle": "Ο αποθηκευτικός χώρος της συσκευής δεν αποκρίνεται",
     "storageStuckBody": "Το 37 Player περιμένει τον αποθηκευτικό χώρο αυτής της συσκευής, όπου φυλάσσεται η βιβλιοθήκη σας. Συνήθως αυτό σημαίνει ότι η συσκευή είναι γεμάτη. Ελευθερώστε λίγο χώρο (σε iPad: Ρυθμίσεις → Γενικά → Αποθηκευτικός χώρος iPad) και πατήστε Δοκιμή ξανά. Μην κάνετε εισαγωγή ούτε σύνδεση σε κοινόχρηστη βιβλιοθήκη μέχρι να εμφανιστεί η βιβλιοθήκη σας.",
+    "startStuckAppTitle": "Το 37 Player αργεί να ξεκινήσει",
+    "startStuckAppBody": "Περιμένει την εφαρμογή υπολογιστή: {step}. Ένας δίσκος με τη βιβλιοθήκη σας ίσως είναι σε αναστολή, απασχολημένος ή αποσυνδεδεμένος. Το «Δοκιμή ξανά» ξεκινά ξανά το παράθυρο.",
+    "startStepShell": "ρωτά την εφαρμογή τι μπορεί να κάνει",
+    "startStepLibraries": "βρίσκει τις βιβλιοθήκες",
+    "startStepFolder": "βρίσκει τον φάκελο αυτής της βιβλιοθήκης",
+    "startStepRename": "ονομάζει τον φάκελο αυτής της βιβλιοθήκης",
+    "startStepPlaces": "τους φακέλους που χρησιμοποιεί επιτόπου αυτή η βιβλιοθήκη",
+    "startStepPermission": "την άδεια για τον φάκελο της βιβλιοθήκης",
+    "startStepOpen": "ανοίγει τη βιβλιοθήκη",
+    "startStepRead": "διαβάζει τη βιβλιοθήκη",
     "exportWhileFullTitle": "Δεν υπάρχει χώρος για το αρχείο",
     "exportWhileFullBody": "Αυτή η συσκευή είναι γεμάτη, οπότε το αρχείο εξαγωγής πιθανότατα δεν θα μπορέσει να αποθηκευτεί κι αυτό, ίσως χωρίς καμία ειδοποίηση. Ελευθερώστε πρώτα λίγο χώρο (σε iPad: Ρυθμίσεις → Γενικά → Αποθηκευτικός χώρος iPad).",
     "exportWhileFullAnyway": "Δοκιμή παρ' όλα αυτά",
@@ -23414,6 +23494,16 @@ const STRINGS = {
     "notLoadedEmptyYes": "Inizia vuota",
     "storageStuckTitle": "La memoria di questo dispositivo non risponde",
     "storageStuckBody": "37 Player sta aspettando la memoria di questo dispositivo, dove è conservata la tua libreria. Di solito significa che il dispositivo è pieno. Libera un po' di spazio (su un iPad: Impostazioni → Generali → Spazio iPad), poi tocca Riprova. Non importare e non unirti a una libreria condivisa finché la tua libreria non compare.",
+    "startStuckAppTitle": "37 Player ci mette molto ad avviarsi",
+    "startStuckAppBody": "Sta aspettando l'app desktop: {step}. Un disco con la tua libreria potrebbe essere in stop, occupato o scollegato. «Riprova» riavvia la finestra.",
+    "startStepShell": "chiedere all'app cosa sa fare",
+    "startStepLibraries": "cercare le librerie",
+    "startStepFolder": "cercare la cartella di questa libreria",
+    "startStepRename": "dare il nome alla cartella di questa libreria",
+    "startStepPlaces": "le cartelle che questa libreria usa sul posto",
+    "startStepPermission": "il permesso per la cartella della libreria",
+    "startStepOpen": "aprire la libreria",
+    "startStepRead": "leggere la libreria",
     "exportWhileFullTitle": "Non c'è spazio per il file",
     "exportWhileFullBody": "Questo dispositivo è pieno, quindi molto probabilmente nemmeno il file esportato potrà essere salvato, forse senza alcun avviso. Libera prima un po' di spazio (su un iPad: Impostazioni → Generali → Spazio iPad).",
     "exportWhileFullAnyway": "Prova comunque",
@@ -24294,10 +24384,52 @@ function signalAppUp(){
 function openStorageNotResponding(){
   signalAppUp();
   backdrop.dataset.busy = "1";
-  openModal(`<h3>${escapeHtmlText(t("storageStuckTitle"))}</h3>
-    <p>${escapeHtmlText(t("storageStuckBody"))}</p>
+  const app = START_APP_STEPS.includes(startStep);
+  openModal(`<h3>${escapeHtmlText(t(app ? "startStuckAppTitle" : "storageStuckTitle"))}</h3>
+    <p id="storageStuckBody">${escapeHtmlText(app ? t("startStuckAppBody", {step: t(START_STEP_KEYS[startStep])}) : t("storageStuckBody"))}</p>
     <div class="modal-actions"><button class="btn primary" type="button" id="storageStuckTry">${escapeHtmlText(t("notLoadedTryAgain"))}</button></div>`);
   document.getElementById("storageStuckTry").addEventListener("click", ()=> location.reload());
+}
+/* The start's watch (2.7.004; desktop/AUDIT-boundaries.md 1.16, the audit's
+   fix 7, K). Before the library opens, the desktop app's page awaits the
+   shell five times (what it can do, the libraries, this one's folder, its
+   name, the folders used in place), and the 8-second "storage isn't
+   responding" watch began only after them: any of them not answering (a
+   drive that's gone, every pool thread busy) left a blank window with
+   nothing said. Now the watch starts before the first, knows which step the
+   start is at (startStepIs), and says it, in the dialog for the app's steps
+   ("It's waiting for the desktop app: …") and in the playback log for every
+   step (so a report names it). Time with a question open for the person
+   (where should your libraries live, a folder to find, permission) isn't
+   counted: the watch never covers a question. */
+const START_STEP_KEYS = {shell: "startStepShell", libraries: "startStepLibraries", folder: "startStepFolder", rename: "startStepRename", places: "startStepPlaces", permission: "startStepPermission", open: "startStepOpen", read: "startStepRead"};
+const START_APP_STEPS = ["shell", "libraries", "folder", "rename", "places"];
+const START_STUCK_MS = 8000;
+let startStep = "", startStepsSaid = new Set();
+function startStepIs(step){
+  startStep = step;
+  const body = document.getElementById("storageStuckBody");
+  if(body && START_APP_STEPS.includes(step)) body.textContent = t("startStuckAppBody", {step: t(START_STEP_KEYS[step])});
+}
+function startWatchBegin(){
+  let waited = 0;
+  const tick = setInterval(()=>{
+    const ours = !!document.getElementById("storageStuckTry");
+    if(!ours && backdrop.dataset.busy && !backdrop.classList.contains("show")) delete backdrop.dataset.busy;
+    if(backdrop.classList.contains("show") && !ours) return; // a question for the person: not counted
+    waited += 500;
+    if(waited < START_STUCK_MS) return;
+    if(!startStepsSaid.has(startStep)){
+      startStepsSaid.add(startStep);
+      let en = startStep; try{ en = STRINGS.en[START_STEP_KEYS[startStep]] || startStep; }catch(err){}
+      playLog("starting: waiting on " + en + " (" + Math.round(waited / 1000) + " s into the start)");
+    }
+    if(!ours) openStorageNotResponding();
+  }, 500);
+  return ()=>{
+    clearInterval(tick);
+    if(startStepsSaid.size) playLog("starting: done waiting (" + Math.round(waited / 1000) + " s)");
+  };
 }
 let forceLibraryWrite = false;  // a recovery was chosen: replace the damaged record
 let recoveredFromSpareAt = null;
@@ -54234,30 +54366,38 @@ if(IN_DESKTOP_APP && window.__TAURI__ && window.__TAURI__.event && window.__TAUR
 (async function init(){
   const driveSignInResult = driveTakeSignInResult(); // first, so the tokens leave the address at once
   if(MOVED_TO && !driveSignInResult && await neverUsedHere()){ location.replace(movedUrl() + location.hash); return; }
+  const startWatchEnd = startWatchBegin(); // before the first wait (2.7.004)
+  startStepIs("shell");
   await desktopShellCheck();
   shellUpdateLater();
   // The desktop app (2.0): libraries found, moved out of browser storage,
   // and this one's folder there, before it opens.
+  startStepIs("libraries");
   if(await desktopLibrariesAtStart()){ leavingOnPurpose = true; location.reload(); return; }
+  startStepIs("folder");
   await ensureDesktopFolder();
+  startStepIs("rename");
   await desktopFolderFollowsName();
   // The folders this library uses in place, back on the shell's list if the
   // app's data folder lost them (the shell reads the library's own record).
+  startStepIs("places");
   if(STORAGE_KIND === "desktop"){ try{ if(await desktopInvoke("fs_places_restore", {id: desktopRootOf(LIBRARY_ID)})) desktopRootsCache = null; }catch(err){} }
   showDesktopStartNote();
+  startStepIs("permission");
   await ensureLibraryFolder(); // a library kept in a folder: the folder first, with permission
-  const storageWatch = setTimeout(openStorageNotResponding, 8000);
   // How long starting took, and where (2.2.011): the Mac mini's window stayed
   // blank white for about 20 s. Seconds since the page began to load.
   const startAt = {began: performance.now()};
+  startStepIs("open");
   await libStore.open();
   startAt.open = performance.now();
   if(STORAGE_KIND === "desktop") setTimeout(()=> tidyPlaces().catch(err=> console.warn("Tidying the folders used in place:", err)), 4000);
   if(STORAGE_KIND === "desktop"){ const back = await libraryMirrorRestore(); if(back.length) setTimeout(()=> playLog("this library's own values came back from its folder (" + back.join(", ") + "): the app's browser storage had been emptied"), 2000); }
+  startStepIs("read");
   await loadState();
   startAt.read = performance.now();
   undoInit();
-  clearTimeout(storageWatch);
+  startWatchEnd();
   if(document.getElementById("storageStuckTry")){ delete backdrop.dataset.busy; closeModal(); }
   writeLibraryInfo();
   noteLibraryStats();
