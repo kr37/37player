@@ -195,7 +195,7 @@ jobs:
           tag="desktop-test-$n"
           # Named by the version first (kr37, 7 Nov 2026), the build's
           # number after; the files carry the version too.
-          v=$(curl -s "https://raw.githubusercontent.com/${{ github.repository }}/${{ inputs.channel == 'main' && 'main' || 'dev' }}/37-player.html" | head -c 4000 | grep -o 'app-version" content="[^"]*' | head -1 | sed 's/.*content="//')
+          v=$(curl -s "https://raw.githubusercontent.com/${{ github.repository }}/${{ inputs.page_branch || (inputs.channel == 'main' && 'main' || 'dev') }}/37-player.html" | head -c 4000 | grep -o 'app-version" content="[^"]*' | head -1 | sed 's/.*content="//')
           # The app's own (shell's) version too, in the title: the page's
           # number alone hid that 31d was shell 2.2.1 (kr37, 11 Nov 2026).
           sv=$(curl -s "https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/desktop/src-tauri/tauri.conf.json" | grep -o '"version": *"[^"]*' | head -1 | sed 's/.*"//')
