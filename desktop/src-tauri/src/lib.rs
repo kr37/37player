@@ -322,6 +322,33 @@ fn ask_page(app: &tauri::AppHandle, system: bool) {
     }
 }
 
+// The page's process ended (the Mac: WebKit's page process crashed, or macOS
+// ended it for memory; shell 2.7.2, the audit's fix 8, J). Kept for the
+// page's log (watch.rs), then the window reloads, as Tauri did by itself;
+// but after a third within two minutes it stops, so a page that dies at
+// every start doesn't reload in a loop, and the system's dialog asks:
+// Reload / Quit. (Windows' WebView2 says it with ProcessFailed, which
+// nothing handles yet: to check on the HP.)
+#[cfg(any(target_os = "macos", target_os = "ios"))]
+fn page_process_ended(webview: &tauri::Webview) {
+    let now = watch::now_ms();
+    let again = match watch::get() {
+        Some(w) => { w.page_ended(now); watch::should_reload(&mut w.recent_ends.lock().unwrap(), now) }
+        None => true,
+    };
+    if again { let _ = webview.reload(); return; }
+    use tauri_plugin_dialog::{DialogExt, MessageDialogButtons, MessageDialogKind};
+    let app = webview.app_handle().clone();
+    let t = app.state::<Arc<closing::Closing>>().texts();
+    let (wv, app2) = (webview.clone(), app.clone());
+    app.dialog().message(t.ended_body).title(t.ended_title).kind(MessageDialogKind::Error)
+        .buttons(MessageDialogButtons::OkCancelCustom(t.reload, t.quit))
+        .show(move |reload| {
+            if reload { if let Some(w) = watch::get() { w.recent_ends.lock().unwrap().clear(); } let _ = wv.reload(); }
+            else { quit_now(&app2); }
+        });
+}
+
 fn offer_quit(app: &tauri::AppHandle) {
     use tauri_plugin_dialog::{DialogExt, MessageDialogButtons, MessageDialogKind};
     let closing = app.state::<Arc<closing::Closing>>().inner().clone();
@@ -407,6 +434,9 @@ pub fn run() {
                 }
             });
     }
+    // The page's process ending: logged, reloaded, no loop (page_process_ended).
+    #[cfg(any(target_os = "macos", target_os = "ios"))]
+    { builder = builder.on_web_content_process_terminate(|webview| page_process_ended(webview)); }
     builder
         .manage(Quitting(AtomicBool::new(false)))
         .manage(Opened::default())

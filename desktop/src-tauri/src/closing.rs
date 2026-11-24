@@ -18,13 +18,22 @@ use std::sync::Mutex;
 pub const NO_ANSWER_MS: u64 = 5000;
 pub const SYSTEM_MS: u64 = 10_000;
 
+// The words for the shell's own dialogs, in the page's language. The page's
+// process ending (shell 2.7.2, lib.rs) has its own, sent from page 2.7.005;
+// an earlier page's leave them empty and the English ones are used.
 #[derive(serde::Deserialize, Clone, Debug, PartialEq)]
-pub struct Texts { pub title: String, pub body: String, pub quit: String, pub wait: String }
+pub struct Texts {
+    pub title: String, pub body: String, pub quit: String, pub wait: String,
+    #[serde(default)] pub ended_title: String, #[serde(default)] pub ended_body: String, #[serde(default)] pub reload: String,
+}
 impl Default for Texts {
     fn default() -> Texts {
-        Texts { title: "37 Player isn't responding".into(), body: "Its window hasn't answered. Quit anyway? Changes not saved yet may be lost.".into(), quit: "Quit".into(), wait: "Wait".into() }
+        Texts { title: "37 Player isn't responding".into(), body: "Its window hasn't answered. Quit anyway? Changes not saved yet may be lost.".into(), quit: "Quit".into(), wait: "Wait".into(),
+            ended_title: ENDED_TITLE.into(), ended_body: ENDED_BODY.into(), reload: "Reload".into() }
     }
 }
+const ENDED_TITLE: &str = "37 Player's window keeps stopping";
+const ENDED_BODY: &str = "Its page has stopped three times in two minutes, so it hasn't been started again by itself. Reload it, or quit 37 Player.";
 
 #[derive(Debug, PartialEq)]
 pub enum Next { AskPage, Offer }
@@ -42,7 +51,10 @@ impl Closing {
     pub fn seen(&self, texts: Option<Texts>) {
         let mut st = self.st.lock().unwrap();
         st.answers = true; st.asked = None;
-        if let Some(t) = texts.filter(|t| !t.title.is_empty() && !t.quit.is_empty() && !t.wait.is_empty()) { st.texts = t; }
+        if let Some(mut t) = texts.filter(|t| !t.title.is_empty() && !t.quit.is_empty() && !t.wait.is_empty()) {
+            if t.ended_title.is_empty() || t.ended_body.is_empty() || t.reload.is_empty() { t.ended_title = ENDED_TITLE.into(); t.ended_body = ENDED_BODY.into(); t.reload = "Reload".into(); }
+            st.texts = t;
+        }
     }
     /// A close, Quit or the system's quit at `now` (ms): ask the page, or,
     /// when an earlier ask has gone unanswered NO_ANSWER_MS, offer the dialog.
@@ -58,6 +70,9 @@ impl Closing {
     pub fn start_offer(&self) -> Option<Texts> { let mut st = self.st.lock().unwrap(); if st.offering { return None; } st.offering = true; Some(st.texts.clone()) }
     pub fn end_offer(&self) { self.st.lock().unwrap().offering = false; }
     pub fn asked_at(&self) -> Option<u64> { self.st.lock().unwrap().asked }
+    /// The words now (for the page's process ending: no "one at a time" here).
+    #[cfg_attr(not(any(target_os = "macos", target_os = "ios")), allow(dead_code))] // the Mac only
+    pub fn texts(&self) -> Texts { self.st.lock().unwrap().texts.clone() }
 }
 
 #[cfg(test)]
@@ -93,11 +108,12 @@ mod tests {
     #[test]
     fn a_page_load_starts_over_and_the_page_gives_its_words() {
         let c = Closing::default();
-        c.seen(Some(Texts { title: "37 Player no responde".into(), body: "…".into(), quit: "Salir".into(), wait: "Esperar".into() }));
+        c.seen(Some(Texts { title: "37 Player no responde".into(), body: "…".into(), quit: "Salir".into(), wait: "Esperar".into(), ended_title: "".into(), ended_body: "".into(), reload: "".into() }));
+        assert_eq!(c.texts().reload, "Reload", "words a page before 2.7.005 doesn't send: English");
         c.request(1000);
         c.page_started();
         assert_eq!(c.request(1000 + NO_ANSWER_MS), Next::AskPage, "a reloaded page hasn't said it answers");
-        c.seen(Some(Texts { title: "".into(), body: "".into(), quit: "".into(), wait: "".into() }));
+        c.seen(Some(Texts { title: "".into(), body: "".into(), quit: "".into(), wait: "".into(), ended_title: "".into(), ended_body: "".into(), reload: "".into() }));
         assert_eq!(c.start_offer().map(|t| t.wait), Some("Esperar".into()), "empty words are passed over");
     }
 }

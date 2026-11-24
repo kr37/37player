@@ -15,6 +15,13 @@
 //    session before ended unexpectedly (a crash, a force quit, the power).
 //  - A Rust panic (the app aborts on one): its message goes into that file
 //    first.
+//  - The page's process ending (shell 2.7.2; desktop/AUDIT-boundaries.md
+//    1.14, the audit's fix 8, J): on the Mac, WebKit's page process crashing
+//    or macOS ending it for memory. Tauri reloaded the page by itself and
+//    nothing was logged; a page that died at every start would have reloaded
+//    in a loop. Now each one is kept here (page_ended) and the window
+//    reloaded, but after three in two minutes (should_reload) it stops and
+//    the system's dialog asks (lib.rs).
 // p37_watch hands the page what's new, once; the page puts it in the
 // playback log, so a feedback report carries it.
 use std::path::PathBuf;
@@ -36,7 +43,22 @@ pub struct Stall { pub at: u64, pub ms: u64, pub focused: bool }
 pub struct Session { pub started: u64, pub alive: u64, pub version: String, #[serde(default)] pub panic: Option<String> }
 
 #[derive(serde::Serialize, Clone, Default)]
-pub struct Report { pub stalls: Vec<Stall>, pub last_session: Option<Session> }
+pub struct Report { pub stalls: Vec<Stall>, pub last_session: Option<Session>, pub page_ended: Vec<u64> }
+
+/// Page process ends kept for should_reload: those within RELOADS_WITHIN_MS.
+#[cfg_attr(not(any(target_os = "macos", target_os = "ios")), allow(dead_code))] // the Mac only
+pub const RELOADS_WITHIN_MS: u64 = 120_000;
+#[cfg_attr(not(any(target_os = "macos", target_os = "ios")), allow(dead_code))] // the Mac only
+pub const RELOADS_AT_MOST: usize = 2;
+/// Whether the window should reload by itself after the page's process
+/// ended at `now`, given the ends before it (kept, pruned, here): not after
+/// a third within two minutes.
+#[cfg_attr(not(any(target_os = "macos", target_os = "ios")), allow(dead_code))] // the Mac only
+pub fn should_reload(ends: &mut Vec<u64>, now: u64) -> bool {
+    ends.retain(|&t| now.saturating_sub(t) < RELOADS_WITHIN_MS);
+    ends.push(now);
+    ends.len() <= RELOADS_AT_MOST
+}
 
 // The stall finder on its own, for tests: fed the time of each of its ticks
 // and the main thread's last note.
@@ -63,6 +85,9 @@ pub struct Watch {
     beat: Arc<AtomicU64>,
     pub focused: AtomicBool,
     stalls: Mutex<Vec<Stall>>,
+    page_ended: Mutex<Vec<u64>>,
+    #[cfg_attr(not(any(target_os = "macos", target_os = "ios")), allow(dead_code))] // the Mac only
+    pub recent_ends: Mutex<Vec<u64>>,
     last: Mutex<Option<Session>>,
     me: Mutex<Session>,
     file: Option<PathBuf>,
@@ -80,7 +105,14 @@ impl Watch {
     // After all (an update that didn't install): running again.
     pub fn running_again(&self) { self.write(); }
     pub fn take(&self) -> Report {
-        Report { stalls: std::mem::take(&mut *self.stalls.lock().unwrap()), last_session: self.last.lock().unwrap().take() }
+        Report { stalls: std::mem::take(&mut *self.stalls.lock().unwrap()), last_session: self.last.lock().unwrap().take(), page_ended: std::mem::take(&mut *self.page_ended.lock().unwrap()) }
+    }
+    /// The page's process ended at `at` (kept for the page's log, at most 20).
+    #[cfg_attr(not(any(target_os = "macos", target_os = "ios")), allow(dead_code))] // the Mac only
+    pub fn page_ended(&self, at: u64) {
+        let mut v = self.page_ended.lock().unwrap();
+        v.push(at);
+        let n = v.len(); if n > 20 { v.drain(0..n - 20); }
     }
 }
 
@@ -93,7 +125,7 @@ pub fn start(app: &tauri::AppHandle) -> Arc<Watch> {
     let now = now_ms();
     let w = Arc::new(Watch {
         beat: Arc::new(AtomicU64::new(now)), focused: AtomicBool::new(true),
-        stalls: Mutex::new(vec![]), last: Mutex::new(last),
+        stalls: Mutex::new(vec![]), page_ended: Mutex::new(vec![]), recent_ends: Mutex::new(vec![]), last: Mutex::new(last),
         me: Mutex::new(Session { started: now, alive: now, version: app.package_info().version.to_string(), panic: None }),
         file,
     });
@@ -151,6 +183,16 @@ pub fn p37_watch() -> Report { get().map(|w| w.take()).unwrap_or_default() }
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn the_window_reloads_by_itself_twice_in_two_minutes_not_three_times() {
+        let mut ends = vec![];
+        assert!(should_reload(&mut ends, 1_000_000));
+        assert!(should_reload(&mut ends, 1_030_000));
+        assert!(!should_reload(&mut ends, 1_060_000), "a third within two minutes: stop and ask");
+        assert!(should_reload(&mut vec![1_000_000, 1_030_000], 1_000_000 + RELOADS_WITHIN_MS + 30_001), "the first ones out of the window by then");
+        let mut far = vec![];
+        for i in 0..5 { assert!(should_reload(&mut far, 1_000_000 + i * (RELOADS_WITHIN_MS + 1)), "one every few minutes: always"); }
+    }
     #[test]
     fn a_held_up_main_thread_is_a_stall() {
         let mut f = Finder::default();
