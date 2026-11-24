@@ -1,8 +1,8 @@
 # Audit: where 37 Player's processes and threads meet
 
 A report for kr37's review, 20 November 2026. **Nothing in the code was
-changed.** Fixes come after the release, each as a small step of its own:
-a d build for the shell, a page version for the page.
+changed.** Fixes come after the release, each in a small step on its own
+branch: a d build for the shell, a page version for the page.
 
 Read against:
 
@@ -813,15 +813,9 @@ On an iPad, the silent-loop test (fix Q).
 
 ## The fixes, in order
 
-Each fix is a small step of its own. Shell fixes become a d build; page
-fixes become a page version on `dev`.
-
-**How (kr37, 23 Nov):** other conversations are paused, so the work goes
-straight onto `desktop` (shell) and `dev` (page): one commit and one version
-per fix, so any one can be undone alone. Fix M, which touches every track,
-gets a branch of its own until kr37 has tried it.
-
-First the ones with the most safety for the least risk:
+Each fix is a small step with its own branch. Shell fixes become a d build;
+page fixes become a page version on `dev`. First the ones with the most
+safety for the least risk:
 
 | # | Fix | Where | Size | Risk | Covers |
 |---|---|---|---|---|---|
