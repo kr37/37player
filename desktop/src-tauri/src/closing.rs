@@ -70,6 +70,8 @@ impl Closing {
     pub fn start_offer(&self) -> Option<Texts> { let mut st = self.st.lock().unwrap(); if st.offering { return None; } st.offering = true; Some(st.texts.clone()) }
     pub fn end_offer(&self) { self.st.lock().unwrap().offering = false; }
     pub fn asked_at(&self) -> Option<u64> { self.st.lock().unwrap().asked }
+    /// This page has said it answers closes.
+    pub fn page_answers(&self) -> bool { self.st.lock().unwrap().answers }
     /// The words now (for the page's process ending: no "one at a time" here).
     #[cfg_attr(not(any(target_os = "macos", target_os = "ios")), allow(dead_code))] // the Mac only
     pub fn texts(&self) -> Texts { self.st.lock().unwrap().texts.clone() }

@@ -310,6 +310,8 @@ fn fit_to_screen(w: &tauri::WebviewWindow) {
 fn ask_page(app: &tauri::AppHandle, system: bool) {
     let closing = app.state::<Arc<closing::Closing>>().inner().clone();
     if closing.request(watch::now_ms()) == closing::Next::Offer { offer_quit(app); return; }
+    // The page silent for a minute or more (watch.rs, shell 2.7.3): offered at once, not after 5 s more.
+    if closing.page_answers() && watch::get().map(|w| w.page_is_silent()).unwrap_or(false) { offer_quit(app); return; }
     if let Some(w) = app.get_webview_window("main") {
         let _ = w.emit("p37-close-requested", ());
     }

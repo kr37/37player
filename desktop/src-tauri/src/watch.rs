@@ -22,6 +22,20 @@
 //    in a loop. Now each one is kept here (page_ended) and the window
 //    reloaded, but after three in two minutes (should_reload) it stops and
 //    the system's dialog asks (lib.rs).
+//  - The page not answering (shell 2.7.3; the audit's fix 9, I). The page
+//    asks p37_watch every 20 s; the time of its last ask is kept, and this
+//    thread's loop notes when it's over PAGE_SILENT_MS old with the window
+//    in front (PAGE_SILENT_AWAY_MS when it isn't: the system slows a hidden
+//    window's timers). Only noted, never acted on (kr37, 23 Nov 2026: a
+//    reload would very likely meet the same stuck media process, and a
+//    restart by itself, perhaps mid-puja on a false alarm, is worse than a
+//    frozen window someone can see): in running.json at once, so a force
+//    quit still leaves when the page stopped answering, and for the page's
+//    log if it answers again. A close or Quit while it's silent offers
+//    "isn't responding" at once (lib.rs, closing.rs).
+//  - Every 30 s running.json also says whether the main thread is held up
+//    right now, and since when: a hang that never ended (Force Quit) then
+//    leaves its start, not only "didn't close normally".
 // p37_watch hands the page what's new, once; the page puts it in the
 // playback log, so a feedback report carries it.
 use std::path::PathBuf;
@@ -32,6 +46,8 @@ use tauri::Manager;
 
 pub const TICK_MS: u64 = 250;
 pub const STALL_MS: u64 = 2000;
+pub const PAGE_SILENT_MS: u64 = 60_000;
+pub const PAGE_SILENT_AWAY_MS: u64 = 300_000;
 const ALIVE_EVERY_MS: u64 = 30_000;
 
 pub fn now_ms() -> u64 { SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_millis() as u64).unwrap_or(0) }
@@ -40,10 +56,24 @@ pub fn now_ms() -> u64 { SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.
 pub struct Stall { pub at: u64, pub ms: u64, pub focused: bool }
 
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default, PartialEq)]
-pub struct Session { pub started: u64, pub alive: u64, pub version: String, #[serde(default)] pub panic: Option<String> }
+pub struct Session { pub started: u64, pub alive: u64, pub version: String, #[serde(default)] pub panic: Option<String>,
+    /// The page's last ask, when it had stopped asking (shell 2.7.3).
+    #[serde(default)] pub page_silent_since: Option<u64>,
+    /// When the main thread was last seen held up, still held up at the last note (shell 2.7.3).
+    #[serde(default)] pub main_stalled_since: Option<u64> }
+
+/// A time the page didn't ask for PAGE_SILENT_MS or more, ended by its asking again.
+#[derive(serde::Serialize, Clone, Debug, PartialEq)]
+pub struct Silence { pub at: u64, pub ms: u64 }
+
+/// Whether the page has been silent too long: its last ask `last` (0: it
+/// hasn't asked yet), at `now`, the window in front or not.
+pub fn page_silent(last: u64, now: u64, focused: bool) -> bool {
+    last != 0 && now.saturating_sub(last) > if focused { PAGE_SILENT_MS } else { PAGE_SILENT_AWAY_MS }
+}
 
 #[derive(serde::Serialize, Clone, Default)]
-pub struct Report { pub stalls: Vec<Stall>, pub last_session: Option<Session>, pub page_ended: Vec<u64> }
+pub struct Report { pub stalls: Vec<Stall>, pub last_session: Option<Session>, pub page_ended: Vec<u64>, pub page_silences: Vec<Silence> }
 
 /// Page process ends kept for should_reload: those within RELOADS_WITHIN_MS.
 #[cfg_attr(not(any(target_os = "macos", target_os = "ios")), allow(dead_code))] // the Mac only
@@ -65,6 +95,8 @@ pub fn should_reload(ends: &mut Vec<u64>, now: u64) -> bool {
 #[derive(Default)]
 pub struct Finder { prev_tick: u64, from: Option<(u64, bool)> }
 impl Finder {
+    /// When the stall under way began, if the main thread is held up now.
+    pub fn stalled_since(&self) -> Option<u64> { self.from.map(|(at, _)| at) }
     // Returns a finished stall, if this tick ends one. `late`: this thread
     // itself was held up (asleep), so the gap says nothing.
     pub fn tick(&mut self, now: u64, beat: u64, focused: bool) -> (Option<Stall>, bool) {
@@ -86,6 +118,9 @@ pub struct Watch {
     pub focused: AtomicBool,
     stalls: Mutex<Vec<Stall>>,
     page_ended: Mutex<Vec<u64>>,
+    /// The page's last p37_watch (ms; 0 before the first), and the silences ended since the page last asked.
+    page_asked: AtomicU64,
+    page_silences: Mutex<Vec<Silence>>,
     #[cfg_attr(not(any(target_os = "macos", target_os = "ios")), allow(dead_code))] // the Mac only
     pub recent_ends: Mutex<Vec<u64>>,
     last: Mutex<Option<Session>>,
@@ -105,8 +140,28 @@ impl Watch {
     // After all (an update that didn't install): running again.
     pub fn running_again(&self) { self.write(); }
     pub fn take(&self) -> Report {
-        Report { stalls: std::mem::take(&mut *self.stalls.lock().unwrap()), last_session: self.last.lock().unwrap().take(), page_ended: std::mem::take(&mut *self.page_ended.lock().unwrap()) }
+        self.page_asks(now_ms());
+        Report { stalls: std::mem::take(&mut *self.stalls.lock().unwrap()), last_session: self.last.lock().unwrap().take(), page_ended: std::mem::take(&mut *self.page_ended.lock().unwrap()),
+            page_silences: std::mem::take(&mut *self.page_silences.lock().unwrap()) }
     }
+    /// The page asked (p37_watch) at `now`: a silence noted before it ends here.
+    pub fn page_asks(&self, now: u64) {
+        self.page_asked.store(now, Ordering::SeqCst);
+        let ended = { let mut me = self.me.lock().unwrap(); me.page_silent_since.take() };
+        if let Some(at) = ended {
+            self.page_silences.lock().unwrap().push(Silence { at, ms: now.saturating_sub(at) });
+            self.write();
+        }
+    }
+    /// Notes a silence once it's too long (from this thread's loop): kept in running.json at once.
+    pub fn check_page(&self, now: u64) {
+        let last = self.page_asked.load(Ordering::SeqCst);
+        if !page_silent(last, now, self.focused.load(Ordering::SeqCst)) { return; }
+        let noted = { let mut me = self.me.lock().unwrap(); if me.page_silent_since.is_some() { false } else { me.page_silent_since = Some(last); true } };
+        if noted { self.write(); }
+    }
+    /// The page silent right now (noted): a close offers "isn't responding" at once.
+    pub fn page_is_silent(&self) -> bool { self.me.lock().unwrap().page_silent_since.is_some() }
     /// The page's process ended at `at` (kept for the page's log, at most 20).
     #[cfg_attr(not(any(target_os = "macos", target_os = "ios")), allow(dead_code))] // the Mac only
     pub fn page_ended(&self, at: u64) {
@@ -125,8 +180,8 @@ pub fn start(app: &tauri::AppHandle) -> Arc<Watch> {
     let now = now_ms();
     let w = Arc::new(Watch {
         beat: Arc::new(AtomicU64::new(now)), focused: AtomicBool::new(true),
-        stalls: Mutex::new(vec![]), page_ended: Mutex::new(vec![]), recent_ends: Mutex::new(vec![]), last: Mutex::new(last),
-        me: Mutex::new(Session { started: now, alive: now, version: app.package_info().version.to_string(), panic: None }),
+        stalls: Mutex::new(vec![]), page_ended: Mutex::new(vec![]), page_asked: AtomicU64::new(0), page_silences: Mutex::new(vec![]), recent_ends: Mutex::new(vec![]), last: Mutex::new(last),
+        me: Mutex::new(Session { started: now, alive: now, version: app.package_info().version.to_string(), panic: None, page_silent_since: None, main_stalled_since: None }),
         file,
     });
     w.write();
@@ -165,9 +220,10 @@ pub fn start(app: &tauri::AppHandle) -> Arc<Watch> {
                 v.push(s);
                 let n = v.len(); if n > 50 { v.drain(0..n - 50); }
             }
+            w2.check_page(now);
             if now.saturating_sub(alive_at) >= ALIVE_EVERY_MS {
                 alive_at = now;
-                if let Ok(mut me) = w2.me.lock() { me.alive = now; }
+                if let Ok(mut me) = w2.me.lock() { me.alive = now; me.main_stalled_since = finder.stalled_since(); }
                 w2.write();
             }
         }
@@ -183,6 +239,45 @@ pub fn p37_watch() -> Report { get().map(|w| w.take()).unwrap_or_default() }
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn the_page_is_silent_after_a_minute_in_front_five_minutes_away() {
+        assert!(!page_silent(0, 10_000_000, true), "it hasn't asked yet");
+        assert!(!page_silent(1_000_000, 1_000_000 + PAGE_SILENT_MS, true));
+        assert!(page_silent(1_000_000, 1_000_000 + PAGE_SILENT_MS + 1, true));
+        assert!(!page_silent(1_000_000, 1_000_000 + PAGE_SILENT_MS + 1, false), "a window away from the front: its timers are slowed");
+        assert!(page_silent(1_000_000, 1_000_000 + PAGE_SILENT_AWAY_MS + 1, false));
+    }
+    #[test]
+    fn a_silence_is_noted_once_and_reported_when_the_page_asks_again() {
+        let d = std::env::temp_dir().join(format!("p37-watch-{}", std::process::id()));
+        let _ = std::fs::create_dir_all(&d);
+        let f = d.join("running.json");
+        let w = Watch { beat: Arc::new(AtomicU64::new(0)), focused: AtomicBool::new(true), stalls: Mutex::new(vec![]), page_ended: Mutex::new(vec![]),
+            page_asked: AtomicU64::new(0), page_silences: Mutex::new(vec![]), recent_ends: Mutex::new(vec![]), last: Mutex::new(None),
+            me: Mutex::new(Session::default()), file: Some(f.clone()) };
+        w.check_page(5_000_000);
+        assert!(!w.page_is_silent(), "before the page's first ask, nothing");
+        w.page_asks(1_000_000);
+        w.check_page(1_000_000 + PAGE_SILENT_MS + 500);
+        assert!(w.page_is_silent());
+        assert_eq!(read_session(&f).and_then(|s| s.page_silent_since), Some(1_000_000), "in running.json at once (a force quit keeps it)");
+        w.check_page(1_000_000 + PAGE_SILENT_MS + 9000);
+        w.page_asks(1_000_000 + 95_000);
+        assert!(!w.page_is_silent());
+        assert_eq!(w.take().page_silences, vec![Silence { at: 1_000_000, ms: 95_000 }]);
+        assert_eq!(read_session(&f).and_then(|s| s.page_silent_since), None, "cleared when it answers");
+        assert!(w.take().page_silences.is_empty(), "said once");
+    }
+    #[test]
+    fn a_stall_under_way_has_its_start() {
+        let mut f = Finder::default();
+        let mut t = 1_000_000;
+        for _ in 0..4 { t += TICK_MS; f.tick(t, t, true); }
+        assert_eq!(f.stalled_since(), None);
+        let held = t;
+        for _ in 0..20 { t += TICK_MS; f.tick(t, held, true); }
+        assert_eq!(f.stalled_since(), Some(held), "a hang still going: its start");
+    }
     #[test]
     fn the_window_reloads_by_itself_twice_in_two_minutes_not_three_times() {
         let mut ends = vec![];
@@ -230,7 +325,7 @@ mod tests {
         let d = std::env::temp_dir().join(format!("p37-watch-{}", std::process::id()));
         let _ = std::fs::create_dir_all(&d);
         let f = d.join("running.json");
-        let s = Session { started: 1, alive: 2, version: "2.5.3".into(), panic: Some("boom (src/x.rs:1)".into()) };
+        let s = Session { started: 1, alive: 2, version: "2.5.3".into(), panic: Some("boom (src/x.rs:1)".into()), ..Default::default() };
         std::fs::write(&f, serde_json::to_vec(&s).unwrap()).unwrap();
         assert_eq!(read_session(&f), Some(s));
         std::fs::write(&f, br#"{"started":1,"alive":2,"version":"2.5.2"}"#).unwrap();
