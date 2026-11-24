@@ -6,7 +6,8 @@
 //  - Closing asks first: closing the window, or quitting (Cmd-Q on a Mac),
 //    is held back and the page is told ("p37-close-requested"); the page
 //    asks if something would stop, then calls p37_quit (see the page's
-//    "The desktop app" section).
+//    "The desktop app" section). A page that doesn't answer gets the
+//    system's "isn't responding" dialog instead (closing.rs, shell 2.7.1).
 //  - On a Mac, the app menu's Quit (Cmd-Q) is our own item, so it asks the
 //    page the same way (a test build's Cmd-Q quit without asking); Edit
 //    gives the page copy and paste, Window minimise and close.
@@ -27,6 +28,7 @@
 //  - Nothing that waits for a disk runs on the main thread or holds Tauri's
 //    shared pool (shell 2.6.1; desktop/AUDIT-boundaries.md, fixes D and E):
 //    see `blocking` below.
+mod closing;
 mod device;
 mod files;
 mod oauth;
@@ -131,7 +133,7 @@ fn p37_opened_take(opened: tauri::State<'_, Opened>) -> Vec<OpenedFile> {
 const BRIDGE: u32 = 2;
 
 #[derive(serde::Serialize)]
-struct ShellInfo { version: String, bridge: u32, pages: bool, device: bool, updates: bool, zoom: bool, trash: bool, watch: bool, append_range: bool, typed_path: bool, opened: bool, slow_route: bool, files_http: Option<String> }
+struct ShellInfo { version: String, bridge: u32, pages: bool, device: bool, updates: bool, zoom: bool, trash: bool, watch: bool, append_range: bool, typed_path: bool, opened: bool, slow_route: bool, close_seen: bool, files_http: Option<String> }
 
 // The shell's version is the page's version as of the shell's own last
 // change (tauri.conf.json "version"), like sync.php's.
@@ -152,6 +154,8 @@ fn p37_shell_info(app: tauri::AppHandle) -> ShellInfo {
         opened: true,
         // slow_route: fs_write takes its bytes by Tauri's slower route too, and says "slow" when they came that way (files::body_bytes, shell 2.7.0).
         slow_route: true,
+        // close_seen: the page answers each close at once (p37_close_seen), and one that doesn't gets "isn't responding" (closing.rs, shell 2.7.1).
+        close_seen: true,
         // files_http: where recordings are also served, on Linux (fileserver.rs, shell 2.5.0).
         files_http: app.try_state::<fileserver::FileServer>().map(|f| f.base.clone()) }
 }
@@ -252,11 +256,18 @@ fn check_pages_daily(app: &tauri::AppHandle, pages: Arc<pages::Pages>) {
 }
 
 #[tauri::command]
-fn p37_quit(app: tauri::AppHandle) {
+fn p37_quit(app: tauri::AppHandle) { quit_now(&app); }
+fn quit_now(app: &tauri::AppHandle) {
     app.state::<Quitting>().0.store(true, Ordering::SeqCst);
     if let Some(w) = watch::get() { w.closing(); }
     app.exit(0);
 }
+
+// The page answers a close at once, before its own question (closing.rs);
+// at its start it says so, with the words for "isn't responding" in its
+// language. No disk: on the main thread.
+#[tauri::command]
+fn p37_close_seen(closing: tauri::State<'_, Arc<closing::Closing>>, texts: Option<closing::Texts>) { closing.seen(texts); }
 
 // Where the window goes on a screen whose free area (less the menu bar and
 // Dock, or the taskbar) is `area` (x, y, width, height): its outer size
@@ -291,10 +302,34 @@ fn fit_to_screen(w: &tauri::WebviewWindow) {
     }
 }
 
-fn ask_page(app: &tauri::AppHandle) {
+// A close, the app menu's Quit or the system's quit: the page is asked, or,
+// when it hasn't answered the ask before for NO_ANSWER_MS, the system's
+// dialog offers to quit anyway (closing.rs). `system`: the system asked (a
+// log-out or restart), which waits on the app; the dialog then comes by
+// itself after SYSTEM_MS without an answer.
+fn ask_page(app: &tauri::AppHandle, system: bool) {
+    let closing = app.state::<Arc<closing::Closing>>().inner().clone();
+    if closing.request(watch::now_ms()) == closing::Next::Offer { offer_quit(app); return; }
     if let Some(w) = app.get_webview_window("main") {
         let _ = w.emit("p37-close-requested", ());
     }
+    if system {
+        let (app, since) = (app.clone(), closing.asked_at());
+        std::thread::spawn(move || {
+            std::thread::sleep(std::time::Duration::from_millis(closing::SYSTEM_MS));
+            if let Some(at) = since { if closing.unanswered_since(at) { offer_quit(&app); } }
+        });
+    }
+}
+
+fn offer_quit(app: &tauri::AppHandle) {
+    use tauri_plugin_dialog::{DialogExt, MessageDialogButtons, MessageDialogKind};
+    let closing = app.state::<Arc<closing::Closing>>().inner().clone();
+    let Some(t) = closing.start_offer() else { return };
+    let app2 = app.clone();
+    app.dialog().message(t.body).title(t.title).kind(MessageDialogKind::Warning)
+        .buttons(MessageDialogButtons::OkCancelCustom(t.quit, t.wait))
+        .show(move |quit| { closing.end_offer(); if quit { quit_now(&app2); } });
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -368,13 +403,18 @@ pub fn run() {
             })
             .on_menu_event(|app, event| {
                 if event.id().as_ref() == "p37-quit" {
-                    ask_page(app);
+                    ask_page(app, false);
                 }
             });
     }
     builder
         .manage(Quitting(AtomicBool::new(false)))
         .manage(Opened::default())
+        .manage(Arc::new(closing::Closing::default()))
+        // A page starting to load hasn't said it answers closes yet (closing.rs).
+        .on_page_load(|webview, payload| {
+            if payload.event() == tauri::webview::PageLoadEvent::Started { webview.app_handle().state::<Arc<closing::Closing>>().page_started(); }
+        })
         .manage(pages.clone())
         .manage(device.clone())
         .plugin(tauri::plugin::Builder::<tauri::Wry, ()>::new("p37device").js_init_script(device_script).build())
@@ -424,13 +464,13 @@ pub fn run() {
             files::fs_place, files::fs_place_default, files::fs_root_info, files::fs_root_rename, files::fs_root_show, files::fs_root_trash, files::fs_places_restore, files::fs_remove_if_empty,
             oauth::p37_google_signin, oauth::p37_open_url, files::fs_find_libraries, files::fs_root_choose_library, files::fs_root_use_found,
             files::fs_list, files::fs_stat, files::fs_read, files::fs_write, files::fs_copy, files::fs_append_range, files::fs_rename, files::fs_remove, files::fs_mkdir,
-            updates::p37_shell_update_check, updates::p37_shell_update_install, watch::p37_watch])
+            updates::p37_shell_update_check, updates::p37_shell_update_install, watch::p37_watch, p37_close_seen])
         .on_window_event(|window, event| {
             if let WindowEvent::Focused(f) = event { if let Some(w) = watch::get() { w.focused.store(*f, Ordering::SeqCst); } }
             if let WindowEvent::CloseRequested { api, .. } = event {
                 if !window.app_handle().state::<Quitting>().0.load(Ordering::SeqCst) {
                     api.prevent_close();
-                    ask_page(window.app_handle());
+                    ask_page(window.app_handle(), false);
                 }
             }
         })
@@ -450,7 +490,7 @@ pub fn run() {
             if let RunEvent::ExitRequested { api, code, .. } = event {
                 if code.is_none() && !app.state::<Quitting>().0.load(Ordering::SeqCst) {
                     api.prevent_exit();
-                    ask_page(app);
+                    ask_page(app, true);
                 }
             }
         });
