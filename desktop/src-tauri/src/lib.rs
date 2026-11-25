@@ -133,7 +133,7 @@ fn p37_opened_take(opened: tauri::State<'_, Opened>) -> Vec<OpenedFile> {
 const BRIDGE: u32 = 2;
 
 #[derive(serde::Serialize)]
-struct ShellInfo { version: String, bridge: u32, pages: bool, device: bool, updates: bool, zoom: bool, trash: bool, watch: bool, append_range: bool, typed_path: bool, opened: bool, slow_route: bool, close_seen: bool, silence: bool, append_at: bool, page_progress: bool, update_progress: bool, files_http: Option<String> }
+struct ShellInfo { version: String, bridge: u32, pages: bool, device: bool, updates: bool, zoom: bool, trash: bool, watch: bool, append_range: bool, typed_path: bool, opened: bool, slow_route: bool, close_seen: bool, silence: bool, append_at: bool, page_progress: bool, update_progress: bool, system: Option<String>, files_http: Option<String> }
 
 // The shell's version is the page's version as of the shell's own last
 // change (tauri.conf.json "version"), like sync.php's.
@@ -164,8 +164,34 @@ fn p37_shell_info(app: tauri::AppHandle) -> ShellInfo {
         page_progress: true,
         // update_progress: the shell's update download tells its progress ("p37-shell-update-progress"), can be cancelled (p37_shell_update_cancel) and gives up when it stalls (updates.rs, shell 2.7.7).
         update_progress: true,
+        // system: the system's name and version ("macOS 12.7.6"), only on a Mac, where the web view's user agent stays "10_15_7" through every macOS update though an update can change what WebKit plays: the page tries again what this device can play when it changes (shell 2.7.8).
+        system: system_version(),
         // files_http: where recordings are also served, on Linux (fileserver.rs, shell 2.5.0).
         files_http: app.try_state::<fileserver::FileServer>().map(|f| f.base.clone()) }
+}
+
+// The Mac's version, from the kernel (kern.osproductversion, macOS 10.13.4
+// on): no disk, no process. Elsewhere None: WebView2 and WebKitGTK name
+// their own versions in the user agent.
+#[cfg(target_os = "macos")]
+fn system_version() -> Option<String> {
+    unsafe extern "C" {
+        fn sysctlbyname(name: *const std::ffi::c_char, oldp: *mut std::ffi::c_void, oldlenp: *mut usize, newp: *mut std::ffi::c_void, newlen: usize) -> std::ffi::c_int;
+    }
+    let mut buf = [0u8; 64];
+    let mut len = buf.len();
+    // SAFETY: buf is writable for len bytes; the name is a NUL-terminated C string; nothing is set.
+    let r = unsafe { sysctlbyname(c"kern.osproductversion".as_ptr(), buf.as_mut_ptr().cast(), &mut len, std::ptr::null_mut(), 0) };
+    if r != 0 { return None; }
+    system_name(&buf[..len.min(buf.len())])
+}
+#[cfg(not(target_os = "macos"))]
+fn system_version() -> Option<String> { None }
+#[cfg_attr(not(any(target_os = "macos", test)), allow(dead_code))]
+fn system_name(raw: &[u8]) -> Option<String> {
+    let v = std::str::from_utf8(raw).ok()?.trim_end_matches('\0').trim();
+    if v.is_empty() || !v.chars().all(|c| c.is_ascii_digit() || c == '.') { return None; }
+    Some(format!("macOS {v}"))
 }
 
 // The display's Size, by the webview's own zoom (as Ctrl-plus in a browser)
@@ -551,6 +577,14 @@ pub fn run() {
 #[cfg(test)]
 mod tests {
     use super::fit_window;
+    #[test]
+    fn the_macs_version() {
+        assert_eq!(super::system_name(b"12.7.6\0"), Some("macOS 12.7.6".into()));
+        assert_eq!(super::system_name(b"15.1"), Some("macOS 15.1".into()));
+        assert_eq!(super::system_name(b"\0"), None);
+        assert_eq!(super::system_name(b"\xff\xfe"), None);
+        assert_eq!(super::system_name(b"12.7<script>"), None);
+    }
     #[test]
     fn files_on_the_command_line() {
         let d = std::env::temp_dir().join(format!("p37-args-{}", std::process::id()));
