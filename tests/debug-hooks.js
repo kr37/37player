@@ -47,6 +47,7 @@ window.__chk = ()=> checkLibrary(); // playablehere.js
 window.__playable = {check: (f)=> checkPlayableHere(f), here: ()=> playableHere(), cantPlay: (id)=> trackCantPlay(id), canConvert: (id)=> trackCanBeConverted(findLibraryTrack(id)), forget: ()=>{ playableCache = undefined; }};
 { const _sop = setActiveOperationProgress; setActiveOperationProgress = function(text){ (window.__opTexts = window.__opTexts || []).push(text); return _sop.apply(this, arguments); }; }
 window.__levelCtx = ()=> levelCtx; // soundinterrupt.js
+window.__op = (text, key)=> text ? setActiveOperationProgress(text, null, key || 'endwatch') : clearActiveOperation(key || 'endwatch'); // endwatch.js
 window.__net = {fetchWithLimits}; // netlimits.js
 window.__dbgSaveAged = (ms)=>{ if(saveAsked.length){ saveAsked[0] -= ms; if(saveSlow) saveSlow.since -= ms; } saveSlowCheck(); }; // saveslow.js: the oldest save made older
 window.__dbgIpcAskSoon = ()=>{ if(desktopIpcSwitch) desktopIpcSwitch.askedAt = 0; }; // slowroute.js: the 10 minutes before asking again, cut short
