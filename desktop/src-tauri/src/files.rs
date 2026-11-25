@@ -899,6 +899,21 @@ pub fn range_of(range: Option<&str>, len: u64) -> Result<(u64, u64, bool), ()> {
     match range { Some(h) => parse_range(h, len).map(|(s, e)| (s, e, true)).ok_or(()), None => Ok((0, len, false)) }
 }
 
+/// The stretch of a recording one p37lib answer carries, as (start, end,
+/// partial); Err for a Range that can't be served. An open-ended Range, and
+/// a request with none at all, get at most SERVE_PIECE: before shell 2.7.9 a
+/// request without a Range had the whole file read into memory for one
+/// answer, a 1.3 GB WAV at once (desktop/AUDIT-boundaries.md 1.5, the
+/// audit's fix 19). Players ask with a Range and come back for the rest; a
+/// file of SERVE_PIECE or less still comes whole, as a 200.
+pub fn piece_of(range: Option<&str>, len: u64) -> Result<(u64, u64, bool), ()> {
+    match range {
+        Some(h) => parse_range(h, len).map(|(s, e)| (s, e.min(s + SERVE_PIECE).max(s), true)).ok_or(()),
+        None if len > SERVE_PIECE => Ok((0, SERVE_PIECE, true)),
+        None => Ok((0, len, false)),
+    }
+}
+
 // The answer to a browser's "may I?" before a cross-origin request with a
 // Range header (shell 2.2.2): the page's converter worker reads a big file
 // a block at a time by its address (page 2.2.039), and WebKit may ask first.
@@ -936,12 +951,8 @@ pub fn serve(app: &tauri::AppHandle, req: &tauri::http::Request<Vec<u8>>) -> tau
     let len = match fs::metadata(&full) { Ok(m) if m.is_file() => m.len(), _ => return fail(StatusCode::NOT_FOUND, "not there".into()) };
     let mime = mime_for_file(&full, rel);
     let range = req.headers().get("range").and_then(|v| v.to_str().ok());
-    let (start, end, partial) = match range {
-        Some(h) => match parse_range(h, len) {
-            Some((s, e)) => (s, e.min(s + SERVE_PIECE).max(s), true),
-            None => return Response::builder().status(StatusCode::RANGE_NOT_SATISFIABLE).header("Content-Range", format!("bytes */{}", len)).header("Access-Control-Allow-Origin", "*").body(vec![]).unwrap(),
-        },
-        None => (0, len, false),
+    let Ok((start, end, partial)) = piece_of(range, len) else {
+        return Response::builder().status(StatusCode::RANGE_NOT_SATISFIABLE).header("Content-Range", format!("bytes */{}", len)).header("Access-Control-Allow-Origin", "*").body(vec![]).unwrap();
     };
     let body = match read(&base, rel, start, Some(end)) { Ok(b) => b, Err(e) => return fail(StatusCode::INTERNAL_SERVER_ERROR, e) };
     let mut r = Response::builder()
@@ -1013,6 +1024,19 @@ pub fn mime_for(rel: &str) -> &'static str {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn no_answer_holds_a_whole_long_recording() {
+        let big = 10 * SERVE_PIECE;
+        assert_eq!(piece_of(None, 1000), Ok((0, 1000, false)), "a small file without a Range: whole, as a 200");
+        assert_eq!(piece_of(None, SERVE_PIECE), Ok((0, SERVE_PIECE, false)));
+        assert_eq!(piece_of(None, big), Ok((0, SERVE_PIECE, true)), "a long one without a Range: its first piece, as a 206");
+        assert_eq!(piece_of(Some("bytes=0-"), big), Ok((0, SERVE_PIECE, true)));
+        assert_eq!(piece_of(Some("bytes=100-199"), big), Ok((100, 200, true)));
+        assert_eq!(piece_of(Some("bytes=-500"), big), Ok((big - 500, big, true)));
+        assert_eq!(piece_of(Some("bytes=0-"), 0), Err(()));
+        assert_eq!(piece_of(Some("bytes=999999999999-"), big), Err(()));
+        assert_eq!(piece_of(None, 0), Ok((0, 0, false)));
+    }
     #[test]
     fn an_append_that_came_twice_is_refused() {
         let d = std::env::temp_dir().join(format!("p37-at-{}", std::process::id()));

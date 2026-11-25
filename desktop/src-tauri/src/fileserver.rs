@@ -114,12 +114,22 @@ fn handle(stream: TcpStream, token: &str, find: &dyn Fn(&str, &str) -> Result<Pa
     let _ = out.flush();
 }
 
+const ACCEPT_BACKOFF: Duration = Duration::from_millis(200);
+// No time limit on writing (the audit's fix 19 proposed 30 s): the one
+// connection that waits in write_all is a paused player's, its buffer full,
+// and a limit would close it under the pause, leaving the resume to a
+// reconnect (shell 2.7.9). A player that goes away closes its connection,
+// and the write ends at once.
 type Find = std::sync::Arc<dyn Fn(&str, &str) -> Result<PathBuf, String> + Send + Sync>;
 // Answers on a listener until the app ends; each request on its own thread
 // (the player keeps one open while it plays, and opens another to seek).
 pub fn serve_on(listener: TcpListener, token: String, find: Find) {
     std::thread::spawn(move || {
-        for stream in listener.incoming().flatten() {
+        for stream in listener.incoming() {
+            // An error here (out of file handles, say) comes back at once on
+            // every try: a short wait, not a loop at full speed (shell 2.7.9,
+            // desktop/AUDIT-boundaries.md 1.6).
+            let Ok(stream) = stream else { std::thread::sleep(ACCEPT_BACKOFF); continue };
             let (find, token) = (find.clone(), token.clone());
             std::thread::spawn(move || handle(stream, &token, &*find));
         }
