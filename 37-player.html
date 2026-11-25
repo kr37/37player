@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.7.013">
+<meta name="app-version" content="2.7.014">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -2789,8 +2789,10 @@ class FolderLibraryStore {
     else if(v && typeof v === "object"){ if(typeof v.$place === "string") return out; if(typeof v.$blob === "string") out.push(v.$blob); else if(typeof v.$path === "string") out.push("/" + v.$path); else Object.values(v).forEach(x=> FolderLibraryStore.blobNames(x, out)); }
     return out;
   }
-  async revive(dir, v){
-    if(Array.isArray(v)) return Promise.all(v.map(x=> this.revive(dir, x)));
+  // opts.whereItLies: a recording of any size comes as a DiskBlob, to be
+  // played from its address, not read into the page (playing, 2.7.014).
+  async revive(dir, v, opts){
+    if(Array.isArray(v)) return Promise.all(v.map(x=> this.revive(dir, x, opts)));
     if(!v || typeof v !== "object") return v;
     // A recording used in place (2.0): read where it is, in the folder the
     // person chose; null when that folder can't be reached now (a drive not
@@ -2807,8 +2809,9 @@ class FolderLibraryStore {
     if(typeof v.$blob === "string" || typeof v.$path === "string"){
       let f;
       try{
-        if(typeof v.$path === "string"){ const at = await this.pathDir(v.$path, false); if(!at) throw new DOMException("missing", "NotFoundError"); f = await (await at.dir.getFileHandle(at.name)).getFile(); }
-        else f = await (await dir.getFileHandle(v.$blob)).getFile();
+        const where = !v.buf && opts && opts.whereItLies ? opts : undefined; // (a browser's own getFile takes nothing)
+        if(typeof v.$path === "string"){ const at = await this.pathDir(v.$path, false); if(!at) throw new DOMException("missing", "NotFoundError"); f = await (await at.dir.getFileHandle(at.name)).getFile(where); }
+        else f = await (await dir.getFileHandle(v.$blob)).getFile(where);
       }
       catch(err){ if(err && err.name === "NotFoundError"){ console.warn("A stored file is missing:", v.$blob || v.$path); return null; } throw err; }
       if(v.buf){ const ab = await f.arrayBuffer(); return v.buf === "ArrayBuffer" ? ab : new globalThis[v.buf](ab); }
@@ -2822,14 +2825,14 @@ class FolderLibraryStore {
       return v.type ? keep(f.slice(0, f.size, v.type)) : f;
     }
     const out = {};
-    for(const [k, x] of Object.entries(v)) out[k] = await this.revive(dir, x);
+    for(const [k, x] of Object.entries(v)) out[k] = await this.revive(dir, x, opts);
     return out;
   }
-  async get(store, key){
+  async get(store, key, opts){
     return this.run(async()=>{
       const raw = await this.readRaw(store, key);
       if(raw === undefined) return undefined;
-      const rec = await this.revive(await this.sub(store), raw);
+      const rec = await this.revive(await this.sub(store), raw, opts);
       if(store === "state" && key === "root"){
         // How long the waveforms take, of the read (the start's log line):
         // what reading them after the screen is drawn would save.
@@ -4456,10 +4459,12 @@ async function audioObjectUrl(blob, filenameHint){
 }
 class DesktopFileHandle {
   constructor(root, path){ this.root = root; this.path = path; this.kind = "file"; this.name = path.split("/").pop(); }
-  async getFile(){
+  // opts.whereItLies: a DiskBlob whatever its size (a recording to play,
+  // audioRecordForPlay).
+  async getFile(opts){
     const st = await desktopInvoke("fs_stat", {root: this.root, path: this.path});
     if(!st || st.kind !== "file") throw desktopNotFound(this.path);
-    if(st.size > DISK_BLOB_MIN){ const d = new DiskBlob(this.root, this.path, st.size, DISK_TYPES[(this.name.split(".").pop() || "").toLowerCase()] || "", this.name, Math.round(st.modified) || Date.now()); d.whole = true; return d; };
+    if(st.size > DISK_BLOB_MIN || (opts && opts.whereItLies && st.size > 0)){ const d = new DiskBlob(this.root, this.path, st.size, DISK_TYPES[(this.name.split(".").pop() || "").toLowerCase()] || "", this.name, Math.round(st.modified) || Date.now()); d.whole = true; return d; };
     const bytes = await desktopInvoke("fs_read", {root: this.root, path: this.path});
     const f = new File([bytes], this.name, {lastModified: Math.round(st.modified) || Date.now()});
     try{ f.p37at = {root: this.root, path: this.path}; }catch(err){} // where it is on the disk (audioObjectUrl, on Linux)
@@ -38013,7 +38018,7 @@ async function playLibraryPreview(trackId, seekRatio){
   const cant = trackCantPlay(trackId);
   if(cant){ showCantPlay(trackId, cant); return; } // with "Convert it now"
   let rec = null;
-  try{ rec = await idbGet("audio", trackId); if(rec && rec.blob && rec.blob.size) await rec.blob.slice(0, 1).arrayBuffer(); else rec = null; }catch(err){ rec = null; }
+  try{ rec = await audioRecordForPlay(trackId); if(rec && rec.blob && rec.blob.size) await rec.blob.slice(0, 1).arrayBuffer(); else rec = null; }catch(err){ rec = null; }
   if(!rec){ showAudioMissing(trackId); return; }
   if(libPreviewUrl){ URL.revokeObjectURL(libPreviewUrl); libPreviewUrl = null; }
   libPreviewUrl = await audioObjectUrl(rec.blob, trackFileName(trackId));
@@ -38941,10 +38946,32 @@ function logPlayableFormats(){
     playLog("this player can play: " + list.map(([n, t])=> n + " " + ask(t)).join(", "));
   }catch(err){}
 }
+/* One way of playing in the desktop app (2.7.014; the audit's fix M, 18;
+   kr37, 23 Nov 2026: "one way of playing, not one for big files and one
+   for small"): every recording in a library's folder is played from its
+   address (p37lib, or the Linux app's local http address), whatever its
+   size. Before, one of 32 MB or less (most tracks) was read whole into the
+   page and played from memory as a blob: the arrangement of the 18 Nov
+   freeze, where WebKit's media process waited for bytes only the page's
+   main thread could give, and a copy of every track in the page's memory.
+   The cost, known from the memory test of 20 Nov night (report
+   2026-11-21-035158): a kind the Mac can't decode, played from its address,
+   runs its time in silence instead of failing; so this follows the format
+   check (2.7.013), which marks such a kind unplayable here before it's
+   played. A file that's damaged rather than of the wrong kind can still
+   play silent; its waveform and length were already found, and the player's
+   "stalled" and "the time isn't moving" lines show it. The browsers keep
+   playing from their own storage: one way for each kind of 37 Player.
+   Anything that needs the bytes (waveforms, converting, sending) reads them
+   as before; only playing (the player, the Library's preview) asks for the
+   address. */
+function audioRecordForPlay(libraryId){
+  return IN_DESKTOP_APP && !window.__playFromMemory ? libStore.get("audio", libraryId, {whereItLies: true}) : idbGet("audio", libraryId);
+}
 async function getAudioUrl(libraryId){
   await sharedEnsureAudio(libraryId); // a shared-library track whose audio hasn't arrived yet: fetch it now
   if(objectUrlCache[libraryId]) return objectUrlCache[libraryId];
-  const rec = await idbGet("audio", libraryId);
+  const rec = await audioRecordForPlay(libraryId);
   if(!rec) return null;
   const url = await audioObjectUrl(rec.blob, trackFileName(libraryId));
   if(!isDesktopHttpUrl(url)) objectUrlCache[libraryId] = url;
@@ -38956,7 +38983,7 @@ async function getPlayableAudioUrl(libraryId){
   await sharedEnsureAudio(libraryId);
   if(objectUrlCache[libraryId]) return objectUrlCache[libraryId];
   try{
-    const rec = await idbGet("audio", libraryId);
+    const rec = await audioRecordForPlay(libraryId);
     if(!rec || !rec.blob || !rec.blob.size) return null;
     await rec.blob.slice(0, 1).arrayBuffer();
     const url = await audioObjectUrl(rec.blob, trackFileName(libraryId));
@@ -39248,7 +39275,7 @@ async function activateItem(itemId, autoplay){
     if(!url){ endPlayBridge("audio missing"); showAudioMissing(item.refId); return; }
   }
   // (How the recording reaches the player, for the Linux app's troubles: never the address itself, which holds a secret.)
-  const reach = !url ? "" : isDesktopHttpUrl(url) ? ", from the app's local address" : /^blob:/.test(url) ? ", from memory" : /^p37lib:/.test(url) ? ", from the app's file address" : "";
+  const reach = !url ? "" : isDesktopHttpUrl(url) ? ", from the app's local address" : /^blob:/.test(url) ? ", from memory" : isP37libUrl(url) ? ", from the app's file address" : ""; // (Windows: http://p37lib.localhost/, 2.7.014)
   const ready = item.kind === "track" && nextReadyId === item.refId && nextReadyUrl === url ? ", ready ahead" : "";
   if(autoplay) playLog("start " + (item.kind === "track" ? "“" + ((findLibraryTrack(item.refId) || {}).name || "?") + "”" + (IN_DESKTOP_APP ? reach : "") + ready : item.kind) + (document.hidden ? " (app not on screen)" : ""));
   stopPlayback();
@@ -47734,7 +47761,7 @@ async function restoreSession(){
         if(url){
           audioEl.src = url;
           applyLevel(audioEl, ctx.item.refId, true);
-          if(IN_DESKTOP_APP) playLog("put back “" + ((findLibraryTrack(ctx.item.refId) || {}).name || "?") + "”" + (isDesktopHttpUrl(url) ? ", from the app's local address" : /^blob:/.test(url) ? ", from memory" : ""));
+          if(IN_DESKTOP_APP) playLog("put back “" + ((findLibraryTrack(ctx.item.refId) || {}).name || "?") + "”" + (isDesktopHttpUrl(url) ? ", from the app's local address" : /^blob:/.test(url) ? ", from memory" : isP37libUrl(url) ? ", from the app's file address" : ""));
           const pos = sess.positionSeconds || 0;
           audioEl.addEventListener("loadedmetadata", function onMeta(){
             try{ audioEl.currentTime = Math.min(pos, audioEl.duration||pos); }catch(e){}
