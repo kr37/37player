@@ -249,7 +249,9 @@ mod tests {
     }
     #[test]
     fn a_silence_is_noted_once_and_reported_when_the_page_asks_again() {
-        let d = std::env::temp_dir().join(format!("p37-watch-{}", std::process::id()));
+        // A folder of its own: a_session_file_reads_back writes a running.json
+        // at the same time (tests run side by side), which failed this on Windows.
+        let d = std::env::temp_dir().join(format!("p37-watch-silence-{}", std::process::id()));
         let _ = std::fs::create_dir_all(&d);
         let f = d.join("running.json");
         let w = Watch { beat: Arc::new(AtomicU64::new(0)), focused: AtomicBool::new(true), stalls: Mutex::new(vec![]), page_ended: Mutex::new(vec![]),
