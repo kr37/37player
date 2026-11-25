@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.7.012">
+<meta name="app-version" content="2.7.013">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -6838,6 +6838,16 @@ const STRINGS = {
     "chkNothing": "Nothing needed fixing.",
     "chkNoWave": "Tracks that play but still have no waveform: {n}.",
     "chkStepTypes": "Checking the library: what kind of file each track is, {done} of {total}",
+    "cantPlayHere": "Can't be played on this device: {format} files don't play here (converting makes it play everywhere)",
+    "chkStepFilesNamed": "Checking the library: stored files {done} of {total}: {name}",
+    "chkStepTrack": "Checking the library: looking again at {done} of {total}: {name}, {task}",
+    "chkTaskSound": "reading its sound (length, waveform, loudness)",
+    "chkTaskAiff": "turning its AIFF into WAV",
+    "chkTaskFormat": "checking its format",
+    "chkTaskSaving": "saving",
+    "chkStepSaving": "Checking the library: saving…",
+    "chkStepPlayable": "Checking the library: what this device can play…",
+    "chkCantPlayHere": "Tracks of a kind this device can't play ({kinds}): {n}. They're marked here as unplayable; converting makes them play everywhere.",
     "chkMistyped": "Files that are another kind than their names say (Table's Type now shows what they are): {n}.",
     "chkWhyLong": "Too long to read whole on this device, and it couldn't be read a piece at a time (the converter, which can, may not be on this device yet).",
     "chkWhyDecode": "This browser plays it, but couldn't decode it to draw one.",
@@ -9001,6 +9011,16 @@ const STRINGS = {
     "chkNothing": "No había nada que arreglar.",
     "chkNoWave": "Pistas que se reproducen pero siguen sin forma de onda: {n}.",
     "chkStepTypes": "Revisando la biblioteca: qué tipo de archivo es cada pista, {done} de {total}",
+    "cantPlayHere": "No se puede reproducir en este dispositivo: los archivos {format} no suenan aquí (convertirlo hace que suene en todas partes)",
+    "chkStepFilesNamed": "Revisando la biblioteca: archivos guardados {done} de {total}: {name}",
+    "chkStepTrack": "Revisando la biblioteca: volviendo a mirar {done} de {total}: {name}, {task}",
+    "chkTaskSound": "leyendo su sonido (duración, forma de onda, volumen)",
+    "chkTaskAiff": "pasando su AIFF a WAV",
+    "chkTaskFormat": "comprobando su formato",
+    "chkTaskSaving": "guardando",
+    "chkStepSaving": "Revisando la biblioteca: guardando…",
+    "chkStepPlayable": "Revisando la biblioteca: qué puede reproducir este dispositivo…",
+    "chkCantPlayHere": "Pistas de un tipo que este dispositivo no puede reproducir ({kinds}): {n}. Aquí aparecen como no reproducibles; convertirlas hace que suenen en todas partes.",
     "chkMistyped": "Archivos de otro tipo que el que dicen sus nombres (el Tipo de la Tabla ahora muestra lo que son): {n}.",
     "chkWhyLong": "Demasiado larga para leerla entera en este dispositivo, y no se pudo leer por partes (el convertidor, que puede hacerlo, quizá aún no esté en este dispositivo).",
     "chkWhyDecode": "Este navegador la reproduce, pero no pudo decodificarla para dibujarla.",
@@ -11164,6 +11184,16 @@ const STRINGS = {
     "chkNothing": "Rien n'avait besoin d'être réparé.",
     "chkNoWave": "Pistes qui se lisent mais n'ont toujours pas de forme d'onde : {n}.",
     "chkStepTypes": "Vérification de la bibliothèque : le type de fichier de chaque piste, {done} sur {total}",
+    "cantPlayHere": "Ne peut pas être lu sur cet appareil : les fichiers {format} ne se lisent pas ici (le convertir le rend lisible partout)",
+    "chkStepFilesNamed": "Vérification de la bibliothèque : fichiers enregistrés {done} sur {total} : {name}",
+    "chkStepTrack": "Vérification de la bibliothèque : nouvel examen {done} sur {total} : {name}, {task}",
+    "chkTaskSound": "lecture de son son (durée, forme d'onde, volume)",
+    "chkTaskAiff": "conversion de son AIFF en WAV",
+    "chkTaskFormat": "vérification de son format",
+    "chkTaskSaving": "enregistrement",
+    "chkStepSaving": "Vérification de la bibliothèque : enregistrement…",
+    "chkStepPlayable": "Vérification de la bibliothèque : ce que cet appareil peut lire…",
+    "chkCantPlayHere": "Pistes d'un type que cet appareil ne peut pas lire ({kinds}) : {n}. Elles sont marquées ici comme illisibles ; les convertir les rend lisibles partout.",
     "chkMistyped": "Fichiers d'un autre type que ce que disent leurs noms (le Type du Tableau montre maintenant ce qu'ils sont) : {n}.",
     "chkWhyLong": "Trop longue pour être lue en entier sur cet appareil, et elle n'a pas pu être lue morceau par morceau (le convertisseur, qui le peut, n'est peut-être pas encore sur cet appareil).",
     "chkWhyDecode": "Ce navigateur la lit, mais n'a pas pu la décoder pour la dessiner.",
@@ -13327,6 +13357,16 @@ const STRINGS = {
     "chkNothing": "Não havia nada a corrigir.",
     "chkNoWave": "Faixas que tocam mas continuam sem forma de onda: {n}.",
     "chkStepTypes": "Verificando a biblioteca: que tipo de arquivo é cada faixa, {done} de {total}",
+    "cantPlayHere": "Não pode ser reproduzida neste dispositivo: ficheiros {format} não tocam aqui (convertê-la faz com que toque em todo o lado)",
+    "chkStepFilesNamed": "Verificando a biblioteca: arquivos guardados {done} de {total}: {name}",
+    "chkStepTrack": "Verificando a biblioteca: olhando de novo {done} de {total}: {name}, {task}",
+    "chkTaskSound": "lendo o seu som (duração, forma de onda, volume)",
+    "chkTaskAiff": "passando o seu AIFF para WAV",
+    "chkTaskFormat": "verificando o seu formato",
+    "chkTaskSaving": "guardando",
+    "chkStepSaving": "Verificando a biblioteca: guardando…",
+    "chkStepPlayable": "Verificando a biblioteca: o que este dispositivo consegue tocar…",
+    "chkCantPlayHere": "Faixas de um tipo que este dispositivo não consegue tocar ({kinds}): {n}. Aparecem aqui como não reproduzíveis; convertê-las faz com que toquem em todo o lado.",
     "chkMistyped": "Arquivos de outro tipo do que dizem os seus nomes (o Tipo da Tabela agora mostra o que são): {n}.",
     "chkWhyLong": "Demasiado longa para ler inteira neste dispositivo, e não foi possível lê-la por partes (o conversor, que consegue, talvez ainda não esteja neste dispositivo).",
     "chkWhyDecode": "Este navegador reprodu-la, mas não a conseguiu descodificar para a desenhar.",
@@ -15490,6 +15530,16 @@ const STRINGS = {
     "chkNothing": "Es gab nichts zu beheben.",
     "chkNoWave": "Titel, die spielen, aber weiterhin keine Wellenform haben: {n}.",
     "chkStepTypes": "Bibliothek wird geprüft: welche Art Datei jeder Titel ist, {done} von {total}",
+    "cantPlayHere": "Kann auf diesem Gerät nicht abgespielt werden: {format}-Dateien spielen hier nicht (Umwandeln macht ihn überall abspielbar)",
+    "chkStepFilesNamed": "Bibliothek wird geprüft: gespeicherte Dateien {done} von {total}: {name}",
+    "chkStepTrack": "Bibliothek wird geprüft: erneuter Blick auf {done} von {total}: {name}, {task}",
+    "chkTaskSound": "sein Klang wird gelesen (Länge, Wellenform, Lautheit)",
+    "chkTaskAiff": "sein AIFF wird zu WAV",
+    "chkTaskFormat": "sein Format wird geprüft",
+    "chkTaskSaving": "wird gespeichert",
+    "chkStepSaving": "Bibliothek wird geprüft: wird gespeichert…",
+    "chkStepPlayable": "Bibliothek wird geprüft: was dieses Gerät abspielen kann…",
+    "chkCantPlayHere": "Titel einer Art, die dieses Gerät nicht abspielen kann ({kinds}): {n}. Sie sind hier als nicht abspielbar markiert; umgewandelt spielen sie überall.",
     "chkMistyped": "Dateien, die eine andere Art sind, als ihre Namen sagen (der Typ in der Tabelle zeigt jetzt, was sie sind): {n}.",
     "chkWhyLong": "Zu lang, um auf diesem Gerät ganz gelesen zu werden, und stückweise ließ er sich nicht lesen (der Konverter, der das kann, ist vielleicht noch nicht auf diesem Gerät).",
     "chkWhyDecode": "Dieser Browser spielt ihn ab, konnte ihn aber nicht decodieren, um eine zu zeichnen.",
@@ -17653,6 +17703,16 @@ const STRINGS = {
     "chkNothing": "没有需要修复的内容。",
     "chkNoWave": "可以播放但仍没有波形的曲目：{n}。",
     "chkStepTypes": "正在检查资料库：每首曲目是哪种文件，{done} / {total}",
+    "cantPlayHere": "无法在此设备上播放：{format} 文件在这里无法播放（转换后到处都能播放）",
+    "chkStepFilesNamed": "正在检查资料库：已存文件 {done} / {total}：{name}",
+    "chkStepTrack": "正在检查资料库：重新查看 {done} / {total}：{name}，{task}",
+    "chkTaskSound": "读取其声音（时长、波形、响度）",
+    "chkTaskAiff": "把其 AIFF 转为 WAV",
+    "chkTaskFormat": "检查其格式",
+    "chkTaskSaving": "正在保存",
+    "chkStepSaving": "正在检查资料库：正在保存…",
+    "chkStepPlayable": "正在检查资料库：此设备能播放什么…",
+    "chkCantPlayHere": "此设备无法播放的类型的曲目（{kinds}）：{n}。它们在这里被标为无法播放；转换后到处都能播放。",
     "chkMistyped": "实际类型与文件名不符的文件（表格的类型现在显示其真实类型）：{n}。",
     "chkWhyLong": "太长，无法在此设备上一次读完，也无法分段读取（能做到的转换器可能还不在此设备上）。",
     "chkWhyDecode": "此浏览器能播放它，但无法解码以绘制波形。",
@@ -19816,6 +19876,16 @@ const STRINGS = {
     "chkNothing": "Không có gì cần sửa.",
     "chkNoWave": "Số bài phát được nhưng vẫn chưa có dạng sóng: {n}.",
     "chkStepTypes": "Đang kiểm tra thư viện: mỗi bài là loại tệp gì, {done} trên {total}",
+    "cantPlayHere": "Không phát được trên thiết bị này: tệp {format} không phát ở đây (chuyển đổi sẽ phát được ở mọi nơi)",
+    "chkStepFilesNamed": "Đang kiểm tra thư viện: tệp đã lưu {done} trên {total}: {name}",
+    "chkStepTrack": "Đang kiểm tra thư viện: xem lại {done} trên {total}: {name}, {task}",
+    "chkTaskSound": "đọc âm thanh của nó (độ dài, dạng sóng, độ lớn)",
+    "chkTaskAiff": "đổi AIFF của nó sang WAV",
+    "chkTaskFormat": "kiểm tra định dạng của nó",
+    "chkTaskSaving": "đang lưu",
+    "chkStepSaving": "Đang kiểm tra thư viện: đang lưu…",
+    "chkStepPlayable": "Đang kiểm tra thư viện: thiết bị này phát được gì…",
+    "chkCantPlayHere": "Bài thuộc loại thiết bị này không phát được ({kinds}): {n}. Ở đây chúng được đánh dấu là không phát được; chuyển đổi sẽ phát được ở mọi nơi.",
     "chkMistyped": "Tệp có loại khác với tên của chúng (cột Loại trong Bảng giờ cho thấy loại thật): {n}.",
     "chkWhyLong": "Quá dài để đọc một lần trên thiết bị này, và không đọc từng phần được (bộ chuyển đổi, vốn làm được, có thể chưa có trên thiết bị này).",
     "chkWhyDecode": "Trình duyệt này phát được, nhưng không giải mã được để vẽ.",
@@ -21979,6 +22049,16 @@ const STRINGS = {
     "chkNothing": "Δεν χρειαζόταν διόρθωση τίποτα.",
     "chkNoWave": "Κομμάτια που παίζουν αλλά ακόμη δεν έχουν κυματομορφή: {n}.",
     "chkStepTypes": "Έλεγχος βιβλιοθήκης: τι είδους αρχείο είναι κάθε κομμάτι, {done} από {total}",
+    "cantPlayHere": "Δεν παίζει σε αυτή τη συσκευή: τα αρχεία {format} δεν παίζουν εδώ (η μετατροπή το κάνει να παίζει παντού)",
+    "chkStepFilesNamed": "Έλεγχος βιβλιοθήκης: αποθηκευμένα αρχεία {done} από {total}: {name}",
+    "chkStepTrack": "Έλεγχος βιβλιοθήκης: νέα ματιά σε {done} από {total}: {name}, {task}",
+    "chkTaskSound": "διαβάζεται ο ήχος του (διάρκεια, κυματομορφή, ένταση)",
+    "chkTaskAiff": "το AIFF του γίνεται WAV",
+    "chkTaskFormat": "ελέγχεται η μορφή του",
+    "chkTaskSaving": "αποθήκευση",
+    "chkStepSaving": "Έλεγχος βιβλιοθήκης: αποθήκευση…",
+    "chkStepPlayable": "Έλεγχος βιβλιοθήκης: τι μπορεί να παίξει αυτή η συσκευή…",
+    "chkCantPlayHere": "Κομμάτια ενός είδους που αυτή η συσκευή δεν παίζει ({kinds}): {n}. Εδώ σημειώνονται ως μη αναπαραγώγιμα· η μετατροπή τα κάνει να παίζουν παντού.",
     "chkMistyped": "Αρχεία άλλου είδους από αυτό που λένε τα ονόματά τους (ο Τύπος στον Πίνακα δείχνει τώρα τι είναι): {n}.",
     "chkWhyLong": "Πολύ μεγάλο για να διαβαστεί ολόκληρο σε αυτή τη συσκευή, και δεν διαβάστηκε κομμάτι-κομμάτι (ο μετατροπέας, που μπορεί, ίσως δεν είναι ακόμη σε αυτή τη συσκευή).",
     "chkWhyDecode": "Αυτός ο browser το παίζει, αλλά δεν μπόρεσε να το αποκωδικοποιήσει για να τη σχεδιάσει.",
@@ -24142,6 +24222,16 @@ const STRINGS = {
     "chkNothing": "Non c'era niente da correggere.",
     "chkNoWave": "Tracce che si riproducono ma non hanno ancora la forma d'onda: {n}.",
     "chkStepTypes": "Controllo della libreria: che tipo di file è ogni traccia, {done} di {total}",
+    "cantPlayHere": "Non si può riprodurre su questo dispositivo: i file {format} qui non suonano (convertirlo lo fa suonare ovunque)",
+    "chkStepFilesNamed": "Controllo della libreria: file salvati {done} di {total}: {name}",
+    "chkStepTrack": "Controllo della libreria: nuovo sguardo a {done} di {total}: {name}, {task}",
+    "chkTaskSound": "lettura del suo suono (durata, forma d'onda, volume)",
+    "chkTaskAiff": "il suo AIFF diventa WAV",
+    "chkTaskFormat": "controllo del suo formato",
+    "chkTaskSaving": "salvataggio",
+    "chkStepSaving": "Controllo della libreria: salvataggio…",
+    "chkStepPlayable": "Controllo della libreria: cosa può riprodurre questo dispositivo…",
+    "chkCantPlayHere": "Tracce di un tipo che questo dispositivo non riproduce ({kinds}): {n}. Qui sono segnate come non riproducibili; convertirle le fa suonare ovunque.",
     "chkMistyped": "File di un tipo diverso da quello che dicono i loro nomi (il Tipo della Tabella ora mostra cosa sono): {n}.",
     "chkWhyLong": "Troppo lunga per leggerla intera su questo dispositivo, e non si è potuta leggere a pezzi (il convertitore, che può farlo, forse non è ancora su questo dispositivo).",
     "chkWhyDecode": "Questo browser la riproduce, ma non è riuscito a decodificarla per disegnarla.",
@@ -29839,7 +29929,7 @@ async function checkStoredFiles(onStep){
   const ids = root.library.map(tr=> tr.id);
   damagedAudio = {checked: 0, ids: new Set(), at: null};
   for(let i = 0; i < ids.length; i++){
-    if(onStep) onStep(i, ids.length);
+    if(onStep){ const tr = findLibraryTrack(ids[i]); onStep(i, ids.length, tr ? (tr.name || tr.filename || "") : ""); }
     try{ if(await storedAudioDamaged(ids[i])) damagedAudio.ids.add(ids[i]); }catch(err){ damagedAudio.ids.add(ids[i]); }
     damagedAudio.checked++;
   }
@@ -30469,6 +30559,88 @@ async function markNeedsConvert(track, blob){
 // sharedTrackMissing's business, not this.
 // Looked up for every row drawn, so by a map rather than a search, rebuilt
 // whenever the library array is replaced or changes length.
+/* What this device can play (2.7.013; desktop/AUDIT-boundaries.md 2.1, the
+   audit's fix 22, the step before M; "The silent WebM, settled" in NOTES;
+   kr37: at installation, "not one more thing to check every day"). macOS
+   12's WebKit can't decode the festival WebM though canPlayType says
+   "probably"; played from memory the player says it can't, through the
+   app's file address (p37lib) the time runs in silence. So 37 Player carries
+   a tiny sample of each kind not every device plays (PLAYABLE_SAMPLES, a few
+   KB each: WAV, AIFF, FLAC, Opus, Ogg Vorbis, WebM Opus; MP3 and AAC in M4A
+   play everywhere) and tries them quietly from memory in a hidden, muted
+   player (loaded, never played or paused): once on a device, and again only
+   when the browser, the desktop app or the system changes (playableHereKey:
+   the user agent, the shell's version, and the system's version, which the
+   shell says from 2.7.8 on: the Mac's WebKit user agent never changes with
+   macOS, though a macOS update can change what it plays), or when Check
+   library asks. The answers
+   are kept per device (localStorage, PLAYABLE_KEY). A track of a kind this
+   device can't play is then said to be unplayable here (trackCantPlay), so
+   playing it brings the can't-be-played dialog with Convert, instead of
+   silence, without failing first; nothing is written into the track, since
+   another device may play it. A sample that neither loads nor fails within
+   5 s says nothing (unknown). */
+const PLAYABLE_KEY = "37player.playable";
+const PLAYABLE_SAMPLES = {"wav": ["audio/wav", "UklGRhYIAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgATElTVBoAAABJTkZPSVNGVA4AAABMYXZmNjAuMTYuMTAwAGRhdGHQBwAAgICBgYGBgYGAgICAf39/f3+AgICAgYGBgYGAgICAf39/f3+AgICAgYGBgYGAgICAf39/f3+AgICAgYGBgYGAgICAf39/f3+AgICAgYGBgYGAgICAf39/f3+AgICAgYGBgYGBgICAf39/f39/gICAgIGBgYGBgICAgH9/f39/gICAgIGBgYGBgICAgH9/f39/gICAgIGBgYGBgICAgH9/f39/gICAgIGBgYGBgICAgH9/f39/gICAgIGBgYGBgICAgH9/f39/f4CAgIGBgYGBgYCAgIB/f39/f4CAgICBgYGBgYCAgIB/f39/f4CAgICBgYGBgYCAgIB/f39/f4CAgICBgYGBgYCAgIB/f39/f4CAgICBgYGBgYCAgIB/f39/f4CAgICBgYGBgYGAgIB/f39/f3+AgICAgYGBgYGAgICAf39/f3+AgICAgYGBgYGAgICAf39/f3+AgICAgYGBgYGAgICAf39/f3+AgICAgYGBgYGAgICAf39/f3+AgICAgYGBgYGAgICAf39/f39/gICAgYGBgYGBgICAgH9/f39/gICAgIGBgYGBgICAgH9/f39/gICAgIGBgYGBgICAgH9/f39/gICAgIGBgYGBgICAgH9/f39/gICAgIGBgYGBgICAgH9/f39/gICAgIGBgYGBgYCAgH9/f39/f4CAgICBgYGBgYCAgIB/f39/f4CAgICBgYGBgYCAgIB/f39/f4CAgICBgYGBgYCAgIB/f39/f4CAgICBgYGBgYCAgIB/f39/f4CAgICBgYGBgYCAgIB/f39/f3+AgICBgYGBgYGAgICAf39/f3+AgICAgYGBgYGAgICAf39/f3+AgICAgYGBgYGAgICAf39/f3+AgICAgYGBgYGAgICAf39/f3+AgICAgYGBgYGAgICAf39/f3+AgICAgYGBgYGBgICAf39/f39/gICAgIGBgYGBgICAgH9/f39/gICAgIGBgYGBgICAgH9/f39/gICAgIGBgYGBgICAgH9/f39/gICAgIGBgYGBgICAgH9/f39/gICAgIGBgYGBgICAgH9/f39/f4CAgIGBgYGBgYCAgIB/f39/f4CAgICBgYGBgYCAgIB/f39/f4CAgICBgYGBgYCAgIB/f39/f4CAgICBgYGBgYCAgIB/f39/f4CAgICBgYGBgYCAgIB/f39/f4CAgICBgYGBgYGAgIB/f39/f3+AgICAgYGBgYGAgICAf39/f3+AgICAgYGBgYGAgICAf39/f3+AgICAgYGBgYGAgICAf39/f3+AgICAgYGBgYGAgICAf39/f3+AgICAgYGBgYGAgICAf39/f39/gICAgYGBgYGBgICAgH9/f39/gICAgIGBgYGBgICAgH9/f39/gICAgIGBgYGBgICAgH9/f39/gICAgIGBgYGBgICAgH9/f39/gICAgIGBgYGBgICAgH9/f39/gICAgIGBgYGBgYCAgH9/f39/f4CAgICBgYGBgYCAgIB/f39/f4CAgICBgYGBgYCAgIB/f39/f4CAgICBgYGBgYCAgIB/f39/f4CAgICBgYGBgYCAgIB/f39/f4CAgICBgYGBgYCAgIB/f39/f3+AgICBgYGBgYGAgICAf39/f3+AgICAgYGBgYGAgICAf39/f3+AgICAgYGBgYGAgICAf39/f3+AgICAgYGBgYGAgICAf39/f3+AgICAgYGBgYGAgICAf39/f3+AgICAgYGBgYGBgICAf39/f39/gICAgIGBgYGBgICAgH9/f39/gICAgIGBgYGBgICAgH9/f39/gICAgIGBgYGBgICAgH9/f39/gICAgIGBgYGBgICAgH9/f39/gICAgIGBgYGBgICAgH9/f39/f4CAgIGBgYGBgYCAgIB/f39/f4CAgICBgYGBgYCAgIB/f39/f4CAgICBgYGBgYCAgIB/f39/f4CAgICBgYGBgYCAgIB/f39/f4CAgICBgYGBgYCAgIB/f39/f4CAgICBgYGBgYGAgIB/f39/f3+AgICAgYGBgYGAgICAf39/f3+AgICAgYGBgYGAgICAf39/f3+AgICAgYGBgYGAgICAf39/f3+AgICAgYGBgYGAgICAf39/f3+AgICAgYGBgYGAgICAf39/f39/gICAgYGBgYGBgICAgH9/f39/gICAgIGBgYGBgICAgH9/f39/gICAgIGBgYGBgICAgH9/f39/gICAgIGBgYGBgICAgH9/f39/gICAgIGBgYGBgICAgH9/f39/gICAgIGBgYGBgYCAgH9/f39/f4CAgICBgYGBgYCAgIB/f39/f4CAgICBgYGBgYCAgIB/f39/f4CAgICBgYGBgYCAgIB/f39/f4CAgICBgYGBgYCAgIB/f39/f4CAgICBgYGBgYCAgIB/f39/f3+AgICBgYGBgYGAgICAf39/f3+AgICAgYGBgYGAgICAf39/f3+AgICAgYGBgYGAgICAf39/f3+AgICAgYGBgYGAgICAf39/f3+AgICAgYGBgYGAgICAf39/f3+AgICAgYGBgYGBgICAf39/f39/gICAgIGBgYGBgICAgH9/f39/gICAgIGBgYGBgICAgH9/f39/gICAgIGBgYGBgICAgH9/f39/gICAgIGBgYGBgICAgH9/f39/gICAgIGBgYGBgICAgH9/f39/f4A="], "aiff": ["audio/aiff", "Rk9STQAADK5BSUZGQ09NTQAAABIAAQAABkAAEEAL+gAAAAAAAABTU05EAAAMiAAAAAAAAAAAAAAARQCCALAAyQDKALMAhwBLAAb/wf+D/1P/OP81/0r/dP+v//MAOQB4AKkAxgDMALkAkQBXABP/zf+N/1r/O/80/0T/a/+j/+YALQBuAKIAwwDNAL4AmgBjACD/2v+Y/2L/P/8z/z//Yv+Y/9oAIABjAJoAvgDNAMMAogBuAC3/5v+j/2v/RP80/zv/Wv+N/80AEwBXAJEAuQDMAMYAqQB4ADn/8/+v/3T/Sv81/zj/U/+C/8EABgBLAIcAswDKAMkAsACDAEUAAP+7/37/UP83/zb/Tf95/7X/+gA/AH0ArQDIAMsAtgCMAFEADf/H/4j/V/86/zT/R/9v/6n/7QAzAHMApgDFAMwAvACVAF0AGv/T/5L/Xv89/zP/Qv9m/53/4AAmAGgAngDBAM0AwQCeAGgAJv/g/53/Zv9C/zP/Pf9e/5L/0wAaAF0AlQC8AMwAxQCmAHMAM//t/6n/b/9H/zT/Ov9X/4j/xwANAFEAjAC2AMsAyACtAH4AP//6/7X/ef9N/zb/N/9Q/33/uwAAAEUAggCwAMkAygCzAIcASwAG/8H/g/9T/zj/Nf9K/3T/r//zADkAeACpAMYAzAC5AJEAVwAT/83/jf9a/zv/NP9E/2v/o//mAC0AbgCiAMMAzQC+AJoAYwAg/9r/mP9i/z//M/8//2L/mP/aACAAYwCaAL4AzQDDAKIAbgAt/+b/o/9r/0T/NP87/1r/jf/NABMAVwCRALkAzADGAKkAeAA5//P/r/90/0r/Nf84/1P/gv/BAAYASwCHALMAygDJALAAgwBFAAD/u/9+/1D/N/82/03/ef+1//oAPwB9AK0AyADLALYAjABRAA3/x/+I/1f/Ov80/0f/b/+p/+0AMwBzAKYAxQDMALwAlQBdABr/0/+S/17/Pf8z/0L/Zv+d/+AAJgBoAJ4AwQDNAMEAngBoACb/4P+d/2b/Qv8z/z3/Xv+S/9MAGgBdAJUAvADMAMUApgBzADP/7f+p/2//R/80/zr/V/+I/8cADQBRAIwAtgDLAMgArQB+AD//+v+1/3n/Tf82/zf/UP99/7sAAABFAIIAsADJAMoAswCHAEsABv/B/4P/U/84/zX/Sv90/6//8wA5AHgAqQDGAMwAuQCRAFcAE//N/43/Wv87/zT/RP9r/6P/5gAtAG4AogDDAM0AvgCaAGMAIP/a/5j/Yv8//zP/P/9i/5j/2gAgAGMAmgC+AM0AwwCiAG4ALf/m/6P/a/9E/zT/O/9a/43/zQATAFcAkQC5AMwAxgCpAHgAOf/z/6//dP9K/zX/OP9T/4L/wQAGAEsAhwCzAMoAyQCwAIMARQAA/7v/fv9Q/zf/Nv9N/3n/tf/6AD8AfQCtAMgAywC2AIwAUQAN/8f/iP9X/zr/NP9H/2//qf/tADMAcwCmAMUAzAC8AJUAXQAa/9P/kv9e/z3/M/9C/2b/nf/gACYAaACeAMEAzQDBAJ4AaAAm/+D/nf9m/0L/M/89/17/kv/TABoAXQCVALwAzADFAKYAcwAz/+3/qf9v/0f/NP86/1f/iP/HAA0AUQCMALYAywDIAK0AfgA///r/tf95/03/Nv83/1D/ff+7AAAARQCCALAAyQDKALMAhwBLAAb/wf+D/1P/OP81/0r/dP+v//MAOQB4AKkAxgDMALkAkQBXABP/zf+N/1r/O/80/0T/a/+j/+YALQBuAKIAwwDNAL4AmgBjACD/2v+Y/2L/P/8z/z//Yv+Y/9oAIABjAJoAvgDNAMMAogBuAC3/5v+j/2v/RP80/zv/Wv+N/80AEwBXAJEAuQDMAMYAqQB4ADn/8/+v/3T/Sv81/zj/U/+C/8EABgBLAIcAswDKAMkAsACDAEUAAP+7/37/UP83/zb/Tf95/7X/+gA/AH0ArQDIAMsAtgCMAFEADf/H/4j/V/86/zT/R/9v/6n/7QAzAHMApgDFAMwAvACVAF0AGv/T/5L/Xv89/zP/Qv9m/53/4AAmAGgAngDBAM0AwQCeAGgAJv/g/53/Zv9C/zP/Pf9e/5L/0wAaAF0AlQC8AMwAxQCmAHMAM//t/6n/b/9H/zT/Ov9X/4j/xwANAFEAjAC2AMsAyACtAH4AP//6/7X/ef9N/zb/N/9Q/33/uwAAAEUAggCwAMkAygCzAIcASwAG/8H/g/9T/zj/Nf9K/3T/r//zADkAeACpAMYAzAC5AJEAVwAT/83/jf9a/zv/NP9E/2v/o//mAC0AbgCiAMMAzQC+AJoAYwAg/9r/mP9i/z//M/8//2L/mP/aACAAYwCaAL4AzQDDAKIAbgAt/+b/o/9r/0T/NP87/1r/jf/NABMAVwCRALkAzADGAKkAeAA5//P/r/90/0r/Nf84/1P/gv/BAAYASwCHALMAygDJALAAgwBFAAD/u/9+/1D/N/82/03/ef+1//oAPwB9AK0AyADLALYAjABRAA3/x/+I/1f/Ov80/0f/b/+p/+0AMwBzAKYAxQDMALwAlQBdABr/0/+S/17/Pf8z/0L/Zv+d/+AAJgBoAJ4AwQDNAMEAngBoACb/4P+d/2b/Qv8z/z3/Xv+S/9MAGgBdAJUAvADMAMUApgBzADP/7f+p/2//R/80/zr/V/+I/8cADQBRAIwAtgDLAMgArQB+AD//+v+1/3n/Tf82/zf/UP99/7sAAABFAIIAsADJAMoAswCHAEsABv/B/4P/U/84/zX/Sv90/6//8wA5AHgAqQDGAMwAuQCRAFcAE//N/43/Wv87/zT/RP9r/6P/5gAtAG4AogDDAM0AvgCaAGMAIP/a/5j/Yv8//zP/P/9i/5j/2gAgAGMAmgC+AM0AwwCiAG4ALf/m/6P/a/9E/zT/O/9a/43/zQATAFcAkQC5AMwAxgCpAHgAOf/z/6//dP9K/zX/OP9T/4L/wQAGAEsAhwCzAMoAyQCwAIMARQAA/7v/fv9Q/zf/Nv9N/3n/tf/6AD8AfQCtAMgAywC2AIwAUQAN/8f/iP9X/zr/NP9H/2//qf/tADMAcwCmAMUAzAC8AJUAXQAa/9P/kv9e/z3/M/9C/2b/nf/gACYAaACeAMEAzQDBAJ4AaAAm/+D/nf9m/0L/M/89/17/kv/TABoAXQCVALwAzADFAKYAcwAz/+3/qf9v/0f/NP86/1f/iP/HAA0AUQCMALYAywDIAK0AfgA///r/tf95/03/Nv83/1D/ff+7AAAARQCCALAAyQDKALMAhwBLAAb/wf+D/1P/OP81/0r/dP+v//MAOQB4AKkAxgDMALkAkQBXABP/zf+N/1r/O/80/0T/a/+j/+YALQBuAKIAwwDNAL4AmgBjACD/2v+Y/2L/P/8z/z//Yv+Y/9oAIABjAJoAvgDNAMMAogBuAC3/5v+j/2v/RP80/zv/Wv+N/80AEwBXAJEAuQDMAMYAqQB4ADn/8/+v/3T/Sv81/zj/U/+C/8EABgBLAIcAswDKAMkAsACDAEUAAP+7/37/UP83/zb/Tf95/7X/+gA/AH0ArQDIAMsAtgCMAFEADf/H/4j/V/86/zT/R/9v/6n/7QAzAHMApgDFAMwAvACVAF0AGv/T/5L/Xv89/zP/Qv9m/53/4AAmAGgAngDBAM0AwQCeAGgAJv/g/53/Zv9C/zP/Pf9e/5L/0wAaAF0AlQC8AMwAxQCmAHMAM//t/6n/b/9H/zT/Ov9X/4j/xwANAFEAjAC2AMsAyACtAH4AP//6/7X/ef9N/zb/N/9Q/33/uwAAAEUAggCwAMkAygCzAIcASwAG/8H/g/9T/zj/Nf9K/3T/r//zADkAeACpAMYAzAC5AJEAVwAT/83/jf9a/zv/NP9E/2v/o//mAC0AbgCiAMMAzQC+AJoAYwAg/9r/mP9i/z//M/8//2L/mP/aACAAYwCaAL4AzQDDAKIAbgAt/+b/o/9r/0T/NP87/1r/jf/NABMAVwCRALkAzADGAKkAeAA5//P/r/90/0r/Nf84/1P/gv/BAAYASwCHALMAygDJALAAgwBFAAD/u/9+/1D/N/82/03/ef+1//oAPwB9AK0AyADLALYAjABRAA3/x/+I/1f/Ov80/0f/b/+p/+0AMwBzAKYAxQDMALwAlQBdABr/0/+S/17/Pf8z/0L/Zv+d/+AAJgBoAJ4AwQDNAMEAngBoACb/4P+d/2b/Qv8z/z3/Xv+S/9MAGgBdAJUAvADMAMUApgBzADP/7f+p/2//R/80/zr/V/+I/8cADQBRAIwAtgDLAMgArQB+AD//+v+1/3n/Tf82/zf/UP99/7s="], "flac": ["audio/flac", "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"], "opus": ["audio/ogg", "T2dnUwACAAAAAAAAAADI0rEFAAAAAIhRDpUBE09wdXNIZWFkAQE4AYC7AAAAAABPZ2dTAAAAAAAAAAAAAMjSsQUBAAAAyLQI1QE+T3B1c1RhZ3MNAAAATGF2ZjYwLjE2LjEwMAEAAAAdAAAAZW5jb2Rlcj1MYXZjNjAuMzEuMTAyIGxpYm9wdXNPZ2dTAAR4OQAAAAAAAMjSsQUCAAAAxIC+xRAtHx0dHx8dHBweIBwgHBscSAHU5MjuJXqX1qBx2pI+XNe5sIkwhCH9Z7z3zxN9byJVA/maT+e27D5wLF2ASBdyusQF9qb99ab/3bl970GXZvkF5ubQ8RLXS8Tk5kgSQYLEmpLkXs4zwzfAd+ZHCjw2yXsvjkHdhYiwSBJBgsSayP+FWfp5rCvFgFEDYJsEqcAVYVY5gQlIEkGCxJqvrIhMWnDFH7grzrupIlRLN9abKaQVZylYSBJBgsSaeWkqxd9DoawiEsNVl4/8uytvwH6ZsZjpwEgSQYLEmq4GSkP1Y+Lu0i3xREbbJx4gBPOl5vcmSBJBgsSakt3jN+drfjPVxNI6VABoE4aqzo+qBkgSQYLEmqre8FdNXTNNPssjMmIXgdCJs44/VmBIEkGCxJp7LthFIwnSQ/W8uD6hUKPaqYJs2nrDs0BIEkGCxJp6ooKtddaDAQ/VZjAgM7o96qg3ZbZUPVENMEgSQYLEmqmTN/3fy8AWKNb8ORkrqTs/YInNwSBIEkGCxJqTEgMEYDBBVEPv69nCgsFNvEbtZYsPxK/b9kgSQYLEmqhUhDMdY2xRFWAJoFoAN27/ovPfyUBIEkGCxJrE2MuGPIA0nPAH5YqRnNrtW1ctRsBIAiLD201bggJrBgOyLRK2KTrqj1cA33jNb9qA"], "ogg": ["audio/ogg", "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"], "webm": ["audio/webm", "GkXfo59ChoEBQveBAULygQRC84EIQoKEd2VibUKHgQRChYECGFOAZwEAAAAAAAQyEU2bdLpNu4tTq4QVSalmU6yBoU27i1OrhBZUrmtTrIHYTbuMU6uEElTDZ1OsggFCTbuMU6uEHFO7a1OsggQc7AEAAAAAAABZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAVSalmsirXsYMPQkBNgI1MYXZmNjAuMTYuMTAwV0GNTGF2ZjYwLjE2LjEwMESJiEBzQAAAAAAAFlSua+WuAQAAAAAAAFzXgQFzxYirsL7ZTLu6YZyBACK1nIN1bmSIgQCGhkFfT1BVU1aqg2MuoFa7hATEtACDgQLhkZ+BAbWIQOdwAAAAAABiZIEgY6KTT3B1c0hlYWQBATgBgLsAAAAAABJUw2f9c3OgY8CAZ8iaRaOHRU5DT0RFUkSHjUxhdmY2MC4xNi4xMDBzc9djwItjxYirsL7ZTLu6YWfIokWjh0VOQ09ERVJEh5VMYXZjNjAuMzEuMTAyIGxpYm9wdXNnyKFFo4hEVVJBVElPTkSHkzAwOjAwOjAwLjMwODAwMDAwMAAfQ7Z1QlLngQCjsYEAAIBIAdTkyO4lepfWoHHakj5c17mwiTCEIf1nvPfPE31vIlUD+ZpP57bsPnAsXYCjo4EAFYBIF3K6xAX2pv31pv/duX3vQZdm+QXm5tDxEtdLxOTmo6GBACmASBJBgsSakuRezjPDN8B35kcKPDbJey+OQd2FiLCjoYEAPYBIEkGCxJrI/4VZ+nmsK8WAUQNgmwSpwBVhVjmBCaOjgQBRgEgSQYLEmq+siExacMUfuCvOu6kiVEs31psppBVnKVijo4EAZYBIEkGCxJp5aSrF30OhrCISw1WXj/y7K2/AfpmxmOnAo6GBAHmASBJBgsSargZKQ/Vj4u7SLfFERtsnHiAE86Xm9yajoIEAjYBIEkGCxJqS3eM352t+M9XE0jpUAGgThqrOj6oGo6CBAKGASBJBgsSaqt7wV01dM00+yyMyYheB0Imzjj9WYKOigQC1gEgSQYLEmnsu2EUjCdJD9by4PqFQo9qpgmzaesOzQKOkgQDJgEgSQYLEmnqigq111oMBD9VmMCAzuj3qqDdltlQ9UQ0wo6CBAN2ASBJBgsSaqZM3/d/LwBYo1vw5GSupOz9gic3BIKOkgQDxgEgSQYLEmpMSAwRgMEFUQ+/r2cKCwU28Ru1liw/Er9v2o6CBAQWASBJBgsSaqFSEMx1jbFEVYAmgWgA3bv+i89/JQKOfgQEZgEgSQYLEmsTYy4Y8gDSc8AflipGc2u1bVy1GwKCpoaCBAS0ASAIiw9tNW4ICawYDsi0Stik66o9XAN94zW/agHWihADN/mAcU7trkbuPs4EAt4r3gQHxggHE8IED"]};
+let playableCache;
+function playableHereKey(){ let v = ""; try{ if(desktopShell) v = (desktopShell.version || "") + (desktopShell.system ? "|" + desktopShell.system : ""); }catch(err){} return navigator.userAgent + "|" + v; }
+function playableHere(){
+  if(playableCache === undefined){ try{ playableCache = JSON.parse(localStorage.getItem(PLAYABLE_KEY) || "null"); }catch(err){ playableCache = null; } }
+  return playableCache && playableCache.key === playableHereKey() ? playableCache : null;
+}
+// The kind of file a track is (FILE_KINDS' id), when this device has tried it and can't play it.
+function trackKindCantPlayHere(tr){
+  const r = playableHere(); if(!r || !r.kinds || !tr) return "";
+  const k = fileKindOfExt(trackExt(tr));
+  return k && r.kinds[k] === false ? k : "";
+}
+function playableKindLabel(k){ const e = FILE_KINDS.find(x=> x[0] === k); return (e && e[2]) || k.toUpperCase(); }
+function tryPlayableSample(mime, b64){
+  return new Promise(resolve=>{
+    let a = null, url = null, done = false, timer = null;
+    const end = (v)=>{
+      if(done) return; done = true; clearTimeout(timer);
+      try{ a.removeAttribute("src"); a.load(); }catch(err){}
+      try{ URL.revokeObjectURL(url); }catch(err){}
+      resolve(v);
+    };
+    try{
+      a = document.createElement("audio"); a.muted = true; a.preload = "auto";
+      url = URL.createObjectURL(new Blob([Uint8Array.from(atob(b64), c=> c.charCodeAt(0))], {type: mime}));
+      a.addEventListener("loadeddata", ()=> end(true));
+      a.addEventListener("error", ()=> end(false));
+      timer = setTimeout(()=> end(null), 5000);
+      a.src = url;
+    }catch(err){ end(null); }
+  });
+}
+let playableChecking = null;
+async function checkPlayableHere(force){
+  if(!force && playableHere()) return playableHere();
+  if(playableChecking) return playableChecking;
+  playableChecking = (async()=>{
+    const kinds = {};
+    for(const [k, [mime, b64]] of Object.entries(PLAYABLE_SAMPLES)) kinds[k] = await tryPlayableSample(mime, b64);
+    const rec = {key: playableHereKey(), at: Date.now(), kinds};
+    playableCache = rec;
+    try{ localStorage.setItem(PLAYABLE_KEY, JSON.stringify(rec)); }catch(err){}
+    playLog("what this device can play, tried with samples: " + Object.entries(kinds).map(([k, v])=> playableKindLabel(k) + " " + (v === true ? "yes" : v === false ? "no" : "?")).join(", "));
+    cantPlayIndexLen = -1; // the notes under tracks are drawn again
+    return rec;
+  })();
+  try{ return await playableChecking; } finally{ playableChecking = null; }
+}
+// Once on a device (or after its browser or app changed): a little after the
+// library opens, when nothing plays.
+function schedulePlayableCheck(){
+  if(playableHere()) return;
+  setTimeout(function again(){
+    if(playableHere()) return;
+    let busy = false; try{ busy = playingHere(); }catch(err){}
+    if(busy){ setTimeout(again, 30000); return; }
+    checkPlayableHere(false).then(()=>{ try{ refreshCurrentView(); }catch(err){} }).catch(err=> console.warn("What this device can play:", err));
+  }, window.__playableCheckMs || 15000);
+}
 let cantPlayIndex = null, cantPlayIndexOf = null, cantPlayIndexLen = -1;
 function trackCantPlay(id){
   const lib = root.library;
@@ -30478,6 +30650,8 @@ function trackCantPlay(id){
   if(tr.needsConvert === NEEDS_CONVERT_PLAYLIST) return {note: t("cantPlayPlaylistFile")};
   if(tr.needsConvert) return {note: tr.needsConvert === "?" ? t("cantPlayNeedsConvertAny") : t("cantPlayNeedsConvert", {format: tr.needsConvert})};
   if(!(tr.duration > 0)) return {note: t("cantPlayZeroLength")};
+  const here = trackKindCantPlayHere(tr);
+  if(here) return {note: t("cantPlayHere", {format: playableKindLabel(here)}), here: true};
   return null;
 }
 // A file this browser couldn't play, just imported: kept and marked, and
@@ -31084,7 +31258,7 @@ let convertQueue = [], convertRunning = false, convertStopped = false, convertDo
 // format settings would convert.
 function trackCanBeConverted(tr){
   if(!tr || tr.needsConvert === NEEDS_CONVERT_PLAYLIST) return false;
-  return !!tr.needsConvert || !(tr.duration > 0) || alacImported.has(tr.id) || trackMatchesPolicy(tr);
+  return !!tr.needsConvert || !(tr.duration > 0) || alacImported.has(tr.id) || trackMatchesPolicy(tr) || !!trackKindCantPlayHere(tr);
 }
 // A file too big to convert without being asked (BIG_FILE_BYTES).
 function trackIsBigFile(tr){ return !!tr && (tr.fileSize || 0) > BIG_FILE_BYTES; }
@@ -41269,9 +41443,11 @@ async function recheckStoredAudio(ids, onStep){
   let fixed = 0, left = 0, noFile = 0, noWave = 0, done = 0;
   const noWaveList = []; // {id, kind, label, why}: which, and why, for the summary
   for(const id of ids){
-    if(onStep) onStep(done, ids.length);
-    done++;
     const tr = findLibraryTrack(id);
+    const name = tr ? (tr.name || tr.filename || "") : "", at = done;
+    const say = (task)=>{ if(onStep) onStep(at, ids.length, name, task); };
+    say("chkTaskSound");
+    done++;
     if(!tr) continue;
     let rec = null;
     try{ rec = await idbGet("audio", id); }catch(err){}
@@ -41279,6 +41455,7 @@ async function recheckStoredAudio(ids, onStep){
     try{
       let blob = rec.blob, convertedFromAiff = false;
       if(await isAiffFile(blob)){
+        say("chkTaskAiff");
         const wav = aiffToWav(await blob.arrayBuffer());
         if(wav){
           const name = (tr.filename || tr.name || "track").replace(/\.(aiff?|aifc)$/i, "") + ".wav";
@@ -41289,6 +41466,7 @@ async function recheckStoredAudio(ids, onStep){
           convertedFromAiff = true;
         }
       }
+      if(convertedFromAiff) say("chkTaskSound");
       const a = await analyzeAudio(blob);
       if(a.likelyUnplayable){
         await markNeedsConvert(tr, blob);
@@ -41304,6 +41482,7 @@ async function recheckStoredAudio(ids, onStep){
       if(a.loudness && !(a.loudness.failed && tr.loudness && tr.loudness.i != null)) tr.loudness = a.loudness;
       invalidateTrackWaveformBg && invalidateTrackWaveformBg(id);
       if(objectUrlCache[id]){ URL.revokeObjectURL(objectUrlCache[id]); delete objectUrlCache[id]; }
+      say("chkTaskFormat");
       const problem = await describeFormatProblem(blob, tr.filename);
       if(problem && problem !== NEEDS_CONVERT_PLAYLIST){ tr.needsConvert = problem; left++; }
       else {
@@ -41316,9 +41495,9 @@ async function recheckStoredAudio(ids, onStep){
       console.warn("Check again failed for", tr.name, err);
       left++;
     }
-    if(done % 5 === 0) await saveState();
+    if(done % 5 === 0){ if(onStep) onStep(done - 1, ids.length, "", "chkTaskSaving"); await saveState(); }
   }
-  if(onStep) onStep(ids.length, ids.length);
+  if(onStep) onStep(ids.length, ids.length, "", "chkTaskSaving");
   await saveState();
   return {fixed, left, noFile, noWave, noWaveList};
 }
@@ -41345,7 +41524,14 @@ async function whyNoWaveform(blob, a){
 //   4. tracks without a record of what kind of file they are have it found
 //      inside them (track.fileType, 2.5.059), as an import does now: Table's
 //      Type and the format rules go by it, not by the name.
-// Add new checks at the end. Progress in the status bar, with Stop.
+//   5. what this device can play is tried again (checkPlayableHere, 2.7.013),
+//      and the tracks of a kind it can't are counted: they're unplayable here
+//      (trackCantPlay); the summary's Convert them now converts them.
+// Add new checks at the end. Progress in the status bar, with Stop. The
+// status names every stage, and the track and what's being done to it
+// (2.7.013; the audit's fix 22): "looking again at 3 of 40: Long Life
+// Prayer, reading its sound", and "saving…" between steps, where one long
+// recording or a save had looked stuck.
 let checkLibraryRunning = false;
 async function checkLibrary(){
   if(checkLibraryRunning) return;
@@ -41353,14 +41539,15 @@ async function checkLibrary(){
   let stopped = false;
   const stop = ()=>{ stopped = true; };
   const step = (text)=>{ if(stopped) throw {stopped: true}; setActiveOperationProgress(text, stop); };
-  const out = {dated: 0, damaged: 0, fixed: 0, left: 0, noWave: 0, noWaveList: [], typed: 0, mistyped: 0};
+  const saving = async ()=>{ step(t("chkStepSaving")); await saveState(); };
+  const out = {dated: 0, damaged: 0, fixed: 0, left: 0, noWave: 0, noWaveList: [], typed: 0, mistyped: 0, cantHere: 0, cantHereKinds: [], cantHereIds: []};
   try{
     const btn = document.getElementById("chkLibraryBtn"); if(btn) btn.disabled = true;
     step(t("chkStepDates"));
     const now = Date.now();
     root.library.forEach(tr=>{ if(!tr.addedAt){ tr.addedAt = now; out.dated++; } });
-    if(out.dated) await saveState();
-    const damaged = await checkStoredFiles((i, n)=> step(t("chkStepFiles", {done: i + 1, total: n})));
+    if(out.dated) await saving();
+    const damaged = await checkStoredFiles((i, n, name)=> step(t(name ? "chkStepFilesNamed" : "chkStepFiles", {done: i + 1, total: n, name})));
     out.damaged = damaged.length;
     const look = root.library.filter(tr=> !damagedAudio.ids.has(tr.id) && !(typeof sharedTrackMissing === "function" && sharedTrackMissing(tr.id)) &&
       (!(tr.duration > 0) || !tr.loudness || !tr.sampleRate || tr.needsConvert ||
@@ -41368,7 +41555,7 @@ async function checkLibrary(){
        // read through when it came in), unless reading it closed the page
        (isStandInPeaks(tr.peaks) && tr.analysisCrashed !== APP_VERSION))).map(tr=> tr.id);
     if(look.length){
-      const r = await recheckStoredAudio(look, (d, n)=> step(t("chkStepTracks", {done: Math.min(d + 1, n), total: n})));
+      const r = await recheckStoredAudio(look, (d, n, name, task)=> step(name ? t("chkStepTrack", {done: Math.min(d + 1, n), total: n, name, task: t(task)}) : t(task === "chkTaskSaving" ? "chkStepSaving" : "chkStepTracks", {done: Math.min(d + 1, n), total: n})));
       out.fixed = r.fixed; out.left = r.left; out.noWave = r.noWave; out.noWaveList = r.noWaveList;
     }
     const kindOf = e=> EXT_AUDIO_KIND[e] || e;
@@ -41379,9 +41566,15 @@ async function checkLibrary(){
       if(!(await recordTrackKind(tr))) continue;
       out.typed++;
       if(kindOf(fileExt(tr.filename)) !== kindOf(tr.fileType)) out.mistyped++;
-      if(out.typed % 25 === 0) await saveState();
+      if(out.typed % 25 === 0) await saving();
     }
-    if(out.typed) await saveState();
+    if(out.typed) await saving();
+    // 5. What this device can play, tried again; the tracks it can't, counted.
+    step(t("chkStepPlayable"));
+    await checkPlayableHere(true);
+    const kinds = new Set();
+    for(const tr of root.library){ const k = trackKindCantPlayHere(tr); if(k && !tr.needsConvert){ out.cantHere++; out.cantHereIds.push(tr.id); kinds.add(playableKindLabel(k)); } }
+    out.cantHereKinds = [...kinds];
     await idbPut("state", {key: "checkLibrary", value: {at: Date.now(), version: 1}}).catch(()=>{});
   }catch(err){
     if(err && err.stopped){ if(settingsPageOpen() && settingsSection === "cleanup") renderSettingsSection(); return; } // Stop: no summary
@@ -41398,15 +41591,20 @@ async function checkLibrary(){
   if(out.fixed || out.left) lines.push(t("chkFixed", {fixed: out.fixed, left: out.left}));
   if(out.noWave) lines.push(t("chkNoWave", {n: out.noWave}));
   if(out.mistyped) lines.push(t("chkMistyped", {n: out.mistyped}));
+  if(out.cantHere) lines.push(t("chkCantPlayHere", {n: out.cantHere, kinds: out.cantHereKinds.join(", ")}));
   if(!lines.length) lines.push(t("chkNothing"));
   // The tracks still without a waveform, by name, with their format, length
   // and why (1.4.108), and a way to find them.
   const nw = (out.noWaveList || []).map(x=> ({...x, tr: findLibraryTrack(x.id)})).filter(x=> x.tr);
   const nwHtml = nw.length ? `<ul class="chk-nowave">${nw.map(x=> `<li><b>${escapeHtmlText(x.tr.name || x.tr.filename || "")}</b> · ${escapeHtmlText(x.label)} · ${escapeHtmlText(fmtTimeLong(x.tr.duration || 0))}<br><span class="settings-note">${escapeHtmlText(t(x.why === "long" ? "chkWhyLong" : "chkWhyDecode"))}</span></li>`).join("")}</ul>` : "";
+  // The tracks of a kind this device can't play: converted from here, as from a playlist's banner.
+  const hereConv = (out.cantHereIds || []).filter(id=> trackCanBeConverted(findLibraryTrack(id)) && !convertQueue.includes(id));
   whenNoModal(()=>{
-    openModal(`<h3>${escapeHtmlText(t("chkDoneTitle"))}</h3>${lines.map(l=> `<p>${escapeHtmlText(l)}</p>`).join("")}${nwHtml}<div class="modal-actions">${nw.length ? `<button class="btn" id="chkShowNoWave">${escapeHtmlText(t("chkShowInLibrary"))}</button>` : ""}<button class="btn primary" data-close>${t("ok")}</button></div>`);
+    openModal(`<h3>${escapeHtmlText(t("chkDoneTitle"))}</h3>${lines.map(l=> `<p>${escapeHtmlText(l)}</p>`).join("")}${nwHtml}<div class="modal-actions">${hereConv.length ? `<button class="btn" id="chkConvertHere">${escapeHtmlText(t(hereConv.length === 1 ? "convertItNowBtn" : "convertThemNowBtn"))}</button>` : ""}${nw.length ? `<button class="btn" id="chkShowNoWave">${escapeHtmlText(t("chkShowInLibrary"))}</button>` : ""}<button class="btn primary" data-close>${t("ok")}</button></div>`);
     const b = document.getElementById("chkShowNoWave");
     if(b) b.addEventListener("click", ()=>{ closeModal(); if(settingsPageOpen()) closeSettingsPage(); showTracksInLibrary(nw.map(x=> x.id)); });
+    const cv = document.getElementById("chkConvertHere");
+    if(cv) cv.addEventListener("click", ()=>{ closeModal(); convertTracks(hereConv); });
   });
 }
 // One row of a Library cleanup list: the track, where it's used (each
@@ -54483,7 +54681,7 @@ if(IN_DESKTOP_APP){
   window.addEventListener("resize", fitHeight);
 }
 const DESKTOP_BRIDGE_NEEDED = +((document.querySelector('meta[name="desktop-bridge"]') || {}).content || 1);
-let desktopShell = null; // {version, bridge, pages, device, updates, zoom, trash (2.5.2), watch (2.5.3), append_range (2.5.3), files_http, typed_path (2.5.6), opened (2.6.0), slow_route (2.7.0), close_seen (2.7.1), silence (2.7.4), append_at (2.7.5), page_progress (2.7.6), update_progress (2.7.7)}
+let desktopShell = null; // {version, bridge, pages, device, updates, zoom, trash (2.5.2), watch (2.5.3), append_range (2.5.3), files_http, typed_path (2.5.6), opened (2.6.0), slow_route (2.7.0), close_seen (2.7.1), silence (2.7.4), append_at (2.7.5), page_progress (2.7.6), update_progress (2.7.7), system (2.7.8: the system's name and version, "macOS 12.7.6"; only on a Mac)}
 async function desktopShellCheck(){
   if(!IN_DESKTOP_APP || !window.__TAURI__ || !window.__TAURI__.core) return;
   try{ desktopShell = await window.__TAURI__.core.invoke("p37_shell_info"); }catch(err){ desktopShell = {version: "?", bridge: 0}; }
@@ -54643,6 +54841,7 @@ if(IN_DESKTOP_APP && window.__TAURI__ && window.__TAURI__.event && window.__TAUR
   startAt.read = performance.now();
   undoInit();
   startWatchEnd();
+  schedulePlayableCheck(); // what this device can play, once (2.7.013)
   if(document.getElementById("storageStuckTry")){ delete backdrop.dataset.busy; closeModal(); }
   writeLibraryInfo();
   noteLibraryStats();

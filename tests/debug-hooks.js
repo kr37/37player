@@ -43,6 +43,9 @@ window.__st = ()=>({src: audioEl.src, paused: audioEl.paused, t: audioEl.current
   title: navigator.mediaSession && navigator.mediaSession.metadata && navigator.mediaSession.metadata.title,
   artist: navigator.mediaSession && navigator.mediaSession.metadata && navigator.mediaSession.metadata.artist});
 window.__log = ()=>playLogLines.slice();
+window.__chk = ()=> checkLibrary(); // playablehere.js
+window.__playable = {check: (f)=> checkPlayableHere(f), here: ()=> playableHere(), cantPlay: (id)=> trackCantPlay(id), canConvert: (id)=> trackCanBeConverted(findLibraryTrack(id)), forget: ()=>{ playableCache = undefined; }};
+{ const _sop = setActiveOperationProgress; setActiveOperationProgress = function(text){ (window.__opTexts = window.__opTexts || []).push(text); return _sop.apply(this, arguments); }; }
 window.__levelCtx = ()=> levelCtx; // soundinterrupt.js
 window.__net = {fetchWithLimits}; // netlimits.js
 window.__dbgSaveAged = (ms)=>{ if(saveAsked.length){ saveAsked[0] -= ms; if(saveSlow) saveSlow.since -= ms; } saveSlowCheck(); }; // saveslow.js: the oldest save made older
