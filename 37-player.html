@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.7.016">
+<meta name="app-version" content="2.7.017">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -38440,8 +38440,14 @@ function updateLibPreviewPlayIcon(){
     const cur = document.getElementById("libTimeCur"), dur = document.getElementById("libTimeDur");
     if(cur) cur.textContent = fmtTime(audioEl.currentTime);
     if(dur) dur.textContent = fmtTime(audioEl.duration||0);
-    if(appMode === "library") refreshCtxBars(); // Split becomes possible once the audio has loaded
   });
+  // The bars' buttons (Split and the rest) follow the preview's audio when it
+  // loads or changes, not at every position update (2.7.017): refreshing
+  // them re-measures the bars, a fresh layout of the whole table, four times
+  // a second; kr37's samples on his MacBook (26 Nov 2026) had the page's
+  // main thread spending 16 to 37% of its time on it while a preview played
+  // in a 2,800-track Library, against 3% in Playing.
+  for(const ev of ["loadedmetadata", "durationchange", "emptied"]) audioEl.addEventListener(ev, ()=>{ if(appMode === "library") refreshCtxBars(); });
 })();
 
 function renderLibraryTracks(){
