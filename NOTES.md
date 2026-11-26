@@ -8,6 +8,11 @@ A playlist player for live sessions at Kadampa centers: chanting, prayers, manda
 
 - One self-contained HTML file, `37-player.html`, running as a PWA. It's offline-capable, and the whole library (audio included) lives in the browser's IndexedDB.
 - Users so far: kr37, two friends, and Samudrabadra (Fort Myers). Prospective: KMC Texas (three rooms wanting one shared library) and IKRC (Macs and an iPad). Phones are a "handy sometimes" platform, not the main target.
+- **Minimum requirements** (written down 26 Nov 2026; nothing below them is tested or supported):
+  - **Browser:** Safari 13.1 (iPadOS/iOS 13.4) or later, or a current Chrome, Edge or Firefox. The page uses optional chaining (`?.`), which older browsers can't parse, so on them it won't start at all. Raise this line when the page starts using something newer.
+  - **Mac:** macOS 10.13 High Sierra or later, for the browser (High Sierra's last Safari is 13.1.2) and for the desktop app (Tauri's default `minimumSystemVersion`, which `tauri.conf.json` doesn't change). Older systems also can't reach 37player.com: they don't trust Let's Encrypt's current root (ISRG Root X1, trusted from macOS 10.12.1), so the site fails before the page loads. Seen on kr37's parents' Mac mini (OS X 10.9.5, Safari 9.1.3, 26 Nov 2026), where many other sites fail too.
+  - **Windows:** whatever WebView2 runs on (Windows 10 and 11).
+  - The cure for an old Mac is a newer macOS where its hardware allows (Mac mini A1347: 2010–2011 to 10.13, 2012 to 10.15, 2014 to 12). Firefox ESR 78 is the last Firefox for OS X 10.9–10.11 and has its own certificates, but it has had no security updates since 2021 and 37 Player hasn't been tried in it.
 
 ## Where it lives
 
