@@ -544,7 +544,7 @@ pub fn run() {
             files::fs_list, files::fs_stat, files::fs_read, files::fs_write, files::fs_copy, files::fs_append_range, files::fs_rename, files::fs_remove, files::fs_mkdir, files::fs_tidy_leftovers,
             updates::p37_shell_update_check, updates::p37_shell_update_install, updates::p37_shell_update_cancel, watch::p37_watch, p37_close_seen, p37_page_progress])
         .on_window_event(|window, event| {
-            if let WindowEvent::Focused(f) = event { if let Some(w) = watch::get() { w.focused.store(*f, Ordering::SeqCst); } }
+            if let WindowEvent::Focused(f) = event { if let Some(w) = watch::get() { w.set_focused(*f, watch::now_ms()); } }
             if let WindowEvent::CloseRequested { api, .. } = event {
                 if !window.app_handle().state::<Quitting>().0.load(Ordering::SeqCst) {
                     api.prevent_close();

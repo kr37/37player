@@ -26,7 +26,13 @@
 //    asks p37_watch every 20 s; the time of its last ask is kept, and this
 //    thread's loop notes when it's over PAGE_SILENT_MS old with the window
 //    in front (PAGE_SILENT_AWAY_MS when it isn't: the system slows a hidden
-//    window's timers). Only noted, never acted on (kr37, 23 Nov 2026: a
+//    window's timers). A page that's hidden and playing nothing says so as
+//    it asks (may_sleep, shell 2.7.10): macOS puts such a page to sleep for
+//    a quarter of an hour at a time, so its silence isn't counted until the
+//    window comes to the front, and then from that moment; nor is the time
+//    the computer was asleep (woke). Before, both were logged as "the page
+//    didn't answer the app for 1650 s" (report 2026-11-26-103712, build
+//    83d: up to 41442 s overnight). Only noted, never acted on (kr37, 23 Nov 2026: a
 //    reload would very likely meet the same stuck media process, and a
 //    restart by itself, perhaps mid-puja on a false alarm, is worse than a
 //    frozen window someone can see): in running.json at once, so a force
@@ -120,6 +126,10 @@ pub struct Watch {
     page_ended: Mutex<Vec<u64>>,
     /// The page's last p37_watch (ms; 0 before the first), and the silences ended since the page last asked.
     page_asked: AtomicU64,
+    /// The page said at its last ask that it's hidden and playing nothing: the system may put it to sleep (shell 2.7.10).
+    page_may_sleep: AtomicBool,
+    /// When the window last came to the front (ms).
+    front_since: AtomicU64,
     page_silences: Mutex<Vec<Silence>>,
     #[cfg_attr(not(any(target_os = "macos", target_os = "ios")), allow(dead_code))] // the Mac only
     pub recent_ends: Mutex<Vec<u64>>,
@@ -154,11 +164,31 @@ impl Watch {
         }
     }
     /// Notes a silence once it's too long (from this thread's loop): kept in running.json at once.
+    /// A page that may sleep is counted only with the window in front, and from when it came there.
     pub fn check_page(&self, now: u64) {
         let last = self.page_asked.load(Ordering::SeqCst);
-        if !page_silent(last, now, self.focused.load(Ordering::SeqCst)) { return; }
-        let noted = { let mut me = self.me.lock().unwrap(); if me.page_silent_since.is_some() { false } else { me.page_silent_since = Some(last); true } };
+        if last == 0 { return; }
+        let focused = self.focused.load(Ordering::SeqCst);
+        let from = if self.page_may_sleep.load(Ordering::SeqCst) {
+            if !focused { return; }
+            last.max(self.front_since.load(Ordering::SeqCst))
+        } else { last };
+        if !page_silent(from, now, focused) { return; }
+        let noted = { let mut me = self.me.lock().unwrap(); if me.page_silent_since.is_some() { false } else { me.page_silent_since = Some(from); true } };
         if noted { self.write(); }
+    }
+    /// The page's ask (p37_watch): whether it said it may sleep.
+    pub fn page_says(&self, may_sleep: bool) { self.page_may_sleep.store(may_sleep, Ordering::SeqCst); }
+    /// The window came to the front, or left it.
+    pub fn set_focused(&self, focused: bool, now: u64) {
+        if focused && !self.focused.load(Ordering::SeqCst) { self.front_since.store(now, Ordering::SeqCst); }
+        self.focused.store(focused, Ordering::SeqCst);
+    }
+    /// This thread's tick came late: the computer was asleep. The page's
+    /// silence is counted from now, not from before (unless already noted).
+    pub fn woke(&self, now: u64) {
+        if self.page_is_silent() { return; }
+        let _ = self.page_asked.fetch_update(Ordering::SeqCst, Ordering::SeqCst, |last| if last == 0 { None } else { Some(now) });
     }
     /// The page silent right now (noted): a close offers "isn't responding" at once.
     pub fn page_is_silent(&self) -> bool { self.me.lock().unwrap().page_silent_since.is_some() }
@@ -180,7 +210,7 @@ pub fn start(app: &tauri::AppHandle) -> Arc<Watch> {
     let now = now_ms();
     let w = Arc::new(Watch {
         beat: Arc::new(AtomicU64::new(now)), focused: AtomicBool::new(true),
-        stalls: Mutex::new(vec![]), page_ended: Mutex::new(vec![]), page_asked: AtomicU64::new(0), page_silences: Mutex::new(vec![]), recent_ends: Mutex::new(vec![]), last: Mutex::new(last),
+        stalls: Mutex::new(vec![]), page_ended: Mutex::new(vec![]), page_asked: AtomicU64::new(0), page_may_sleep: AtomicBool::new(false), front_since: AtomicU64::new(now), page_silences: Mutex::new(vec![]), recent_ends: Mutex::new(vec![]), last: Mutex::new(last),
         me: Mutex::new(Session { started: now, alive: now, version: app.package_info().version.to_string(), panic: None, page_silent_since: None, main_stalled_since: None }),
         file,
     });
@@ -214,7 +244,7 @@ pub fn start(app: &tauri::AppHandle) -> Arc<Watch> {
             let beat = w2.beat.clone();
             let _ = app2.run_on_main_thread(move || beat.store(now_ms(), Ordering::SeqCst));
             let (stall, late) = finder.tick(now, w2.beat.load(Ordering::SeqCst), w2.focused.load(Ordering::SeqCst));
-            if late { w2.beat.store(now, Ordering::SeqCst); }
+            if late { w2.beat.store(now, Ordering::SeqCst); w2.woke(now); }
             if let Some(s) = stall {
                 let mut v = w2.stalls.lock().unwrap();
                 v.push(s);
@@ -233,8 +263,9 @@ pub fn start(app: &tauri::AppHandle) -> Arc<Watch> {
 
 // What's new since the page last asked: stalls, and once, how the session
 // before ended (None when it closed normally).
+/// `may_sleep`: the page is hidden and playing nothing (a page before 2.7.016 doesn't say).
 #[tauri::command]
-pub fn p37_watch() -> Report { get().map(|w| w.take()).unwrap_or_default() }
+pub fn p37_watch(may_sleep: Option<bool>) -> Report { get().map(|w| { w.page_says(may_sleep.unwrap_or(false)); w.take() }).unwrap_or_default() }
 
 #[cfg(test)]
 mod tests {
@@ -254,9 +285,7 @@ mod tests {
         let d = std::env::temp_dir().join(format!("p37-watch-silence-{}", std::process::id()));
         let _ = std::fs::create_dir_all(&d);
         let f = d.join("running.json");
-        let w = Watch { beat: Arc::new(AtomicU64::new(0)), focused: AtomicBool::new(true), stalls: Mutex::new(vec![]), page_ended: Mutex::new(vec![]),
-            page_asked: AtomicU64::new(0), page_silences: Mutex::new(vec![]), recent_ends: Mutex::new(vec![]), last: Mutex::new(None),
-            me: Mutex::new(Session::default()), file: Some(f.clone()) };
+        let w = test_watch(Some(f.clone()));
         w.check_page(5_000_000);
         assert!(!w.page_is_silent(), "before the page's first ask, nothing");
         w.page_asks(1_000_000);
@@ -269,6 +298,46 @@ mod tests {
         assert_eq!(w.take().page_silences, vec![Silence { at: 1_000_000, ms: 95_000 }]);
         assert_eq!(read_session(&f).and_then(|s| s.page_silent_since), None, "cleared when it answers");
         assert!(w.take().page_silences.is_empty(), "said once");
+    }
+    #[test]
+    fn a_page_that_may_sleep_is_counted_only_in_front_and_from_then() {
+        let w = test_watch(None);
+        w.set_focused(false, 900_000);
+        w.page_says(true);
+        w.page_asks(1_000_000);
+        w.check_page(1_000_000 + 3_600_000);
+        assert!(!w.page_is_silent(), "hidden and playing nothing: asleep for an hour is no silence");
+        w.set_focused(true, 5_000_000);
+        w.check_page(5_000_000 + PAGE_SILENT_MS - 1);
+        assert!(!w.page_is_silent(), "in front: counted from then");
+        w.check_page(5_000_000 + PAGE_SILENT_MS + 1);
+        assert!(w.page_is_silent(), "still not answering a minute after it came to the front");
+        w.page_asks(5_000_000 + 70_000);
+        assert_eq!(w.take().page_silences, vec![Silence { at: 5_000_000, ms: 70_000 }], "from when it came to the front");
+        // A page that's playing (may_sleep false) is counted as before, even away from the front.
+        w.page_says(false);
+        w.set_focused(false, 6_000_000);
+        w.page_asks(6_000_000);
+        w.check_page(6_000_000 + PAGE_SILENT_AWAY_MS + 1);
+        assert!(w.page_is_silent());
+    }
+    #[test]
+    fn the_computer_asleep_is_not_the_page_silent() {
+        let w = test_watch(None);
+        w.woke(2_000_000);
+        w.check_page(2_000_000 + 10 * PAGE_SILENT_MS);
+        assert!(!w.page_is_silent(), "before the page's first ask, nothing");
+        w.page_asks(1_000_000);
+        w.woke(1_000_000 + 11 * 3_600_000); // eleven hours asleep
+        w.check_page(1_000_000 + 11 * 3_600_000 + 5_000);
+        assert!(!w.page_is_silent(), "counted from the waking");
+        w.check_page(1_000_000 + 11 * 3_600_000 + PAGE_SILENT_MS + 1);
+        assert!(w.page_is_silent(), "and a page that then doesn't answer is noted");
+    }
+    fn test_watch(file: Option<std::path::PathBuf>) -> Watch {
+        Watch { beat: Arc::new(AtomicU64::new(0)), focused: AtomicBool::new(true), stalls: Mutex::new(vec![]), page_ended: Mutex::new(vec![]),
+            page_asked: AtomicU64::new(0), page_may_sleep: AtomicBool::new(false), front_since: AtomicU64::new(0), page_silences: Mutex::new(vec![]), recent_ends: Mutex::new(vec![]), last: Mutex::new(None),
+            me: Mutex::new(Session::default()), file }
     }
     #[test]
     fn a_stall_under_way_has_its_start() {
