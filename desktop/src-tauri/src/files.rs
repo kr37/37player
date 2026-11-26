@@ -900,16 +900,17 @@ pub fn range_of(range: Option<&str>, len: u64) -> Result<(u64, u64, bool), ()> {
 }
 
 /// The stretch of a recording one p37lib answer carries, as (start, end,
-/// partial); Err for a Range that can't be served. An open-ended Range, and
-/// a request with none at all, get at most SERVE_PIECE: before shell 2.7.9 a
-/// request without a Range had the whole file read into memory for one
-/// answer, a 1.3 GB WAV at once (desktop/AUDIT-boundaries.md 1.5, the
-/// audit's fix 19). Players ask with a Range and come back for the rest; a
-/// file of SERVE_PIECE or less still comes whole, as a 200.
+/// partial); Err for a Range that can't be served. An open-ended Range gets
+/// at most SERVE_PIECE (players come back for the rest). A request with no
+/// Range gets the whole file, read into memory for the answer: that's a
+/// download, and dragging a track out of the Windows app to Explorer is one
+/// (WebView2 fetches the DownloadURL without a Range). Shell 2.7.9 (the
+/// audit's fix 19, 1.5) gave such a request only the first SERVE_PIECE as a
+/// 206, and the dragged-out file was saved cut at 4 MB (kr37, 26 Nov 2026,
+/// build 84d); shell 2.7.11 answers it whole again.
 pub fn piece_of(range: Option<&str>, len: u64) -> Result<(u64, u64, bool), ()> {
     match range {
         Some(h) => parse_range(h, len).map(|(s, e)| (s, e.min(s + SERVE_PIECE).max(s), true)).ok_or(()),
-        None if len > SERVE_PIECE => Ok((0, SERVE_PIECE, true)),
         None => Ok((0, len, false)),
     }
 }
@@ -1025,11 +1026,10 @@ pub fn mime_for(rel: &str) -> &'static str {
 #[cfg(test)]
 mod tests {
     #[test]
-    fn no_answer_holds_a_whole_long_recording() {
+    fn a_range_gets_a_piece_and_a_download_the_whole_file() {
         let big = 10 * SERVE_PIECE;
         assert_eq!(piece_of(None, 1000), Ok((0, 1000, false)), "a small file without a Range: whole, as a 200");
-        assert_eq!(piece_of(None, SERVE_PIECE), Ok((0, SERVE_PIECE, false)));
-        assert_eq!(piece_of(None, big), Ok((0, SERVE_PIECE, true)), "a long one without a Range: its first piece, as a 206");
+        assert_eq!(piece_of(None, big), Ok((0, big, false)), "a long one without a Range (a download, a drag out to Explorer): whole, as a 200");
         assert_eq!(piece_of(Some("bytes=0-"), big), Ok((0, SERVE_PIECE, true)));
         assert_eq!(piece_of(Some("bytes=100-199"), big), Ok((100, 200, true)));
         assert_eq!(piece_of(Some("bytes=-500"), big), Ok((big - 500, big, true)));
