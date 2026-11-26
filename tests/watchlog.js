@@ -56,5 +56,15 @@ const log = (p)=> p.evaluate(()=> window.__log().join('\n'));
   await p.reload({waitUntil: 'domcontentloaded'}); await sleep(3000);
   L = await log(p);
   ok(/37 Player opened \(2\.5\.\d+\) —\n?[^\n]*this start was a reload of the window/.test(L) || /this start was a reload of the window/.test(L), 'a reload of the window says so');
+  // The page says when it may sleep (2.7.016, shell 2.7.10): hidden and
+  // playing nothing; at once when that changes, not only every 20 s.
+  const told = ()=> p.evaluate(()=> (window.__fakeWatchAsks || []).slice(-1)[0]);
+  ok(await told() === false, 'on screen: it doesn\'t say it may sleep');
+  await p.evaluate(()=>{ window.__hiddenNow = true; Object.defineProperty(document, 'visibilityState', {configurable: true, get: ()=> window.__hiddenNow ? 'hidden' : 'visible'}); document.dispatchEvent(new Event('visibilitychange')); });
+  await sleep(1200);
+  ok(await told() === true, 'hidden and playing nothing: it says so at once');
+  await p.evaluate(()=>{ window.__hiddenNow = false; document.dispatchEvent(new Event('visibilitychange')); });
+  await sleep(1200);
+  ok(await told() === false, 'back on screen: said at once');
   console.log(fails ? fails + ' FAILED' : 'ALL OK'); await b.close();
 })();

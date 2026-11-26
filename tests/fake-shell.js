@@ -135,7 +135,7 @@
       // A library's folder to the Trash (shell 2.5.2): here it's removed, and
       // its path noted in __fakeTrash.
       // The shell's watch (2.5.3): what a test put in __fakeWatch, once.
-      case 'p37_watch': { const r = window.__fakeWatch || {stalls: [], last_session: null}; window.__fakeWatch = null; return r; }
+      case 'p37_watch': { (window.__fakeWatchAsks = window.__fakeWatchAsks || []).push(args ? args.maySleep : undefined); const r = window.__fakeWatch || {stalls: [], last_session: null}; window.__fakeWatch = null; return r; }
       case 'fs_root_trash': {
         if(!String(args.id).startsWith('lib-')) throw new Error("only a library's own folder");
         const r = await readRoots(); if(!(args.id in r)) throw new Error('no folder called ' + args.id + ' on the list');

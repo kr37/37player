@@ -11,6 +11,7 @@ const server = http.createServer((req, res)=>{
   const cors = {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': '*', 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS'};
   if(req.method === 'OPTIONS'){ res.writeHead(204, cors); return res.end(); }
   if(req.url === '/never') return; // no answer at all
+  if(req.url === '/unread'){ res.writeHead(200, Object.assign({'Content-Type': 'application/octet-stream'}, cors)); res.write(Buffer.alloc(1000, 1)); return; } // as /stalls, but nobody reads it
   if(req.url === '/stalls'){ res.writeHead(200, Object.assign({'Content-Type': 'application/octet-stream'}, cors)); res.write(Buffer.alloc(1000, 1)); return; } // a start, then nothing
   if(req.url === '/slow'){ res.writeHead(200, Object.assign({'Content-Type': 'application/octet-stream'}, cors)); let n = 0; const t = setInterval(()=>{ res.write(Buffer.alloc(1000, 2)); if(++n === 6){ clearInterval(t); res.end(); } }, 1000); return; }
   if(req.url === '/upload'){ let got = 0; req.on('data', d=> got += d.length); req.on('end', ()=> setTimeout(()=>{ res.writeHead(200, Object.assign({'Content-Type': 'application/json'}, cors)); res.end(JSON.stringify({got})); }, 4000)); return; }
@@ -43,5 +44,12 @@ const server = http.createServer((req, res)=>{
   ok(r.ok && r.out === '{"got":200000}' && r.ms > 3500, 'an upload gets time for its size (' + JSON.stringify(r) + ')');
   r = await ask('/upload', {bodySize: 1000}, 'json');
   ok(!r.ok && /no answer in 2 s/.test(r.error), 'a small request that takes too long is given up (' + JSON.stringify(r) + ')');
+  // An answer nobody reads (the caller looks only at its status) isn't given up (2.7.016).
+  const st = await p.evaluate(async()=>{ const res = await window.__net.fetchWithLimits('http://127.0.0.1:8879/unread', {}); return res.status; });
+  await sleep(4000);
+  ok(st === 200 && !/given up[^\n]*\/unread/.test((await p.evaluate(()=> window.__slog())).join('\n')), 'an answer nobody reads isn\'t given up, and isn\'t logged as one');
+  // One read slowly: the limit runs only while a read waits.
+  r = await p.evaluate(async()=>{ const res = await window.__net.fetchWithLimits('http://127.0.0.1:8879/slow', {}); const rd = res.body.getReader(); let n = 0; for(;;){ const x = await rd.read(); if(x.done) break; n += x.value.length; await new Promise(z=> setTimeout(z, 3000)); } return n; });
+  ok(r === 6000, 'an answer read slowly (3 s between reads, longer than the quiet limit) comes whole (' + r + ')');
   console.log(fails ? fails + ' FAILED' : 'ALL OK'); await b.close(); server.close();
 })();
