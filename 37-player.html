@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.7.019">
+<meta name="app-version" content="2.7.020">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -37159,8 +37159,29 @@ function levelRoutedPlaying(){ return [audioEl, ...levelPreviewEls()].some(el=> 
    its place kept, and the lock screen's play resumes it. */
 let levelInterrupted = null; // {at, item} while Playing is paused for an interruption
 const levelPlayingMain = ()=> !audioEl.paused || silenceState.active;
+/* Temple first (2.7.020; kr37, 26 Nov 2026: "the principal use on a mobile
+   device is a dedicated iPad in a meditation room that is not receiving
+   phone calls … design for temple"). Only a track that plays through the
+   engine is silenced by an interruption, so only then does Playing pause:
+   never during a silence or a stop, where nothing is lost and a pause would
+   hold the puja until someone unlocked the iPad (the engine is reported
+   "interrupted" when a page is hidden and nothing sounds through it, as on
+   kr37's Mac); a track not turned up through the engine plays on by itself.
+   And the engine is first asked to run again: a lock or a hidden page lets
+   it, at once; only an interruption that still holds it 3 s later (a call,
+   Siri) pauses Playing. */
+const levelRoutedMain = ()=> !audioEl.paused && levelGains.has(audioEl);
+let levelInterruptCheck = null;
 function levelInterruptionBegan(){
-  if(levelInterrupted || !levelPlayingMain()) return;
+  if(levelInterrupted || levelInterruptCheck || !levelRoutedMain()) return;
+  try{ levelCtx.resume().catch(()=>{}); }catch(err){}
+  levelInterruptCheck = setTimeout(()=>{
+    levelInterruptCheck = null;
+    if(levelInterrupted || !levelCtx || levelCtx.state !== "interrupted" || !levelRoutedMain()) return;
+    levelInterruptionPause();
+  }, window.__levelInterruptWaitMs || 3000);
+}
+function levelInterruptionPause(){
   levelInterrupted = {at: Date.now(), item: currentItemId};
   playLog("sound interrupted (a call, Siri or the like): Playing paused, keeping its place");
   togglePlay();

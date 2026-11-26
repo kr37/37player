@@ -48,6 +48,7 @@ window.__playable = {check: (f)=> checkPlayableHere(f), here: ()=> playableHere(
 { const _sop = setActiveOperationProgress; setActiveOperationProgress = function(text){ (window.__opTexts = window.__opTexts || []).push(text); return _sop.apply(this, arguments); }; }
 window.__levelCtx = ()=> levelCtx; // soundinterrupt.js
 { const _rcb = refreshCtxBars; refreshCtxBars = function(){ window.__ctxRefreshes = (window.__ctxRefreshes || 0) + 1; return _rcb.apply(this, arguments); }; } // libpreviewcalm.js
+window.__levelRouteMain = ()=> levelGains.set(audioEl, levelGains.get(audioEl) || {}); // soundinterrupt.js: stands in for a track turned up through the engine
 window.__userSkip = (d)=> userSkip(d); // lockguard.js
 window.__op = (text, key)=> text ? setActiveOperationProgress(text, null, key || 'endwatch') : clearActiveOperation(key || 'endwatch'); // endwatch.js
 window.__net = {fetchWithLimits}; // netlimits.js
