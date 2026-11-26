@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.7.018">
+<meta name="app-version" content="2.7.019">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -39367,6 +39367,7 @@ async function activateItem(itemId, autoplay){
     // Queued (not autoplay), a silence waits at 0:00 like a queued track.
     silenceState = { active:!!autoplay, seconds:item.seconds, elapsedMs:0, lastTick:performance.now(), raf:null };
     if(autoplay) tickSilence();
+    updateMediaSessionMetadata(); // the lock screen names the silence, queued too (2.7.019: it kept the last track's name)
   } else if(item.kind==="stop"){
     stoppedActive = true;
     stopHold = !!autoplay && stopsKeepLockScreen() && silentLoopUsed();
@@ -39456,6 +39457,33 @@ function restartSelectionOrCurrent(){
   if(targetId) playItem(targetId);
 }
 
+/* The player plays only when 37 Player asks (2.7.019; kr37's iPad, reports
+   2026-11-26-134436 and -145823, traced by 2.7.018). On iPadOS the main
+   player was started with no call from the page: after play and pause from
+   the lock screen, at the unlock; and after "next" and "previous" from the
+   lock screen into a silence, the player, still holding the next track,
+   started at the unlock while Playing ran the silence, so Playing's Pause
+   reached only the silence and the track played on. WebKit (or iPadOS)
+   carried out a play of its own. Now the page keeps what it last asked of
+   the player (play: playItem, togglePlay, the lock screen's play through its
+   handler, the phone's own pause undone; pause: pauseMain), and a start it
+   didn't ask for after a pause it asked for is paused again at once, and
+   said in the log. A start after a pause the page didn't make (a call, the
+   headphones) is left alone, as before: that's the system resuming what it
+   stopped. */
+let mainWantsPlaying = false;
+(function(){
+  const play = audioEl.play, pause = audioEl.pause;
+  audioEl.play = function(){ mainWantsPlaying = true; return play.apply(this, arguments); };
+  audioEl.pause = function(){ mainWantsPlaying = false; return pause.apply(this, arguments); };
+  audioEl.addEventListener("ended", ()=>{ mainWantsPlaying = false; });
+  audioEl.addEventListener("play", ()=>{
+    if(mainWantsPlaying) return;
+    let what = "?"; try{ what = lockTraceState(); }catch(err){}
+    playLog("the player started without 37 Player asking (" + (document.hidden ? "off screen" : "on screen") + "): paused again. " + what);
+    pause.call(audioEl); // not through the wrapper: 37 Player still wants it paused
+  });
+})();
 /* Lock-screen tracing (2.7.018, diagnostics only; kr37's iPad, report
    2026-11-26-134436): after play and pause from the lock screen, unlocking
    started the track again, and once, after "next" into a silence, a track
