@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.7.017">
+<meta name="app-version" content="2.7.018">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -39456,6 +39456,44 @@ function restartSelectionOrCurrent(){
   if(targetId) playItem(targetId);
 }
 
+/* Lock-screen tracing (2.7.018, diagnostics only; kr37's iPad, report
+   2026-11-26-134436): after play and pause from the lock screen, unlocking
+   started the track again, and once, after "next" into a silence, a track
+   played on that Playing's Pause didn't reach. Nothing in the page starts
+   the player on unlock, so on phones and tablets each start and pause of
+   the player is logged with what asked for it and whether the screen was
+   locked, and each lock-screen press and each return to the screen with
+   what Playing holds then. No change in what happens. */
+function lockTraceOn(){ try{ return silentLoopUsed(); }catch(err){ return false; } }
+function lockTraceState(){
+  try{
+    const ctx = currentItemId ? findItemContext(currentItemId) : null, it = ctx && ctx.item;
+    const cur = !it ? "nothing" : it.kind === "track" ? "track “" + (((findLibraryTrack(it.refId) || {}).name) || "?") + "”" : it.kind;
+    const held = audioEl.src ? (Object.keys(objectUrlCache).find(id=> objectUrlCache[id] === audioEl.src) || "") : "";
+    const heldName = held ? "“" + (((findLibraryTrack(held) || {}).name) || "?") + "”" : (audioEl.src ? "an address" : "nothing");
+    return "Playing holds " + cur + (silenceState.active ? " (silence running)" : "") + "; the player holds " + heldName + ", " + (audioEl.paused ? "paused" : "playing") + " at " + fmtTime(audioEl.currentTime || 0);
+  }catch(err){ return "?"; }
+}
+function lockTraceCaller(){
+  try{
+    const lines = String(new Error().stack || "").split("\n").slice(2).map(l=>{ const m = /^\s*at\s+(?:async\s+)?([^\s(]+)/.exec(l); return (m ? m[1] : (l.split("@")[0] || "")).trim(); }).filter(n=> n && !/^(lockTrace\w*|play|pause|promiseReactionJob|global code)$/.test(n) && !/\.(play|pause)$/.test(n));
+    return lines.slice(0, 4).join(" < ") || "?";
+  }catch(err){ return "?"; }
+}
+(function(){
+  const play = audioEl.play, pause = audioEl.pause;
+  audioEl.play = function(){ if(lockTraceOn()) playLog("trace: player play() " + (document.hidden ? "locked/off screen" : "on screen") + ", from " + lockTraceCaller()); return play.apply(this, arguments); };
+  audioEl.pause = function(){ if(lockTraceOn()) playLog("trace: player pause() " + (document.hidden ? "locked/off screen" : "on screen") + ", from " + lockTraceCaller()); return pause.apply(this, arguments); };
+  audioEl.addEventListener("play", ()=>{ if(lockTraceOn()) playLog("trace: the player's play event (" + (document.hidden ? "off screen" : "on screen") + "): " + lockTraceState()); });
+  document.addEventListener("visibilitychange", ()=>{ if(lockTraceOn()) playLog("trace: " + (document.hidden ? "leaving" : "back on") + " the screen: " + lockTraceState()); }, true);
+  if("mediaSession" in navigator){
+    // Wrapped, so each lock-screen press says what Playing holds before it's handled.
+    const set = navigator.mediaSession.setActionHandler.bind(navigator.mediaSession);
+    navigator.mediaSession.setActionHandler = function(action, fn){
+      return set(action, !fn ? fn : function(){ if(lockTraceOn()) playLog("trace: lock screen " + action + " arrives: " + lockTraceState()); return fn.apply(this, arguments); });
+    };
+  }
+})();
 /* ===================== Media Session (reliable background/lock-screen playback) =====================
    Without this, a phone's browser has no way to tell "this tab is genuinely
    playing audio right now" from an ordinary backgrounded tab, and treats it
