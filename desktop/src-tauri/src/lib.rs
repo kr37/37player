@@ -381,26 +381,62 @@ fn ask_page(app: &tauri::AppHandle, system: bool) {
 // page's log (watch.rs), then the window reloads, as Tauri did by itself;
 // but after a third within two minutes it stops, so a page that dies at
 // every start doesn't reload in a loop, and the system's dialog asks:
-// Reload / Quit. (Windows' WebView2 says it with ProcessFailed, which
-// nothing handles yet: to check on the HP.)
-#[cfg(any(target_os = "macos", target_os = "ios"))]
-fn page_process_ended(webview: &tauri::Webview) {
+// Reload / Quit. Windows' WebView2 says it with ProcessFailed (shell 2.7.13,
+// windows_page_watch below): there the window had gone blank and nothing
+// was logged. `reload` reloads the window's page; `can_reload` false (the
+// whole WebView2 gone, which a reload can't bring back) goes straight to
+// the dialog.
+#[cfg(any(target_os = "macos", target_os = "ios", windows))]
+fn page_process_ended(app: &tauri::AppHandle, reload: Arc<dyn Fn() + Send + Sync>, can_reload: bool) {
     let now = watch::now_ms();
     let again = match watch::get() {
         Some(w) => { w.page_ended(now); watch::should_reload(&mut w.recent_ends.lock().unwrap(), now) }
         None => true,
     };
-    if again { let _ = webview.reload(); return; }
+    if again && can_reload { reload(); return; }
     use tauri_plugin_dialog::{DialogExt, MessageDialogButtons, MessageDialogKind};
-    let app = webview.app_handle().clone();
     let t = app.state::<Arc<closing::Closing>>().texts();
-    let (wv, app2) = (webview.clone(), app.clone());
+    let app2 = app.clone();
     app.dialog().message(t.ended_body).title(t.ended_title).kind(MessageDialogKind::Error)
         .buttons(MessageDialogButtons::OkCancelCustom(t.reload, t.quit))
-        .show(move |reload| {
-            if reload { if let Some(w) = watch::get() { w.recent_ends.lock().unwrap().clear(); } let _ = wv.reload(); }
+        .show(move |again| {
+            if again { if let Some(w) = watch::get() { w.recent_ends.lock().unwrap().clear(); } reload(); }
             else { quit_now(&app2); }
         });
+}
+
+// Windows: WebView2's ProcessFailed (shell 2.7.13; the audit's fix 8, J, its
+// Windows half). The page's process ending (RENDER_PROCESS_EXITED: a crash,
+// or Windows ending it for memory) is handled as on the Mac: logged,
+// reloaded, no loop. WebView2 itself ending (BROWSER_PROCESS_EXITED) can't be
+// reloaded: logged, and the dialog offers Quit. The rest (the GPU process
+// and helpers) WebView2 restarts by itself; a page that hangs is the watch's
+// (page_silent).
+#[cfg(windows)]
+fn windows_page_watch(window: &tauri::WebviewWindow) {
+    use webview2_com::Microsoft::Web::WebView2::Win32::*;
+    use webview2_com::ProcessFailedEventHandler;
+    let (app, ww) = (window.app_handle().clone(), window.clone());
+    let _ = window.with_webview(move |pw| unsafe {
+        let Ok(core) = pw.controller().CoreWebView2() else { return };
+        let mut token: i64 = 0;
+        let (app, ww) = (app.clone(), ww.clone());
+        let _ = core.add_ProcessFailed(&ProcessFailedEventHandler::create(Box::new(move |_, args| {
+            let Some(args) = args else { return Ok(()) };
+            let mut kind = COREWEBVIEW2_PROCESS_FAILED_KIND::default();
+            args.ProcessFailedKind(&mut kind)?;
+            let can_reload = if kind == COREWEBVIEW2_PROCESS_FAILED_KIND_RENDER_PROCESS_EXITED { true }
+                else if kind == COREWEBVIEW2_PROCESS_FAILED_KIND_BROWSER_PROCESS_EXITED { false }
+                else { return Ok(()) };
+            let (app2, ww2) = (app.clone(), ww.clone());
+            // Not from inside WebView2's own event: on the main thread, after it.
+            let _ = app.run_on_main_thread(move || {
+                let ww3 = ww2.clone();
+                page_process_ended(&app2, Arc::new(move || { let _ = ww3.reload(); }), can_reload);
+            });
+            Ok(())
+        })), &mut token);
+    });
 }
 
 fn offer_quit(app: &tauri::AppHandle) {
@@ -490,7 +526,10 @@ pub fn run() {
     }
     // The page's process ending: logged, reloaded, no loop (page_process_ended).
     #[cfg(any(target_os = "macos", target_os = "ios"))]
-    { builder = builder.on_web_content_process_terminate(|webview| page_process_ended(webview)); }
+    { builder = builder.on_web_content_process_terminate(|webview| {
+        let wv = webview.clone();
+        page_process_ended(webview.app_handle(), Arc::new(move || { let _ = wv.reload(); }), true);
+    }); }
     builder
         .manage(Quitting(AtomicBool::new(false)))
         .manage(Opened::default())
@@ -538,6 +577,8 @@ pub fn run() {
             if let Some(fs) = fileserver::start(app.handle()) { app.manage(fs); }
             #[cfg(desktop)]
             if let Some(w) = app.get_webview_window("main") { fit_to_screen(&w); }
+            #[cfg(windows)]
+            if let Some(w) = app.get_webview_window("main") { windows_page_watch(&w); }
             watch_page(app.handle(), pages.clone(), first.clone());
             check_pages_daily(app.handle(), pages.clone());
             let _ = app;

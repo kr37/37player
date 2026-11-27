@@ -475,7 +475,7 @@ Nothing to fix now.
 
 - Our own handler on the Mac: record it for the watch report, then reload.
 - After three in two minutes, stop reloading and show a native message with a Reload button.
-- On Windows, handle `ProcessFailed` the same way (to check what Tauri gives us).
+- On Windows, handle `ProcessFailed` the same way (to check what Tauri gives us). *Done in shell 2.7.13, through `webview2-com` directly (NOTES.md).*
 - **Risk:** low.
 
 ### 1.15 Panics: the app ends at once

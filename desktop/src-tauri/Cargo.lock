@@ -2698,6 +2698,7 @@ dependencies = [
  "tauri-plugin-updater",
  "trash",
  "ureq",
+ "webview2-com",
 ]
 
 [[package]]

@@ -41,6 +41,10 @@ tauri-plugin-single-instance = "2"
 tauri-plugin-dialog = "2"
 tauri-plugin-updater = "2"
 
+# WebView2's ProcessFailed (shell 2.7.13): the same version wry uses.
+[target.'cfg(windows)'.dependencies]
+webview2-com = "0.39"
+
 [dev-dependencies]
 minisign = "0.7"
 
