@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.7.021">
+<meta name="app-version" content="2.7.022">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -37228,6 +37228,22 @@ document.addEventListener("pointerdown", ()=>{ ensureLevelCtx(); hookInLoadedPla
 document.addEventListener("keydown", ()=>{ ensureLevelCtx(); hookInLoadedPlayers(true); }, true);
 // Whether a player may be hooked into the engine now: it runs, or (gesture)
 // it's just been asked to start by this click, which the browser honours.
+// Whether tracks may be turned up through Web Audio here. Not in Safari
+// before 15 (nor in an app on an older Mac's own WebKit): its route from a
+// player into Web Audio resamples badly (WebKit bugs 211394, 215314,
+// 221553), and on kr37's parents' Mac mini (Safari 14.1.2, Mojave, 27 Nov
+// 2026) a track turned up took on a steady flutter after any hiccup, "a
+// gentle helicopter", until it was started again from the beginning
+// (2.7.022). There tracks play at their own level; cuts still work. Told
+// apart by something Safari 15 brought (aspect-ratio).
+const LEVEL_ROUTE_ALLOWED = (function(){
+  try{
+    const ua = navigator.userAgent;
+    if(!/AppleWebKit/.test(ua) || /Chrome|Chromium|Edg\//.test(ua)) return true;
+    return !!(window.CSS && CSS.supports && CSS.supports("aspect-ratio", "1"));
+  }catch(err){ return true; }
+})();
+let levelRouteRefusedSaid = false;
 function levelCtxReady(gesture){
   if(window.__noLevelStart) return false; // tests: an engine the browser won't start
   return !!levelCtx && (levelCtx.state === "running" || (!!gesture && levelCtx.state === "suspended"));
@@ -37243,7 +37259,7 @@ function levelCtxReady(gesture){
 // I pause and continue, and now loudness has been applied?"). The next
 // track is hooked in as it loads, as evening out always works.
 function hookInLoadedPlayers(gesture){
-  if(!levelCtxReady(gesture)) return;
+  if(!LEVEL_ROUTE_ALLOWED || !levelCtxReady(gesture)) return;
   for(const el of [audioEl, ...levelPreviewEls()]){
     if(!el || levelGains.has(el) || !el._levelTrack || !el.getAttribute("src") || el.ended) continue;
     if(levelGainWanted(el, el._levelTrack) <= 1.001) continue;
@@ -37279,7 +37295,7 @@ function guardLevelOnPlay(el){
   if(!el || el._levelGuard) return;
   el._levelGuard = true;
   el.addEventListener("play", ()=>{
-    if(levelHeld.has(el) || levelGains.has(el) || !el._levelTrack || el._levelGiveUp === el._levelTrack) return;
+    if(!LEVEL_ROUTE_ALLOWED || levelHeld.has(el) || levelGains.has(el) || !el._levelTrack || el._levelGiveUp === el._levelTrack) return;
     if(levelGainWanted(el, el._levelTrack) <= 1.001) return;
     levelHeld.add(el);
     if(el === audioEl) pauseMain(); else el.pause();
@@ -37333,7 +37349,7 @@ function applyLevel(el, trackId, atStart, gesture){
   // 2026-11-20-054746). The shell answers with Access-Control-Allow-Origin,
   // so the marked load passes. The mark stays on the element, so every
   // later track it loads is fetched the same way.
-  if(atStart && (isDesktopHttpUrl(el.src) || isP37libUrl(el.src)) && el.crossOrigin !== "anonymous" && levelCtxReady(gesture)
+  if(LEVEL_ROUTE_ALLOWED && atStart && (isDesktopHttpUrl(el.src) || isP37libUrl(el.src)) && el.crossOrigin !== "anonymous" && levelCtxReady(gesture)
       && levelGainWanted(el, trackId) > 1.001){ const u = el.src; el.crossOrigin = "anonymous"; el.src = u; }
   el._levelTrack = trackId;
   // Whether this track is heard without the boost it wants (not hooked in):
@@ -37349,7 +37365,11 @@ function applyLevel(el, trackId, atStart, gesture){
   const base = mainVolumeGain();
   const g = Math.pow(10, trackLevel(findLibraryTrack(trackId)).db / 20);
   let gain = levelGains.get(el);
-  if(!gain && g * base > 1.001 && atStart && levelCtxReady(gesture)){
+  if(!gain && g * base > 1.001 && atStart && !LEVEL_ROUTE_ALLOWED && el === audioEl && !levelRouteRefusedSaid){
+    levelRouteRefusedSaid = true;
+    playLog("tracks aren't turned up in this browser (an older Safari: Web Audio would distort them); they play at their own level");
+  }
+  if(!gain && g * base > 1.001 && atStart && LEVEL_ROUTE_ALLOWED && levelCtxReady(gesture)){
     try{
       const src = levelCtx.createMediaElementSource(el);
       gain = levelCtx.createGain();
