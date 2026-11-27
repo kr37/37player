@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.7.022">
+<meta name="app-version" content="2.7.023">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -2023,6 +2023,20 @@
 
 <script>
 (function(){
+
+// Blob's arrayBuffer(), text() and stream() came in Safari 14.1. The
+// desktop app's web view is the system's own WebKit, not Safari's, and on
+// Catalina that is older (kr37's parents' Mac mini, 10.15.7, 27 Nov 2026:
+// "Save failed: new Blob(parts).arrayBuffer is not a function", nothing
+// saved, no starter track, Feedback and Import/export not opening). Filled
+// in from Response, which reads a Blob in every browser 37 Player runs in
+// (2.7.023). Not a repair: does nothing where they exist.
+try{
+  const B = window.Blob && Blob.prototype;
+  if(B && !B.arrayBuffer) B.arrayBuffer = function(){ return new Response(this).arrayBuffer(); };
+  if(B && !B.text) B.text = function(){ return new Response(this).text(); };
+  if(B && !B.stream) B.stream = function(){ return new Response(this).body; };
+}catch(err){}
 
 /* ===================== Icons ===================== */
 // Playback and operator cues: inline SVGs remain sharp on phones and offline.
