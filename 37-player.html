@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.7.023">
+<meta name="app-version" content="2.7.024">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -39542,21 +39542,14 @@ let mainWantsPlaying = false;
   audioEl.addEventListener("ended", ()=>{ mainWantsPlaying = false; });
   audioEl.addEventListener("play", ()=>{
     if(mainWantsPlaying) return;
-    let what = "?"; try{ what = lockTraceState(); }catch(err){}
+    let what = "?"; try{ what = playerStateNote(); }catch(err){}
     playLog("the player started without 37 Player asking (" + (document.hidden ? "off screen" : "on screen") + "): paused again. " + what);
     pause.call(audioEl); // not through the wrapper: 37 Player still wants it paused
   });
 })();
-/* Lock-screen tracing (2.7.018, diagnostics only; kr37's iPad, report
-   2026-11-26-134436): after play and pause from the lock screen, unlocking
-   started the track again, and once, after "next" into a silence, a track
-   played on that Playing's Pause didn't reach. Nothing in the page starts
-   the player on unlock, so on phones and tablets each start and pause of
-   the player is logged with what asked for it and whether the screen was
-   locked, and each lock-screen press and each return to the screen with
-   what Playing holds then. No change in what happens. */
-function lockTraceOn(){ try{ return silentLoopUsed(); }catch(err){ return false; } }
-function lockTraceState(){
+// What Playing and the player hold, for the guard's line in the log (from
+// 2.7.018's lock-screen tracing, which 2.7.024 took out).
+function playerStateNote(){
   try{
     const ctx = currentItemId ? findItemContext(currentItemId) : null, it = ctx && ctx.item;
     const cur = !it ? "nothing" : it.kind === "track" ? "track “" + (((findLibraryTrack(it.refId) || {}).name) || "?") + "”" : it.kind;
@@ -39565,26 +39558,6 @@ function lockTraceState(){
     return "Playing holds " + cur + (silenceState.active ? " (silence running)" : "") + "; the player holds " + heldName + ", " + (audioEl.paused ? "paused" : "playing") + " at " + fmtTime(audioEl.currentTime || 0);
   }catch(err){ return "?"; }
 }
-function lockTraceCaller(){
-  try{
-    const lines = String(new Error().stack || "").split("\n").slice(2).map(l=>{ const m = /^\s*at\s+(?:async\s+)?([^\s(]+)/.exec(l); return (m ? m[1] : (l.split("@")[0] || "")).trim(); }).filter(n=> n && !/^(lockTrace\w*|play|pause|promiseReactionJob|global code)$/.test(n) && !/\.(play|pause)$/.test(n));
-    return lines.slice(0, 4).join(" < ") || "?";
-  }catch(err){ return "?"; }
-}
-(function(){
-  const play = audioEl.play, pause = audioEl.pause;
-  audioEl.play = function(){ if(lockTraceOn()) playLog("trace: player play() " + (document.hidden ? "locked/off screen" : "on screen") + ", from " + lockTraceCaller()); return play.apply(this, arguments); };
-  audioEl.pause = function(){ if(lockTraceOn()) playLog("trace: player pause() " + (document.hidden ? "locked/off screen" : "on screen") + ", from " + lockTraceCaller()); return pause.apply(this, arguments); };
-  audioEl.addEventListener("play", ()=>{ if(lockTraceOn()) playLog("trace: the player's play event (" + (document.hidden ? "off screen" : "on screen") + "): " + lockTraceState()); });
-  document.addEventListener("visibilitychange", ()=>{ if(lockTraceOn()) playLog("trace: " + (document.hidden ? "leaving" : "back on") + " the screen: " + lockTraceState()); }, true);
-  if("mediaSession" in navigator){
-    // Wrapped, so each lock-screen press says what Playing holds before it's handled.
-    const set = navigator.mediaSession.setActionHandler.bind(navigator.mediaSession);
-    navigator.mediaSession.setActionHandler = function(action, fn){
-      return set(action, !fn ? fn : function(){ if(lockTraceOn()) playLog("trace: lock screen " + action + " arrives: " + lockTraceState()); return fn.apply(this, arguments); });
-    };
-  }
-})();
 /* ===================== Media Session (reliable background/lock-screen playback) =====================
    Without this, a phone's browser has no way to tell "this tab is genuinely
    playing audio right now" from an ordinary backgrounded tab, and treats it
@@ -48975,6 +48948,29 @@ function playLog(msg){
   const el = document.getElementById("playLog");
   if(el) el.textContent = playLogLines.slice().reverse().join("\n");
 }
+// The page's own errors go into the playback log too (2.7.024): on kr37's
+// parents' Mac mini (the desktop app on Catalina) Feedback, Import/export and
+// joining didn't open, saving failed, and only the console said why, which
+// took a photo of the screen. Each message once a minute, twenty at most
+// per session, so a fault that repeats can't push everything else out.
+(function(){
+  const said = new Map(); let count = 0;
+  function note(kind, msg, where){
+    msg = String(msg || "?").slice(0, 240);
+    const now = Date.now(), last = said.get(msg);
+    if(count >= 20 || (last && now - last < 60000)) return;
+    said.set(msg, now); count++;
+    try{ playLog("page error (" + kind + "): " + msg + (where ? " [" + where + "]" : "")); }catch(err){}
+  }
+  window.addEventListener("error", e=>{
+    if(!e || !e.message || e.message === "Script error.") return; // a file that didn't load; another origin's script, which says nothing
+    note("script", e.message, e.lineno ? "line " + e.lineno + (e.colno ? ":" + e.colno : "") : "");
+  });
+  window.addEventListener("unhandledrejection", e=>{
+    const r = e && e.reason;
+    note("promise", r && (r.name ? r.name + ": " : "") + (r && r.message ? r.message : String(r)), "");
+  });
+})();
 (function(){
   const a = document.getElementById("audioEl");
   const at = ()=> " at " + fmtTime(a.currentTime || 0) + (document.hidden ? ", not on screen" : "");
@@ -50942,13 +50938,13 @@ async function sharedDownloadPendingHere(cfg){
     sharedNotOnServer = notOn;
     if(changed) sharedRefreshSoon();
     if(list.length) sharedLog("receiving " + list.length + " files" + (waiting ? ", " + waiting + " still on their way" : ""));
-    let done = 0;
+    let done = 0, storeFailsInRow = 0;
     for(const [kind, id] of list){
       // With the track's name (2.4.001, kr37, 13 Nov 2026: a long download, and no way to tell which file).
       if(list.length > 1){ const nt = findLibraryTrack(id); sharedSetStatus({transfer: {kind: "down", done, total: list.length, name: nt && nt.name ? nt.name : ""}}); }
       await sharedWaitForTransfers();
       if(!sharedConfig()) break;
-      try{ await sharedFetchFile(cfg, kind, id); }
+      try{ await sharedFetchFile(cfg, kind, id); storeFailsInRow = 0; }
       catch(err){
         console.warn("Download failed:", id, err);
         const ft = findLibraryTrack(id);
@@ -50957,6 +50953,17 @@ async function sharedDownloadPendingHere(cfg){
           const all = sharedCrashedDownloads(); all[kind + ":" + id + "." + (kind === "audio" ? pending.audio[id] : pending.art[id])] = APP_VERSION;
           try{ localStorage.setItem(DOWNLOAD_CRASHED_KEY, JSON.stringify(all)); }catch(e2){}
           sharedLog("couldn't receive " + what + ": " + err.message + ". This device may not manage a file this big: converting it to a smaller format on another device (Library cleanup → Convert to the preferred format) would help. Not tried again until Sync now");
+          done++; continue;
+        }
+        // One file that can't be stored (it, or its place, read-only: kr37's
+        // T470, a restored library, 13–26 Nov 2026, "Permission denied" on one
+        // file and 467 waiting behind it for two weeks) doesn't hold up the
+        // rest: they go on, and that one is tried again next time (2.7.024).
+        // A full device, or three in a row, stops the round as before.
+        if(err && err.storing && !isQuotaError(err) && ++storeFailsInRow < 3){
+          waiting++;
+          const note = id + " store " + errText(err.inner);
+          if(!sharedFetchErrorsSaid.has(note)){ sharedFetchErrorsSaid.add(note); sharedLog("couldn't store " + what + ": " + errText(err.inner) + "; going on with the rest, and trying it again next time"); }
           done++; continue;
         }
         if(err && err.storing){

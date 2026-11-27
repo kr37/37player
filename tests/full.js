@@ -2,8 +2,10 @@
 // the top bar (and once as a dialog), be retried, and clear once there's
 // room, with nothing lost while the window stayed open. A failed audio write
 // must take back the track's new revision. Receiving from a shared library
-// must stop at the first file it can't store (not download it again every
-// 30 seconds), say why in the sync log, and resume at Sync now.
+// must stop at the first file it can't store on a full device (not download
+// it again every 30 seconds), say why in the sync log, and resume at Sync
+// now; one file that can't be stored for another reason doesn't hold up the
+// rest (2.7.024).
 // Simulated by making IndexedDB puts throw, as in quota.js.
 const puppeteer = require('puppeteer-core');
 const fs = require('fs'), path = require('path'); const sleep = ms=>new Promise(r=>setTimeout(r,ms));
@@ -37,6 +39,7 @@ const breakable = p=> p.evaluate(()=>{
   if(window.__breakable) return; window.__breakable = true;
   const orig = IDBObjectStore.prototype.put;
   IDBObjectStore.prototype.put = function(...a){
+    if(window.__failPutsLeft > 0 && this.name === 'audio'){ window.__failPutsLeft--; throw new DOMException('An internal error was encountered in the Indexed Database server', 'UnknownError'); } // one file can't be stored
     if(window.__full && window.__fullName === 'silentAbort'){ const r = orig.apply(this, a); this.transaction.abort(); return r; } // Safari: aborted, no reason given
     if(window.__full && (!window.__fullStores || window.__fullStores.includes(this.name))) throw new DOMException(window.__fullName === 'UnknownError' ? 'An internal error was encountered in the Indexed Database server' : 'The quota has been exceeded.', window.__fullName || 'QuotaExceededError');
     return orig.apply(this, a);
@@ -168,6 +171,26 @@ const waitIdle = async (p)=>{ for(let k=0;k<300;k++){ const s = await p.evaluate
   await B.evaluate(()=> window.__dbg3.sync().catch(()=>{})); await sleep(1500); await waitIdle(B);
   st = await B.evaluate(()=> window.__dbg3.status());
   ok(st.state !== 'error' && (await firstPl(B)) === 'Renamed for B', 'and with all well again, the rename arrives');
+
+  // --- One file that can't be stored doesn't hold up the rest (2.7.024; kr37's
+  // T470: "Permission denied" on one file, and 467 waiting behind it).
+  await A.evaluate((b64)=>{ const bytes = Uint8Array.from(atob(b64), c=>c.charCodeAt(0)); const fs = ['one', 'two', 'three'].map((n, i)=>{ const f = new File([bytes, new Uint8Array(64 + i).fill(i + 1)], n + '.mp3', {type:'audio/mpeg'}); Object.defineProperty(f,'webkitRelativePath',{value: 'More/' + n + '.mp3'}); return f; }); window.__dbg.bulkImportFolder(fs); }, STARTER);
+  for(let i=0; i<60; i++){ await sleep(250); if(await A.$('#folderImportGo')) break; }
+  await A.click('#folderImportGo').catch(()=>{});
+  for(let i=0; i<120; i++){ await sleep(250); if(await A.evaluate(()=> window.__dbg.getRoot().library.length >= 4 && !document.getElementById('bulkImportStatus'))) break; }
+  await A.evaluate(()=> document.querySelectorAll('.modal [data-close], .modal .btn.primary').forEach(b=>b.click())); await sleep(500);
+  await A.evaluate(()=> window.__dbg3.sync()); await waitIdle(A); await sleep(1500); await waitIdle(A);
+  ok((await A.evaluate(()=> window.__dbg.getRoot().library.length)) === 4, 'set up: three more tracks on A, sent');
+  await B.evaluate(()=>{ window.__failPutsLeft = 1; });
+  await B.evaluate(()=> window.__dbg3.sync().catch(()=>{})); await sleep(2000); await waitIdle(B); await sleep(1500); await waitIdle(B);
+  lb = await log(B);
+  const round = lb.slice(lb.lastIndexOf('receiving 3 files')); // the three have the starter's title tag, so the same name
+  const got = (round.match(/received “/g) || []).length;
+  ok(/couldn't store “[^”]+”: UnknownError.*going on with the rest/.test(round), 'the file that can\'t be stored is named, and receiving goes on');
+  ok(got === 2, 'the other two arrive (' + got + ')');
+  ok(await B.evaluate(()=> Object.keys(window.__dbg3.pending().audio).length) === 1, 'the one that failed still waits');
+  await B.evaluate(()=> window.__dbg3.sync().catch(()=>{})); await sleep(2000); await waitIdle(B); await sleep(1500); await waitIdle(B);
+  ok(await B.evaluate(()=> Object.keys(window.__dbg3.pending().audio).length) === 0, 'and arrives at the next Sync now');
 
   console.log(fails ? fails+' FAILED' : 'ALL OK');
   await b.close();
