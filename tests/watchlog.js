@@ -66,5 +66,14 @@ const log = (p)=> p.evaluate(()=> window.__log().join('\n'));
   await p.evaluate(()=>{ window.__hiddenNow = false; document.dispatchEvent(new Event('visibilitychange')); });
   await sleep(1200);
   ok(await told() === false, 'back on screen: said at once');
+  // Closed with its X while the page wasn't answering (shell 2.7.12, page
+  // 2.7.025; kr37's T470): the shell keeps it, and the next start says so,
+  // with the window's stalls nobody took. Not "didn't close normally".
+  await p.evaluate(()=>{ window.__fakeWatch = {stalls: [], last_session: {started: Date.UTC(2026, 10, 26, 21, 20), alive: Date.UTC(2026, 10, 26, 21, 29, 40), version: '2.7.12', closed: Date.UTC(2026, 10, 26, 21, 29, 40), page_silent_since: Date.UTC(2026, 10, 26, 21, 27, 10), stalls: [{at: Date.UTC(2026, 10, 26, 21, 27, 30), ms: 12000, focused: true}]}}; });
+  await sleep(21500);
+  L = await log(p);
+  ok(/37 Player was closed at .+ \(app 2\.7\.12\) while its page wasn't answering the app, since /.test(L), 'a close while the page wasn\'t answering is said at the next start');
+  ok(/before that close, the app's window didn't respond for 12 s, from /.test(L), 'with the window\'s stalls nobody took');
+  ok((L.match(/didn't close normally/g) || []).length === 1, 'and it isn\'t called "didn\'t close normally"');
   console.log(fails ? fails + ' FAILED' : 'ALL OK'); await b.close();
 })();

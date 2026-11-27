@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.7.024">
+<meta name="app-version" content="2.7.025">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -55055,7 +55055,12 @@ async function desktopWatchAsk(){
     desktopWatchToldSleep = maySleep;
     const hm = ms=> new Date(ms).toLocaleTimeString();
     const last = r && r.last_session;
-    if(last) playLog("37 Player didn't close normally last time (app " + last.version + ", last seen running at " + new Date(last.alive).toLocaleString() + ")" + (last.panic ? "; it stopped on an error: " + last.panic : "")
+    // Closed while its page wasn't answering, or with window stalls nobody
+    // took (shell 2.7.12): kept by the shell for this start (2.7.025).
+    if(last && last.closed) playLog("37 Player was closed at " + new Date(last.closed).toLocaleString() + " (app " + last.version + ")"
+      + (last.page_silent_since ? " while its page wasn't answering the app, since " + new Date(last.page_silent_since).toLocaleString() : ""));
+    for(const s of (last && last.closed && last.stalls) || []) playLog("before that close, the app's window didn't respond for " + Math.round(s.ms / 1000) + " s, from " + new Date(s.at).toLocaleString() + (s.focused ? "" : " (in the background)"));
+    if(last && !last.closed) playLog("37 Player didn't close normally last time (app " + last.version + ", last seen running at " + new Date(last.alive).toLocaleString() + ")" + (last.panic ? "; it stopped on an error: " + last.panic : "")
       // When it froze (shell 2.7.3; the audit's fix 9, I): the page had stopped answering the app, or the app's window was held up, since then.
       + (last.page_silent_since ? "; its page had stopped answering the app since " + new Date(last.page_silent_since).toLocaleString() : "")
       + (last.main_stalled_since ? "; its window had stopped answering since " + new Date(last.main_stalled_since).toLocaleString() : ""));
