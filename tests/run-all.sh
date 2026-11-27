@@ -1,6 +1,6 @@
 #!/bin/bash
 # Runs every test, each against a fresh shared library, and prints a summary.
-#   CHROME=/usr/bin/google-chrome ./run-all.sh          (all of them; about 15 minutes)
+#   CHROME=/usr/bin/google-chrome ./run-all.sh          (all of them; over an hour)
 #   ./run-all.sh miss play stoplock                      (just these)
 cd "$(dirname "$0")"
 [ -f www/ten.mp3 ] || ./make-fixtures.sh || exit 1
