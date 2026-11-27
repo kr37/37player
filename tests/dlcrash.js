@@ -18,6 +18,14 @@ const waitIdle = async (p)=>{ for(let k=0;k<300;k++){ const s = await p.evaluate
 const HANG = ()=>{
   const orig = Response.prototype.blob;
   Response.prototype.blob = function(){ if(localStorage.getItem('__hang') === '1' && /kind=audio/.test(this.url || '')) return new Promise(()=>{}); return orig.call(this); };
+  // Downloads read the body as it arrives (fetchWithLimits), not with blob():
+  // a body that never ends, too.
+  const of = window.fetch;
+  window.fetch = function(u, o){
+    const url = String(u && u.url || u);
+    if(localStorage.getItem('__hang') === '1' && /kind=audio/.test(url)) return of.apply(this, arguments).then(r=> new Response(new ReadableStream({pull(){ return new Promise(()=>{}); }}), {status: r.status, headers: r.headers}));
+    return of.apply(this, arguments);
+  };
 };
 async function device(b, name){
   const ctx = await b.createBrowserContext();

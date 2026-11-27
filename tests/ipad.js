@@ -4,6 +4,8 @@ let fails=0; const ok=(c,m)=>{ console.log((c?'ok   ':'FAIL ')+m); if(!c) fails+
   const b = await puppeteer.launch({executablePath: process.env.CHROME || '/usr/bin/google-chrome', args:['--no-sandbox']});
   const p = await b.newPage(); p.on('pageerror', e=>console.log('PAGE ERROR:', e.message));
   await p.setViewport({width:1180,height:820,isMobile:true,hasTouch:true,deviceScaleFactor:1});
+  // What this device can play (2.7.013) is found later: its samples decoding during the drags made them miss.
+  await p.evaluateOnNewDocument(()=>{ window.__playableCheckMs = 600000; });
   await p.goto('http://localhost:8861/37-player.html',{waitUntil:'networkidle0'}); await sleep(1000);
   for(let i=0;i<4;i++){ await p.evaluate(()=>{ const m=document.querySelector('.modal'); if(!m) return; const b=[...m.querySelectorAll('button')].find(b=>/English|No, just start|Start a library|Skip|Finish|Close|OK|Not now/.test(b.textContent)) || m.querySelector('[data-close]'); b && b.click(); }); await sleep(300); }
   // library: Classes folder with two playlists, a second folder "Retreat" empty; tracks
