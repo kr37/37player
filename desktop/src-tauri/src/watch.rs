@@ -39,6 +39,11 @@
 //    quit still leaves when the page stopped answering, and for the page's
 //    log if it answers again. A close or Quit while it's silent offers
 //    "isn't responding" at once (lib.rs, closing.rs).
+//  - A close (the X, Quit) while the page isn't answering, or with window
+//    stalls the page never took, isn't a normal end (shell 2.7.12): running.json
+//    is kept with when it was closed (and those stalls), so the next start's
+//    log says so. Before, closing threw it all away (kr37's T470, report
+//    2026-11-26-193244: a frozen, then blank, window closed with its X).
 //  - Every 30 s running.json also says whether the main thread is held up
 //    right now, and since when: a hang that never ended (Force Quit) then
 //    leaves its start, not only "didn't close normally".
@@ -58,7 +63,7 @@ const ALIVE_EVERY_MS: u64 = 30_000;
 
 pub fn now_ms() -> u64 { SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_millis() as u64).unwrap_or(0) }
 
-#[derive(serde::Serialize, Clone, Debug, PartialEq)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq)]
 pub struct Stall { pub at: u64, pub ms: u64, pub focused: bool }
 
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default, PartialEq)]
@@ -66,7 +71,16 @@ pub struct Session { pub started: u64, pub alive: u64, pub version: String, #[se
     /// The page's last ask, when it had stopped asking (shell 2.7.3).
     #[serde(default)] pub page_silent_since: Option<u64>,
     /// When the main thread was last seen held up, still held up at the last note (shell 2.7.3).
-    #[serde(default)] pub main_stalled_since: Option<u64> }
+    #[serde(default)] pub main_stalled_since: Option<u64>,
+    /// Closed (the X, Quit) while the page wasn't answering, or with window
+    /// stalls the page never took: when (shell 2.7.12). Then running.json is
+    /// kept, so the next start's log says so; before, a close counted as
+    /// normal and threw all of it away (kr37's T470, report
+    /// 2026-11-26-193244: a frozen, then blank, window closed with its X
+    /// left nothing).
+    #[serde(default)] pub closed: Option<u64>,
+    /// Those stalls (shell 2.7.12).
+    #[serde(default)] pub stalls: Vec<Stall> }
 
 /// A time the page didn't ask for PAGE_SILENT_MS or more, ended by its asking again.
 #[derive(serde::Serialize, Clone, Debug, PartialEq)]
@@ -145,10 +159,25 @@ impl Watch {
         let Some(f) = &self.file else { return };
         if let Ok(s) = serde_json::to_vec(&*self.me.lock().unwrap()) { let _ = std::fs::write(f, s); }
     }
-    // A normal end: no "didn't close normally" at the next start.
-    pub fn closing(&self) { if let Some(f) = &self.file { let _ = std::fs::remove_file(f); } }
+    // A normal end: no "didn't close normally" at the next start. But a
+    // close while the page isn't answering, or with stalls the page never
+    // took, is kept for the next start (shell 2.7.12).
+    pub fn closing(&self) {
+        let Some(f) = &self.file else { return };
+        let untaken = std::mem::take(&mut *self.stalls.lock().unwrap());
+        let keep = {
+            let mut me = self.me.lock().unwrap();
+            if me.page_silent_since.is_some() || !untaken.is_empty() {
+                me.closed = Some(now_ms()); me.alive = now_ms(); me.stalls = untaken; true
+            } else { false }
+        };
+        if keep { self.write(); } else { let _ = std::fs::remove_file(f); }
+    }
     // After all (an update that didn't install): running again.
-    pub fn running_again(&self) { self.write(); }
+    pub fn running_again(&self) {
+        { let mut me = self.me.lock().unwrap(); me.closed = None; let back = std::mem::take(&mut me.stalls); self.stalls.lock().unwrap().extend(back); }
+        self.write();
+    }
     pub fn take(&self) -> Report {
         self.page_asks(now_ms());
         Report { stalls: std::mem::take(&mut *self.stalls.lock().unwrap()), last_session: self.last.lock().unwrap().take(), page_ended: std::mem::take(&mut *self.page_ended.lock().unwrap()),
@@ -211,7 +240,7 @@ pub fn start(app: &tauri::AppHandle) -> Arc<Watch> {
     let w = Arc::new(Watch {
         beat: Arc::new(AtomicU64::new(now)), focused: AtomicBool::new(true),
         stalls: Mutex::new(vec![]), page_ended: Mutex::new(vec![]), page_asked: AtomicU64::new(0), page_may_sleep: AtomicBool::new(false), front_since: AtomicU64::new(now), page_silences: Mutex::new(vec![]), recent_ends: Mutex::new(vec![]), last: Mutex::new(last),
-        me: Mutex::new(Session { started: now, alive: now, version: app.package_info().version.to_string(), panic: None, page_silent_since: None, main_stalled_since: None }),
+        me: Mutex::new(Session { started: now, alive: now, version: app.package_info().version.to_string(), panic: None, page_silent_since: None, main_stalled_since: None, ..Default::default() }),
         file,
     });
     w.write();
@@ -333,6 +362,35 @@ mod tests {
         assert!(!w.page_is_silent(), "counted from the waking");
         w.check_page(1_000_000 + 11 * 3_600_000 + PAGE_SILENT_MS + 1);
         assert!(w.page_is_silent(), "and a page that then doesn't answer is noted");
+    }
+    #[test]
+    fn a_close_while_the_page_is_silent_is_kept_for_the_next_start() {
+        let d = std::env::temp_dir().join(format!("p37-watch-close-{}", std::process::id()));
+        let _ = std::fs::create_dir_all(&d);
+        let f = d.join("running.json");
+        // An ordinary close: nothing for the next start.
+        let w = test_watch(Some(f.clone()));
+        w.write(); w.page_asks(1_000_000);
+        w.closing();
+        assert!(!f.exists(), "a normal close leaves nothing");
+        // Closed while the page wasn't answering: kept, with when.
+        let w = test_watch(Some(f.clone()));
+        w.page_asks(1_000_000);
+        w.check_page(1_000_000 + PAGE_SILENT_MS + 500);
+        w.closing();
+        let s = read_session(&f).expect("kept");
+        assert_eq!(s.page_silent_since, Some(1_000_000));
+        assert!(s.closed.is_some(), "with when it was closed");
+        // Closed with window stalls the page never took: kept, with them.
+        let w = test_watch(Some(f.clone()));
+        w.stalls.lock().unwrap().push(Stall { at: 2_000_000, ms: 4000, focused: true });
+        w.closing();
+        assert_eq!(read_session(&f).map(|s| s.stalls), Some(vec![Stall { at: 2_000_000, ms: 4000, focused: true }]));
+        // An update that didn't install: running again, the stalls back for the page.
+        w.running_again();
+        assert_eq!(read_session(&f).and_then(|s| s.closed), None);
+        assert_eq!(w.take().stalls.len(), 1);
+        let _ = std::fs::remove_dir_all(&d);
     }
     fn test_watch(file: Option<std::path::PathBuf>) -> Watch {
         Watch { beat: Arc::new(AtomicU64::new(0)), focused: AtomicBool::new(true), stalls: Mutex::new(vec![]), page_ended: Mutex::new(vec![]),

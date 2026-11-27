@@ -132,6 +132,13 @@ fn p37_opened_take(opened: tauri::State<'_, Opened>) -> Vec<OpenedFile> {
 //     command the page relies on after that makes bridge 3, version 2.3.000.
 const BRIDGE: u32 = 2;
 
+// Whether this app can replace itself (shell 2.7.12): not when installed
+// from a .deb or .rpm, which the system's package manager owns and the
+// updater can't replace (only an AppImage could). Before, the T470 logged
+// "None of the fallback platforms linux-x86_64-deb" at every check
+// (report 2026-11-26-193244); there the page says nothing and kr37 installs
+// the next build by hand.
+fn can_update_itself() -> bool { !cfg!(target_os = "linux") || std::env::var_os("APPIMAGE").is_some() }
 #[derive(serde::Serialize)]
 struct ShellInfo { version: String, bridge: u32, pages: bool, device: bool, updates: bool, zoom: bool, trash: bool, watch: bool, append_range: bool, typed_path: bool, opened: bool, slow_route: bool, close_seen: bool, silence: bool, append_at: bool, page_progress: bool, update_progress: bool, system: Option<String>, files_http: Option<String> }
 
@@ -141,7 +148,7 @@ struct ShellInfo { version: String, bridge: u32, pages: bool, device: bool, upda
 fn p37_shell_info(app: tauri::AppHandle) -> ShellInfo {
     // updates: it can update itself (updates.rs, shell 2.2.3).
     // zoom: it sizes the page itself (p37_zoom, shell 2.4.0).
-    ShellInfo { version: app.package_info().version.to_string(), bridge: BRIDGE, pages: app.state::<Arc<pages::Pages>>().enabled(), device: true, updates: true, zoom: true,
+    ShellInfo { version: app.package_info().version.to_string(), bridge: BRIDGE, pages: app.state::<Arc<pages::Pages>>().enabled(), device: true, updates: can_update_itself(), zoom: true,
         // trash: a library's folder can go to the Trash (fs_root_trash, shell 2.5.2).
         trash: true,
         // watch: p37_watch, the window not answering and the last session's end (watch.rs, shell 2.5.3).
