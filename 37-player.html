@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.7.020">
+<meta name="app-version" content="2.7.021">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -155,11 +155,18 @@
     /* Safari's toolbar grows and shrinks; 100vh is the height without it,
        which pushed the page up under the toolbar. dvh is the visible height.
        The bar at the bottom (importing, converting, syncing…) takes its own
-       height off the page, so every screen ends at its top (1.4.107). */
-    height: calc((100dvh - var(--opbar-h, 0px)) / var(--ui-scale));
+       height off the page, so every screen ends at its top (1.4.107).
+       The dvh line is below, under @supports: a line with var() isn't
+       dropped by a browser that doesn't know dvh, as a plain one would be;
+       it becomes unset when used, and the page was only as tall as its
+       contents, the player bar mid-window and nothing scrolling (Safari 14
+       on Mojave, 2.7.021). */
     width: calc(100vw / var(--ui-scale));
     transform: scale(var(--ui-scale));
     transform-origin: top left;
+  }
+  @supports (height: 100dvh){
+    #app{ height: calc((100dvh - var(--opbar-h, 0px)) / var(--ui-scale)); }
   }
   /* The desktop app on an older Mac (Monterey's WebKit, 6 Nov 2026): 100vh
      and 100dvh came out 28px (the title bar) taller than the window shows,
@@ -311,7 +318,8 @@
   .merge-pick{ display:flex; align-items:center; gap:8px; cursor:pointer; }
   /* Unavailable buttons: with More Contrast the faint colour is nearly white, so fade them (1.4.112) */
   body.more-contrast .tb-btn:disabled{ opacity:.38; }
-  .lib-col-head{ position:sticky; top:0; z-index:2; flex-shrink:0; padding:5px 14px; font-size:12.5px; font-weight:600; letter-spacing:0.2px; color:var(--text-dim); background:color-mix(in srgb, #3b5b86 16%, var(--bg-panel)); border-bottom:1px solid var(--line); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .lib-col-head{ position:sticky; top:0; z-index:2; flex-shrink:0; padding:5px 14px; font-size:12.5px; font-weight:600; letter-spacing:0.2px; color:var(--text-dim); background:var(--bg-panel); border-bottom:1px solid var(--line); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  @supports (color: color-mix(in srgb, red, blue)){ .lib-col-head{ background:color-mix(in srgb, #3b5b86 16%, var(--bg-panel)); } }
   #libTableSelCount{ color:var(--text); font-weight:600; padding:0 4px; white-space:nowrap; font-size:13px; font-variant-numeric:tabular-nums; }
   .library-screen:not(.lib-table-mode) #libTableCount{ display:none; }
   .library-screen.lib-table-mode .library-header > .tb-sep{ display:none; }
