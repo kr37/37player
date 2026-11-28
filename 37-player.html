@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.7.027">
+<meta name="app-version" content="2.7.028">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -48012,6 +48012,14 @@ function fmtDate(ms){
 async function restoreSession(){
   const sess = root.session || {};
   if(sess.viewedPlaylistId && findNode(sess.viewedPlaylistId)) viewedPlaylistId = sess.viewedPlaylistId;
+  // Something put back to play: its own playlist is the one shown (2.7.028).
+  // A different one kept from before came back as "Viewing a different
+  // playlist — … is playing" with no overlay, a view nothing else leads to
+  // now (another playlist opens in the overlay while a session is loaded):
+  // kr37, 28 Nov 2026, "since the earliest versions", report
+  // 2026-11-28-065917-85851a, the iPad.
+  const putBack = sess.currentItemId ? findItemContext(sess.currentItemId) : null;
+  if(putBack){ viewedPlaylistId = putBack.playlist.id; sess.viewedPlaylistId = viewedPlaylistId; }
   if(viewedPlaylistId){
     function walk(nodes, trail){
       for(const n of nodes){
@@ -48025,10 +48033,9 @@ async function restoreSession(){
     if(trail) trail.slice(0,-1).forEach(n=> openFolders.add(n.id));
   }
   if(sess.currentItemId){
-    const ctx = findItemContext(sess.currentItemId);
+    const ctx = putBack;
     if(ctx){
       currentItemId = sess.currentItemId;
-      if(!viewedPlaylistId) viewedPlaylistId = ctx.playlist.id;
       if(ctx.item.kind==="track"){
         const url = await getAudioUrl(ctx.item.refId);
         if(url){
