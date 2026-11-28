@@ -15,7 +15,10 @@ const waitFor = async(p, fn, ms)=>{ for(let t=0; t<ms; t+=250){ if(await p.evalu
   const p = await (await b.createBrowserContext()).newPage();
   await p.emulate({viewport:{width:1024,height:768,isMobile:true,hasTouch:true,deviceScaleFactor:1}, userAgent:'Mozilla/5.0 (iPad; CPU OS 18_0 like Mac OS X) Mobile'});
   p.on('pageerror', e=> console.log('PAGE ERROR:', e.message)); p.on('dialog', d=> d.dismiss());
-  await p.evaluateOnNewDocument(()=>{ window.__noAutoConverter = true; window.__playableCheckMs = 600000; });
+  await p.evaluateOnNewDocument(()=>{ window.__noAutoConverter = true; window.__playableCheckMs = 600000;
+    // The lock screen's buttons, to press them here.
+    window.__ms = {}; const set = navigator.mediaSession.setActionHandler.bind(navigator.mediaSession);
+    navigator.mediaSession.setActionHandler = (a, h)=>{ window.__ms[a] = h; return set(a, h); }; });
   await p.goto('http://localhost:8861/37-player.html', {waitUntil: 'networkidle0'}); await sleep(800);
   for(const x of ['^English$', '^Start a library on this device$', '^No, just start$', '^Skip for now$', '^Finish$', '^Close$']){ await clickText(p, '.modal button', x); await sleep(300); }
   await p.evaluate(()=> document.querySelectorAll('.modal [data-close]').forEach(x=> x.click()));
@@ -61,5 +64,14 @@ const waitFor = async(p, fn, ms)=>{ for(let t=0; t<ms; t+=250){ if(await p.evalu
   ok(await p.evaluate(()=> !document.getElementById('audioEl').paused), 'and the track plays');
   await p.click('#btnPlay'); await sleep(400); await p.click('#btnPlay'); await sleep(800);
   ok(await made() === before + 1, 'only once a page');
+  // Back and forward 10 s (2.7.030): they move the track, not the silent loop.
+  await p.evaluate(()=>{ document.getElementById('audioEl').currentTime = 6; }); await sleep(300);
+  await p.evaluate(()=> window.__ms.seekbackward({action: 'seekbackward'})); await sleep(300);
+  const back = await p.evaluate(()=> document.getElementById('audioEl').currentTime);
+  ok(back < 1.5, 'back 10 s moves the track back (' + back.toFixed(1) + ' s)');
+  await p.evaluate(()=> window.__ms.seekforward({action: 'seekforward', seekOffset: 5})); await sleep(300);
+  const fwd = await p.evaluate(()=> document.getElementById('audioEl').currentTime);
+  ok(fwd > 4.5 && fwd < 7, 'forward, by what the lock screen asks (5 s), moves it on (' + fwd.toFixed(1) + ' s)');
+  ok(/lock screen \/ phone: back 10 s[\s\S]*lock screen \/ phone: forward 5 s/.test(await p.evaluate(()=> window.__log().join('\n'))), 'both logged');
   console.log(fails ? fails + ' FAILED' : 'ALL OK'); await b.close();
 })();

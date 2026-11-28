@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.7.029">
+<meta name="app-version" content="2.7.030">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -39668,6 +39668,29 @@ if("mediaSession" in navigator){
       audioEl.currentTime = details.seekTime;
     });
   }catch(e){} // some browsers don't support the seekto action at all — fine to skip
+  // Back and forward 10 seconds (2.7.030). The iPad's lock screen shows these
+  // rather than previous and next (iPadOS's choice). With no handler,
+  // Safari moved whatever was sounding, the track, so they seemed to work;
+  // with the silent loop on through a track (2.7.029) they moved the loop
+  // instead: "they cause the progress indicator to go back to near 0, a
+  // split second later it's back" (kr37, 28 Nov 2026). Now they move the
+  // track, or the silence.
+  const seekBy = (secs)=>{
+    const c = currentItemId ? findItemContext(currentItemId) : null;
+    if(c && c.item.kind === "silence" && silenceState.active){
+      silenceState.elapsedMs = Math.max(0, Math.min(silenceState.seconds * 1000, silenceState.elapsedMs + secs * 1000));
+      silenceState.lastTick = performance.now();
+      if(!document.hidden) updateSilenceUI();
+      return;
+    }
+    if(!audioEl.src || !isFinite(audioEl.duration)) return;
+    audioEl.currentTime = Math.max(0, Math.min(audioEl.duration - 0.5, audioEl.currentTime + secs));
+    updateMediaSessionPosition();
+  };
+  try{
+    navigator.mediaSession.setActionHandler("seekbackward", (d)=>{ const s = (d && d.seekOffset) || 10; playLog("lock screen / phone: back " + s + " s"); seekBy(-s); });
+    navigator.mediaSession.setActionHandler("seekforward", (d)=>{ const s = (d && d.seekOffset) || 10; playLog("lock screen / phone: forward " + s + " s"); seekBy(s); });
+  }catch(e){}
 }
 function updateMediaSessionMetadata(){
   if(!("mediaSession" in navigator)) return;
