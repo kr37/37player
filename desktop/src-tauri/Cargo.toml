@@ -45,6 +45,10 @@ tauri-plugin-updater = "2"
 [target.'cfg(windows)'.dependencies]
 webview2-com = "0.39"
 
+# WebKitGTK's web-process-terminated (shell 2.7.14): the same version wry uses.
+[target.'cfg(target_os = "linux")'.dependencies]
+webkit2gtk = { version = "=2.0.2", features = ["v2_38"] }
+
 [dev-dependencies]
 minisign = "0.7"
 

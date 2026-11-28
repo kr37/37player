@@ -382,11 +382,12 @@ fn ask_page(app: &tauri::AppHandle, system: bool) {
 // but after a third within two minutes it stops, so a page that dies at
 // every start doesn't reload in a loop, and the system's dialog asks:
 // Reload / Quit. Windows' WebView2 says it with ProcessFailed (shell 2.7.13,
-// windows_page_watch below): there the window had gone blank and nothing
+// windows_page_watch below), WebKitGTK with web-process-terminated (shell
+// 2.7.14, linux_page_watch): there the window had gone blank and nothing
 // was logged. `reload` reloads the window's page; `can_reload` false (the
 // whole WebView2 gone, which a reload can't bring back) goes straight to
 // the dialog.
-#[cfg(any(target_os = "macos", target_os = "ios", windows))]
+#[cfg(any(target_os = "macos", target_os = "ios", windows, target_os = "linux"))]
 fn page_process_ended(app: &tauri::AppHandle, reload: Arc<dyn Fn() + Send + Sync>, can_reload: bool) {
     let now = watch::now_ms();
     let again = match watch::get() {
@@ -436,6 +437,30 @@ fn windows_page_watch(window: &tauri::WebviewWindow) {
             });
             Ok(())
         })), &mut token);
+    });
+}
+
+// Linux: WebKitGTK's web-process-terminated (shell 2.7.14; the audit's fix 8,
+// J, its last part). On kr37's T470 the page's process aborted inside
+// GStreamer (28 Nov 2026, report 2026-11-28-071535-03d566) and the window
+// stayed blank, nothing logged, until it was closed: as on the Mac and
+// Windows now, it's logged, reloaded, no loop. A termination the app asked
+// for itself (TerminatedByApi) isn't one.
+#[cfg(target_os = "linux")]
+fn linux_page_watch(window: &tauri::WebviewWindow) {
+    let (app, ww) = (window.app_handle().clone(), window.clone());
+    let _ = window.with_webview(move |pw| {
+        use webkit2gtk::{WebViewExt, WebProcessTerminationReason};
+        let (app, ww) = (app.clone(), ww.clone());
+        pw.inner().connect_web_process_terminated(move |_, reason| {
+            if matches!(reason, WebProcessTerminationReason::TerminatedByApi) { return; }
+            let (app2, ww2) = (app.clone(), ww.clone());
+            // Not from inside WebKit's own signal: on the main loop, after it.
+            let _ = app.run_on_main_thread(move || {
+                let ww3 = ww2.clone();
+                page_process_ended(&app2, Arc::new(move || { let _ = ww3.reload(); }), true);
+            });
+        });
     });
 }
 
@@ -579,6 +604,8 @@ pub fn run() {
             if let Some(w) = app.get_webview_window("main") { fit_to_screen(&w); }
             #[cfg(windows)]
             if let Some(w) = app.get_webview_window("main") { windows_page_watch(&w); }
+            #[cfg(target_os = "linux")]
+            if let Some(w) = app.get_webview_window("main") { linux_page_watch(&w); }
             watch_page(app.handle(), pages.clone(), first.clone());
             check_pages_daily(app.handle(), pages.clone());
             let _ = app;
