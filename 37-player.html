@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.7.030">
+<meta name="app-version" content="2.7.031">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -39335,6 +39335,10 @@ function setPauseHold(on, why){
 }
 function pausedPartway(){
   const ctx = currentItemId ? findItemContext(currentItemId) : null;
+  // A silence paused part-way too (2.7.031): paused from the iPad's lock
+  // screen, the loop stopped, the lock screen lost 37 Player and Apple
+  // Music took its place (kr37, 28 Nov 2026).
+  if(ctx && ctx.item.kind === "silence") return !silenceState.active && silenceState.elapsedMs > 0 && silenceState.elapsedMs < silenceState.seconds * 1000;
   return !!(ctx && ctx.item.kind === "track" && audioEl.paused && !audioEl.ended && audioEl.currentTime > 0);
 }
 function stopsKeepLockScreen(){ return !root.settings || root.settings.stopLockScreen !== false; }
@@ -39921,7 +39925,15 @@ function primeSilentLoop(){
 // below), while the tap still counts.
 ["click", "keydown"].forEach(ev=> document.addEventListener(ev, ()=>{ if(mainWantsPlaying || silenceState.active) primeSilentLoop(); }, true));
 function startSilenceKeepAlive(){
-  if(silentLoopUsed()){ const el = silentKeepAlive(); if(el.paused) el.play().catch(()=>{}); }
+  if(silentLoopUsed()){
+    const el = silentKeepAlive();
+    if(el.paused) el.play().catch(()=>{});
+    // Already on (off screen, through the track before): started again, so
+    // it's the one iPadOS shows as playing. It showed the track that had
+    // just ended, paused: a play button through the silence (kr37, 28 Nov
+    // 2026, 2.7.031).
+    else if(document.hidden){ el.pause(); el.play().catch(()=>{}); }
+  }
   updateMediaSessionMetadata();
   if("mediaSession" in navigator) navigator.mediaSession.playbackState = "playing";
 }
@@ -40108,10 +40120,17 @@ function togglePlay(){
     if(silenceState.active){
       if(silenceState.raf){ cancelAnimationFrame(silenceState.raf); silenceState.raf=null; }
       silenceState.active=false;
+      // Off screen, the lock screen kept ready, as for a track (2.7.031):
+      // before the loop would be stopped, so it stays on.
+      if(document.hidden && stopsKeepLockScreen() && pausedPartway()) setPauseHold(true);
       stopSilenceKeepAlive();
       if("mediaSession" in navigator) navigator.mediaSession.playbackState = "paused";
     } else {
       silenceState.active=true; silenceState.lastTick=performance.now(); tickSilence();
+      // Going on off screen needs the loop again, which the pause stopped
+      // (2.7.031): nothing else would move the silence along with the screen off.
+      if(pauseHold) setPauseHold(false, "playing");
+      startSilenceKeepAlive(); updateLoopHold();
     }
     // Unlike a track, a silence item has no native browser event to hook
     // for this — audioEl's own "pause"/"play" listeners below only fire for

@@ -50,7 +50,10 @@ let fails=0; const ok=(c,m)=>{ console.log((c?'ok   ':'FAIL ')+m); if(!c) fails+
   // pause during a silence from the lock screen ends the loop
   await p.evaluate(()=> window.__play('i2')); await sleep(600);
   await p.evaluate(()=> window.__ah.pause()); await sleep(400);
-  { const z = await p.evaluate(()=>window.__st()); ok(!z.sil && !z.ka && !z.hold, 'silence paused off screen: loop off'); }
+  // Since 2.7.031 a silence paused off screen keeps the lock screen ready, as a
+  // track does: the loop stays on, under the pause hold (kr37's iPad: with the
+  // loop off, the lock screen lost 37 Player and Apple Music took its place).
+  { const z = await p.evaluate(()=>window.__st()); ok(!z.sil && z.ka && z.hold, 'silence paused off screen: the lock screen kept ready, the loop on'); }
   await p.evaluate(()=> window.__play('i3')); await sleep(800);
   // straight track→track
   await p.evaluate(()=>{ const a=document.getElementById('audioEl'); a.currentTime = Math.max(0, a.duration - 0.8); });

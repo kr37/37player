@@ -73,5 +73,19 @@ const waitFor = async(p, fn, ms)=>{ for(let t=0; t<ms; t+=250){ if(await p.evalu
   const fwd = await p.evaluate(()=> document.getElementById('audioEl').currentTime);
   ok(fwd > 4.5 && fwd < 7, 'forward, by what the lock screen asks (5 s), moves it on (' + fwd.toFixed(1) + ' s)');
   ok(/lock screen \/ phone: back 10 s[\s\S]*lock screen \/ phone: forward 5 s/.test(await p.evaluate(()=> window.__log().join('\n'))), 'both logged');
+  // A silence paused from the lock screen keeps it (2.7.031; kr37's iPad: the
+  // loop stopped, the lock screen lost 37 Player, Apple Music took over), and
+  // play there goes on with it.
+  await p.evaluate(()=> window.__userSkip(1)); await sleep(1500);
+  await p.evaluate(()=>{ Object.defineProperty(document,'hidden',{get:()=>true, configurable:true}); Object.defineProperty(document,'visibilityState',{get:()=>'hidden', configurable:true}); document.dispatchEvent(new Event('visibilitychange')); });
+  await sleep(1200);
+  const n0 = await p.evaluate(()=> window.__log().length);
+  await p.evaluate(()=> window.__ms.pause({action: 'pause'})); await sleep(600);
+  let tail = await p.evaluate((n0)=> window.__log().slice(n0).join('\n'), n0);
+  ok(/paused off screen: lock screen kept ready/.test(tail) && !/silent loop off/.test(tail), 'a silence paused off screen keeps the lock screen ready, the loop on');
+  await p.evaluate(()=> window.__ms.play({action: 'play'})); await sleep(2200);
+  tail = await p.evaluate((n0)=> window.__log().slice(n0).join('\n'), n0);
+  ok(/pause hold ended \(playing\)/.test(tail), 'play from the lock screen goes on with the silence');
+
   console.log(fails ? fails + ' FAILED' : 'ALL OK'); await b.close();
 })();
