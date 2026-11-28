@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.7.028">
+<meta name="app-version" content="2.7.029">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -39560,7 +39560,11 @@ function restartSelectionOrCurrent(){
 let mainWantsPlaying = false;
 (function(){
   const play = audioEl.play, pause = audioEl.pause;
-  audioEl.play = function(){ mainWantsPlaying = true; return play.apply(this, arguments); };
+  audioEl.play = function(){
+    mainWantsPlaying = true;
+    try{ if(navigator.userActivation && navigator.userActivation.isActive) primeSilentLoop(); }catch(err){}
+    return play.apply(this, arguments);
+  };
   audioEl.pause = function(){ mainWantsPlaying = false; return pause.apply(this, arguments); };
   audioEl.addEventListener("ended", ()=>{ mainWantsPlaying = false; });
   audioEl.addEventListener("play", ()=>{
@@ -39866,6 +39870,33 @@ function silentKeepAlive(){
   silentKeepAliveEl = el;
   return el;
 }
+// The loop made ready by a tap (2.7.029). On iPadOS each player may start
+// on its own only after it has once been started by a tap; the loop was
+// first started when the app left the screen, no tap, so "silent loop
+// wouldn't start: NotAllowedError" (kr37's iPad, 28 Nov 2026, report
+// 2026-11-28-133227-f91434, and at times since 26 Nov). Without it, after a
+// silence with the iPad locked the next track stalled until he unlocked it,
+// and the lock screen showed back and forward 10 seconds instead of
+// previous and next; every session where the loop started showed previous
+// and next. So at a tap or key while 37 Player is playing (or one that has
+// just started it, or a silence), the loop is started and stopped again,
+// which is all iPadOS needs; once is enough for the page's life. Not at any
+// tap: starting a sound, even a silent one, takes the iPad's sound from
+// another app, which a tap that plays nothing shouldn't do.
+let silentLoopPrimed = false;
+function primeSilentLoop(){
+  if(silentLoopPrimed || !silentLoopUsed()) return;
+  silentLoopPrimed = true;
+  const el = silentKeepAlive();
+  if(!el.paused) return;
+  const p = el.play();
+  if(p && p.then) p.then(()=>{ if(!loopHold && !silenceState.active) el.pause(); playLog("silent loop made ready (a tap)"); },
+    err=>{ silentLoopPrimed = false; playLog("silent loop not made ready: " + (err && err.name)); });
+}
+// A tap while playing (capturing, so no handler of the page's can stop it);
+// and a tap that starts playing, from the player's own play() (the guard,
+// below), while the tap still counts.
+["click", "keydown"].forEach(ev=> document.addEventListener(ev, ()=>{ if(mainWantsPlaying || silenceState.active) primeSilentLoop(); }, true));
 function startSilenceKeepAlive(){
   if(silentLoopUsed()){ const el = silentKeepAlive(); if(el.paused) el.play().catch(()=>{}); }
   updateMediaSessionMetadata();

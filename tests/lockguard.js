@@ -46,5 +46,20 @@ const waitFor = async(p, fn, ms)=>{ for(let t=0; t<ms; t+=250){ if(await p.evalu
   ok(await p.evaluate(()=> navigator.mediaSession.metadata && navigator.mediaSession.metadata.title) === 'One minute of silence', 'a silence skipped to names itself on the lock screen (' + await p.evaluate(()=> navigator.mediaSession.metadata && navigator.mediaSession.metadata.title) + ')');
   await p.evaluate(()=> HTMLMediaElement.prototype.play.call(document.getElementById('audioEl')).catch(()=>{})); await sleep(800);
   ok(await p.evaluate(()=> document.getElementById('audioEl').paused), 'with Playing in the silence, the system can\'t start the track the player still holds');
+  // The silent loop made ready by a tap that plays (2.7.029; kr37's iPad: the
+  // loop first started when the app left the screen, with no tap, and iPadOS
+  // refused it, NotAllowedError). Once, at the first tap on Play; and a tap
+  // that plays nothing doesn't.
+  await p.reload({waitUntil: 'networkidle0'}); await sleep(1200);
+  await p.evaluate(()=> document.querySelectorAll('.modal [data-close]').forEach(x=> x.click()));
+  await p.evaluate(()=> window.__userSkip(-1)); await sleep(600);
+  if(await p.evaluate(()=> !document.getElementById('audioEl').paused)){ await p.evaluate(()=> window.__pause()); await sleep(400); }
+  const made = ()=> p.evaluate(()=> window.__log().filter(l=> /silent loop made ready/.test(l)).length);
+  const before = await made();
+  await p.click('#btnPlay'); await sleep(800);
+  ok(await made() === before + 1, 'a tap on Play makes the silent loop ready (' + (await made() - before) + ')');
+  ok(await p.evaluate(()=> !document.getElementById('audioEl').paused), 'and the track plays');
+  await p.click('#btnPlay'); await sleep(400); await p.click('#btnPlay'); await sleep(800);
+  ok(await made() === before + 1, 'only once a page');
   console.log(fails ? fails + ' FAILED' : 'ALL OK'); await b.close();
 })();
