@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.7.025">
+<meta name="app-version" content="2.7.026">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -2761,7 +2761,7 @@ class FolderLibraryStore {
     await this.open();
     return fn();
   }
-  locked(fn){ return this.run(()=> navigator.locks ? navigator.locks.request(this.lockName, fn) : fn()); }
+  locked(fn){ this.lockedCalls = (this.lockedCalls || 0) + 1; return this.run(()=> navigator.locks ? navigator.locks.request(this.lockName, fn) : fn()); }
   // The stored form of one record, or undefined. A .json that can't be
   // parsed throws, as IndexedDB does for a damaged record.
   async readRaw(store, key){
@@ -3236,18 +3236,33 @@ class FolderLibraryStore {
   }
   // Removes files whose grace is over, and puts any file no record uses
   // (an interrupted write) on the list.
-  tidy(){
+  // Reading every record (thousands of files: 2791 tracks on kr37's Surface,
+  // about two minutes in the desktop app) is done without the library's
+  // lock, which every save needs: held through it, a save asked for 20 s
+  // after a start (the tidy's first) waited until it was done ("saving has
+  // taken 2 minutes", report 2026-11-28-060602-63e90a), and again every six
+  // hours. Only what it found is then weighed under the lock. If anything
+  // in this window wrote meanwhile, nothing is removed this time, only
+  // noted: a file goes only after a day unused (FILES_GRACE_MS), so the
+  // next tidy does it (2.7.026).
+  async tidy(){
+    const seen = this.lockedCalls || 0;
+    const usedPaths = new Set(); // readable recordings records point at (lower case: see renameRecordings)
+    const found = [];            // [store, used names, other files]
+    for(const store of ["state", "audio", "artwork"]){
+      const dir = await this.sub(store), used = new Set(), files = [];
+      for await (const [name, h] of dir.entries()){
+        if(h.kind !== "file") continue;
+        if(/^[^.]+\.json$/.test(name)){ try{ FolderLibraryStore.blobNames(JSON.parse(await (await h.getFile()).text()), []).forEach(n=> n.startsWith("/") ? usedPaths.add(n.toLowerCase()) : used.add(n)); }catch(err){} }
+        else files.push(name);
+      }
+      found.push([store, used, files]);
+    }
     return this.locked(async()=>{
+      const quiet = (this.lockedCalls || 0) === seen + 1; // only this call since the reading began
       const ledger = await this.readLedger(), now = Date.now();
       let changed = false;
-      const usedPaths = new Set(); // readable recordings records point at (lower case: see renameRecordings)
-      for(const store of ["state", "audio", "artwork"]){
-        const dir = await this.sub(store), used = new Set(), files = [];
-        for await (const [name, h] of dir.entries()){
-          if(h.kind !== "file") continue;
-          if(/^[^.]+\.json$/.test(name)){ try{ FolderLibraryStore.blobNames(JSON.parse(await (await h.getFile()).text()), []).forEach(n=> n.startsWith("/") ? usedPaths.add(n.toLowerCase()) : used.add(n)); }catch(err){} }
-          else files.push(name);
-        }
+      for(const [store, used, files] of found){
         for(const name of files){
           const p = store + "/" + name;
           if(used.has(name)){ if(ledger[p]){ delete ledger[p]; changed = true; } continue; }
@@ -3255,6 +3270,7 @@ class FolderLibraryStore {
         }
       }
       for(const [p, at] of Object.entries(ledger)){
+        if(!quiet) break;
         // A readable recording a record points at (just written, or moved
         // back by an Undo) is off the list; only one nothing uses goes.
         if(p.startsWith("/") && usedPaths.has(p.toLowerCase())){ delete ledger[p]; changed = true; continue; }
@@ -42114,9 +42130,14 @@ async function renderSettingsSection(fromTimer){
     if(STORAGE_KIND === "desktop"){
       document.getElementById("infoRunning").textContent = t("infoAppDesktop", {version: APP_VERSION});
       const roots = await desktopRoots(true).catch(()=> ({}));
+      // Each wait here can outlast the section: another one chosen meanwhile
+      // ("Cannot set properties of null", report 2026-11-28-060602-63e90a,
+      // while placeRefs waited for the library's lock; 2.7.026).
+      if(!document.getElementById("infoKept")) return;
       document.getElementById("infoKept").textContent = roots[desktopRootOf(LIBRARY_ID)] || t("checkingLabel");
       document.getElementById("infoShowFolder").addEventListener("click", ()=> desktopInvoke("fs_root_show", {id: desktopRootOf(LIBRARY_ID)}).catch(err=> alert(String((err && err.message) || err))));
       await libStore.placeRefs();
+      if(!document.getElementById("infoRecordings")) return;
       let own = 0, place = 0; desktopBytes = {own: 0, place: 0};
       for(const tr of root.library){ if(placeOfTrack(tr.id)){ place++; desktopBytes.place += tr.fileSize || 0; } else { own++; desktopBytes.own += tr.fileSize || 0; } }
       document.getElementById("infoRecordings").textContent = place ? t("infoRecordingsDesktop", {own, place}) : t("infoRecordingsAllOwn", {own});
@@ -42127,6 +42148,7 @@ async function renderSettingsSection(fromTimer){
       if(canKeepInFolder()){ const b = document.getElementById("infoKeepFolder"); b.style.display = ""; b.addEventListener("click", moveLibraryToFolder); }
       document.getElementById("infoBackup").textContent = libraryBackupText();
     }
+    if(!document.getElementById("placeFolders")) return;
     await renderPlaceFolders(document.getElementById("placeFolders"));
     const types = await libraryFileTypeCounts();
     const typeTable = document.getElementById("fileTypeTable");
@@ -42155,7 +42177,7 @@ async function renderSettingsSection(fromTimer){
       : t("storageUsageUnknown");
     el.textContent = t("infoStorageAll") + " " + usageLine + " " + persistLine;
     const btn = document.getElementById("requestPersist");
-    if(info.persisted===false && navigator.storage && navigator.storage.persist){
+    if(btn && info.persisted===false && navigator.storage && navigator.storage.persist){
       btn.style.display = "";
       btn.addEventListener("click", async ()=>{ try{ await navigator.storage.persist(); }catch(err){} renderSettingsSection(); });
     }

@@ -71,6 +71,24 @@ let fails = 0; const ok=(c,m)=>{ console.log((c?'ok   ':'FAIL ')+m); if(!c) fail
     await st.tidy();
     out.filesAfterGrace = await ls('audio');
     out.nestedStill = (await (await st.get('state', k)).audio.blob.text()) === 'x';
+    // 6b. The tidy reads every record without the library's lock (2.7.026):
+    // a save meanwhile isn't held up until it's done; and with a write in
+    // this window during the reading, nothing is removed that time.
+    for(let i = 0; i < 300; i++) await st.put('state', {key: 'many' + i, value: {n: i}});
+    const lv = async (name)=>{ const w = await (await ad.getFileHandle(name, {create: true})).createWritable(); await w.write('?'); await w.close(); };
+    await lv('leftover2.zz.mp3');
+    const setOld = async ()=>{ const w = await (await (await top.getDirectoryHandle('fstest')).getFileHandle('orphans.json')).createWritable(); await w.write(JSON.stringify({'audio/leftover2.zz.mp3': 1})); await w.close(); };
+    await setOld();
+    let tidyDone = false;
+    const tp = st.tidy().then(()=>{ tidyDone = true; });
+    await new Promise(r=> setTimeout(r, 5));
+    await st.put('state', {key: 'during', value: 1});
+    out.saveNotHeld = !tidyDone;
+    await tp;
+    out.keptAfterWriteDuring = (await ls('audio')).includes('leftover2.zz.mp3');
+    await setOld();
+    await st.tidy();
+    out.goneNextTime = !(await ls('audio')).includes('leftover2.zz.mp3');
     // 7. keys
     out.keyRound = ['root', 'undotrash:1:Ab', 'dlpart:x.y:3', 'Ünï cödé'].every(x=> window.__fs.unkey(window.__fs.keyOf(x)) === x);
     out.keySafe = window.__fs.keyOf('Abc:1.2');
@@ -95,6 +113,9 @@ let fails = 0; const ok=(c,m)=>{ console.log((c?'ok   ':'FAIL ')+m); if(!c) fail
   ok(r.leftoverListed && r.filesBeforeGrace.includes('leftover.zz.mp3'), 'a file no record uses goes on the list, and stays for now');
   ok(r.filesAfterGrace.length === 0, 'once the grace is over, unused files are removed (' + r.filesAfterGrace.join(', ') + ')');
   ok(r.nestedStill, 'files still in use are never removed');
+  ok(r.saveNotHeld, 'a save during the tidy\'s reading of the records isn\'t held up until it ends');
+  ok(r.keptAfterWriteDuring, 'with a write during the reading, nothing is removed that time');
+  ok(r.goneNextTime, 'and the next tidy removes it');
   ok(r.keyRound && r.keySafe === '%0041bc%003a1%002e2', 'keys round-trip through file names (' + r.keySafe + ')');
   ok(JSON.stringify(r.cleared) === JSON.stringify([['libraryInfo'], []]), 'clear keeps only what\'s asked (' + JSON.stringify(r.cleared) + ')');
   console.log(fails ? fails + ' FAILED' : 'ALL OK'); await b.close();
