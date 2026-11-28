@@ -86,6 +86,12 @@ const waitFor = async(p, fn, ms)=>{ for(let t=0; t<ms; t+=250){ if(await p.evalu
   await p.evaluate(()=> window.__ms.play({action: 'play'})); await sleep(2200);
   tail = await p.evaluate((n0)=> window.__log().slice(n0).join('\n'), n0);
   ok(/pause hold ended \(playing\)/.test(tail), 'play from the lock screen goes on with the silence');
+  // Forward past a silence's end ends it at once (2.7.032; the iPad: with the
+  // loop not moving it along, a silence pushed past its end just waited).
+  const n1 = await p.evaluate(()=> window.__log().length);
+  for(let i = 0; i < 7; i++){ await p.evaluate(()=> window.__ms.seekforward({action: 'seekforward'})); await sleep(80); }
+  await sleep(800);
+  ok(/between items \(silence ended\)|start “ten”/.test(await p.evaluate((n1)=> window.__log().slice(n1).join('\n'), n1)), 'forward past the end of a silence ends it, and the next item starts');
 
   console.log(fails ? fails + ' FAILED' : 'ALL OK'); await b.close();
 })();

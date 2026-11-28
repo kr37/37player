@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="2.7.031">
+<meta name="app-version" content="2.7.032">
 <meta name="desktop-bridge" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title data-i18n="appTitle">37 Player</title>
@@ -39684,7 +39684,7 @@ if("mediaSession" in navigator){
     if(c && c.item.kind === "silence" && silenceState.active){
       silenceState.elapsedMs = Math.max(0, Math.min(silenceState.seconds * 1000, silenceState.elapsedMs + secs * 1000));
       silenceState.lastTick = performance.now();
-      if(!document.hidden) updateSilenceUI();
+      advanceSilence(); // at once: the lock screen's time, and the end if it's reached
       return;
     }
     if(!audioEl.src || !isFinite(audioEl.duration)) return;
@@ -39928,11 +39928,11 @@ function startSilenceKeepAlive(){
   if(silentLoopUsed()){
     const el = silentKeepAlive();
     if(el.paused) el.play().catch(()=>{});
-    // Already on (off screen, through the track before): started again, so
-    // it's the one iPadOS shows as playing. It showed the track that had
-    // just ended, paused: a play button through the silence (kr37, 28 Nov
-    // 2026, 2.7.031).
-    else if(document.hidden){ el.pause(); el.play().catch(()=>{}); }
+    // Not started again when it's already on, to have iPadOS show it as the
+    // one playing (2.7.031): off screen, its play() after the pause didn't
+    // happen, so nothing moved the silence along and it never ended (kr37's
+    // iPad, 28 Nov 2026, report 2026-11-28-141706-2749b8). Taken out in
+    // 2.7.032; the play button iPadOS shows through a silence stays.
   }
   updateMediaSessionMetadata();
   if("mediaSession" in navigator) navigator.mediaSession.playbackState = "playing";
